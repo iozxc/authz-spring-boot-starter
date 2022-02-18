@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.cache;
 
-import cn.omisheep.authz.core.util.TimeUtils;
 import cn.omisheep.authz.core.util.Utils;
+import cn.omisheep.commons.util.TimeUtils;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Scheduler;

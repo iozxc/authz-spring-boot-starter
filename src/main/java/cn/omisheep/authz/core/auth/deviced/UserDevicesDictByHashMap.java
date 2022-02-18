@@ -5,7 +5,7 @@ import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.tk.TokenPair;
 import cn.omisheep.authz.core.util.AUtils;
-import cn.omisheep.authz.core.util.TimeUtils;
+import cn.omisheep.commons.util.TimeUtils;
 import lombok.Getter;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;

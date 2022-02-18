@@ -1,6 +1,6 @@
 package cn.omisheep.authz.core.auth.ipf;
 
-import cn.omisheep.authz.core.util.TimeUtils;
+import cn.omisheep.commons.util.TimeUtils;
 import lombok.Getter;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;

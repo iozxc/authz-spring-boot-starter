@@ -7,7 +7,7 @@ import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.tk.TokenPair;
 import cn.omisheep.authz.core.util.AUtils;
-import cn.omisheep.authz.core.util.TimeUtils;
+import cn.omisheep.commons.util.TimeUtils;
 import lombok.NonNull;
 
 import java.util.Arrays;

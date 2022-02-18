@@ -1,6 +1,6 @@
 package cn.omisheep.authz.core.cache;
 
-import cn.omisheep.authz.core.util.TimeUtils;
+import cn.omisheep.commons.util.TimeUtils;
 import com.github.benmanes.caffeine.cache.Expiry;
 import lombok.Getter;
 import lombok.Setter;

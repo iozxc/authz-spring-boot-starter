@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.aggregate;
 
 import cn.omisheep.authz.core.util.CapacityRestrictedQueue;
-import cn.omisheep.authz.core.util.TimeUtils;
+import cn.omisheep.commons.util.TimeUtils;
 import lombok.Data;
 import org.springframework.util.Assert;
 
