@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.cache;
 
-import cn.omisheep.authz.core.util.Utils;
 import cn.omisheep.commons.util.TimeUtils;
+import cn.omisheep.commons.util.Utils;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Scheduler;
@@ -13,7 +13,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static cn.omisheep.authz.core.util.Utils.castValue;
+import static cn.omisheep.commons.util.Utils.castValue;
+
 
 /**
  * @author zhouxinchen[1269670415@qq.com]

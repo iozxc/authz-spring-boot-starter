@@ -13,7 +13,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import static cn.omisheep.authz.core.util.Utils.castValue;
+import static cn.omisheep.commons.util.Utils.castValue;
+
 
 /**
  * @author zhouxinchen[1269670415@qq.com]

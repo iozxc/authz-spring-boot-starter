@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static cn.omisheep.authz.core.util.Utils.castValue;
+import static cn.omisheep.commons.util.Utils.castValue;
 
 /**
  * Injected into the Spring container
