@@ -1,6 +1,6 @@
 package cn.omisheep.authz.core.cache;
 
-import cn.omisheep.authz.core.util.CollectionUtils;
+import cn.omisheep.commons.util.CollectionUtils;
 import lombok.Data;
 
 import java.util.Collection;
