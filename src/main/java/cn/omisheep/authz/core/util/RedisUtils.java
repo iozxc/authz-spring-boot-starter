@@ -2,6 +2,7 @@ package cn.omisheep.authz.core.util;
 
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.cache.Message;
+import cn.omisheep.commons.util.Assert;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
@@ -11,7 +12,6 @@ import org.springframework.data.redis.connection.jedis.JedisConnection;
 import org.springframework.data.redis.connection.lettuce.LettuceClusterConnection;
 import org.springframework.data.redis.connection.lettuce.LettuceConnection;
 import org.springframework.data.redis.core.*;
-import org.springframework.util.Assert;
 
 import java.time.Duration;
 import java.util.Collection;

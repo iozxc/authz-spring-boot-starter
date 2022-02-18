@@ -3,11 +3,11 @@ package cn.omisheep.authz.core.tk;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.TimeUtils;
+import cn.omisheep.commons.util.Assert;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.impl.TextCodec;
-import io.jsonwebtoken.lang.Assert;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
