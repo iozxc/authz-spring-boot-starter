@@ -23,17 +23,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.*;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.redis.connection.RedisConnectionCommands;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.listener.PatternTopic;
@@ -72,8 +71,15 @@ public class AuthzAutoConfiguration {
             jackson2JsonRedisSerializer.setObjectMapper(new ObjectMapper().setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY).activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL));
         }
 
+        @Bean(name = "redisHealthIndicator")
+        @ConditionalOnProperty(name = "authz.cache.enabled-redis-actuator", havingValue = "false", matchIfMissing = true)
+        public Object nonRedisActuator() {
+            return new Object();
+        }
+
         @Bean("redisTemplate")
         @ConditionalOnMissingBean(name = "redisTemplate")
+        @ConditionalOnProperty(prefix = "authz.cache", name = "enabled-redis", havingValue = "true")
         public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
             RedisTemplate<String, Object> template = new RedisTemplate<>();
             template.setConnectionFactory(redisConnectionFactory);
@@ -87,6 +93,7 @@ public class AuthzAutoConfiguration {
 
         @Bean
         @ConditionalOnMissingBean(StringRedisTemplate.class)
+        @ConditionalOnProperty(prefix = "authz.cache", name = "enabled-redis", havingValue = "true")
         public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
             StringRedisTemplate template = new StringRedisTemplate();
             template.setConnectionFactory(redisConnectionFactory);
@@ -95,7 +102,7 @@ public class AuthzAutoConfiguration {
 
         @Bean
         public Cache cache(AuthzProperties properties) {
-            if (properties.getCache().isEnableRedis()) {
+            if (properties.getCache().isEnabledRedis()) {
                 return new DoubleDeckCache(properties);
             } else {
                 return new DefaultCache(properties.getCache().getCacheMaximumSize(), properties.getCache().getExpireAfterReadOrUpdateTime());
@@ -103,7 +110,7 @@ public class AuthzAutoConfiguration {
         }
 
         @Bean("authzCacheMessageReceive")
-        @ConditionalOnProperty(prefix = "au.cache", name = "enable-redis", havingValue = "true", matchIfMissing = false)
+        @ConditionalOnProperty(prefix = "authz.cache", name = "enable-redis", havingValue = "true")
         public MessageReceive messageReceive(Cache cache) {
             return new MessageReceive(cache);
         }
@@ -117,7 +124,13 @@ public class AuthzAutoConfiguration {
 
         @Bean("auCacheRedisMessageListenerContainer")
         @ConditionalOnBean(value = MessageReceive.class, name = "authzCacheMessageReceive")
-        public RedisMessageListenerContainer container(RedisConnectionFactory connectionFactory, @Qualifier("authzCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter) {
+        public RedisMessageListenerContainer container(@Qualifier("redisTemplate") RedisTemplate redisTemplate, RedisConnectionFactory connectionFactory, @Qualifier("authzCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter) {
+            try {
+                redisTemplate.execute((RedisCallback<Object>) RedisConnectionCommands::ping);
+            } catch (Exception e) {
+                log.error("请配置redis并确保其能够正常连接");
+                throw new IllegalStateException("redis异常，检查redis配置是否有效");
+            }
             RedisMessageListenerContainer container = new RedisMessageListenerContainer();
             container.setConnectionFactory(connectionFactory);
             container.addMessageListener(listenerAdapter, new PatternTopic(Cache.CHANNEL));
@@ -149,7 +162,7 @@ public class AuthzAutoConfiguration {
 
     @Bean
     public UserDevicesDict userDevicesDict(AuthzProperties properties, Cache cache) {
-        if (properties.getCache().isEnableRedis()) {
+        if (properties.getCache().isEnabledRedis()) {
             return new UserDevicesDictByCache(properties, cache);
         } else {
             return new UserDevicesDictByHashMap(properties);

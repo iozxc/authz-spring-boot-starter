@@ -102,8 +102,4 @@ public abstract class TreeCache implements Cache {
             }
         }
     }
-
-    public void show() {
-        System.out.println(Utils.beautifulJson(root));
-    }
 }

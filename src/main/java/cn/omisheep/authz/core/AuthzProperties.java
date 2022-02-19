@@ -21,7 +21,7 @@ public class AuthzProperties {
 
     private CacheConfig cache = new CacheConfig();
 
-    private boolean enableCatchException = false;
+    private boolean enabledCatchException = false;
 
     /**
      * role/permission分隔符
@@ -67,7 +67,12 @@ public class AuthzProperties {
          * 是否开启redis缓存（两级缓存）
          * L2
          */
-        private boolean enableRedis = false;
+        private boolean enabledRedis = false;
+
+        /**
+         * 是否开启redis健康监控检查，默认关闭
+         */
+        private boolean enabledRedisActuator = false;
 
         /**
          * redis每次扫描key的数量

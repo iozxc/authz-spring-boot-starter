@@ -83,7 +83,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
             } catch (Exception e) {
                 // 惰性删除策略，如果此用户存在，但是过期，则删除
                 httpMeta.setTokenException(HttpMeta.TokenException.valueOf(e.getClass().getSimpleName()));
-                if (!properties.getCache().isEnableRedis() && e instanceof ExpiredJwtException) {
+                if (!properties.getCache().isEnabledRedis() && e instanceof ExpiredJwtException) {
                     Claims claims = ((ExpiredJwtException) e).getClaims();
                     userDevicesDict.removeDeviceByUserIdAndAccessTokenId(claims.get("userId"), claims.getId());
                 }

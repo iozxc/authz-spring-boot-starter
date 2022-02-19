@@ -30,8 +30,6 @@ public class AuthzInterceptor implements HandlerInterceptor {
         if (!(handler instanceof HandlerMethod)) {
             return false;
         }
-        System.out.println("AuthInterceptor");
-
         HandlerMethod hm = (HandlerMethod) handler;
 
         // 状态获取初始化
