@@ -14,6 +14,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import lombok.extern.slf4j.Slf4j;
 import orestes.bloomfilter.CountingBloomFilter;
+import org.springframework.boot.logging.LogLevel;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -142,7 +143,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
                 } else {
                     if (ipMeta.isBan()) {
                         if (ipMeta.getReliveTime() > now) {
-                            LogUtils.pushLogToRequest("「请求频繁(拒绝)」 \t距上次访问: [{}] , method: [{}] , ip : [{}] , uri: [{}]  ", ipMeta.lastTime(), method, ip, uri);
+                            LogUtils.pushLogToRequest(LogLevel.WARN, "「请求频繁(拒绝)」 \t距上次访问: [{}] , method: [{}] , ip : [{}] , uri: [{}]  ", ipMeta.lastTime(), method, ip, uri);
                             HttpUtils.returnResponse(HttpStatus.FORBIDDEN, RequestExceptionStatus.REQUEST_REPEAT);
                             return null;
                         } else {
@@ -150,11 +151,11 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
                             ipMeta.relive();
                         }
                     }
-                    if (ipMeta.request(limitMeta.getMaxCount(), limitMeta.getTime(), limitMeta.getInterval())) {
+                    if (ipMeta.request(limitMeta.getMaxRequests(), limitMeta.getWindow(), limitMeta.getMinInterval())) {
                         LogUtils.pushLogToRequest("「普通访问(正常)」\t距上次访问: [{}] , method: [{}] , ip : [{}] , uri: [{}]  ", ipMeta.lastTime(), method, ip, uri);
                     } else {
-                        ipMeta.forbidden(limitMeta.getRelieveTime());
-                        LogUtils.pushLogToRequest("「请求频繁(封禁)」 \t距上次访问: [{}] , method: [{}] , ip : [{}] , uri: [{}]  ", ipMeta.lastTime(), method, ip, uri);
+                        ipMeta.forbidden(limitMeta.getPunishmentTime());
+                        LogUtils.pushLogToRequest(LogLevel.WARN, "「请求频繁(封禁)」 \t距上次访问: [{}] , method: [{}] , ip : [{}] , uri: [{}]  ", ipMeta.lastTime(), method, ip, uri);
                         HttpUtils.returnResponse(HttpStatus.FORBIDDEN, RequestExceptionStatus.REQUEST_REPEAT);
                         if (BannedType.IP.equals(limitMeta.getBannedType())) {
                             ipBlacklist.add(ipMeta); // 若是封锁ip，则添加到ipBlacklist中，在第一层ip过滤时则会将其拦下

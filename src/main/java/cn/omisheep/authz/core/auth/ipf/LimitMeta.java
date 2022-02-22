@@ -10,17 +10,17 @@ import lombok.Getter;
 
 @Getter
 public class LimitMeta {
-    private final long time;
-    private final int maxCount;
-    private final long relieveTime;
-    private final long interval;
+    private final long window;
+    private final int maxRequests;
+    private final long punishmentTime;
+    private final long minInterval;
     private final BannedType bannedType;
 
-    public LimitMeta(String time, int maxCount, String relieveTime, String interval, BannedType bannedType) {
-        this.time = TimeUtils.parseTimeValue(time);
-        this.maxCount = maxCount;
-        this.relieveTime = TimeUtils.parseTimeValue(relieveTime);
-        this.interval = TimeUtils.parseTimeValue(interval);
+    public LimitMeta(String window, int maxRequests, String punishmentTime, String minInterval, BannedType bannedType) {
+        this.window = TimeUtils.parseTimeValue(window);
+        this.maxRequests = maxRequests;
+        this.punishmentTime = TimeUtils.parseTimeValue(punishmentTime);
+        this.minInterval = TimeUtils.parseTimeValue(minInterval);
         this.bannedType = bannedType;
     }
 }

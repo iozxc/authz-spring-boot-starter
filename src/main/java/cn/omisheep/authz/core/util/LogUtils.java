@@ -19,7 +19,7 @@ import java.util.ArrayList;
  *
  * @author zhou xin chen
  */
-@Slf4j(topic = "Authz log")
+@Slf4j(topic = "Authz.log")
 public class LogUtils {
 
     @Setter
@@ -42,16 +42,20 @@ public class LogUtils {
         if (logLevel.ordinal() <= LogLevel.DEBUG.ordinal()) log.info(MARKER, Constants.DEBUG_PREFIX + msg, args);
     }
 
-    @SuppressWarnings("unchecked")
+
     public static void pushLogToRequest(String formatMsg, Object... args) {
+        pushLogToRequest(LogLevel.INFO, formatMsg, args);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void pushLogToRequest(LogLevel logLevel, String formatMsg, Object... args) {
         HttpServletRequest request = ((ServletRequestAttributes) (RequestContextHolder.currentRequestAttributes())).getRequest();
         ArrayList<LogMeta> au_logs = (ArrayList<LogMeta>) request.getAttribute("au_logs");
         if (au_logs == null) {
             au_logs = new ArrayList<>();
             request.setAttribute("au_logs", au_logs);
         }
-        LogMeta logMeta = new LogMeta(null, format(formatMsg, args));
-        au_logs.add(logMeta);
+        au_logs.add(new LogMeta(logLevel, format(formatMsg, args)));
     }
 
     @SuppressWarnings("unchecked")
@@ -64,7 +68,7 @@ public class LogUtils {
         StringBuilder debug = new StringBuilder();
         StringBuilder error = new StringBuilder();
         logs.forEach(logMeta -> {
-            switch (logMeta.logType) {
+            switch (logMeta.logLevel) {
                 case INFO:
                     info.append("\n").append(logMeta.getMsg());
                     break;
@@ -80,66 +84,43 @@ public class LogUtils {
             }
         });
         if (info.length() > 0) {
-            log.info(info.toString() + "\n");
+            log.info(info.append("\n").toString());
         }
         if (warn.length() > 0) {
-            log.warn(warn.toString() + "\n");
+            log.warn(warn.append("\n").toString());
         }
         if (debug.length() > 0) {
-            log.debug(debug.toString() + "\n");
+            log.debug(debug.append("\n").toString());
         }
         if (error.length() > 0) {
-            log.error(error.toString() + "\n");
+            log.error(error.append("\n").toString());
         }
 
         logs.clear();
     }
 
-    public enum LogType {
-        INFO,
-        WARN,
-        ERROR,
-        DEBUG
-    }
-
     @Getter
     public static class LogMeta {
-        private LogType logType;
+        private final LogLevel logLevel;
         private final String msg;
 
-        public LogMeta(LogType logType, String msg) {
-            if (logType == null) {
-                logType = LogType.INFO;
+        public LogMeta(LogLevel logLevel, String msg) {
+            if (logLevel == null) {
+                logLevel = LogLevel.INFO;
             }
-            this.logType = logType;
+            this.logLevel = logLevel;
             this.msg = msg;
         }
 
         public LogMeta(String msg) {
-            this.logType = LogType.INFO;
+            this.logLevel = LogLevel.INFO;
             this.msg = msg;
-        }
-
-        public void info() {
-            this.logType = LogType.INFO;
-        }
-
-        public void warn() {
-            this.logType = LogType.WARN;
-        }
-
-        public void debug() {
-            this.logType = LogType.DEBUG;
-        }
-
-        public void error() {
-            this.logType = LogType.ERROR;
         }
     }
 
     private static String format(String formatMsg, Object... args) {
         for (Object arg : args) {
-            formatMsg = formatMsg.replaceFirst("\\{\\}", String.valueOf(arg));
+            formatMsg = formatMsg.replaceFirst("\\{}", String.valueOf(arg));
         }
         return formatMsg;
     }

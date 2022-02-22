@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core;
 
 import cn.omisheep.authz.annotation.Perms;
-import cn.omisheep.authz.annotation.RateLimited;
+import cn.omisheep.authz.annotation.RateLimit;
 import cn.omisheep.authz.annotation.Roles;
 import cn.omisheep.authz.core.auth.AuKey;
 import cn.omisheep.authz.core.auth.PermRolesMeta;
@@ -32,9 +32,9 @@ import java.util.Set;
 import java.util.StringJoiner;
 
 /**
- * qq: 1269670415
- *
- * @author zhou xin chen
+ * @author zhouxinchen[1269670415@qq.com]
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @SuppressWarnings("all")
 public class AuCoreInitialization implements ApplicationContextAware {
@@ -196,21 +196,21 @@ public class AuCoreInitialization implements ApplicationContextAware {
         Map<String, Map<String, LimitMeta>> limitedMap = httpd.getLimitedMap();
         HashMap<String, LimitMeta> cMap = new HashMap<>();
 
-        applicationContext.getBeansWithAnnotation(RateLimited.class).entrySet().forEach(entry -> {
+        applicationContext.getBeansWithAnnotation(RateLimit.class).entrySet().forEach(entry -> {
             Class<?> aClass = AopUtils.getTargetClass(entry.getValue());
-            RateLimited auLimit = aClass.getAnnotation(RateLimited.class);
-            if (auLimit != null) {
+            RateLimit rateLimit = aClass.getAnnotation(RateLimit.class);
+            if (rateLimit != null) {
                 cMap.put(aClass.getName(),
-                        new LimitMeta(auLimit.window(), auLimit.maxRequests(), auLimit.relieveTime(), auLimit.interval(), auLimit.bannedType()));
+                        new LimitMeta(rateLimit.window(), rateLimit.maxRequests(), rateLimit.punishmentTime(), rateLimit.minInterval(), rateLimit.bannedType()));
             }
         });
 
         for (Map.Entry<RequestMappingInfo, HandlerMethod> entry : mapRet.entrySet()) {
             Set<RequestMethod> methods = entry.getKey().getMethodsCondition().getMethods();
             Set<String> patternValues = entry.getKey().getPatternsCondition().getPatterns();
-            RateLimited auLimit = entry.getValue().getMethodAnnotation(RateLimited.class); // 方法上的au
-            if (auLimit != null) {
-                LimitMeta limitMeta = new LimitMeta(auLimit.window(), auLimit.maxRequests(), auLimit.relieveTime(), auLimit.interval(), auLimit.bannedType());
+            RateLimit rateLimit = entry.getValue().getMethodAnnotation(RateLimit.class); // 方法上的au
+            if (rateLimit != null) {
+                LimitMeta limitMeta = new LimitMeta(rateLimit.window(), rateLimit.maxRequests(), rateLimit.punishmentTime(), rateLimit.minInterval(), rateLimit.bannedType());
                 for (RequestMethod method : methods) {
                     for (String patternValue : patternValues) {
                         Map<String, LimitMeta> map = limitedMap.get(method.toString());
