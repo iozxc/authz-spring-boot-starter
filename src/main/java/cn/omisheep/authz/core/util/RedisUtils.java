@@ -97,25 +97,6 @@ public class RedisUtils {
         return expire != null ? expire : -2;
     }
 
-
-    public static List ttl(List<String> keys) {
-        RedisConnectionFactory connectionFactory = redisTemplate.getConnectionFactory();
-        if (connectionFactory == null) return new ArrayList<>();
-        List<String> list = new ArrayList<>();
-        RedisConnection connection = connectionFactory.getConnection();
-        return null;
-//        byte[] rawKey = this.rawKey(key);
-//        return (Long)this.execute((connection) -> {
-//            return connection.ttl(rawKey);
-//        }, true);
-    }
-
-//    byte[] rawKey(Object key) {
-//        org.springframework.util.Assert.notNull(key, "non null key required");
-//        RedisSerializer<?> keySerializer = redisTemplate.getKeySerializer();
-//        return keySerializer == null && key instanceof byte[] ? (byte[])((byte[])key) : keySerializer.serialize(key);
-//    }
-
     public static boolean hasKey(String key) {
         Boolean bool = redisTemplate.hasKey(key);
         return bool != null && bool;
@@ -148,14 +129,14 @@ public class RedisUtils {
             return Utils.castValue(redisTemplate.opsForValue().get(key), requiredType);
         }
 
-        public static List get(List<String> key) {
-            List objects = redisTemplate.opsForValue().multiGet(key);
+        public static List<?> get(List<String> key) {
+            List<?> objects = redisTemplate.opsForValue().multiGet(key);
             if (objects == null) return new ArrayList<>();
             return objects;
         }
 
         public static Map<String, Object> getToMap(List<String> key) {
-            List objects = redisTemplate.opsForValue().multiGet(key);
+            List<?> objects = redisTemplate.opsForValue().multiGet(key);
             if (objects == null) return new HashMap<>();
             HashMap<String, Object> map = new HashMap<>();
             Iterator<String> iterator = key.iterator();
@@ -166,7 +147,7 @@ public class RedisUtils {
         }
 
         public static <E> Map<String, E> getToMap(List<String> key, Class<E> requiredType) {
-            List objects = redisTemplate.opsForValue().multiGet(key);
+            List<?> objects = redisTemplate.opsForValue().multiGet(key);
             if (objects == null) return new HashMap<>();
             HashMap<String, E> map = new HashMap<>();
             Iterator<String> iterator = key.iterator();
@@ -193,34 +174,6 @@ public class RedisUtils {
         }
 
     }
-
-//    public static class Asy {
-
-//        public static void set(String key, Object value) {
-//            Async.run(() -> redisTemplate.opsForValue().set(key, value));
-//        }
-//
-//        public static void set(String key, Object value, long ttl) {
-//            Async.run(() -> redisTemplate.opsForValue().set(key, value, ttl, TimeUnit.SECONDS));
-//        }
-//
-//        public static void update(String key, Object value) {
-//            Async.run(() -> redisTemplate.opsForValue().set(key, value, 0));
-//        }
-//
-//        public static void del(String key) {
-//            if (key != null && !key.equals("")) {
-//                Async.run(() -> redisTemplate.delete(key));
-//            }
-//        }
-//
-//        public static void del(Collection<String> collection) {
-//            if (collection != null && collection.size() > 0) {
-//                Async.run(() -> redisTemplate.delete(collection));
-//            }
-//        }
-//    }
-
 
     private static final RedisTemplate<String, Object> redisTemplate;
     private static final int SCAN_COUNT;

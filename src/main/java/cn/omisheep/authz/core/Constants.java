@@ -13,4 +13,5 @@ public interface Constants {
     String REFRESH_INFO_KEY_PREFIX = "au:usersRefreshInfo:";
     String SEPARATOR = ":";
     String WILDCARD = "*";
+    String CRLF = "\n";
 }

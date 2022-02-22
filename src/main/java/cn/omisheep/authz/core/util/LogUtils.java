@@ -25,6 +25,7 @@ public class LogUtils {
 
     @Setter
     private static LogLevel logLevel;
+    private static final String AU_LOGS = "au_logs";
     private static final Marker MARKER = MarkerFactory.getMarker("cn.omisheep.au");
 
     public static void logInfo(String msg, Object... args) {
@@ -51,10 +52,10 @@ public class LogUtils {
     @SuppressWarnings("unchecked")
     public static void pushLogToRequest(LogLevel logLevel, String formatMsg, Object... args) {
         HttpServletRequest request = ((ServletRequestAttributes) (RequestContextHolder.currentRequestAttributes())).getRequest();
-        ArrayList<LogMeta> au_logs = (ArrayList<LogMeta>) request.getAttribute("au_logs");
+        ArrayList<LogMeta> au_logs = (ArrayList<LogMeta>) request.getAttribute(AU_LOGS);
         if (au_logs == null) {
             au_logs = new ArrayList<>();
-            request.setAttribute("au_logs", au_logs);
+            request.setAttribute(AU_LOGS, au_logs);
         }
         au_logs.add(new LogMeta(logLevel, format(formatMsg, args)));
     }
@@ -62,7 +63,7 @@ public class LogUtils {
     @SuppressWarnings("unchecked")
     public static void exportLogsFromRequest() {
         HttpServletRequest request = ((ServletRequestAttributes) (RequestContextHolder.currentRequestAttributes())).getRequest();
-        ArrayList<LogMeta> logs = (ArrayList<LogMeta>) request.getAttribute("au_logs");
+        ArrayList<LogMeta> logs = (ArrayList<LogMeta>) request.getAttribute(AU_LOGS);
         if (!logLevel.equals(LogLevel.OFF) || logs == null) return;
         StringBuilder info = new StringBuilder();
         StringBuilder warn = new StringBuilder();
@@ -71,30 +72,30 @@ public class LogUtils {
         logs.forEach(logMeta -> {
             switch (logMeta.logLevel) {
                 case INFO:
-                    info.append("\n").append(logMeta.getMsg());
+                    info.append(Constants.CRLF).append(logMeta.getMsg());
                     break;
                 case WARN:
-                    warn.append("\n").append(logMeta.getMsg());
+                    warn.append(Constants.CRLF).append(logMeta.getMsg());
                     break;
                 case DEBUG:
-                    debug.append("\n").append(logMeta.getMsg());
+                    debug.append(Constants.CRLF).append(logMeta.getMsg());
                     break;
                 case ERROR:
-                    error.append("\n").append(logMeta.getMsg());
+                    error.append(Constants.CRLF).append(logMeta.getMsg());
                     break;
             }
         });
         if (info.length() > 0) {
-            logInfo(info.append("\n").toString());
+            logInfo(info.append(Constants.CRLF).toString());
         }
         if (warn.length() > 0) {
-            logWarn(warn.append("\n").toString());
+            logWarn(warn.append(Constants.CRLF).toString());
         }
         if (debug.length() > 0) {
-            logDebug(debug.append("\n").toString());
+            logDebug(debug.append(Constants.CRLF).toString());
         }
         if (error.length() > 0) {
-            logError(error.append("\n").toString());
+            logError(error.append(Constants.CRLF).toString());
         }
         logs.clear();
     }
