@@ -2,6 +2,7 @@ package cn.omisheep.authz.core.auth.ipf;
 
 import cn.omisheep.authz.annotation.BannedType;
 import cn.omisheep.authz.core.AuthzProperties;
+import cn.omisheep.authz.core.Constants;
 import cn.omisheep.authz.core.RequestExceptionStatus;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.tk.Token;
@@ -9,6 +10,7 @@ import cn.omisheep.authz.core.tk.TokenHelper;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.Async;
 import cn.omisheep.commons.util.HttpUtils;
+import cn.omisheep.commons.util.Utils;
 import cn.omisheep.commons.web.BufferedServletRequestWrapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -25,12 +27,12 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 
 /**
- * @author zhou xin chen
+ * @author zhouxinchen[1269670415@qq.com]
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Slf4j
 @SuppressWarnings("all")
@@ -58,7 +60,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
         String method = request.getMethod();
 
         //  记录访问次数，同时保存所访问的api，不能直接用uri。因为路径可能也为参数
-        String api = decLimit(ip, uri, method); // api
+        String api = execLimit(ip, uri, method); // api
 
         if (api == null) {
             LogUtils.exportLogsFromRequest();
@@ -67,10 +69,9 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
 
         HttpMeta httpMeta = new HttpMeta(
                 request,
-                ip, uri, api, method,
-                request.getHeader("user-agent"), new Date());
+                ip, uri, api, method, new Date());
 
-        request.setAttribute("AU_HTTP_META", httpMeta);
+        request.setAttribute(Constants.HTTP_META, httpMeta);
 
         // 获取Cookie
         Cookie cookie = HttpUtils.readSingleCookieInRequestByName(properties.getCookieName());
@@ -95,7 +96,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private String decLimit(String ip, String uri, String method) throws IOException {
+    private String execLimit(String ip, String uri, String method) throws IOException {
         HashSet<IpMeta> ipBlacklist = httpd.getIpBlacklist();
         CountingBloomFilter<String> ipBlacklistBloomFilter = httpd.getIpBlacklistBloomFilter();
 
@@ -106,8 +107,8 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
             IpMeta orElse = ipBlacklist.stream() // 黑名单内搜索
                     .filter(_ipMeta -> _ipMeta.getIp().equals(ip)).findFirst().orElse(null);
             if (orElse != null && orElse.isBan()) { // 若存在且确实是被禁止了。则
-                if (orElse.getReliveTime() > now) {
-                    LogUtils.pushLogToRequest("「请求频繁ip封锁(拒绝)」 \t距上次访问: [{}] , method: [{}] , ip : [{}] , uri: [{}]  ", orElse.lastTime(), method, ip, uri);
+                if (!orElse.enableRelive(now)) {
+                    LogUtils.pushLogToRequest("「请求频繁ip封锁(拒绝)」 \t距上次访问: [{}] , method: [{}] , ip : [{}] , uri: [{}]  ", orElse.sinceLastTime(), method, ip, uri);
                     HttpUtils.returnResponse(HttpStatus.FORBIDDEN, RequestExceptionStatus.REQUEST_REPEAT);
                     return null;
                 } else {
@@ -125,7 +126,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
                 LimitMeta limitMeta = null;
 
                 try {
-                    limitMeta = httpd.getLimitedMap().get(method).get(entry.getKey());
+                    limitMeta = httpd.getLimitedMetaMap().get(method).get(entry.getKey());
                 } catch (NullPointerException e) {
                     LogUtils.pushLogToRequest("「普通访问」 \tmethod: [{}] , ip : [{}] , uri: [{}]   ", method, ip, uri);
                     return entry.getKey();
@@ -142,20 +143,35 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
                     LogUtils.pushLogToRequest("「普通访问(首次)」 \tmethod: [{}] , ip : [{}] , uri: [{}]  ", method, ip, uri);
                 } else {
                     if (ipMeta.isBan()) {
-                        if (ipMeta.getReliveTime() > now) {
-                            LogUtils.pushLogToRequest(LogLevel.WARN, "「请求频繁(拒绝)」 \t距上次访问: [{}] , method: [{}] , ip : [{}] , uri: [{}]  ", ipMeta.lastTime(), method, ip, uri);
+                        if (!ipMeta.enableRelive(now)) {
+                            LogUtils.pushLogToRequest(LogLevel.WARN, "「请求频繁(拒绝)」 \t距上次访问: [{}] , method: [{}] , ip : [{}] , uri: [{}]  ", ipMeta.sinceLastTime(), method, ip, uri);
                             HttpUtils.returnResponse(HttpStatus.FORBIDDEN, RequestExceptionStatus.REQUEST_REPEAT);
+                            ipMeta.setLastRequestTime(now);
                             return null;
                         } else {
                             LogUtils.pushLogToRequest("「解除封禁(解封)」  \tmethod: [{}] , ip : [{}] , uri: [{}]  ", method, ip, uri);
                             ipMeta.relive();
+                            for (Httpd.IpPool ipPool : oIpPools(limitMeta)) {
+                                if (ipPool.containsKey(ip)) {
+                                    ipPool.get(ip).relive();
+                                }
+                            }
                         }
                     }
                     if (ipMeta.request(limitMeta.getMaxRequests(), limitMeta.getWindow(), limitMeta.getMinInterval())) {
-                        LogUtils.pushLogToRequest("「普通访问(正常)」\t距上次访问: [{}] , method: [{}] , ip : [{}] , uri: [{}]  ", ipMeta.lastTime(), method, ip, uri);
+                        System.out.println(Utils.beautifulJson(ipMeta));
+                        LogUtils.pushLogToRequest("「普通访问(正常)」\t距上次访问: [{}] , method: [{}] , ip : [{}] , uri: [{}]  ", ipMeta.sinceLastTime(), method, ip, uri);
                     } else {
                         ipMeta.forbidden(limitMeta.getPunishmentTime());
-                        LogUtils.pushLogToRequest(LogLevel.WARN, "「请求频繁(封禁)」 \t距上次访问: [{}] , method: [{}] , ip : [{}] , uri: [{}]  ", ipMeta.lastTime(), method, ip, uri);
+
+                        for (Httpd.IpPool ipPool : oIpPools(limitMeta)) {
+                            long time = ipMeta.getLastRequestTime().getTime();
+                            if (!ipPool.contains(ip)) {
+                                ipPool.put(ip, new IpMeta(ip).forbidden(limitMeta.getPunishmentTime()));
+                            } else ipPool.get(ip).forbidden(limitMeta.getPunishmentTime());
+                        }
+
+                        LogUtils.pushLogToRequest(LogLevel.WARN, "「请求频繁(封禁)」 \t距上次访问: [{}] , method: [{}] , ip : [{}] , uri: [{}]  ", ipMeta.sinceLastTime(), method, ip, uri);
                         HttpUtils.returnResponse(HttpStatus.FORBIDDEN, RequestExceptionStatus.REQUEST_REPEAT);
                         if (BannedType.IP.equals(limitMeta.getBannedType())) {
                             ipBlacklist.add(ipMeta); // 若是封锁ip，则添加到ipBlacklist中，在第一层ip过滤时则会将其拦下
@@ -174,24 +190,53 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
         return null;
     }
 
+    public List<Httpd.IpPool> oIpPools(LimitMeta limitMeta) {
+        List<LimitMeta.AssociatedPattern> associatedPatterns = limitMeta.getAssociatedPatterns();
+        List<Httpd.IpPool> oIpPools = new ArrayList<>();
+        if (associatedPatterns != null) {
+            associatedPatterns.stream().forEach(associatedPattern -> {
+                associatedPattern.getMethods().forEach(meth -> {
+                    httpd.getRequestPools()
+                            .get(meth)
+                            .keySet()
+                            .stream().filter(path -> antPathMatcher.match(associatedPattern.getPattern(), path))
+                            .forEach(path -> {
+                                try {
+                                    oIpPools.add(httpd.getRequestPools().get(meth).get(path));
+                                } catch (Exception ignore) {
+                                }
+                            });
+                });
+            });
+        }
+        return oIpPools;
+    }
+
+
+    private static final String UNKNOWN = "unknown";
+    private static final String PROXY_CLIENT_IP = "Proxy-Client-IP";
+    private static final String X_FORWARDED_FOR = "X-Forwarded-For";
+    private static final String WL_PROXY_CLIENT_IP = "WL-Proxy-Client-IP";
+    private static final String X_REAL_IP = "X-Real-IP";
+
     private String getIp(HttpServletRequest request) {
         if (request == null) {
-            return "unknown";
+            return UNKNOWN;
         }
-        String ip = request.getHeader("x-forwarded-for");
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("Proxy-Client-IP");
+        String ip = request.getHeader(X_FORWARDED_FOR);
+        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+            ip = request.getHeader(PROXY_CLIENT_IP);
         }
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+            ip = request.getHeader(X_FORWARDED_FOR);
         }
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("WL-Proxy-Client-IP");
+        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+            ip = request.getHeader(WL_PROXY_CLIENT_IP);
         }
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("X-Real-IP");
+        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+            ip = request.getHeader(X_REAL_IP);
         }
-        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
             ip = request.getRemoteAddr();
         }
         return ip.equals("0:0:0:0:0:0:0:1") ? "127.0.0.1" : ip;

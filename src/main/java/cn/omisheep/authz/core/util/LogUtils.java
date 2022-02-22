@@ -64,7 +64,7 @@ public class LogUtils {
     public static void exportLogsFromRequest() {
         HttpServletRequest request = ((ServletRequestAttributes) (RequestContextHolder.currentRequestAttributes())).getRequest();
         ArrayList<LogMeta> logs = (ArrayList<LogMeta>) request.getAttribute(AU_LOGS);
-        if (!logLevel.equals(LogLevel.OFF) || logs == null) return;
+        if (logLevel.equals(LogLevel.OFF) || logs == null) return;
         StringBuilder info = new StringBuilder();
         StringBuilder warn = new StringBuilder();
         StringBuilder debug = new StringBuilder();

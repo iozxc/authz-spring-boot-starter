@@ -2,6 +2,7 @@ package cn.omisheep.authz.core.auth.ipf;
 
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.util.LogUtils;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import javax.servlet.http.HttpServletRequest;
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
 @Data
 public class HttpMeta {
 
+    @JsonIgnore
     private final HttpServletRequest request;
     private final String ip;
     private final String uri;
@@ -65,14 +67,14 @@ public class HttpMeta {
     }
 
     public HttpMeta(HttpServletRequest request, String ip, String uri, String api,
-                    String method, String userAgent, Date date) {
+                    String method, Date date) {
         this.request = request;
         this.refer = request.getHeader("Referer");
         this.ip = ip;
         this.uri = uri;
         this.api = api;
         this.method = method.toUpperCase();
-        this.userAgent = userAgent;
+        this.userAgent = request.getHeader("user-agent");
         this.date = date;
     }
 

@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -193,7 +194,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
     }
 
     private void initHttpd(ApplicationContext applicationContext, Map<RequestMappingInfo, HandlerMethod> mapRet) {
-        Map<String, Map<String, LimitMeta>> limitedMap = httpd.getLimitedMap();
+        Map<String, Map<String, LimitMeta>> httpdLimitedMetaMap = httpd.getLimitedMetaMap();
         HashMap<String, LimitMeta> cMap = new HashMap<>();
 
         applicationContext.getBeansWithAnnotation(RateLimit.class).entrySet().forEach(entry -> {
@@ -201,7 +202,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
             RateLimit rateLimit = aClass.getAnnotation(RateLimit.class);
             if (rateLimit != null) {
                 cMap.put(aClass.getName(),
-                        new LimitMeta(rateLimit.window(), rateLimit.maxRequests(), rateLimit.punishmentTime(), rateLimit.minInterval(), rateLimit.bannedType()));
+                        new LimitMeta(rateLimit.window(), rateLimit.maxRequests(), rateLimit.punishmentTime(), rateLimit.minInterval(), rateLimit.associatedPatterns(), rateLimit.bannedType()));
             }
         });
 
@@ -210,13 +211,13 @@ public class AuCoreInitialization implements ApplicationContextAware {
             Set<String> patternValues = entry.getKey().getPatternsCondition().getPatterns();
             RateLimit rateLimit = entry.getValue().getMethodAnnotation(RateLimit.class); // 方法上的au
             if (rateLimit != null) {
-                LimitMeta limitMeta = new LimitMeta(rateLimit.window(), rateLimit.maxRequests(), rateLimit.punishmentTime(), rateLimit.minInterval(), rateLimit.bannedType());
+                LimitMeta limitMeta = new LimitMeta(rateLimit.window(), rateLimit.maxRequests(), rateLimit.punishmentTime(), rateLimit.minInterval(), rateLimit.associatedPatterns(), rateLimit.bannedType());
                 for (RequestMethod method : methods) {
                     for (String patternValue : patternValues) {
-                        Map<String, LimitMeta> map = limitedMap.get(method.toString());
+                        Map<String, LimitMeta> map = httpdLimitedMetaMap.get(method.toString());
                         if (map == null) {
                             map = new HashMap<>();
-                            limitedMap.put(method.toString(), map);
+                            httpdLimitedMetaMap.put(method.toString(), map);
                         }
                         map.put(contextPath + patternValue, limitMeta);
                     }
@@ -226,10 +227,10 @@ public class AuCoreInitialization implements ApplicationContextAware {
                     for (String patternValue : patternValues) {
                         LimitMeta limitMeta = cMap.get(entry.getValue().getBeanType().getName());
                         if (limitMeta != null) {
-                            Map<String, LimitMeta> map = limitedMap.get(method.toString());
+                            Map<String, LimitMeta> map = httpdLimitedMetaMap.get(method.toString());
                             if (map == null) {
                                 map = new HashMap<>();
-                                limitedMap.put(method.toString(), map);
+                                httpdLimitedMetaMap.put(method.toString(), map);
                             }
                             map.put(contextPath + patternValue, limitMeta);
                         }
@@ -240,24 +241,10 @@ public class AuCoreInitialization implements ApplicationContextAware {
             HashMap<String, Httpd.IpPool> requestPool = new HashMap<>();
 
             entry.getKey().getMethodsCondition().getMethods().forEach(method -> {
-                entry.getKey().getPatternsCondition().getPatterns().forEach(patternValue -> {
-                    httpd.getPaths().add(patternValue);
-                    httpd.getPaddingPath().add(contextPath + patternValue);
-                    StringJoiner stringJoiner = new StringJoiner("/");
-                    for (String s : patternValue.split("/")) {
-                        if (s.startsWith("{") && s.endsWith("}")) {
-                            stringJoiner.add("*");
-                        } else {
-                            stringJoiner.add(s);
-                        }
-                    }
-                    httpd.getPatternPath().add(stringJoiner.toString());
-                    requestPool.put(contextPath + patternValue, new Httpd.IpPool());
-                });
-
-                HashMap<String, Httpd.IpPool> reqMap = httpd.getRequestPools().get(method.toString());
+                entry.getKey().getPatternsCondition().getPatterns().forEach(patternValue -> requestPool.put(contextPath + patternValue, new Httpd.IpPool()));
+                ConcurrentHashMap<String, Httpd.IpPool> reqMap = httpd.getRequestPools().get(method.toString());
                 if (reqMap == null) {
-                    reqMap = new HashMap<>();
+                    reqMap = new ConcurrentHashMap<>();
                     httpd.getRequestPools().put(method.toString(), reqMap);
                 }
                 reqMap.putAll(requestPool);
