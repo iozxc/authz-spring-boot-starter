@@ -85,9 +85,9 @@ public class AuthzProperties {
         private Long cacheMaximumSize;
 
         /**
-         * 在读取或者更新之后刷新缓存存活的时间
+         * 在读取或者更新之后刷新缓存存活的时间 默认1分钟
          */
-        private String expireAfterReadOrUpdateTime = "10s";
+        private String expireAfterReadOrUpdateTime = "1m";
 
     }
 

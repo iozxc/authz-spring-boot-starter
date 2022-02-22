@@ -44,6 +44,7 @@ public class PermLibraryCache {
     }
 
     private Object handle(String key, ProceedingJoinPoint joinPoint) throws Throwable {
+        System.out.println("handle");
         Object o = cache.get(key);
         if (o != null) return o;
         if (!cache.hasKey(key)) {

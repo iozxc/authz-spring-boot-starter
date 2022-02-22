@@ -4,11 +4,12 @@ import cn.omisheep.authz.annotation.BannedType;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.RequestExceptionStatus;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
-import cn.omisheep.authz.core.handler.BufferedServletRequestWrapper;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.tk.TokenHelper;
 import cn.omisheep.authz.core.util.LogUtils;
+import cn.omisheep.commons.util.Async;
 import cn.omisheep.commons.util.HttpUtils;
+import cn.omisheep.commons.web.BufferedServletRequestWrapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import lombok.extern.slf4j.Slf4j;
@@ -70,7 +71,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
 
         request.setAttribute("AU_HTTP_META", httpMeta);
 
-//        // 获取Cookie
+        // 获取Cookie
         Cookie cookie = HttpUtils.readSingleCookieInRequestByName(properties.getCookieName());
         httpMeta.setHasTokenCookie(cookie != null);
 
@@ -79,7 +80,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
                 Token token = TokenHelper.parseToken(cookie.getValue());
                 httpMeta.setToken(token);
                 // 每次访问将最后一次访问时间和ip存入缓存中
-                userDevicesDict.request();
+                Async.run(() -> userDevicesDict.request());
             } catch (Exception e) {
                 // 惰性删除策略，如果此用户存在，但是过期，则删除
                 httpMeta.setTokenException(HttpMeta.TokenException.valueOf(e.getClass().getSimpleName()));

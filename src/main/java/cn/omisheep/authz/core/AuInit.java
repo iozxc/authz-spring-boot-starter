@@ -6,8 +6,8 @@ import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
 import io.jsonwebtoken.lang.Assert;
-import org.apache.juli.logging.Log;
-import org.apache.juli.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Import;
 
 /**
@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Import;
 @Import({Httpd.class, PermissionDict.class, PermFact.class, AUtils.class})
 public class AuInit {
 
-    public static final Log log = LogFactory.getLog(AuInit.class);
+    public static final Logger log = LoggerFactory.getLogger(AuInit.class);
 
     private final AuthzProperties properties;
 

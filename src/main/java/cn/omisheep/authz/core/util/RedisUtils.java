@@ -13,14 +13,16 @@ import org.springframework.data.redis.connection.jedis.JedisClusterConnection;
 import org.springframework.data.redis.connection.jedis.JedisConnection;
 import org.springframework.data.redis.connection.lettuce.LettuceClusterConnection;
 import org.springframework.data.redis.connection.lettuce.LettuceConnection;
-import org.springframework.data.redis.core.*;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.RedisCallback;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 
 import java.time.Duration;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+
+import static cn.omisheep.commons.util.Utils.castValue;
 
 /**
  * qq: 1269670415
@@ -92,8 +94,27 @@ public class RedisUtils {
 
     public static long ttl(String key) {
         Long expire = redisTemplate.getExpire(key);
-        return expire != null ? expire : 0;
+        return expire != null ? expire : -2;
     }
+
+
+    public static List ttl(List<String> keys) {
+        RedisConnectionFactory connectionFactory = redisTemplate.getConnectionFactory();
+        if (connectionFactory == null) return new ArrayList<>();
+        List<String> list = new ArrayList<>();
+        RedisConnection connection = connectionFactory.getConnection();
+        return null;
+//        byte[] rawKey = this.rawKey(key);
+//        return (Long)this.execute((connection) -> {
+//            return connection.ttl(rawKey);
+//        }, true);
+    }
+
+//    byte[] rawKey(Object key) {
+//        org.springframework.util.Assert.notNull(key, "non null key required");
+//        RedisSerializer<?> keySerializer = redisTemplate.getKeySerializer();
+//        return keySerializer == null && key instanceof byte[] ? (byte[])((byte[])key) : keySerializer.serialize(key);
+//    }
 
     public static boolean hasKey(String key) {
         Boolean bool = redisTemplate.hasKey(key);
@@ -106,51 +127,6 @@ public class RedisUtils {
 
     public static void publish(String channel, Message message) {
         redisTemplate.convertAndSend(channel, message);
-    }
-
-    // ================================ stringRedisTemplate ================================ //
-
-    public static class Str {
-        public static void set(String key, String value) {
-            stringRedisTemplate.opsForValue().set(key, value);
-        }
-
-        public static String get(String key) {
-            return stringRedisTemplate.opsForValue().get(key);
-        }
-
-        public static void hset(String key, Map<Object, Object> map, long time) {
-            stringRedisTemplate.opsForHash().putAll(key, map);
-            expire(key, time);
-        }
-
-        public static void hset(String key, String timeVal, Map<Object, Object> map) {
-            hset(key, map, TimeUtils.parseTimeValue(timeVal));
-        }
-
-        public static void hset(String key, Map<Object, Object> map) {
-            stringRedisTemplate.opsForHash().putAll(key, map);
-        }
-
-        public static Map<Object, Object> hget(String key) {
-            return stringRedisTemplate.opsForHash().entries(key);
-        }
-
-        public static String hget(String key, String field) {
-            return (String) stringRedisTemplate.opsForHash().get(key, field);
-        }
-
-        public static void del(String key) {
-            if (key != null && !key.equals("")) {
-                stringRedisTemplate.delete(key);
-            }
-        }
-
-        public static void del(Collection<String> collection) {
-            if (collection != null && collection.size() > 0) {
-                stringRedisTemplate.delete(collection);
-            }
-        }
     }
 
     // ================================ redisTemplate ================================ //
@@ -168,8 +144,36 @@ public class RedisUtils {
             return redisTemplate.opsForValue().get(key);
         }
 
-        public static <E> E get(String key, Class<E> requireType) {
-            return Utils.castValue(redisTemplate.opsForValue().get(key), requireType);
+        public static <E> E get(String key, Class<E> requiredType) {
+            return Utils.castValue(redisTemplate.opsForValue().get(key), requiredType);
+        }
+
+        public static List get(List<String> key) {
+            List objects = redisTemplate.opsForValue().multiGet(key);
+            if (objects == null) return new ArrayList<>();
+            return objects;
+        }
+
+        public static Map<String, Object> getToMap(List<String> key) {
+            List objects = redisTemplate.opsForValue().multiGet(key);
+            if (objects == null) return new HashMap<>();
+            HashMap<String, Object> map = new HashMap<>();
+            Iterator<String> iterator = key.iterator();
+            for (Object value : objects) {
+                map.put(iterator.next(), value);
+            }
+            return map;
+        }
+
+        public static <E> Map<String, E> getToMap(List<String> key, Class<E> requiredType) {
+            List objects = redisTemplate.opsForValue().multiGet(key);
+            if (objects == null) return new HashMap<>();
+            HashMap<String, E> map = new HashMap<>();
+            Iterator<String> iterator = key.iterator();
+            for (Object value : objects) {
+                map.put(iterator.next(), castValue(value, requiredType));
+            }
+            return map;
         }
 
         public static void del(String key) {
@@ -188,25 +192,48 @@ public class RedisUtils {
             redisTemplate.opsForValue().set(key, value, 0);
         }
 
-        public static void setrange(String key, Object value, long offset) {
-            redisTemplate.opsForValue().set(key, value, offset);
-        }
     }
 
-    private static final StringRedisTemplate stringRedisTemplate;
+//    public static class Asy {
+
+//        public static void set(String key, Object value) {
+//            Async.run(() -> redisTemplate.opsForValue().set(key, value));
+//        }
+//
+//        public static void set(String key, Object value, long ttl) {
+//            Async.run(() -> redisTemplate.opsForValue().set(key, value, ttl, TimeUnit.SECONDS));
+//        }
+//
+//        public static void update(String key, Object value) {
+//            Async.run(() -> redisTemplate.opsForValue().set(key, value, 0));
+//        }
+//
+//        public static void del(String key) {
+//            if (key != null && !key.equals("")) {
+//                Async.run(() -> redisTemplate.delete(key));
+//            }
+//        }
+//
+//        public static void del(Collection<String> collection) {
+//            if (collection != null && collection.size() > 0) {
+//                Async.run(() -> redisTemplate.delete(collection));
+//            }
+//        }
+//    }
+
+
     private static final RedisTemplate<String, Object> redisTemplate;
     private static final int SCAN_COUNT;
 
     static {
-        stringRedisTemplate = AUtils.getBean(StringRedisTemplate.class);
-        redisTemplate = AUtils.getBean("redisTemplate", RedisTemplate.class);
+        redisTemplate = AUtils.getBean("authzRedisTemplate", RedisTemplate.class);
         RedisProperties properties = AUtils.getBean(RedisProperties.class);
         AuthzProperties authzProperties = AUtils.getBean(AuthzProperties.class);
         SCAN_COUNT = authzProperties.getCache().getRedisScanCount();
         Duration timeout = properties.getTimeout();
 
         try {
-            Object execute = stringRedisTemplate.execute((RedisCallback<Object>) RedisConnectionCommands::ping);
+            Object execute = redisTemplate.execute((RedisCallback<Object>) RedisConnectionCommands::ping);
             Assert.state(execute != null && execute.equals("PONG"), "请配置redis并确保其能够正常连接");
         } catch (Exception e) {
             log.error("请配置redis并确保其能够正常连接");

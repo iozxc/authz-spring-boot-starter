@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core;
 
-import cn.omisheep.authz.annotation.Limited;
 import cn.omisheep.authz.annotation.Perms;
+import cn.omisheep.authz.annotation.RateLimited;
 import cn.omisheep.authz.annotation.Roles;
 import cn.omisheep.authz.core.auth.AuKey;
 import cn.omisheep.authz.core.auth.PermRolesMeta;
@@ -10,6 +10,7 @@ import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.ipf.LimitMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
+import cn.omisheep.authz.core.cache.Message;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.CollectionUtils;
@@ -84,7 +85,8 @@ public class AuCoreInitialization implements ApplicationContextAware {
             TaskBuilder.schedule(Pelcron::activeExpireCycle, properties.getUserBufferRefreshWithPeriod());
         }
         TaskBuilder.schedule(Pelcron::GC, properties.getGcPeriod());
-        AuInit.log.info("Started Authz");
+
+        AuInit.log.info("Started Authz  id: {}", Message.id);
 //        initJob(CountingTaskForMinute.class, "1m", TimeUtils.nextIntactDateForMinute(), AggregateManager.class);
 //        initJob(CountingTaskForDay.class, "1d", TimeUtils.nextIntactDateForDay(), AggregateManager.class);
     }
@@ -194,21 +196,21 @@ public class AuCoreInitialization implements ApplicationContextAware {
         Map<String, Map<String, LimitMeta>> limitedMap = httpd.getLimitedMap();
         HashMap<String, LimitMeta> cMap = new HashMap<>();
 
-        applicationContext.getBeansWithAnnotation(Limited.class).entrySet().forEach(entry -> {
+        applicationContext.getBeansWithAnnotation(RateLimited.class).entrySet().forEach(entry -> {
             Class<?> aClass = AopUtils.getTargetClass(entry.getValue());
-            Limited auLimit = aClass.getAnnotation(Limited.class);
+            RateLimited auLimit = aClass.getAnnotation(RateLimited.class);
             if (auLimit != null) {
                 cMap.put(aClass.getName(),
-                        new LimitMeta(auLimit.time(), auLimit.maxCount(), auLimit.relieveTime(), auLimit.interval(), auLimit.bannedType()));
+                        new LimitMeta(auLimit.window(), auLimit.maxRequests(), auLimit.relieveTime(), auLimit.interval(), auLimit.bannedType()));
             }
         });
 
         for (Map.Entry<RequestMappingInfo, HandlerMethod> entry : mapRet.entrySet()) {
             Set<RequestMethod> methods = entry.getKey().getMethodsCondition().getMethods();
             Set<String> patternValues = entry.getKey().getPatternsCondition().getPatterns();
-            Limited auLimit = entry.getValue().getMethodAnnotation(Limited.class); // 方法上的au
+            RateLimited auLimit = entry.getValue().getMethodAnnotation(RateLimited.class); // 方法上的au
             if (auLimit != null) {
-                LimitMeta limitMeta = new LimitMeta(auLimit.time(), auLimit.maxCount(), auLimit.relieveTime(), auLimit.interval(), auLimit.bannedType());
+                LimitMeta limitMeta = new LimitMeta(auLimit.window(), auLimit.maxRequests(), auLimit.relieveTime(), auLimit.interval(), auLimit.bannedType());
                 for (RequestMethod method : methods) {
                     for (String patternValue : patternValues) {
                         Map<String, LimitMeta> map = limitedMap.get(method.toString());

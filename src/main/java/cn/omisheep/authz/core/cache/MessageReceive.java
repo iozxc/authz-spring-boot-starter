@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core.cache;
 
 import cn.omisheep.authz.AuthzAutoConfiguration;
+import cn.omisheep.authz.core.util.LogUtils;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -21,6 +22,7 @@ public class MessageReceive {
         if (oo instanceof Message) {
             Message message = (Message) oo;
             if (!Message.ignore(message)) {
+                LogUtils.logDebug("MessageReceive: {}", message);
                 cache.sync(message);
             }
         }

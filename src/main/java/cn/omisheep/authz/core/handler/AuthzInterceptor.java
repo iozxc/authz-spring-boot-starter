@@ -36,7 +36,7 @@ public class AuthzInterceptor implements HandlerInterceptor {
         HttpMeta httpMeta = (HttpMeta) request.getAttribute(Constants.HTTP_META);
 
         // 如果是OPTIONS请求，直接放行
-        if (httpMeta.isMethod("OPTIONS")) return true;
+        if (httpMeta.isMethod(Constants.OPTIONS)) return true;
 
         if (!auDefender.requireProtect(httpMeta.getMethod(), httpMeta.getApi())) {
             LogUtils.exportLogsFromRequest();
@@ -67,6 +67,7 @@ public class AuthzInterceptor implements HandlerInterceptor {
 
          */
         boolean flag = auDefender.verify(httpMeta);
+
         LogUtils.exportLogsFromRequest();
         return flag;
     }

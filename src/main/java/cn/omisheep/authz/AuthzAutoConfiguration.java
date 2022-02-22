@@ -16,14 +16,18 @@ import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.cache.*;
 import cn.omisheep.authz.core.handler.AuthzFeignRequestInterceptor;
 import cn.omisheep.authz.core.handler.AuthzHandlerRegister;
+import cn.omisheep.authz.core.handler.AuthzRestTemplateInterceptor;
 import cn.omisheep.authz.core.handler.DecryptRequestBodyAdvice;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.*;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -34,29 +38,24 @@ import org.springframework.data.redis.connection.RedisConnectionCommands;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.web.client.RestTemplate;
+
 
 /**
- * qq: 1269670415
- *
- * @author zhou xin chen
+ * @author zhouxinchen[1269670415@qq.com]
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Configuration
-@Import({AuInit.class})
 @EnableConfigurationProperties({AuthzProperties.class})
 @ConditionalOnClass(AuInit.class)
-@Slf4j
+@Import({AuInit.class})
 public class AuthzAutoConfiguration {
-
-    @Bean
-    public DecryptRequestBodyAdvice auDecryptRequestBodyAdvice() {
-        return new DecryptRequestBodyAdvice();
-    }
 
     @Configuration
     @EnableConfigurationProperties(RedisProperties.class)
@@ -68,7 +67,11 @@ public class AuthzAutoConfiguration {
 
         static {
             jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer(Object.class);
-            jackson2JsonRedisSerializer.setObjectMapper(new ObjectMapper().setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY).activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL));
+            jackson2JsonRedisSerializer
+                    .setObjectMapper(new ObjectMapper()
+                            .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY)
+                            .activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL)
+                    );
         }
 
         @Bean(name = "redisHealthIndicator")
@@ -77,8 +80,8 @@ public class AuthzAutoConfiguration {
             return new Object();
         }
 
-        @Bean("redisTemplate")
-        @ConditionalOnMissingBean(name = "redisTemplate")
+        @Bean("authzRedisTemplate")
+        @ConditionalOnMissingBean(name = "authzRedisTemplate")
         @ConditionalOnProperty(prefix = "authz.cache", name = "enabled-redis", havingValue = "true")
         public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
             RedisTemplate<String, Object> template = new RedisTemplate<>();
@@ -92,15 +95,6 @@ public class AuthzAutoConfiguration {
         }
 
         @Bean
-        @ConditionalOnMissingBean(StringRedisTemplate.class)
-        @ConditionalOnProperty(prefix = "authz.cache", name = "enabled-redis", havingValue = "true")
-        public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory redisConnectionFactory) {
-            StringRedisTemplate template = new StringRedisTemplate();
-            template.setConnectionFactory(redisConnectionFactory);
-            return template;
-        }
-
-        @Bean
         public Cache cache(AuthzProperties properties) {
             if (properties.getCache().isEnabledRedis()) {
                 return new DoubleDeckCache(properties);
@@ -110,7 +104,7 @@ public class AuthzAutoConfiguration {
         }
 
         @Bean("authzCacheMessageReceive")
-        @ConditionalOnProperty(prefix = "authz.cache", name = "enable-redis", havingValue = "true")
+        @ConditionalOnProperty(prefix = "authz.cache", name = "enabled-redis", havingValue = "true")
         public MessageReceive messageReceive(Cache cache) {
             return new MessageReceive(cache);
         }
@@ -121,14 +115,12 @@ public class AuthzAutoConfiguration {
             return new MessageListenerAdapter(receiver);
         }
 
-
         @Bean("auCacheRedisMessageListenerContainer")
         @ConditionalOnBean(value = MessageReceive.class, name = "authzCacheMessageReceive")
-        public RedisMessageListenerContainer container(@Qualifier("redisTemplate") RedisTemplate redisTemplate, RedisConnectionFactory connectionFactory, @Qualifier("authzCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter) {
+        public RedisMessageListenerContainer container(@Qualifier("authzRedisTemplate") RedisTemplate redisTemplate, RedisConnectionFactory connectionFactory, @Qualifier("authzCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter) {
             try {
                 redisTemplate.execute((RedisCallback<Object>) RedisConnectionCommands::ping);
             } catch (Exception e) {
-                log.error("请配置redis并确保其能够正常连接");
                 throw new IllegalStateException("redis异常，检查redis配置是否有效");
             }
             RedisMessageListenerContainer container = new RedisMessageListenerContainer();
@@ -137,6 +129,7 @@ public class AuthzAutoConfiguration {
             container.setTopicSerializer(jackson2JsonRedisSerializer);
             return container;
         }
+
     }
 
     @Configuration
@@ -148,6 +141,23 @@ public class AuthzAutoConfiguration {
             return new AuthzFeignRequestInterceptor();
         }
 
+        @Autowired(required = false)
+        @ConditionalOnBean(RestTemplate.class)
+        public void authzRestTemplateInterceptor(RestTemplate restTemplate) {
+            restTemplate.getInterceptors().add(new AuthzRestTemplateInterceptor());
+        }
+
+        @Bean
+        @ConditionalOnMissingBean(PermLibrary.class)
+        public PermLibrary<Object> permLibrary() {
+            return new AuthzDefaultPermLibrary();
+        }
+
+    }
+
+    @Bean
+    public DecryptRequestBodyAdvice auDecryptRequestBodyAdvice() {
+        return new DecryptRequestBodyAdvice();
     }
 
     @Bean

@@ -9,7 +9,7 @@ import lombok.experimental.Accessors;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -33,10 +33,10 @@ public interface Cache {
         // 到期的时间，用毫秒表示
         protected final long expiration;
         @Getter
-        protected final Object value;
+        protected Object value;
 
         /**
-         * @param ttl   存活时间 单位秒， -1表示永久
+         * @param ttl   存活时间 单位秒， -1表示在【创建】【更新】【读取】时，xx秒后会过期，这个时间取决与配置
          * @param value 值
          */
         public CacheItem(long ttl, E value) {
@@ -120,6 +120,16 @@ public interface Cache {
      */
     Set<String> keys(String pattern);
 
+    /**
+     * 返回匹配的key同时将对应的object加载进缓存
+     *
+     * @param pattern redis 风格的匹配
+     * @return 匹配上的key
+     */
+    default Set<String> keysAndLoad(String pattern) {
+        return keys(pattern);
+    }
+
     boolean hasKey(String key);
 
     /**
@@ -178,6 +188,14 @@ public interface Cache {
         return set(key, element, TimeUtils.parseTimeValueToSecond(ttl));
     }
 
+    default <E> void asyncSet(String key, E element) {
+        asyncSet(key, element, -1L);
+    }
+
+    default <E> void asyncSet(String key, E element, long ttl) {
+        set(key, element, ttl);
+    }
+
     /**
      * 得到对应key的值
      *
@@ -202,7 +220,7 @@ public interface Cache {
      * @param keys keys
      * @return 返回keys的所有值
      */
-    List get(Set<String> keys);
+    Map<String, Object> get(Set<String> keys);
 
     /**
      * @param keys         keys
@@ -210,7 +228,7 @@ public interface Cache {
      * @param <T>          需要转换的类型
      * @return values
      */
-    <T> List<T> get(Set<String> keys, Class<T> requiredType);
+    <T> Map<String, T> get(Set<String> keys, Class<T> requiredType);
 
     /**
      * @param key 需要删除的key

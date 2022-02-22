@@ -5,11 +5,9 @@ import cn.omisheep.commons.util.Utils;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Scheduler;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -85,15 +83,18 @@ public class DefaultCache implements cn.omisheep.authz.core.cache.Cache {
     }
 
     @Override
-    public List get(Set<String> keys) {
-        Map<String, CacheItem> items = cache.getAllPresent(keys);
-        return items.values().stream().map(CacheItem::getValue).collect(Collectors.toList());
+    public @NonNull Map<String, Object> get(Set<String> keys) {
+        return new HashMap<>(cache.getAllPresent(keys));
     }
 
     @Override
-    public <T> List<T> get(Set<String> keys, Class<T> requiredType) {
+    public @NonNull <T> Map<String, T> get(Set<String> keys, Class<T> requiredType) {
         Map<String, CacheItem> items = cache.getAllPresent(keys);
-        return items.values().stream().map(cacheItem -> castValue(cacheItem.getValue(), requiredType)).collect(Collectors.toList());
+        HashMap<String, T> map = new HashMap<>();
+        for (Map.Entry<String, CacheItem> entry : items.entrySet()) {
+            map.put(entry.getKey(), castValue(entry.getValue(), requiredType));
+        }
+        return map;
     }
 
     @Override

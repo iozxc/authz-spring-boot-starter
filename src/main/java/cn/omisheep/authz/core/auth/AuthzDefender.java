@@ -22,6 +22,8 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import javax.servlet.http.HttpServletResponse;
 import java.util.*;
 
+import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.*;
+
 /**
  * qq: 1269670415
  *
@@ -107,6 +109,7 @@ public class AuthzDefender {
         }
 
         if (httpMeta.getTokenException() != null) {
+//            throw new AuthException(httpMeta.getTokenException().name());
             switch (httpMeta.getTokenException()) {
                 case ExpiredJwtException:
                     logs("Forbid : expired token exception", httpMeta, permRolesMeta);
@@ -126,17 +129,17 @@ public class AuthzDefender {
         Token accessToken = httpMeta.getToken();
 
         switch (userDevicesDict.userStatus(accessToken.getUserId(), accessToken.getDeviceType(), accessToken.getDeviceId(), accessToken.getTokenId())) {
-            case 1:
+            case ACCESS_TOKEN_OVERDUE:
                 // accessToken过期
                 logs("Forbid : expired token exception", httpMeta, permRolesMeta);
                 HttpUtils.returnResponse(HttpStatus.FORBIDDEN, RequestExceptionStatus.ACCESS_TOKEN_OVERDUE);
                 return false;
-            case 2:
+            case REQUIRE_LOGIN:
                 // 需要重新登录
                 logs("Require Login", httpMeta, permRolesMeta);
                 HttpUtils.returnResponse(HttpStatus.FORBIDDEN, RequestExceptionStatus.REQUIRE_LOGIN);
                 return false;
-            case 3:
+            case LOGIN_EXCEPTION:
                 // 在别处登录
                 logs("forbid : may have logged in elsewhere", httpMeta, permRolesMeta);
                 HttpUtils.returnResponse(HttpStatus.FORBIDDEN, RequestExceptionStatus.LOGIN_EXCEPTION);

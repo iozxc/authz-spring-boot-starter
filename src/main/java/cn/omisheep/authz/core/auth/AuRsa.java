@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.auth;
 
 
-import cn.omisheep.authz.core.util.RSAUtils;
+import cn.omisheep.commons.util.RSAUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.SneakyThrows;
@@ -85,7 +85,7 @@ public class AuRsa {
 
 
     public static String bugfix(String text) {
-        return text.replaceAll(" ", "+");//!!!!!
+        return text.replaceAll(" ", "+");
     }
 
 }

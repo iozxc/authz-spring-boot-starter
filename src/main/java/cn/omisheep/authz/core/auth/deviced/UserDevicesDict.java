@@ -9,6 +9,11 @@ import cn.omisheep.authz.core.tk.TokenPair;
  */
 public interface UserDevicesDict {
 
+    int SUCCESS = 0;
+    int ACCESS_TOKEN_OVERDUE = 1;
+    int REQUIRE_LOGIN = 2;
+    int LOGIN_EXCEPTION = 3;
+
     /**
      * 用户设备状态判断，以及第二次惰性删除
      *

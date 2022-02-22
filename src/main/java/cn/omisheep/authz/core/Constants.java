@@ -8,4 +8,9 @@ package cn.omisheep.authz.core;
 public interface Constants {
     String HTTP_META = "AU_HTTP_META";
     String DEBUG_PREFIX = "[DEBUG]  ";
+    String OPTIONS = "OPTIONS";
+    String ACCESS_INFO_KEY_PREFIX = "au:usersAccessInfo:";
+    String REFRESH_INFO_KEY_PREFIX = "au:usersRefreshInfo:";
+    String SEPARATOR = ":";
+    String WILDCARD = "*";
 }

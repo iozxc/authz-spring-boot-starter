@@ -6,11 +6,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * RateLimit的注解配置
+ *
  * @author zhou xin chen
  */
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Limited {
+public @interface RateLimited {
 
     /**
      * 单位 ms|s|m|h|d
@@ -18,14 +20,14 @@ public @interface Limited {
      *
      * @return -
      */
-    String time() default "1s";
+    String window() default "1s";
 
     /**
      * 在规定时间内不能重复请求，否则拉入黑名单(禁止对该接口继续请求)，且在规定时间后释放
      *
      * @return -
      */
-    int maxCount() default 5;
+    int maxRequests() default 5;
 
     /**
      * 在规定时间后释放，默认1小时
