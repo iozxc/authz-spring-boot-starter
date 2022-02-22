@@ -11,13 +11,14 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
-import java.time.LocalTime;
 import java.util.ArrayList;
 
 /**
- * qq: 1269670415
+ * 日志工具类
  *
- * @author zhou xin chen
+ * @author zhouxinchen[1269670415@qq.com]
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Slf4j(topic = "Authz.log")
 public class LogUtils {
@@ -84,18 +85,17 @@ public class LogUtils {
             }
         });
         if (info.length() > 0) {
-            log.info(info.append("\n").toString());
+            logInfo(info.append("\n").toString());
         }
         if (warn.length() > 0) {
-            log.warn(warn.append("\n").toString());
+            logWarn(warn.append("\n").toString());
         }
         if (debug.length() > 0) {
-            log.debug(debug.append("\n").toString());
+            logDebug(debug.append("\n").toString());
         }
         if (error.length() > 0) {
-            log.error(error.append("\n").toString());
+            logError(error.append("\n").toString());
         }
-
         logs.clear();
     }
 
@@ -111,11 +111,6 @@ public class LogUtils {
             this.logLevel = logLevel;
             this.msg = msg;
         }
-
-        public LogMeta(String msg) {
-            this.logLevel = LogLevel.INFO;
-            this.msg = msg;
-        }
     }
 
     private static String format(String formatMsg, Object... args) {
@@ -123,20 +118,6 @@ public class LogUtils {
             formatMsg = formatMsg.replaceFirst("\\{}", String.valueOf(arg));
         }
         return formatMsg;
-    }
-
-    /**
-     * System.out
-     *
-     * @param log       log
-     * @param formatMsg formatMsg
-     */
-    public static void debug(String formatMsg, Object... log) {
-        StackTraceElement[] stacks = new Throwable().getStackTrace();
-        System.out.println(stacks[1].getClassName() + " line no: " + stacks[1].getLineNumber() + "   time: " + LocalTime.now());
-        for (Object o : log) {
-            System.out.println(format(formatMsg, log));
-        }
     }
 
 }
