@@ -75,9 +75,7 @@ public class RequestMeta {
      */
     public boolean request(long now, int maxRequests, long window, long minInterval) {
         // 过了一个周期后，惩罚等级归零
-        if (now - reliveTime > window) {
-            punishmentLevel = 0;
-        }
+        if (now - reliveTime > window) punishmentLevel = 0;
 
         Long lastSecond = null;
         if (!requestTimeList.isEmpty()) {
@@ -87,7 +85,6 @@ public class RequestMeta {
         lastRequestTime = now;
 
         requestTimeList.removeIf(time -> (now - time) > window);
-
         requestTimeList.offer(now);
         Long lastFirst = requestTimeList.getLast();
 
@@ -97,9 +94,7 @@ public class RequestMeta {
             }
         }
 
-        while (requestTimeList.size() - 1 > maxRequests) {
-            requestTimeList.pollFirst();
-        }
+        while (requestTimeList.size() - 1 > maxRequests) requestTimeList.pollFirst();
 
         if (requestTimeList.size() > maxRequests) {
             Long first = requestTimeList.getFirst();
