@@ -3,16 +3,16 @@ package cn.omisheep.authz.core.auth.deviced;
 import cn.omisheep.authz.core.tk.TokenPair;
 
 /**
- * qq: 1269670415
- *
- * @author zhou xin chen
+ * @author zhouxinchen[1269670415@qq.com]
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface UserDevicesDict {
 
-    int SUCCESS = 0;
-    int ACCESS_TOKEN_OVERDUE = 1;
-    int REQUIRE_LOGIN = 2;
-    int LOGIN_EXCEPTION = 3;
+    short SUCCESS = 0;
+    short ACCESS_TOKEN_OVERDUE = 1;
+    short REQUIRE_LOGIN = 2;
+    short LOGIN_EXCEPTION = 3;
 
     /**
      * 用户设备状态判断，以及第二次惰性删除
