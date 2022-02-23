@@ -86,7 +86,7 @@ public class AuthzDefender {
     }
 
     public boolean requireProtect(String method, String api) {
-        Map<String, PermRolesMeta> map = permissionDict.getAuMap().get(method);
+        Map<String, PermRolesMeta> map = permissionDict.getAuthzMetadata().get(method);
         if (map == null) return false;
         return map.get(api) != null;
     }
@@ -100,7 +100,7 @@ public class AuthzDefender {
     @SneakyThrows
     @SuppressWarnings("all")
     public boolean verify(HttpMeta httpMeta) {
-        PermRolesMeta permRolesMeta = permissionDict.getAuMap().get(httpMeta.getMethod()).get(httpMeta.getApi());
+        PermRolesMeta permRolesMeta = permissionDict.getAuthzMetadata().get(httpMeta.getMethod()).get(httpMeta.getApi());
 
         if (!httpMeta.isHasTokenCookie()) {
             logs("Require Login", httpMeta, permRolesMeta);

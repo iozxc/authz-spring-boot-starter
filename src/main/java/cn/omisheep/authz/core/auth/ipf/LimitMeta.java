@@ -6,6 +6,7 @@ import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.commons.util.TimeUtils;
 import com.google.common.base.Objects;
 import lombok.Getter;
+import org.springframework.http.HttpMethod;
 
 import java.util.*;
 
@@ -27,8 +28,6 @@ public class LimitMeta {
     private final List<AssociatedPattern> associatedPatterns;
     @Getter
     private final BannedType bannedType;
-    @Getter
-    private final List<Httpd.RequestPool> associatedIpPools = new ArrayList<>();
 
     public LimitMeta(String window,
                      int maxRequests,
@@ -68,7 +67,16 @@ public class LimitMeta {
             if (split.length > 1) {
                 this.pattern = split[split.length - 1];
                 split[split.length - 1] = null;
-                this.methods = CollectionUtils.newSet(split);
+                Set<String> method = CollectionUtils.newSet(split);
+                if (method.stream().anyMatch(m -> m.equals("*"))) {
+                    this.methods = CollectionUtils.newSet(
+                            Arrays.stream(HttpMethod.values())
+                                    .map(Enum::name)
+                                    .toArray(String[]::new)
+                    );
+                } else {
+                    this.methods = CollectionUtils.newSet(split);
+                }
             } else {
                 this.pattern = split[0];
                 this.methods = CollectionUtils.newSet("GET");

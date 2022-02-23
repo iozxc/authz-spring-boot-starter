@@ -29,7 +29,6 @@ import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -95,7 +94,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
     private void initPermissionDict(ApplicationContext applicationContext, Map<RequestMappingInfo, HandlerMethod> mapRet) {
         permissionDict.setPermSeparator(properties.getPermSeparator());
-        Map<String, Map<String, PermRolesMeta>> auMap = permissionDict.getAuMap();
+        Map<String, Map<String, PermRolesMeta>> authzMetadata = permissionDict.getAuthzMetadata();
         Map<String, PermRolesMeta> pMap = new HashMap<>();
         Map<String, PermRolesMeta> rMap = new HashMap<>();
         applicationContext.getBeansWithAnnotation(Perms.class).entrySet().forEach(entry -> {
@@ -142,24 +141,10 @@ public class AuCoreInitialization implements ApplicationContextAware {
             if (permRolesMeta != null) {
                 entry.getKey().getMethodsCondition().getMethods().forEach(method -> {
                     entry.getKey().getPatternsCondition().getPatterns().forEach(patternValue -> {
-
-                        permissionDict.getPaths().add(patternValue);
-                        permissionDict.getPaddingPath().add(contextPath + patternValue);
-
-                        StringJoiner stringJoiner = new StringJoiner("/");
-                        for (String s : patternValue.split("/")) {
-                            if (s.startsWith("{") && s.endsWith("}")) {
-                                stringJoiner.add("*");
-                            } else {
-                                stringJoiner.add(s);
-                            }
-                        }
-                        permissionDict.getPatternPath().add(stringJoiner.toString());
-
-                        Map<String, PermRolesMeta> map = auMap.get(method.toString());
+                        Map<String, PermRolesMeta> map = authzMetadata.get(method.toString());
                         if (map == null) {
                             map = new HashMap<>();
-                            auMap.put(method.toString(), map);
+                            authzMetadata.put(method.toString(), map);
                         }
                         map.put(contextPath + patternValue, permRolesMeta);
                     });

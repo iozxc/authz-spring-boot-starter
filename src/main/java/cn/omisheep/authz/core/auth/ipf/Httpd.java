@@ -1,11 +1,13 @@
 package cn.omisheep.authz.core.auth.ipf;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import orestes.bloomfilter.CountingBloomFilter;
 import orestes.bloomfilter.FilterBuilder;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -35,6 +37,9 @@ public class Httpd {
      */
     private final Map<String, Map<String, LimitMeta>> rateLimitMetadata = new HashMap<>();
 
+    @JsonIgnore
+    private final HashMap<LimitMeta, List<RequestPool>> associatedIpPoolsCache = new HashMap<>();
+
     /**
      * 黑名单 $redis$
      */
@@ -43,6 +48,7 @@ public class Httpd {
     /**
      * ip过滤器
      */
+    @JsonIgnore
     private final CountingBloomFilter<String> ipBlacklistBloomFilter =
             new FilterBuilder(1000,
                     0.001).countingBits(8).buildCountingBloomFilter();

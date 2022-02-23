@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -189,24 +190,26 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
     }
 
     public List<Httpd.RequestPool> oIpPools(LimitMeta limitMeta) {
+        List<Httpd.RequestPool> requestPools = httpd.getAssociatedIpPoolsCache().get(limitMeta);
+        if (requestPools != null) return requestPools;
+
         List<LimitMeta.AssociatedPattern> associatedPatterns = limitMeta.getAssociatedPatterns();
         List<Httpd.RequestPool> oIpPools = new ArrayList<>();
         if (associatedPatterns != null) {
             associatedPatterns.stream().forEach(associatedPattern -> {
                 associatedPattern.getMethods().forEach(meth -> {
-                    httpd.getRequestPools()
-                            .get(meth)
-                            .keySet()
-                            .stream().filter(path -> antPathMatcher.match(associatedPattern.getPattern(), path))
-                            .forEach(path -> {
-                                try {
-                                    oIpPools.add(httpd.getRequestPools().get(meth).get(path));
-                                } catch (NullPointerException ignore) {
-                                }
-                            });
+                    ConcurrentHashMap<String, Httpd.RequestPool> map = httpd.getRequestPools()
+                            .get(meth);
+                    if (map != null) {
+                        map.keySet()
+                                .stream().filter(path -> antPathMatcher.match(associatedPattern.getPattern(), path))
+                                .forEach(path -> oIpPools.add(map.get(path)));
+                    }
                 });
             });
         }
+
+        httpd.getAssociatedIpPoolsCache().put(limitMeta, oIpPools);
         return oIpPools;
     }
 
