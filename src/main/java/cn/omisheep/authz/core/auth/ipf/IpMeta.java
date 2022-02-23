@@ -81,7 +81,7 @@ public class IpMeta {
 
         Long lastSecond = null;
         if (!requestTimeList.isEmpty()) {
-            lastSecond = requestTimeList.getLast(); 
+            lastSecond = requestTimeList.getLast();
             lastRequestTime = lastSecond;
         } else {
             if (lastRequestTime == 0) lastRequestTime = now;

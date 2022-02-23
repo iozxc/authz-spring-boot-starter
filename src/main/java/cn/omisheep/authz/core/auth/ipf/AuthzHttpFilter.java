@@ -203,8 +203,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
                             .forEach(path -> {
                                 try {
                                     oIpPools.add(httpd.getRequestPools().get(meth).get(path));
-                                } catch (Exception ignore) {
-                                }
+                                } catch (NullPointerException ignore) {}
                             });
                 });
             });
