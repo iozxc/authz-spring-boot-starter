@@ -1,7 +1,6 @@
 package cn.omisheep.authz.core.auth.ipf;
 
 import cn.omisheep.commons.util.TimeUtils;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import lombok.Setter;
@@ -30,19 +29,16 @@ public class IpMeta {
     @Setter
     private long lastRequestTime;
 
-    @JsonFormat(pattern = "yyyy-MM-dd hh:mm:ss:SSS")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public Date getReliveTime() {
         return reliveTime == 0 ? null : new Date(reliveTime);
     }
 
-    @JsonFormat(pattern = "yyyy-MM-dd hh:mm:ss:SSS")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     public List<Date> getRequestTimeList() {
         return requestTimeList.stream().map(Date::new).collect(Collectors.toList());
     }
 
-    @JsonFormat(pattern = "yyyy-MM-dd hh:mm:ss:SSS")
     public Date getLastRequestTime() {
         return new Date(lastRequestTime);
     }
