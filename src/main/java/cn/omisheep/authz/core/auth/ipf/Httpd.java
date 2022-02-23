@@ -18,27 +18,27 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Httpd {
 
     /**
-     * 用于保存请求限制的信息 $redis$
+     * 用于保存请求限制的信息
      */
     private final RequestPools requestPools = new RequestPools();
 
-    public static class RequestPools extends HashMap<String, ConcurrentHashMap<String, IpPool>> {
+    public static class RequestPools extends HashMap<String, ConcurrentHashMap<String, RequestPool>> {
         private static final long serialVersionUID = -1838299980303412207L;
     }
 
-    public static class IpPool extends ConcurrentHashMap<String, IpMeta> {
+    public static class RequestPool extends ConcurrentHashMap<String, RequestMeta> {
         private static final long serialVersionUID = -284927742264879191L;
     }
 
     /**
      * api限制访问次数信息map
      */
-    private final Map<String, Map<String, LimitMeta>> limitedMetaMap = new HashMap<>();
+    private final Map<String, Map<String, LimitMeta>> rateLimitMetadata = new HashMap<>();
 
     /**
      * 黑名单 $redis$
      */
-    private final HashSet<IpMeta> ipBlacklist = new HashSet<>();
+    private final HashSet<RequestMeta> ipBlacklist = new HashSet<>();
 
     /**
      * ip过滤器

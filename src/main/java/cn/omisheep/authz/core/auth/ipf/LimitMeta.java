@@ -7,9 +7,7 @@ import cn.omisheep.commons.util.TimeUtils;
 import com.google.common.base.Objects;
 import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -22,7 +20,7 @@ public class LimitMeta {
     @Getter
     private final int maxRequests;
     @Getter
-    private final long punishmentTime;
+    private final List<Long> punishmentTime = new ArrayList<>();
     @Getter
     private final long minInterval;
     @Getter
@@ -30,17 +28,18 @@ public class LimitMeta {
     @Getter
     private final BannedType bannedType;
     @Getter
-    private final List<Httpd.IpPool> associatedIpPools = new ArrayList<>();
+    private final List<Httpd.RequestPool> associatedIpPools = new ArrayList<>();
 
     public LimitMeta(String window,
                      int maxRequests,
-                     String punishmentTime,
+                     String[] punishmentTime,
                      String minInterval,
                      String[] associatedPatterns,
                      BannedType bannedType) {
         this.window = TimeUtils.parseTimeValue(window);
         this.maxRequests = maxRequests;
-        this.punishmentTime = TimeUtils.parseTimeValue(punishmentTime);
+        Arrays.stream(punishmentTime).forEach(val -> this.punishmentTime.add(TimeUtils.parseTimeValue(val)));
+        Collections.sort(this.punishmentTime);
         this.minInterval = TimeUtils.parseTimeValue(minInterval);
         this.bannedType = bannedType;
 

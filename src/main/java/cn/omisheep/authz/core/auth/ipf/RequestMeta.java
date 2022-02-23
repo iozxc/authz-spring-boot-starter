@@ -16,22 +16,18 @@ import java.util.stream.Collectors;
  * @version 1.0.0
  * @since 1.0.0
  */
-public class IpMeta {
-    @Getter
-    private final String ip;
-    @Getter
-    private boolean ban;
-
-    private long reliveTime = 0;
-
+public class RequestMeta {
+    @Getter private final String ip;
+    @Getter private boolean ban;
+    private int punishmentLevel;
+    private long reliveTime;
+    @Setter private long lastRequestTime;
+    private long sinceLastTime;
     private final LinkedList<Long> requestTimeList = new LinkedList<>();
-
-    @Setter
-    private long lastRequestTime;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public Date getReliveTime() {
-        return reliveTime == 0 ? null : new Date(reliveTime);
+        return ban ? new Date(reliveTime) : null;
     }
 
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -43,9 +39,9 @@ public class IpMeta {
         return new Date(lastRequestTime);
     }
 
-    public IpMeta(String ip) {
+    public RequestMeta(long now, String ip) {
         this.ip = ip;
-        request(1, 0, 0);
+        request(now, 1, 0, 0);
     }
 
     public boolean enableRelive(long now) {
@@ -53,35 +49,42 @@ public class IpMeta {
     }
 
     public void relive() {
-        if (this.ban) {
-            this.ban = false;
-            this.reliveTime = 0;
-        }
+        if (ban) ban = false;
     }
 
-    public IpMeta forbidden(long punishmentTime) {
-        this.reliveTime = punishmentTime + new Date().getTime();
+    public RequestMeta forbidden(List<Long> punishmentTime) {
+        long nowTime = TimeUtils.nowTime();
+        // 惩罚升级
+        punishmentLevel++;
+        if (punishmentLevel <= punishmentTime.size()) {
+            reliveTime = punishmentTime.get(punishmentLevel - 1) + nowTime;
+        } else {
+            reliveTime = punishmentTime.get(punishmentTime.size() - 1) + nowTime;
+        }
         requestTimeList.clear();
-        this.ban = true;
+        ban = true;
         return this;
     }
 
     /**
+     * @param now         nowMills
      * @param maxRequests 请求限制最大次数
      * @param window      时间窗口
      * @param minInterval 最小请求间隔时间
      * @return 访问是否成功
      */
-    public boolean request(int maxRequests, long window, long minInterval) {
-        long now = TimeUtils.nowTime();
+    public boolean request(long now, int maxRequests, long window, long minInterval) {
+        // 过了一个周期后，惩罚等级归零
+        if (now - reliveTime > window) {
+            punishmentLevel = 0;
+        }
 
         Long lastSecond = null;
         if (!requestTimeList.isEmpty()) {
             lastSecond = requestTimeList.getLast();
-            lastRequestTime = lastSecond;
-        } else {
-            if (lastRequestTime == 0) lastRequestTime = now;
+            sinceLastTime = now - lastSecond;
         }
+        lastRequestTime = now;
 
         requestTimeList.removeIf(time -> (now - time) > window);
 
@@ -107,17 +110,14 @@ public class IpMeta {
     }
 
     public String sinceLastTime() {
-        return TimeUtils.parseTime(new Date().getTime() - lastRequestTime);
+        return TimeUtils.parseTime(sinceLastTime);
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-
         if (o == null || getClass() != o.getClass()) return false;
-
-        IpMeta ipMeta = (IpMeta) o;
-
+        RequestMeta ipMeta = (RequestMeta) o;
         return ip.equals(ipMeta.ip)
                 && ipMeta.reliveTime < reliveTime;
     }
@@ -125,7 +125,6 @@ public class IpMeta {
     @Override
     public int hashCode() {
         return new HashCodeBuilder(17, 37)
-                .append(ip)
-                .toHashCode();
+                .append(ip).toHashCode();
     }
 }

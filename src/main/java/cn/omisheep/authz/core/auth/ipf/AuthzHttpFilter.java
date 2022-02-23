@@ -10,7 +10,6 @@ import cn.omisheep.authz.core.tk.TokenHelper;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.Async;
 import cn.omisheep.commons.util.HttpUtils;
-import cn.omisheep.commons.util.Utils;
 import cn.omisheep.commons.web.BufferedServletRequestWrapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -97,14 +96,14 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
     }
 
     private String execLimit(String ip, String uri, String method) throws IOException {
-        HashSet<IpMeta> ipBlacklist = httpd.getIpBlacklist();
+        HashSet<RequestMeta> ipBlacklist = httpd.getIpBlacklist();
         CountingBloomFilter<String> ipBlacklistBloomFilter = httpd.getIpBlacklistBloomFilter();
 
         long now = new Date().getTime();
 
         // 全局ip黑名单过滤
         if (ipBlacklistBloomFilter.contains(ip)) { // 使用布隆过滤器过滤。若存在，则去黑名单里搜索
-            IpMeta orElse = ipBlacklist.stream() // 黑名单内搜索
+            RequestMeta orElse = ipBlacklist.stream() // 黑名单内搜索
                     .filter(_ipMeta -> _ipMeta.getIp().equals(ip)).findFirst().orElse(null);
             if (orElse != null && orElse.isBan()) { // 若存在且确实是被禁止了。则
                 if (!orElse.enableRelive(now)) {
@@ -121,12 +120,12 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
         }
 
         // 局部api黑名单过滤
-        for (Map.Entry<String, Httpd.IpPool> entry : httpd.getRequestPools().get(method).entrySet()) {
+        for (Map.Entry<String, Httpd.RequestPool> entry : httpd.getRequestPools().get(method).entrySet()) {
             if (antPathMatcher.match(entry.getKey(), uri)) {
                 LimitMeta limitMeta = null;
 
                 try {
-                    limitMeta = httpd.getLimitedMetaMap().get(method).get(entry.getKey());
+                    limitMeta = httpd.getRateLimitMetadata().get(method).get(entry.getKey());
                 } catch (NullPointerException e) {
                     LogUtils.pushLogToRequest("「普通访问」 \tmethod: [{}] , ip : [{}] , uri: [{}]   ", method, ip, uri);
                     return entry.getKey();
@@ -137,9 +136,9 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
                     return entry.getKey();
                 }
 
-                IpMeta ipMeta = entry.getValue().get(ip);
+                RequestMeta ipMeta = entry.getValue().get(ip);
                 if (ipMeta == null) {
-                    entry.getValue().put(ip, new IpMeta(ip));
+                    entry.getValue().put(ip, new RequestMeta(now, ip));
                     LogUtils.pushLogToRequest("「普通访问(首次)」 \tmethod: [{}] , ip : [{}] , uri: [{}]  ", method, ip, uri);
                 } else {
                     if (ipMeta.isBan()) {
@@ -151,23 +150,22 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
                         } else {
                             LogUtils.pushLogToRequest("「解除封禁(解封)」  \tmethod: [{}] , ip : [{}] , uri: [{}]  ", method, ip, uri);
                             ipMeta.relive();
-                            for (Httpd.IpPool ipPool : oIpPools(limitMeta)) {
+                            for (Httpd.RequestPool ipPool : oIpPools(limitMeta)) {
                                 if (ipPool.containsKey(ip)) {
                                     ipPool.get(ip).relive();
                                 }
                             }
                         }
                     }
-                    if (ipMeta.request(limitMeta.getMaxRequests(), limitMeta.getWindow(), limitMeta.getMinInterval())) {
-                        System.out.println(Utils.beautifulJson(ipMeta));
+                    if (ipMeta.request(now, limitMeta.getMaxRequests(), limitMeta.getWindow(), limitMeta.getMinInterval())) {
                         LogUtils.pushLogToRequest("「普通访问(正常)」\t距上次访问: [{}] , method: [{}] , ip : [{}] , uri: [{}]  ", ipMeta.sinceLastTime(), method, ip, uri);
                     } else {
                         ipMeta.forbidden(limitMeta.getPunishmentTime());
 
-                        for (Httpd.IpPool ipPool : oIpPools(limitMeta)) {
+                        for (Httpd.RequestPool ipPool : oIpPools(limitMeta)) {
                             long time = ipMeta.getLastRequestTime().getTime();
                             if (!ipPool.contains(ip)) {
-                                ipPool.put(ip, new IpMeta(ip).forbidden(limitMeta.getPunishmentTime()));
+                                ipPool.put(ip, new RequestMeta(now, ip).forbidden(limitMeta.getPunishmentTime()));
                             } else ipPool.get(ip).forbidden(limitMeta.getPunishmentTime());
                         }
 
@@ -190,9 +188,9 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
         return null;
     }
 
-    public List<Httpd.IpPool> oIpPools(LimitMeta limitMeta) {
+    public List<Httpd.RequestPool> oIpPools(LimitMeta limitMeta) {
         List<LimitMeta.AssociatedPattern> associatedPatterns = limitMeta.getAssociatedPatterns();
-        List<Httpd.IpPool> oIpPools = new ArrayList<>();
+        List<Httpd.RequestPool> oIpPools = new ArrayList<>();
         if (associatedPatterns != null) {
             associatedPatterns.stream().forEach(associatedPattern -> {
                 associatedPattern.getMethods().forEach(meth -> {
@@ -203,7 +201,8 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
                             .forEach(path -> {
                                 try {
                                     oIpPools.add(httpd.getRequestPools().get(meth).get(path));
-                                } catch (NullPointerException ignore) {}
+                                } catch (NullPointerException ignore) {
+                                }
                             });
                 });
             });
@@ -213,30 +212,43 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
 
 
     private static final String UNKNOWN = "unknown";
+    private static final String X_FORWARDED_FOR = "x-forwarded-for";
     private static final String PROXY_CLIENT_IP = "Proxy-Client-IP";
-    private static final String X_FORWARDED_FOR = "X-Forwarded-For";
     private static final String WL_PROXY_CLIENT_IP = "WL-Proxy-Client-IP";
+    private static final String HTTP_CLIENT_IP = "HTTP_CLIENT_IP";
+    private static final String HTTP_X_FORWARDED_FOR = "HTTP_X_FORWARDED_FOR";
     private static final String X_REAL_IP = "X-Real-IP";
 
     private String getIp(HttpServletRequest request) {
-        if (request == null) {
-            return UNKNOWN;
-        }
         String ip = request.getHeader(X_FORWARDED_FOR);
         if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
-            ip = request.getHeader(PROXY_CLIENT_IP);
-        }
-        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
-            ip = request.getHeader(X_FORWARDED_FOR);
-        }
-        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
-            ip = request.getHeader(WL_PROXY_CLIENT_IP);
-        }
-        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
-            ip = request.getHeader(X_REAL_IP);
-        }
-        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
+            if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+                ip = request.getHeader(PROXY_CLIENT_IP);
+            }
+            if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+                ip = request.getHeader(WL_PROXY_CLIENT_IP);
+            }
+            if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+                ip = request.getHeader(HTTP_CLIENT_IP);
+            }
+            if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+                ip = request.getHeader(HTTP_X_FORWARDED_FOR);
+            }
+            if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+                ip = request.getHeader(X_REAL_IP);
+            }
+            if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
+                ip = request.getRemoteAddr();
+            }
+        } else if (ip.length() > 15) {
+            String[] ips = ip.split(Constants.COMMA);
+            for (int index = 0; index < ips.length; index++) {
+                String strIp = (String) ips[index];
+                if (!(UNKNOWN.equalsIgnoreCase(strIp))) {
+                    ip = strIp;
+                    break;
+                }
+            }
         }
         return ip.equals("0:0:0:0:0:0:0:1") ? "127.0.0.1" : ip;
     }

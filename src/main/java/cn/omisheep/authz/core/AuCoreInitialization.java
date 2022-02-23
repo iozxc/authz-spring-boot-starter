@@ -194,7 +194,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
     }
 
     private void initHttpd(ApplicationContext applicationContext, Map<RequestMappingInfo, HandlerMethod> mapRet) {
-        Map<String, Map<String, LimitMeta>> httpdLimitedMetaMap = httpd.getLimitedMetaMap();
+        Map<String, Map<String, LimitMeta>> httpdLimitedMetaMap = httpd.getRateLimitMetadata();
         HashMap<String, LimitMeta> cMap = new HashMap<>();
 
         applicationContext.getBeansWithAnnotation(RateLimit.class).entrySet().forEach(entry -> {
@@ -238,11 +238,11 @@ public class AuCoreInitialization implements ApplicationContextAware {
                 }
             }
 
-            HashMap<String, Httpd.IpPool> requestPool = new HashMap<>();
+            HashMap<String, Httpd.RequestPool> requestPool = new HashMap<>();
 
             entry.getKey().getMethodsCondition().getMethods().forEach(method -> {
-                entry.getKey().getPatternsCondition().getPatterns().forEach(patternValue -> requestPool.put(contextPath + patternValue, new Httpd.IpPool()));
-                ConcurrentHashMap<String, Httpd.IpPool> reqMap = httpd.getRequestPools().get(method.toString());
+                entry.getKey().getPatternsCondition().getPatterns().forEach(patternValue -> requestPool.put(contextPath + patternValue, new Httpd.RequestPool()));
+                ConcurrentHashMap<String, Httpd.RequestPool> reqMap = httpd.getRequestPools().get(method.toString());
                 if (reqMap == null) {
                     reqMap = new ConcurrentHashMap<>();
                     httpd.getRequestPools().put(method.toString(), reqMap);

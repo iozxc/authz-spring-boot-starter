@@ -42,11 +42,17 @@ public @interface RateLimit {
     int maxRequests() default 5;
 
     /**
-     * 被禁止后在规定时间后释放，默认1小时
+     * 被禁止后在规定时间后释放，默认 [5分钟,10分钟,30分钟,1小时]。
+     * <p>
+     * 在解封之后，若在一个窗口的时间周期内仍然出发封禁机制，那么惩罚等级（0是正常）会增加（依次往后+1），时间按照所给的依次往后，直到最后。
+     * 如：{@code "1h","2h"} 当在第一次触发封禁机制时，会禁止1h
+     * 当解封之后的一个window时间内，又触发封禁机制。那么会封禁2h。再此触发时，仍然还是2h。
+     * <p>
+     * 当解封后，若过了window窗口时间，没有再触发，惩罚等级会归零。
      *
      * @return 封禁时间（单位 ms | s | m | h | d）
      */
-    String punishmentTime() default "1h";
+    String[] punishmentTime() default {"5m", "10m", "30m", "1h"};
 
     /**
      * 最小请求间隔，小于等于0时不对间隔做限制
@@ -73,16 +79,19 @@ public @interface RateLimit {
     CheckType[] checkType() default {CheckType.IP};
 
     /**
-     * 关联的api.当此api封禁时，该ip或者用户id在其他api同样封禁，支持*
+     * 1. 关联的api.当此api封禁时，该ip或者用户id在其他api同样封禁，支持*
      * <p>
-     * 默认为ALL，当不加时也为ALL
+     * 2. 如果需要选择模式，则加上前缀可多个，用空格隔开，方法类型 + 空格
      * <p>
-     * 如果需要选择模式，则加上前缀可多个，用空格隔开，方法类型 + 空格 如
-     * <pre>/api/login  --->  GET POST ... /api/login</pre>
-     * <pre>POST /api/login</pre>
-     * <pre>POST GET /api/login</pre>
-     * <pre>DELETE /api/delete</pre>
-     * <pre>GET /api/*  --->  /api下的全部封禁</pre>
+     * 3. 当不加时默认为GET，全加可以用*代替
+     * <p>
+     * 例子:
+     * <pre> * /api/login   --->  GET POST ... /api/login </pre>
+     * <pre> /api/log   --->   GET /api/log </pre>
+     * <pre> POST /api/login </pre>
+     * <pre> POST GET /api/login </pre>
+     * <pre> DELETE /api/delete </pre>
+     * <pre> GET /api/*  --->  /api下的全部封禁 </pre>
      *
      * @return 关联的api集合
      */
