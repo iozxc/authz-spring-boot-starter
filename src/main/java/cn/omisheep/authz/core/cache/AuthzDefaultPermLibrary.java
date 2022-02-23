@@ -20,4 +20,5 @@ public class AuthzDefaultPermLibrary implements PermLibrary<Object> {
     public List<String> getPermissionsByRole(String role) {
         return null;
     }
+
 }
