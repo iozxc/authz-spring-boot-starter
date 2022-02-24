@@ -11,6 +11,8 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 
 import javax.servlet.http.HttpServletRequest;
 
+import static cn.omisheep.authz.core.Constants.HTTP_META;
+
 /**
  * @author zhouxinchen[1269670415@qq.com]
  * @version 1.0.0
@@ -24,7 +26,7 @@ public class AuTokenOrHttpMetaResolver implements HandlerMethodArgumentResolver 
 
     @Override
     public Object resolveArgument(MethodParameter methodParameter, @Nullable ModelAndViewContainer modelAndViewContainer, NativeWebRequest nativeWebRequest, @Nullable WebDataBinderFactory webDataBinderFactory) {
-        HttpMeta httpMeta = (HttpMeta) ((HttpServletRequest) nativeWebRequest.getNativeRequest()).getAttribute("AU_HTTP_META");
+        HttpMeta httpMeta = (HttpMeta) ((HttpServletRequest) nativeWebRequest.getNativeRequest()).getAttribute(HTTP_META);
         if (httpMeta == null) return null;
         if (methodParameter.getParameterType().equals(Token.class)) {
             return httpMeta.getToken();
