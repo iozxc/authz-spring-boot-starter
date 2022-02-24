@@ -1,15 +1,14 @@
-package cn.omisheep.authz;
+package cn.omisheep.authz.core.auth;
 
 import java.util.List;
 
 /**
- * qq: 1269670415
- *
  * @param <K> userId类型
- * @author zhou xin chen
+ * @author zhouxinchen[1269670415@qq.com]
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface PermLibrary<K> {
-
     List<String> getRolesByUserId(K userId);
 
     List<String> getPermissionsByRole(String role);
@@ -24,5 +23,4 @@ public interface PermLibrary<K> {
     default List<String> getPermissionsByUserId(K userId) {
         return null;
     }
-
 }

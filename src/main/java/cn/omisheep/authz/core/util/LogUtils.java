@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core.util;
 
 import cn.omisheep.authz.core.Constants;
+import cn.omisheep.commons.util.HttpUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,7 @@ import java.util.ArrayList;
  * @version 1.0.0
  * @since 1.0.0
  */
-@Slf4j(topic = "Authz.log")
+@Slf4j(topic = "authz.global.log")
 public class LogUtils {
 
     @Setter
@@ -60,9 +61,12 @@ public class LogUtils {
         au_logs.add(new LogMeta(logLevel, format(formatMsg, args)));
     }
 
-    @SuppressWarnings("unchecked")
     public static void exportLogsFromRequest() {
-        HttpServletRequest request = ((ServletRequestAttributes) (RequestContextHolder.currentRequestAttributes())).getRequest();
+        exportLogsFromRequest(HttpUtils.getCurrentRequest());
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void exportLogsFromRequest(HttpServletRequest request) {
         ArrayList<LogMeta> logs = (ArrayList<LogMeta>) request.getAttribute(AU_LOGS);
         if (logLevel.equals(LogLevel.OFF) || logs == null) return;
         StringBuilder info = new StringBuilder();

@@ -40,7 +40,7 @@ public class Pelcron {
         long free = run.freeMemory() / 1024 / 1024; // 已分配内存中的剩余空间(freeMemory) 这是相对以分配内存（totalMemory）计算的
         long usable = max - total + free; // 最大可用内存 （usable）这是JVM真正还可以再继续使用的内存
         long using = total - free; // 当前使用内存 (using)
-        LogUtils.logInfo("已分配内存 = {}MB  当前使用内存 = {}MB  已分配内存中的剩余空间 = {}MB  最大内存 = {}MB  最大可用内存 = {}MB",
+        LogUtils.logDebug("已分配内存 = {}MB  当前使用内存 = {}MB  已分配内存中的剩余空间 = {}MB  最大内存 = {}MB  最大可用内存 = {}MB",
                 total, using, free, max, usable);
     }
 

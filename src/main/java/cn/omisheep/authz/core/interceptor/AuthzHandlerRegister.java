@@ -1,4 +1,4 @@
-package cn.omisheep.authz.core.handler;
+package cn.omisheep.authz.core.interceptor;
 
 import cn.omisheep.authz.core.auth.AuthzDefender;
 import cn.omisheep.authz.core.resolver.AuHttpMetaResolver;
@@ -11,24 +11,28 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import java.util.List;
 
 /**
- * qq: 1269670415
+ * 拦截器注册
  *
- * @author zhou xin chen
+ * @author zhouxinchen[1269670415@qq.com]
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Slf4j
 public class AuthzHandlerRegister implements WebMvcConfigurer {
 
     private final AuthzDefender auDefender;
+    private final AuthzExceptionHandler authzExceptionHandler;
 
-    public AuthzHandlerRegister(AuthzDefender auDefender) {
+    public AuthzHandlerRegister(AuthzDefender auDefender, AuthzExceptionHandler authzExceptionHandler) {
         this.auDefender = auDefender;
+        this.authzExceptionHandler = authzExceptionHandler;
     }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new AuthzInterceptor(auDefender))
+        registry.addInterceptor(new AuthzCoreInterceptor(auDefender))
                 .excludePathPatterns("/error").order(1);
-        registry.addInterceptor(new ErrorHandlerInterceptor())
+        registry.addInterceptor(new AuthzFinalInterceptor(authzExceptionHandler))
                 .excludePathPatterns("/error").order(2);
     }
 

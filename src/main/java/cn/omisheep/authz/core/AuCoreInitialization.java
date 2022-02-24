@@ -81,7 +81,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
         // init Jobs
         TaskBuilder.schedule(AuKey::refreshKeyGroup, properties.getRsaKeyRefreshWithPeriod());
-        if (!properties.getCache().isEnabledRedis()) {
+        if (!properties.getCache().isEnableRedis()) {
             TaskBuilder.schedule(Pelcron::activeExpireCycle, properties.getUserBufferRefreshWithPeriod());
         }
         TaskBuilder.schedule(Pelcron::GC, properties.getGcPeriod());

@@ -99,7 +99,6 @@
             <artifactId>maven-gpg-plugin</artifactId>
             <version>1.6</version>
         </dependency>
-
         <dependency>
             <groupId>io.github.openfeign</groupId>
             <artifactId>feign-core</artifactId>

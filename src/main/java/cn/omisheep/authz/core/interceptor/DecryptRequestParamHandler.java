@@ -1,4 +1,4 @@
-package cn.omisheep.authz.core.handler;
+package cn.omisheep.authz.core.interceptor;
 
 import cn.omisheep.authz.annotation.Decrypt;
 import cn.omisheep.authz.core.auth.AuKey;
@@ -13,14 +13,15 @@ import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Constructor;
 
 /**
- * qq: 1269670415
+ * 请求参数的拦截器。用于rsa解密
  *
- * @author zhou xin chen
+ * @author zhouxinchen[1269670415@qq.com]
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Slf4j
 @SuppressWarnings("all")
 public class DecryptRequestParamHandler implements HandlerMethodArgumentResolver {
-
 
     @Override
     public boolean supportsParameter(MethodParameter parameter) {

@@ -1,6 +1,6 @@
 package cn.omisheep.authz.core.cache;
 
-import cn.omisheep.authz.PermLibrary;
+import cn.omisheep.authz.core.auth.PermLibrary;
 
 import java.util.List;
 

@@ -38,6 +38,11 @@ public class HttpMeta {
         SignatureException
     }
 
+    public boolean setHasTokenCookie(boolean hasTokenCookie) {
+        this.hasTokenCookie = hasTokenCookie;
+        return hasTokenCookie;
+    }
+
     /**
      * post时生效
      * 从包装过的httpRequest中读取，读取body行为只进行一次，读取之后会备份body

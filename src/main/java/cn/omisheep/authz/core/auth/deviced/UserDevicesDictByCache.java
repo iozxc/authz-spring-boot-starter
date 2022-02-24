@@ -90,7 +90,6 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         Async.combine(() -> accessInfoKeys.addAll(cache.keysAndLoad(acKey(userId, Constants.WILDCARD)))
                 , () -> refreshInfoKeys.addAll(cache.keysAndLoad(rfKey(userId, Constants.WILDCARD)))).join();
 
-
         Set<String> delKeys = new HashSet<>();
         if (!isSupportMultiDevice) {
             delKeys.addAll(accessInfoKeys);
@@ -156,11 +155,12 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         AccessInfo accessInfo = new AccessInfo().setRefreshTokenId(tokenPair.getRefreshToken().getTokenId());
         RefreshInfo refreshInfo = new RefreshInfo().setDevice(device);
 
-        long l = TimeUtils.parseTimeValueTotal(properties.getToken().getLiveTime(), properties.getToken().getRefreshTime(), "10s");
         Async.run(() -> {
             cache.del(acKey(userId, Constants.WILDCARD));
             cache.del(rfKey(userId, Constants.WILDCARD));
         });
+
+        long l = TimeUtils.parseTimeValueTotal(properties.getToken().getLiveTime(), properties.getToken().getRefreshTime(), "10s");
         return Async.joinAndCheck(Async
                 .combine(
                         () -> cache.set(acKey(userId, tokenPair), accessInfo, properties.getToken().getLiveTime()),

@@ -8,7 +8,8 @@ import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.tk.TokenPair;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.commons.util.TimeUtils;
-import lombok.NonNull;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -27,8 +28,9 @@ public class AuHelper {
     /**
      * @param userId     用户id - 不为null
      * @param deviceType 设备系统类型 - 不为null
-     * @return 授权后的tokenPair(accessToken以及refreshToken)
+     * @return 授权后的tokenPair(accessToken以及refreshToken)，返回空则登录失败
      */
+    @Nullable
     public static TokenPair login(@NonNull Object userId, @NonNull String deviceType) {
         return login(userId, deviceType, null);
     }
@@ -37,9 +39,10 @@ public class AuHelper {
      * @param userId     用户id - 不为null
      * @param deviceType 设备系统类型 - 不为null
      * @param deviceId   设备id - 可为null 且为 "" 时于 null等价
-     * @return 授权后的tokenPair(accessToken以及refreshToken)
+     * @return 授权后的tokenPair(accessToken以及refreshToken)，返回空则登录失败
      */
-    public static TokenPair login(@NonNull Object userId, @NonNull String deviceType, String deviceId) {
+    @Nullable
+    public static TokenPair login(@NonNull Object userId, @NonNull String deviceType, @Nullable String deviceId) {
         return auDefender.grant(userId, deviceType, deviceId);
     }
 
@@ -51,9 +54,9 @@ public class AuHelper {
      * 使用双token时，accessToken过期时，可以利用refreshToken在此接口中刷新获得一个新的accessToken。
      *
      * @param refreshToken 与accessToken一起授予的refreshToken
-     * @return 刷新成功（true）/ 失败（false）
+     * @return 刷新成功（true）/ 失败（false）返回空则登录失败
      */
-    public static TokenPair refreshToken(String refreshToken) {
+    public static TokenPair refreshToken(@NonNull String refreshToken) {
         return auDefender.refreshToken(refreshToken);
     }
 

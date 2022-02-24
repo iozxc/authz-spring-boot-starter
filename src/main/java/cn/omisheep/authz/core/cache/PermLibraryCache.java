@@ -20,14 +20,14 @@ public class PermLibraryCache {
         this.cache = cache;
     }
 
-    @Around("execution(* cn.omisheep.authz.PermLibrary+.getRolesByUserId(..))")
+    @Around("execution(* cn.omisheep.authz.core.auth.PermLibrary+.getRolesByUserId(..))")
     public Object Before(ProceedingJoinPoint joinPoint) throws Throwable {
         Object[] args = joinPoint.getArgs();
         if (args.length != 1) return joinPoint.proceed();
         return handle("userRoles:" + args[0], joinPoint);
     }
 
-    @Around("execution(* cn.omisheep.authz.PermLibrary+.getPermissionsByRole(..))")
+    @Around("execution(* cn.omisheep.authz.core.auth.PermLibrary+.getPermissionsByRole(..))")
     public Object Before2(ProceedingJoinPoint joinPoint) throws Throwable {
         Object[] args = joinPoint.getArgs();
         MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
@@ -36,7 +36,7 @@ public class PermLibraryCache {
         return handle("permissionsByRole:" + args[0], joinPoint);
     }
 
-    @Around("execution(* cn.omisheep.authz.PermLibrary+.getPermissionsByUserId(..))")
+    @Around("execution(* cn.omisheep.authz.core.auth.PermLibrary+.getPermissionsByUserId(..))")
     public Object Before3(ProceedingJoinPoint joinPoint) throws Throwable {
         Object[] args = joinPoint.getArgs();
         if (args.length != 1) return joinPoint.proceed();
@@ -44,7 +44,6 @@ public class PermLibraryCache {
     }
 
     private Object handle(String key, ProceedingJoinPoint joinPoint) throws Throwable {
-        System.out.println("handle");
         Object o = cache.get(key);
         if (o != null) return o;
         if (!cache.hasKey(key)) {

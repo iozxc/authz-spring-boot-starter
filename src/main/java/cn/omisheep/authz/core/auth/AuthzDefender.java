@@ -1,7 +1,6 @@
 package cn.omisheep.authz.core.auth;
 
-import cn.omisheep.authz.PermLibrary;
-import cn.omisheep.authz.core.RequestExceptionStatus;
+import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.auth.deviced.DefaultDevice;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
@@ -11,11 +10,9 @@ import cn.omisheep.authz.core.tk.TokenHelper;
 import cn.omisheep.authz.core.tk.TokenPair;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.CollectionUtils;
-import cn.omisheep.commons.util.HttpUtils;
 import cn.omisheep.commons.util.TimeUtils;
 import io.jsonwebtoken.ExpiredJwtException;
 import lombok.SneakyThrows;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -25,20 +22,21 @@ import java.util.*;
 import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.*;
 
 /**
- * qq: 1269670415
- *
- * @author zhou xin chen
+ * @author zhouxinchen[1269670415@qq.com]
+ * @version 1.0.0
+ * @since 1.0.0
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class AuthzDefender {
 
     private final UserDevicesDict userDevicesDict;
     private final PermissionDict permissionDict;
-    private final PermFact permFact;
+    private final PermLibrary permLibrary;
 
-    public AuthzDefender(UserDevicesDict userDevicesDict, PermissionDict permissionDict, PermFact permFact) {
+    public AuthzDefender(UserDevicesDict userDevicesDict, PermissionDict permissionDict, PermLibrary permLibrary) {
         this.userDevicesDict = userDevicesDict;
         this.permissionDict = permissionDict;
-        this.permFact = permFact;
+        this.permLibrary = permLibrary;
     }
 
     /**
@@ -102,30 +100,25 @@ public class AuthzDefender {
      */
     @SneakyThrows
     @SuppressWarnings("all")
-    public boolean verify(HttpMeta httpMeta) {
+    public ExceptionStatus verify(HttpMeta httpMeta) {
         PermRolesMeta permRolesMeta = permissionDict.getAuthzMetadata().get(httpMeta.getMethod()).get(httpMeta.getApi());
 
         if (!httpMeta.isHasTokenCookie()) {
             logs("Require Login", httpMeta, permRolesMeta);
-            HttpUtils.returnResponse(HttpStatus.FORBIDDEN, RequestExceptionStatus.REQUIRE_LOGIN);
-            return false;
+            return ExceptionStatus.REQUIRE_LOGIN;
         }
 
         if (httpMeta.getTokenException() != null) {
-//            throw new AuthException(httpMeta.getTokenException().name());
             switch (httpMeta.getTokenException()) {
                 case ExpiredJwtException:
                     logs("Forbid : expired token exception", httpMeta, permRolesMeta);
-                    HttpUtils.returnResponse(HttpStatus.FORBIDDEN, RequestExceptionStatus.ACCESS_TOKEN_OVERDUE);
-                    return false;
+                    return ExceptionStatus.ACCESS_TOKEN_OVERDUE;
                 case MalformedJwtException:
                     logs("Forbid : malformed token exception", httpMeta, permRolesMeta);
-                    HttpUtils.returnResponse(HttpStatus.FORBIDDEN, RequestExceptionStatus.TOKEN_EXCEPTION);
-                    return false;
+                    return ExceptionStatus.TOKEN_EXCEPTION;
                 case SignatureException:
                     logs("Forbid : signature exception", httpMeta, permRolesMeta);
-                    HttpUtils.returnResponse(HttpStatus.FORBIDDEN, RequestExceptionStatus.TOKEN_EXCEPTION);
-                    return false;
+                    return ExceptionStatus.TOKEN_EXCEPTION;
             }
         }
 
@@ -135,44 +128,36 @@ public class AuthzDefender {
             case ACCESS_TOKEN_OVERDUE:
                 // accessToken过期
                 logs("Forbid : expired token exception", httpMeta, permRolesMeta);
-                HttpUtils.returnResponse(HttpStatus.FORBIDDEN, RequestExceptionStatus.ACCESS_TOKEN_OVERDUE);
-                return false;
+                return ExceptionStatus.ACCESS_TOKEN_OVERDUE;
             case REQUIRE_LOGIN:
                 // 需要重新登录
                 logs("Require Login", httpMeta, permRolesMeta);
-                HttpUtils.returnResponse(HttpStatus.FORBIDDEN, RequestExceptionStatus.REQUIRE_LOGIN);
-                return false;
+                return ExceptionStatus.REQUIRE_LOGIN;
             case LOGIN_EXCEPTION:
                 // 在别处登录
                 logs("forbid : may have logged in elsewhere", httpMeta, permRolesMeta);
-                HttpUtils.returnResponse(HttpStatus.FORBIDDEN, RequestExceptionStatus.LOGIN_EXCEPTION);
-                return false;
+                return ExceptionStatus.LOGIN_EXCEPTION;
         }
 
         List<String> roles = null;
         boolean e1 = CollectionUtils.isEmpty(permRolesMeta.getRequireRoles());
         boolean e2 = CollectionUtils.isEmpty(permRolesMeta.getExcludeRoles());
         if (!e1 || !e2) {
-            PermLibrary permLibrary = permFact.getPermLibrary();
-            //
             roles = permLibrary.getRolesByUserId(accessToken.getUserId());
             if (!e1 && !CollectionUtils.containsSub(permRolesMeta.getRequireRoles(), roles) || !e2 && CollectionUtils.containsSub(permRolesMeta.getExcludeRoles(), roles)) {
                 logs("Forbid : permissions exception", httpMeta, permRolesMeta);
-                HttpUtils.returnResponse(HttpStatus.FORBIDDEN, RequestExceptionStatus.PERM_EXCEPTION);
-                return false;
+                return ExceptionStatus.PERM_EXCEPTION;
             }
         }
 
         boolean e3 = CollectionUtils.isEmpty(permRolesMeta.getRequirePermissions());
         boolean e4 = CollectionUtils.isEmpty(permRolesMeta.getExcludePermissions());
         if (!e3 || !e4) {
-            PermLibrary permLibrary = permFact.getPermLibrary();
             List permissions = permLibrary.getPermissionsByUserId(accessToken.getUserId());
             if (permissions != null) {
                 if (!e3 && !CollectionUtils.containsSub(permRolesMeta.getRequirePermissions(), permissions) || !e4 && CollectionUtils.containsSub(permRolesMeta.getExcludePermissions(), permissions)) {
                     logs("Forbid : permissions exception", httpMeta, permRolesMeta);
-                    HttpUtils.returnResponse(HttpStatus.FORBIDDEN, RequestExceptionStatus.PERM_EXCEPTION);
-                    return false;
+                    return ExceptionStatus.PERM_EXCEPTION;
                 }
             } else {
                 if (e1 && e2) {
@@ -186,21 +171,18 @@ public class AuthzDefender {
                     }
                     if (!e4 && CollectionUtils.containsSub(permRolesMeta.getExcludePermissions(), permissionsByRole)) {
                         logs("Forbid : permissions exception", httpMeta, permRolesMeta);
-                        HttpUtils.returnResponse(HttpStatus.FORBIDDEN, RequestExceptionStatus.PERM_EXCEPTION);
-                        return false;
+                        return ExceptionStatus.PERM_EXCEPTION;
                     }
                 }
                 if (!e3 && !CollectionUtils.containsSub(permRolesMeta.getRequirePermissions(), perms)) {
                     logs("Forbid : permissions exception", httpMeta, permRolesMeta);
-                    HttpUtils.returnResponse(HttpStatus.FORBIDDEN, RequestExceptionStatus.PERM_EXCEPTION);
-                    return false;
+                    return ExceptionStatus.PERM_EXCEPTION;
                 }
             }
-
         }
 
         logs("Success", httpMeta, permRolesMeta);
-        return true;
+        return null;
     }
 
     private void logs(String status, HttpMeta httpMeta, PermRolesMeta meta) {

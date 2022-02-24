@@ -1,4 +1,4 @@
-package cn.omisheep.authz.core.handler;
+package cn.omisheep.authz.core.interceptor;
 
 import cn.omisheep.commons.util.HttpUtils;
 import org.springframework.http.HttpRequest;
@@ -9,6 +9,8 @@ import org.springframework.http.client.ClientHttpResponse;
 import java.io.IOException;
 
 /**
+ * restTemplate适配
+ *
  * @author zhouxinchen[1269670415@qq.com]
  * @version 1.0.0
  * @since 1.0.0

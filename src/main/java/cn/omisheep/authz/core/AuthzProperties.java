@@ -5,14 +5,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.logging.LogLevel;
 
 /**
- * qq: 1269670415
- *
- * @author zhou xin chen
+ * @author zhouxinchen[1269670415@qq.com]
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Data
-@ConfigurationProperties(
-        prefix = "authz"
-)
+@ConfigurationProperties(prefix = "spring.authz")
 public class AuthzProperties {
 
     private TokenConfig token = new TokenConfig();
@@ -20,8 +18,6 @@ public class AuthzProperties {
     private UserConfig user = new UserConfig();
 
     private CacheConfig cache = new CacheConfig();
-
-    private boolean enabledCatchException = false;
 
     /**
      * role/permission分隔符
@@ -67,12 +63,12 @@ public class AuthzProperties {
          * 是否开启redis缓存（两级缓存）
          * L2
          */
-        private boolean enabledRedis = false;
+        private boolean enableRedis = false;
 
         /**
          * 是否开启redis健康监控检查，默认关闭
          */
-        private boolean enabledRedisActuator = false;
+        private boolean enableRedisActuator = false;
 
         /**
          * redis每次扫描key的数量
