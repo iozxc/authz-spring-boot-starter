@@ -82,7 +82,7 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
     }
 
     @Override
-    public void addUser(Object userId, TokenPair tokenPair, Device device) {
+    public boolean addUser(Object userId, TokenPair tokenPair, Device device) {
         inertDeletion(userId);
         Map<String, AccessInfo> accessInfoHeap = usersAccessInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
         Map<String, RefreshInfo> refreshInfoHeap = usersRefreshInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
@@ -107,6 +107,7 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
                 new AccessInfo().setRefreshTokenId(refreshToken.getTokenId()).setExpiration(accessToken.getExpiredTime()));
         refreshInfoHeap.put(refreshToken.getTokenId(),
                 new RefreshInfo().setDevice(device).setExpiration(TimeUtils.datePlus(refreshToken.getExpiredTime(), properties.getToken().getLiveTime())));
+        return true;
     }
 
     @Override

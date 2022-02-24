@@ -6,7 +6,6 @@ import cn.omisheep.authz.core.util.RedisUtils;
 import cn.omisheep.commons.util.Async;
 import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.commons.util.TimeUtils;
-import cn.omisheep.commons.util.Utils;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
@@ -42,7 +41,7 @@ public class DoubleDeckCache implements Cache {
             caffeine.maximumSize(cacheMaximumSize);
         cache = caffeine.build(new CacheLoader<String, CacheItem>() {
             @Override
-            public @Nullable CacheItem load(@NonNull String key) throws Exception {
+            public @Nullable CacheItem load(@NonNull String key) {
                 Object o = RedisUtils.Obj.get(key); // cache中没有，加载redis
                 long ttl = RedisUtils.ttl(key);
                 if (o != null) { // redis中有 且值不为空
@@ -55,7 +54,7 @@ public class DoubleDeckCache implements Cache {
             }
 
             @Override
-            public @NonNull Map<@NonNull String, @NonNull CacheItem> loadAll(@NonNull Iterable<? extends @NonNull String> keys) throws Exception {
+            public @NonNull Map<@NonNull String, @NonNull CacheItem> loadAll(@NonNull Iterable<? extends @NonNull String> keys) {
                 List<String> list = new ArrayList<>();
                 keys.forEach(list::add);
                 List objects = RedisUtils.Obj.get(list);
@@ -149,24 +148,6 @@ public class DoubleDeckCache implements Cache {
     }
 
     @Override
-    public <E> void asyncSet(String key, E element, long ttl) {
-        CacheItem item = cache.get(key);
-        if (item != null) {
-            Async.run(() -> {
-                RedisUtils.Obj.update(key, element);
-                RedisUtils.publish(Cache.CHANNEL, Message.write(key));
-            });
-            item.value = element;
-        } else {
-            Async.run(() -> {
-                RedisUtils.Obj.set(key, element, ttl);
-                RedisUtils.publish(Cache.CHANNEL, Message.write(key));
-            });
-            cache.put(key, new CacheItem(ttl, element));
-        }
-    }
-
-    @Override
     public void del(String key) {
         cache.invalidate(key);
         Async.run(() -> {
@@ -185,7 +166,7 @@ public class DoubleDeckCache implements Cache {
     }
 
     @Override
-    public void sync(Message message) {
+    public void receive(Message message) {
         if (Message.MessageType.WRITE.equals(message.getType())) {
             setSync(message);
         } else {
@@ -200,9 +181,7 @@ public class DoubleDeckCache implements Cache {
             Object o = RedisUtils.Obj.get(key);
             long ttl = RedisUtils.ttl(key);
             if (ttl != -2) {
-                log.info("setSync   key: {}, value: {}", key, o);
                 cache.put(key, new CacheItem(ttl, o));
-                System.out.println(Utils.beautifulJson(cache.asMap()));
             } else cache.invalidate(key);
         } else if (keys.size() > 1) {
             String pattern = message.getPattern();

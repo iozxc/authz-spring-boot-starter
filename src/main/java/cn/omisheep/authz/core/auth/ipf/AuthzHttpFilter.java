@@ -82,7 +82,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
                 Token token = TokenHelper.parseToken(cookie.getValue());
                 httpMeta.setToken(token);
                 // 每次访问将最后一次访问时间和ip存入缓存中
-                Async.run(() -> userDevicesDict.request());
+                Async.run(userDevicesDict::request);
             } catch (Exception e) {
                 // 惰性删除策略，如果此用户存在，但是过期，则删除
                 httpMeta.setTokenException(HttpMeta.TokenException.valueOf(e.getClass().getSimpleName()));

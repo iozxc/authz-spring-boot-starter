@@ -86,7 +86,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
         }
         TaskBuilder.schedule(Pelcron::GC, properties.getGcPeriod());
 
-        AuInit.log.info("Started Authz  id: {}", Message.id);
+        AuInit.log.info("Started Authz  Message id: {}", Message.id);
 //        initJob(CountingTaskForMinute.class, "1m", TimeUtils.nextIntactDateForMinute(), AggregateManager.class);
 //        initJob(CountingTaskForDay.class, "1d", TimeUtils.nextIntactDateForDay(), AggregateManager.class);
     }
@@ -97,21 +97,22 @@ public class AuCoreInitialization implements ApplicationContextAware {
         Map<String, Map<String, PermRolesMeta>> authzMetadata = permissionDict.getAuthzMetadata();
         Map<String, PermRolesMeta> pMap = new HashMap<>();
         Map<String, PermRolesMeta> rMap = new HashMap<>();
-        applicationContext.getBeansWithAnnotation(Perms.class).entrySet().forEach(entry -> {
-            Perms permsFromController = AnnotationUtils.getAnnotation(entry.getValue().getClass(), Perms.class);
-            pMap.put(entry.getValue().getClass().getName(),
+        applicationContext.getBeansWithAnnotation(Perms.class).forEach((key, value) -> {
+            Perms permsFromController = AnnotationUtils.getAnnotation(value.getClass(), Perms.class);
+            pMap.put(value.getClass().getName(),
                     generatePermRolesMeta(permsFromController, null));
         });
-        applicationContext.getBeansWithAnnotation(Roles.class).entrySet().forEach(entry -> {
-            Roles rolesFromController = AnnotationUtils.getAnnotation(entry.getValue().getClass(), Roles.class);
-            rMap.put(entry.getValue().getClass().getName(),
+
+        applicationContext.getBeansWithAnnotation(Roles.class).forEach((key, value) -> {
+            Roles rolesFromController = AnnotationUtils.getAnnotation(value.getClass(), Roles.class);
+            rMap.put(value.getClass().getName(),
                     generatePermRolesMeta(null, rolesFromController));
         });
 
-        mapRet.entrySet().forEach(entry -> {
-            PermRolesMeta pFc = pMap.get(entry.getValue().getBeanType().getName());
-            PermRolesMeta rFc = rMap.get(entry.getValue().getBeanType().getName());
-            PermRolesMeta permRolesMeta = generatePermRolesMeta(entry.getValue().getMethodAnnotation(Perms.class), entry.getValue().getMethodAnnotation(Roles.class));
+        mapRet.forEach((key, value) -> {
+            PermRolesMeta pFc = pMap.get(value.getBeanType().getName());
+            PermRolesMeta rFc = rMap.get(value.getBeanType().getName());
+            PermRolesMeta permRolesMeta = generatePermRolesMeta(value.getMethodAnnotation(Perms.class), value.getMethodAnnotation(Roles.class));
 
             if (rFc != null) {
                 if (permRolesMeta.getRequireRoles() != null) {
@@ -139,8 +140,8 @@ public class AuCoreInitialization implements ApplicationContextAware {
             }
 
             if (permRolesMeta != null) {
-                entry.getKey().getMethodsCondition().getMethods().forEach(method -> {
-                    entry.getKey().getPatternsCondition().getPatterns().forEach(patternValue -> {
+                key.getMethodsCondition().getMethods().forEach(method -> {
+                    key.getPatternsCondition().getPatterns().forEach(patternValue -> {
                         Map<String, PermRolesMeta> map = authzMetadata.get(method.toString());
                         if (map == null) {
                             map = new HashMap<>();
@@ -182,8 +183,8 @@ public class AuCoreInitialization implements ApplicationContextAware {
         Map<String, Map<String, LimitMeta>> httpdLimitedMetaMap = httpd.getRateLimitMetadata();
         HashMap<String, LimitMeta> cMap = new HashMap<>();
 
-        applicationContext.getBeansWithAnnotation(RateLimit.class).entrySet().forEach(entry -> {
-            Class<?> aClass = AopUtils.getTargetClass(entry.getValue());
+        applicationContext.getBeansWithAnnotation(RateLimit.class).forEach((key, value) -> {
+            Class<?> aClass = AopUtils.getTargetClass(value);
             RateLimit rateLimit = aClass.getAnnotation(RateLimit.class);
             if (rateLimit != null) {
                 cMap.put(aClass.getName(),
@@ -191,10 +192,10 @@ public class AuCoreInitialization implements ApplicationContextAware {
             }
         });
 
-        for (Map.Entry<RequestMappingInfo, HandlerMethod> entry : mapRet.entrySet()) {
-            Set<RequestMethod> methods = entry.getKey().getMethodsCondition().getMethods();
-            Set<String> patternValues = entry.getKey().getPatternsCondition().getPatterns();
-            RateLimit rateLimit = entry.getValue().getMethodAnnotation(RateLimit.class); // 方法上的au
+        mapRet.forEach((key, value) -> {
+            Set<RequestMethod> methods = key.getMethodsCondition().getMethods();
+            Set<String> patternValues = key.getPatternsCondition().getPatterns();
+            RateLimit rateLimit = value.getMethodAnnotation(RateLimit.class); // 方法上的au
             if (rateLimit != null) {
                 LimitMeta limitMeta = new LimitMeta(rateLimit.window(), rateLimit.maxRequests(), rateLimit.punishmentTime(), rateLimit.minInterval(), rateLimit.associatedPatterns(), rateLimit.bannedType());
                 for (RequestMethod method : methods) {
@@ -210,7 +211,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
             } else {
                 for (RequestMethod method : methods) {
                     for (String patternValue : patternValues) {
-                        LimitMeta limitMeta = cMap.get(entry.getValue().getBeanType().getName());
+                        LimitMeta limitMeta = cMap.get(value.getBeanType().getName());
                         if (limitMeta != null) {
                             Map<String, LimitMeta> map = httpdLimitedMetaMap.get(method.toString());
                             if (map == null) {
@@ -225,8 +226,8 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
             HashMap<String, Httpd.RequestPool> requestPool = new HashMap<>();
 
-            entry.getKey().getMethodsCondition().getMethods().forEach(method -> {
-                entry.getKey().getPatternsCondition().getPatterns().forEach(patternValue -> requestPool.put(contextPath + patternValue, new Httpd.RequestPool()));
+            key.getMethodsCondition().getMethods().forEach(method -> {
+                key.getPatternsCondition().getPatterns().forEach(patternValue -> requestPool.put(contextPath + patternValue, new Httpd.RequestPool()));
                 ConcurrentHashMap<String, Httpd.RequestPool> reqMap = httpd.getRequestPools().get(method.toString());
                 if (reqMap == null) {
                     reqMap = new ConcurrentHashMap<>();
@@ -234,8 +235,8 @@ public class AuCoreInitialization implements ApplicationContextAware {
                 }
                 reqMap.putAll(requestPool);
             });
+        });
 
-        }
     }
 
     private void initUserDevicesDict() {

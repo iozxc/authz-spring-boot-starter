@@ -23,7 +23,7 @@ public class MessageReceive {
             Message message = (Message) oo;
             if (!Message.ignore(message)) {
                 LogUtils.logDebug("MessageReceive: {}", message);
-                cache.sync(message);
+                cache.receive(message);
             }
         }
     }

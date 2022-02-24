@@ -25,7 +25,7 @@ public interface UserDevicesDict {
      */
     int userStatus(Object userId, String deviceType, String deviceId, String accessTokenId);
 
-    void addUser(Object userId, TokenPair tokenPair, Device device);
+    boolean addUser(Object userId, TokenPair tokenPair, Device device);
 
     boolean refreshUser(TokenPair tokenPair);
 

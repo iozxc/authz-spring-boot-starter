@@ -188,14 +188,6 @@ public interface Cache {
         return set(key, element, TimeUtils.parseTimeValueToSecond(ttl));
     }
 
-    default <E> void asyncSet(String key, E element) {
-        asyncSet(key, element, -1L);
-    }
-
-    default <E> void asyncSet(String key, E element, long ttl) {
-        set(key, element, ttl);
-    }
-
     /**
      * 得到对应key的值
      *
@@ -240,7 +232,7 @@ public interface Cache {
      */
     void del(Set<String> keys);
 
-    default void sync(Message message) {
+    default void receive(Message message) {
     }
 
     default void reload() {

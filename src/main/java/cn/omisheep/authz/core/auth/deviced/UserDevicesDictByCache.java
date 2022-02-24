@@ -7,6 +7,7 @@ import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.tk.TokenPair;
 import cn.omisheep.authz.core.util.AUtils;
+import cn.omisheep.commons.util.Async;
 import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.commons.util.TimeUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static cn.omisheep.authz.core.auth.deviced.DeviceConfig.isSupportMultiDevice;
@@ -39,7 +41,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
 
     @Override
     public int userStatus(Object userId, String deviceType, String deviceId, String accessTokenId) {
-        Set<String> accessInfoKeys = cache.keysAndLoad(acKey(userId, Constants.WILDCARD));
+        CompletableFuture<Set<String>> acSupply = Async.supply(() -> cache.keysAndLoad(acKey(userId, Constants.WILDCARD)));
         Set<String> refreshInfoKeys = cache.keysAndLoad(rfKey(userId, Constants.WILDCARD));
 
         boolean hasTargetDeviceInfo = false;
@@ -52,6 +54,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
 
         if (!hasTargetDeviceInfo) return REQUIRE_LOGIN;
 
+        Set<String> accessInfoKeys = acSupply.join();
         if (accessInfoKeys.isEmpty()) {
             if (refreshInfoKeys.isEmpty()) return REQUIRE_LOGIN;
             return ACCESS_TOKEN_OVERDUE;
@@ -80,9 +83,13 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     @Override
-    public void addUser(Object userId, TokenPair tokenPair, Device device) {
-        Set<String> accessInfoKeys = cache.keysAndLoad(acKey(userId, Constants.WILDCARD));
-        Set<String> refreshInfoKeys = cache.keysAndLoad(rfKey(userId, Constants.WILDCARD));
+    public boolean addUser(Object userId, TokenPair tokenPair, Device device) {
+        Set<String> accessInfoKeys = new HashSet<>();
+        Set<String> refreshInfoKeys = new HashSet<>();
+
+        Async.combine(() -> accessInfoKeys.addAll(cache.keysAndLoad(acKey(userId, Constants.WILDCARD)))
+                , () -> refreshInfoKeys.addAll(cache.keysAndLoad(rfKey(userId, Constants.WILDCARD)))).join();
+
 
         Set<String> delKeys = new HashSet<>();
         if (!isSupportMultiDevice) {
@@ -144,16 +151,22 @@ public class UserDevicesDictByCache implements UserDevicesDict {
             }
         }
 
-        if (!delKeys.isEmpty()) cache.del(delKeys);
+        if (!delKeys.isEmpty()) Async.run(() -> cache.del(delKeys));
 
         AccessInfo accessInfo = new AccessInfo().setRefreshTokenId(tokenPair.getRefreshToken().getTokenId());
         RefreshInfo refreshInfo = new RefreshInfo().setDevice(device);
 
         long l = TimeUtils.parseTimeValueTotal(properties.getToken().getLiveTime(), properties.getToken().getRefreshTime(), "10s");
-        cache.set(acKey(userId, tokenPair), accessInfo, properties.getToken().getLiveTime());
-        cache.set(rfKey(userId, tokenPair), refreshInfo, l, TimeUnit.MILLISECONDS);
-        cache.del(acKey(userId, Constants.WILDCARD));
-        cache.del(rfKey(userId, Constants.WILDCARD));
+        Async.run(() -> {
+            cache.del(acKey(userId, Constants.WILDCARD));
+            cache.del(rfKey(userId, Constants.WILDCARD));
+        });
+        return Async.joinAndCheck(Async
+                .combine(
+                        () -> cache.set(acKey(userId, tokenPair), accessInfo, properties.getToken().getLiveTime()),
+                        () -> cache.set(rfKey(userId, tokenPair), refreshInfo, l, TimeUnit.MILLISECONDS)
+                )
+        );
     }
 
     @Override
@@ -394,7 +407,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
                 if (!device.isEmpty()) {
                     device.setIp(currentHttpMeta.getIp());
                     device.setLastRequestTime(TimeUtils.now());
-                    cache.asyncSet(rfKey, device);
+                    cache.set(rfKey, device);
                 }
             }
         } catch (Exception ignored) {

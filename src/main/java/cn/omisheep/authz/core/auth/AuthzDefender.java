@@ -54,11 +54,14 @@ public class AuthzDefender {
         if (response != null) {
             response.addCookie(TokenHelper.generateCookie(tokenPair.getAccessToken()));
         }
-
         DefaultDevice device = new DefaultDevice();
         device.setType(deviceType).setId(deviceId).setLastRequestTime(TimeUtils.now()).setIp(httpMeta.getIp());
-        userDevicesDict.addUser(userId, tokenPair, device);
-        return tokenPair;
+        try {
+            if (userDevicesDict.addUser(userId, tokenPair, device)) return tokenPair;
+            else return null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**
