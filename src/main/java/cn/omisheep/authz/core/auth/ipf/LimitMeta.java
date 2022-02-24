@@ -6,9 +6,9 @@ import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.commons.util.TimeUtils;
 import com.google.common.base.Objects;
 import lombok.Getter;
-import org.springframework.http.HttpMethod;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -66,22 +66,21 @@ public class LimitMeta {
             String[] split = info.split(Constants.BLANK);
             if (split.length > 1) {
                 this.pattern = split[split.length - 1];
-                split[split.length - 1] = null;
-                Set<String> method = CollectionUtils.newSet(split);
-                if (method.stream().anyMatch(m -> m.equals("*"))) {
-                    this.methods = CollectionUtils.newSet(
-                            Arrays.stream(HttpMethod.values())
-                                    .map(Enum::name)
-                                    .toArray(String[]::new)
-                    );
-                } else {
-                    this.methods = CollectionUtils.newSet(split);
-                }
+                this.methods = Arrays.stream(Arrays.copyOf(split, split.length - 1))
+                        .map(String::toUpperCase)
+                        .map(this::mtsFn)
+                        .flatMap(Arrays::stream)
+                        .collect(Collectors.toSet());
             } else {
                 this.pattern = split[0];
                 this.methods = CollectionUtils.newSet("GET");
             }
 
+        }
+
+        public String[] mtsFn(String mts) {
+            if (mts.equals("*")) return Constants.METHODS;
+            else return new String[]{mts};
         }
 
         public void mergeMethods(AssociatedPattern other) {

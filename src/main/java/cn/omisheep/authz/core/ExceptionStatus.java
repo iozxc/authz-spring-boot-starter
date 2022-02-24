@@ -10,18 +10,19 @@ import static org.springframework.http.HttpStatus.*;
  * @since 1.0.0
  */
 public enum ExceptionStatus {
-    UNKNOWN(-1, "unknown", INTERNAL_SERVER_ERROR),
+    UNKNOWN(100, "unknown", INTERNAL_SERVER_ERROR),
 
-    MISMATCHED_URL(-2, "URL matching failed", NOT_FOUND),
+    MISMATCHED_URL(201, "URL matching failed", NOT_FOUND),
 
-    ACCESS_TOKEN_OVERDUE(2, "AccessToken overdue"),
-    REQUIRE_LOGIN(-1, "Require login"),
-    PERM_EXCEPTION(-2, "Insufficient permissions"),
-    REQUEST_REPEAT(-3, "Request repeat error"),
-    TOKEN_EXCEPTION(-6, "Token exception"),
-    LOGIN_EXCEPTION(-7, "You are offline, or you may have logged in elsewhere"),
+    ACCESS_TOKEN_OVERDUE(301, "AccessToken overdue", NETWORK_AUTHENTICATION_REQUIRED),
+    REQUIRE_LOGIN(302, "Require login", NETWORK_AUTHENTICATION_REQUIRED),
+    PERM_EXCEPTION(303, "Insufficient permissions", NETWORK_AUTHENTICATION_REQUIRED),
 
-    CONTENT_TYPE_ERROR(-10, "Content type not supported, must be json", INTERNAL_SERVER_ERROR);
+    TOKEN_EXCEPTION(401, "Token exception", FORBIDDEN),
+    REQUEST_REPEAT(402, "Request repeat error", FORBIDDEN),
+    LOGIN_EXCEPTION(403, "You are offline, or you may have logged in elsewhere", FORBIDDEN),
+
+    CONTENT_TYPE_ERROR(501, "Content type not supported, must be json", INTERNAL_SERVER_ERROR);
 
     private final int code;
     private final String message;

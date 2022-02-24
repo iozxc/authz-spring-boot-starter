@@ -17,4 +17,6 @@ public interface Constants {
     String BLANK = " ";
     String WILDCARD = "*";
     String CRLF = "\n";
+
+    String[] METHODS = {"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE"};
 }
