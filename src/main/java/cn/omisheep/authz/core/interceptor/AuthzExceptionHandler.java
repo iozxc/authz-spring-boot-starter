@@ -1,7 +1,6 @@
 package cn.omisheep.authz.core.interceptor;
 
 import cn.omisheep.authz.core.AuthzException;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -19,5 +18,5 @@ public interface AuthzExceptionHandler {
      * @return 是否继续通过
      * @throws Exception 抛出异常
      */
-    boolean handle(HttpServletRequest request, HttpServletResponse response, @NonNull AuthzException exception) throws Exception;
+    boolean handle(HttpServletRequest request, HttpServletResponse response, AuthzException exception) throws Exception;
 }

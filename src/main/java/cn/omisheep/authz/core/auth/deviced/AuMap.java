@@ -1,11 +1,13 @@
 package cn.omisheep.authz.core.auth.deviced;
 
+import com.google.common.base.Objects;
+
 import java.util.*;
 
 /**
- * qq: 1269670415
- *
- * @author zhou xin chen
+ * @author zhouxinchen[1269670415@qq.com]
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public class AuMap implements Map<Object, Object> {
 
@@ -86,7 +88,7 @@ public class AuMap implements Map<Object, Object> {
 
     @SuppressWarnings("NullableProblems")
     @Override
-    public void putAll(Map<? extends Object, ? extends Object> m) {
+    public void putAll(Map<?, ?> m) {
         if (m == null) {
             return;
         }
@@ -126,7 +128,10 @@ public class AuMap implements Map<Object, Object> {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return map.equals(obj);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof AuMap)) return false;
+        AuMap auMap = (AuMap) o;
+        return Objects.equal(map, auMap.map);
     }
 }

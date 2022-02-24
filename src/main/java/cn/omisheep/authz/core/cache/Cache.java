@@ -18,7 +18,8 @@ import static cn.omisheep.commons.util.Utils.castValue;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
- * @since 2022-02-01
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @SuppressWarnings({"rawtypes,", "uncheked", "unused"})
 public interface Cache {
@@ -130,7 +131,11 @@ public interface Cache {
         return keys(pattern);
     }
 
-    boolean hasKey(String key);
+    /**
+     * @param key key
+     * @return 如果没有这个key，返回true
+     */
+    boolean notKey(String key);
 
     /**
      * 获取key的过期时间。如果key存在过期时间，返回剩余生存时间(秒)；

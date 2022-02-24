@@ -175,7 +175,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         Token accessToken = tokenPair.getAccessToken();
         Object userId = accessToken.getUserId();
         String rfKey = rfKey(userId, tokenPair);
-        if (!cache.hasKey(rfKey)) return false;
+        if (cache.notKey(rfKey)) return false;
 
         Set<String> accessInfoKeys = cache.keysAndLoad(acKey(userId, Constants.WILDCARD));
         String k = null;

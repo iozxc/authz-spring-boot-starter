@@ -5,7 +5,8 @@ import cn.omisheep.authz.core.util.LogUtils;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
- * @since 2022-02-02
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @SuppressWarnings("all")
 public class MessageReceive {

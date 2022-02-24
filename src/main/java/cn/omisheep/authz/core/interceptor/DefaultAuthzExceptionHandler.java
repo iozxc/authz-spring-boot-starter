@@ -4,7 +4,6 @@ import cn.omisheep.authz.core.AuthzException;
 import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.commons.util.HttpUtils;
 import cn.omisheep.commons.web.entity.Result;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -16,14 +15,11 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class DefaultAuthzExceptionHandler implements AuthzExceptionHandler {
     @Override
-    public boolean handle(HttpServletRequest request, HttpServletResponse response, @NonNull AuthzException exception) throws Exception {
+    public boolean handle(HttpServletRequest request, HttpServletResponse response, AuthzException exception) throws Exception {
         ExceptionStatus exceptionStatus = exception.getExceptionStatus();
 
         HttpUtils.returnResponse(exceptionStatus.getHttpStatus(),
                 Result.of(exceptionStatus.getCode(), exceptionStatus.getMessage()));
-//        RequestExceptionStatus exceptionStatus = exception.getExceptionStatus();
-//        ExceptionStatus exceptionStatus = exception.getExceptionStatus();
-//        System.out.println(exceptionStatus.getMsg());
         return false;
     }
 }

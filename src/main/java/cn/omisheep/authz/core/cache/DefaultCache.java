@@ -16,6 +16,8 @@ import static cn.omisheep.commons.util.Utils.castValue;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @SuppressWarnings({"rawtypes"})
 public class DefaultCache implements cn.omisheep.authz.core.cache.Cache {
@@ -37,13 +39,6 @@ public class DefaultCache implements cn.omisheep.authz.core.cache.Cache {
         }
     }
 
-    public DefaultCache(String time) {
-        cache = Caffeine.newBuilder()
-                .scheduler(Scheduler.systemScheduler())
-                .expireAfter(new CacheExpiry(TimeUtils.parseTimeValue(time), TimeUnit.MILLISECONDS))
-                .build();
-    }
-
     public DefaultCache() {
         cache = Caffeine.newBuilder()
                 .scheduler(Scheduler.systemScheduler())
@@ -59,8 +54,8 @@ public class DefaultCache implements cn.omisheep.authz.core.cache.Cache {
     }
 
     @Override
-    public boolean hasKey(String key) {
-        return cache.getIfPresent(key) != null;
+    public boolean notKey(String key) {
+        return cache.getIfPresent(key) == null;
     }
 
     @Override

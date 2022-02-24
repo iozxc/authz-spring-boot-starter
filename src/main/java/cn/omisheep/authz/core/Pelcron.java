@@ -9,7 +9,9 @@ import cn.omisheep.authz.core.util.LogUtils;
  * device删除器，（惰性删除策略和定期删除策略）
  * 定期GC
  *
- * @author zhou xin chen
+ * @author zhouxinchen[1269670415@qq.com]
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public class Pelcron {
 

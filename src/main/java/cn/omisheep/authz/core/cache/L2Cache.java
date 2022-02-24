@@ -21,18 +21,17 @@ import java.util.concurrent.TimeUnit;
 import static cn.omisheep.commons.util.Utils.castValue;
 
 /**
- * Injected into the Spring container
- *
  * @author zhouxinchen[1269670415@qq.com]
- * @since 2022-02-01
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 @Slf4j
-public class DoubleDeckCache implements Cache {
+public class L2Cache implements Cache {
 
     final LoadingCache<String, CacheItem> cache;
 
-    public DoubleDeckCache(AuthzProperties properties) {
+    public L2Cache(AuthzProperties properties) {
         Caffeine<String, CacheItem> caffeine = Caffeine.newBuilder()
                 .scheduler(Scheduler.systemScheduler())
                 .expireAfter(new CacheExpiry(TimeUtils.parseTimeValue(properties.getCache().getExpireAfterReadOrUpdateTime()), TimeUnit.MILLISECONDS));
@@ -93,8 +92,8 @@ public class DoubleDeckCache implements Cache {
     }
 
     @Override
-    public boolean hasKey(String key) {
-        return key != null && cache.get(key) != null;
+    public boolean notKey(String key) {
+        return key == null || cache.get(key) == null;
     }
 
     @Override

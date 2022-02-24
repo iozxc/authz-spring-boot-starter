@@ -3,8 +3,8 @@ package cn.omisheep.authz.core.interceptor;
 
 import cn.omisheep.authz.annotation.Decrypt;
 import cn.omisheep.authz.core.auth.AuKey;
-import cn.omisheep.authz.core.auth.AuRsa;
 import cn.omisheep.authz.core.util.AUtils;
+import cn.omisheep.commons.util.RsaHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpHeaders;
@@ -68,7 +68,7 @@ public class DecryptRequestBodyAdvice implements RequestBodyAdvice {
                     .lines().collect(Collectors.joining(System.lineSeparator()));
 
             // 将原本的json整个加密，然后再放到一个空对象中，请勿直接传递加密的数据
-            String decrypt = AuRsa.decrypt(AUtils.parse_RSA_JSON(content), privateKey);
+            String decrypt = RsaHelper.decrypt(AUtils.parse_RSA_JSON(content), privateKey);
             if (decrypt == null) {
                 decrypt = "{}";
             }

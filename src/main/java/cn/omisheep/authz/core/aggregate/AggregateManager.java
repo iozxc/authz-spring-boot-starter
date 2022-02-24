@@ -21,9 +21,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 /**
- * qq: 1269670415
- *
- * @author zhou xin chen
+ * @author zhouxinchen[1269670415@qq.com]
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Aspect
 @Slf4j
@@ -36,9 +36,7 @@ public class AggregateManager {
     private static final HashMap<StatisticalType, ConcurrentHashMap<String, Object>> cmp = new HashMap<>();
 
     static {
-        Arrays.stream(StatisticalType.values()).forEach(type -> {
-            cmp.put(type, new ConcurrentHashMap<>());
-        });
+        Arrays.stream(StatisticalType.values()).forEach(type -> cmp.put(type, new ConcurrentHashMap<>()));
     }
 
     @Pointcut("@annotation(cn.omisheep.authz.annotation.Aggregate)")
@@ -101,6 +99,7 @@ public class AggregateManager {
     public void pv(HttpMeta httpMeta, String scope) {
         long d = (long) cmp.get(StatisticalType.PV).computeIfAbsent(scope, k -> 0L);
         d += 1;
+        System.out.println(d);
     }
 
 

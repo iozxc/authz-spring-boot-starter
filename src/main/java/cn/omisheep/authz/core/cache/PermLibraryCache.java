@@ -8,7 +8,8 @@ import org.aspectj.lang.reflect.MethodSignature;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
- * @since 2022-02-03
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Aspect
 @Slf4j
@@ -46,7 +47,7 @@ public class PermLibraryCache {
     private Object handle(String key, ProceedingJoinPoint joinPoint) throws Throwable {
         Object o = cache.get(key);
         if (o != null) return o;
-        if (!cache.hasKey(key)) {
+        if (cache.notKey(key)) {
             Object result = joinPoint.proceed();
             cache.set(key, result);
             return result;

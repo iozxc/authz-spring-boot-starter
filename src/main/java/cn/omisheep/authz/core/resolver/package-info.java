@@ -5,7 +5,7 @@
  */
 @NonNullApi
 @NonNullFields
-package cn.omisheep.authz.core.interceptor;
+package cn.omisheep.authz.core.resolver;
 
 import org.springframework.lang.NonNullApi;
 import org.springframework.lang.NonNullFields;

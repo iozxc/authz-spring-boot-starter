@@ -12,9 +12,9 @@ import java.io.Serializable;
  * 特别的
  * 只能查看近24小时内的 时 和 分
  * <p>
- * qq: 1269670415
- *
- * @author zhou xin chen
+ * @author zhouxinchen[1269670415@qq.com]
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Data
 public class Details implements Serializable {

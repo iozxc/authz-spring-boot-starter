@@ -96,7 +96,7 @@ public class AuthzAutoConfiguration {
         @Bean
         public Cache cache(AuthzProperties properties) {
             if (properties.getCache().isEnableRedis()) {
-                return new DoubleDeckCache(properties);
+                return new L2Cache(properties);
             } else {
                 return new DefaultCache(properties.getCache().getCacheMaximumSize(), properties.getCache().getExpireAfterReadOrUpdateTime());
             }
