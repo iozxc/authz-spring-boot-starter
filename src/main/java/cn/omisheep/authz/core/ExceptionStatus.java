@@ -12,25 +12,21 @@ import static org.springframework.http.HttpStatus.*;
 public enum ExceptionStatus {
     UNKNOWN(100, "unknown", INTERNAL_SERVER_ERROR),
 
-    MISMATCHED_URL(201, "URL matching failed", NOT_FOUND),
+    MISMATCHED_URL(200, "URL matching failed", NOT_FOUND),
 
-    ACCESS_TOKEN_OVERDUE(301, "AccessToken overdue", NETWORK_AUTHENTICATION_REQUIRED),
-    REQUIRE_LOGIN(302, "Require login", NETWORK_AUTHENTICATION_REQUIRED),
-    PERM_EXCEPTION(303, "Insufficient permissions", NETWORK_AUTHENTICATION_REQUIRED),
+    ACCESS_TOKEN_OVERDUE(300, "AccessToken overdue", NETWORK_AUTHENTICATION_REQUIRED),
+    REQUIRE_LOGIN(301, "Require login", NETWORK_AUTHENTICATION_REQUIRED),
+    PERM_EXCEPTION(302, "Insufficient permissions", NETWORK_AUTHENTICATION_REQUIRED),
 
-    TOKEN_EXCEPTION(401, "Token exception", FORBIDDEN),
-    REQUEST_REPEAT(402, "Request repeat error", FORBIDDEN),
-    LOGIN_EXCEPTION(403, "You are offline, or you may have logged in elsewhere", FORBIDDEN),
+    TOKEN_EXCEPTION(400, "Token exception", FORBIDDEN),
+    REQUEST_REPEAT(401, "Request repeat error", TOO_MANY_REQUESTS),
+    LOGIN_EXCEPTION(402, "You are offline, or you may have logged in elsewhere", FORBIDDEN),
 
-    CONTENT_TYPE_ERROR(501, "Content type not supported, must be json", INTERNAL_SERVER_ERROR);
+    CONTENT_TYPE_ERROR(500, "Content type not supported, must be json", INTERNAL_SERVER_ERROR);
 
     private final int code;
     private final String message;
     private final HttpStatus httpStatus;
-
-    ExceptionStatus(int code, String message) {
-        this(code, message, INTERNAL_SERVER_ERROR);
-    }
 
     ExceptionStatus(int code, String message, HttpStatus httpStatus) {
         this.code = code;
