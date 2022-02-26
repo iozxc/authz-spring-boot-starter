@@ -8,7 +8,6 @@ import java.util.Date;
  * @since 1.0.0
  */
 public class AccessInfo extends AuMap {
-
     public static final String EXPIRATION = "aex";
 
     public static final String REFRESH_TOKEN_ID = "rtid";

@@ -398,12 +398,12 @@ public class UserDevicesDictByCache implements UserDevicesDict {
             HttpMeta currentHttpMeta = AUtils.getCurrentHttpMeta();
             Token token = currentHttpMeta.getToken();
             String acKey = acKey(token.getUserId(), token.getTokenId());
-            Object o = cache.get(acKey);  //1434
+            Object o = cache.get(acKey);
             if (o == null) return;
             String rtid = ((AccessInfo) o).getRefreshTokenId();
             if (rtid != null) {
                 String rfKey = rfKey(token.getUserId(), rtid);
-                Device device = (Device) cache.get(rfKey); // 538
+                Device device = (Device) cache.get(rfKey);
                 if (!device.isEmpty()) {
                     device.setIp(currentHttpMeta.getIp());
                     device.setLastRequestTime(TimeUtils.now());

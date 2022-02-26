@@ -10,7 +10,6 @@ import java.util.*;
  * @since 1.0.0
  */
 public class AuMap implements Map<Object, Object> {
-
     private final Map<Object, Object> map;
 
     public AuMap() {

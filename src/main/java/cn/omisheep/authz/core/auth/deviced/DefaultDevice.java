@@ -2,7 +2,6 @@ package cn.omisheep.authz.core.auth.deviced;
 
 
 import java.util.Date;
-import java.util.Map;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -10,15 +9,10 @@ import java.util.Map;
  * @since 1.0.0
  */
 public class DefaultDevice extends AuMap implements Device {
-
     private static final long serialVersionUID = 3561879223319144385L;
 
     public DefaultDevice() {
         super();
-    }
-
-    public DefaultDevice(Map<Object, Object> map) {
-        super(map);
     }
 
     @Override
@@ -42,6 +36,7 @@ public class DefaultDevice extends AuMap implements Device {
         setValue(ID, id);
         return this;
     }
+
 
     @Override
     public Date getLastRequestTime() {

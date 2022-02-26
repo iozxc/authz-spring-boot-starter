@@ -8,9 +8,9 @@ import java.util.Date;
  * @since 1.0.0
  */
 public class RefreshInfo extends DefaultDevice {
+    private static final long serialVersionUID = 630388187461710252L;
 
     public static final String EXPIRATION = "rex";
-    private static final long serialVersionUID = 630388187461710252L;
 
     public RefreshInfo() {
         super();
