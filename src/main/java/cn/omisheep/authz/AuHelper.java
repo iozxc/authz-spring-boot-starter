@@ -124,10 +124,12 @@ public class AuHelper {
     // *************************************     api权限、rate-limit 自定义      ************************************* //
 
     /**
-     * 可使用{@link org.springframework.web.bind.annotation.RequestBody}获得，或者new
+     * 可使用{@link org.springframework.web.bind.annotation.RequestBody}获得，或者new {@link PermRolesMeta.Vo#Vo()}
      * <p>
-     * 支持四种操作
-     * ADD,DELETE,MODIFY,GET （可小写）
+     *
+     * 必须要的三个字段：{@code operate, method, api}
+     * <p>
+     * operate 支持四种操作: ADD, DELETE, MODIFY, GET （可小写）
      * <p>
      * example ：
      * <pre>
@@ -147,30 +149,7 @@ public class AuHelper {
      * @return 操作之后的结果
      */
     public static PermRolesMeta operatePermRolesMeta(PermRolesMeta.Vo permRolesMetaVo) {
-        try {
-            switch (permRolesMetaVo.getOperate()) {
-                case ADD:
-                    return permissionDict.getAuthzMetadata().get(permRolesMetaVo.getMethod()).put(permRolesMetaVo.getApi(), permRolesMetaVo.build());
-                case MODIFY:
-                    return permissionDict.getAuthzMetadata().get(permRolesMetaVo.getMethod()).get(permRolesMetaVo.getApi()).merge(permRolesMetaVo.build());
-                case DELETE:
-                    return permissionDict.getAuthzMetadata().get(permRolesMetaVo.getMethod()).remove(permRolesMetaVo.getApi());
-                case GET:
-                    return permissionDict.getAuthzMetadata().get(permRolesMetaVo.getMethod()).get(permRolesMetaVo.getApi());
-                default:
-                    return null;
-            }
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    public static PermRolesMeta getPermRolesMeta(String method, String api) {
-        try {
-            return permissionDict.getAuthzMetadata().get(method.toUpperCase(Locale.ROOT)).remove(api);
-        } catch (Exception e) {
-            return null;
-        }
+        return permissionDict.modify(permRolesMetaVo);
     }
 
     // **************************************     缓存      ************************************** //

@@ -110,7 +110,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
     private void initPermissionDict(ApplicationContext applicationContext, Map<RequestMappingInfo, HandlerMethod> mapRet) {
         PermissionDict.setPermSeparator(properties.getPermSeparator());
         Set<String> roles = new HashSet<>();
-        Map<String, Map<String, PermRolesMeta>> authzMetadata = permissionDict.getAuthzMetadata();
+        HashMap<String, Map<String, PermRolesMeta>> authzMetadata = new HashMap<>();
         Map<String, PermRolesMeta> pMap = new HashMap<>();
         Map<String, PermRolesMeta> rMap = new HashMap<>();
         applicationContext.getBeansWithAnnotation(Perms.class).forEach((key, value) -> {
@@ -173,6 +173,11 @@ public class AuCoreInitialization implements ApplicationContextAware {
             }
         });
 
+        try {
+            permissionDict.init(authzMetadata);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
 
         Async.run(() -> {
             List<String> collect = roles.stream().collect(Collectors.toList());
