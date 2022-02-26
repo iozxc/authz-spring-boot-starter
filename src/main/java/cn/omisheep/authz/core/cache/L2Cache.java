@@ -92,6 +92,7 @@ public class L2Cache implements Cache {
     }
 
     @Override
+    @NonNull
     public Set<String> keys(String pattern) {
         CacheItem cacheItem = cache.asMap().get(pattern);
         if (cacheItem != null) return (Set<String>) cacheItem.value;
@@ -102,6 +103,7 @@ public class L2Cache implements Cache {
     }
 
     @Override
+    @NonNull
     public Set<String> keysAndLoad(String pattern) {
         Set<String> keys = keys(pattern);
         cache.getAll(keys);
@@ -147,9 +149,21 @@ public class L2Cache implements Cache {
      */
     @Override
     public <E> E set(String key, E element, long ttl) {
+        E e = setSneaky(key, element, ttl);
+        RedisUtils.publish(Cache.CHANNEL, Message.write(key));
+        return e;
+    }
+
+    @Override
+    public <E> void setSneaky(String key, E element, long number, TimeUnit unit) {
+        setSneaky(key, element, unit.toSeconds(number));
+    }
+
+    @Override
+    public <E> E setSneaky(String key, E element, long ttl) {
         if (ttl == 0) return element;
         try {
-            if (ttl == -1) {
+            if (ttl == Cache.INHERIT) {
                 RedisUtils.Obj.update(key, element);
             } else {
                 if (ttl == Cache.INFINITE) {
@@ -163,7 +177,6 @@ public class L2Cache implements Cache {
         } finally {
             cache.put(key, new CacheItem(ttl, element));
         }
-        RedisUtils.publish(Cache.CHANNEL, Message.write(key));
         return element;
     }
 

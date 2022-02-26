@@ -12,8 +12,6 @@ import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.commons.util.TimeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -46,10 +44,11 @@ public class UserDevicesDictByCache implements UserDevicesDict {
 
         boolean hasTargetDeviceInfo = false;
         if (!refreshInfoKeys.isEmpty()) {
-            hasTargetDeviceInfo = refreshInfoKeys.stream().anyMatch(rfKey -> {
-                Device deviceInfo = (Device) cache.get(rfKey);
-                return equalsDeviceByTypeAndId(deviceInfo, deviceType, deviceId);
-            });
+            hasTargetDeviceInfo = refreshInfoKeys.stream()
+                    .anyMatch(rfKey -> {
+                        Device deviceInfo = (Device) cache.get(rfKey);
+                        return equalsDeviceByTypeAndId(deviceInfo, deviceType, deviceId);
+                    });
         }
 
         if (!hasTargetDeviceInfo) return REQUIRE_LOGIN;
@@ -61,11 +60,12 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         }
 
         // 于登录设备同类型，同ID的设备acID
-        String acKey = accessInfoKeys.stream().filter(key -> {
-            AccessInfo accessInfo = (AccessInfo) cache.get(key);
-            if (accessInfo == null) return true;
-            return equalsDeviceByTypeAndId((Device) cache.get(rfKey(userId, accessInfo.getRefreshTokenId())), deviceType, deviceId);
-        }).findFirst().orElse(null);
+        String acKey = accessInfoKeys.stream()
+                .filter(key -> {
+                    AccessInfo accessInfo = (AccessInfo) cache.get(key);
+                    if (accessInfo == null) return true;
+                    return equalsDeviceByTypeAndId((Device) cache.get(rfKey(userId, accessInfo.getRefreshTokenId())), deviceType, deviceId);
+                }).findFirst().orElse(null);
 
         if (acKey == null) { // 如果没有这个设备
             if (!isSupportMultiDevice) { // 如果不允许多设备登录，说明现在存在其他设备。
@@ -83,12 +83,16 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     @Override
-    public boolean addUser(Object userId, TokenPair tokenPair, Device device) {
+    public boolean addUser(Object userId, TokenPair tokenPair, String deviceType, String deviceId, HttpMeta httpMeta) {
         Set<String> accessInfoKeys = new HashSet<>();
         Set<String> refreshInfoKeys = new HashSet<>();
+        DefaultDevice device = new DefaultDevice();
+        device.setType(deviceType).setId(deviceId).setLastRequestTime(TimeUtils.now()).setIp(httpMeta.getIp());
 
-        Async.combine(() -> accessInfoKeys.addAll(cache.keysAndLoad(acKey(userId, Constants.WILDCARD)))
-                , () -> refreshInfoKeys.addAll(cache.keysAndLoad(rfKey(userId, Constants.WILDCARD)))).join();
+        Async.combine(
+                () -> accessInfoKeys.addAll(cache.keysAndLoad(acKey(userId, Constants.WILDCARD))),
+                () -> refreshInfoKeys.addAll(cache.keysAndLoad(rfKey(userId, Constants.WILDCARD)))
+        ).join();
 
         Set<String> delKeys = new HashSet<>();
         if (!isSupportMultiDevice) {
@@ -100,52 +104,44 @@ public class UserDevicesDictByCache implements UserDevicesDict {
                     AccessInfo accessInfo = (AccessInfo) cache.get(key);
                     if (accessInfo == null) return true;
                     String rtid = accessInfo.getRefreshTokenId();
-                    if (rtid != null) {
-                        String rfKey = rfKey(userId, rtid);
-                        Device deviceInfo = (Device) cache.get(rfKey);
-                        if (deviceInfo == null || equalsDeviceByTypeOrId(deviceInfo, device)) {
-                            delKeys.add(key);
-                            delKeys.add(rfKey);
-                            refreshInfoKeys.remove(rfKey);
-                            return true;
-                        }
-                    }
-                    return false;
+                    if (rtid == null) return false;
+                    String rfKey = rfKey(userId, rtid);
+                    Device deviceInfo = (Device) cache.get(rfKey);
+                    if (deviceInfo != null && !equalsDeviceByTypeOrId(deviceInfo, device)) return false;
+                    delKeys.add(key);
+                    delKeys.add(rfKey);
+                    refreshInfoKeys.remove(rfKey);
+                    return true;
                 });
 
                 refreshInfoKeys.removeIf(key -> {
                     Device deviceInfo = (Device) cache.get(key);
-                    if (deviceInfo == null || equalsDeviceByTypeOrId(deviceInfo, device)) {
-                        delKeys.add(key);
-                        return true;
-                    }
-                    return false;
+                    if (deviceInfo != null && !equalsDeviceByTypeOrId(deviceInfo, device)) return false;
+                    delKeys.add(key);
+                    delKeys.add(requestKey(userId, key));
+                    return true;
                 });
             } else {
                 accessInfoKeys.removeIf(key -> {
                     AccessInfo accessInfo = (AccessInfo) cache.get(key);
                     if (accessInfo == null) return true;
                     String rtid = accessInfo.getRefreshTokenId();
-                    if (rtid != null) {
-                        String rfKey = rfKey(userId, rtid);
-                        Device deviceInfo = (Device) cache.get(rfKey);
-                        if (deviceInfo == null || equalsDeviceById(deviceInfo, device)) {
-                            delKeys.add(key);
-                            delKeys.add(rfKey);
-                            refreshInfoKeys.remove(rfKey);
-                            return true;
-                        }
-                    }
-                    return false;
+                    if (rtid == null) return false;
+                    String rfKey = rfKey(userId, rtid);
+                    Device deviceInfo = (Device) cache.get(rfKey);
+                    if (deviceInfo != null && !equalsDeviceById(deviceInfo, device)) return false;
+                    delKeys.add(key);
+                    delKeys.add(rfKey);
+                    refreshInfoKeys.remove(rfKey);
+                    return true;
                 });
 
                 refreshInfoKeys.removeIf(key -> {
                     Device deviceInfo = (Device) cache.get(key);
-                    if (deviceInfo == null || equalsDeviceById(deviceInfo, device)) {
-                        delKeys.add(key);
-                        return true;
-                    }
-                    return false;
+                    if (deviceInfo != null && !equalsDeviceById(deviceInfo, device)) return false;
+                    delKeys.add(key);
+                    delKeys.add(requestKey(userId, key));
+                    return true;
                 });
             }
         }
@@ -155,16 +151,20 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         AccessInfo accessInfo = new AccessInfo().setRefreshTokenId(tokenPair.getRefreshToken().getTokenId());
         RefreshInfo refreshInfo = new RefreshInfo().setDevice(device);
 
+        long rfLiveTime = TimeUtils.parseTimeValueTotal(properties.getToken().getLiveTime(), properties.getToken().getRefreshTime(), "10s");
+
         Async.run(() -> {
+            cache.setSneaky(requestKeyByTokenId(userId, tokenPair.getRefreshToken().getTokenId()),
+                    RequestInfo.of(httpMeta),
+                    rfLiveTime, TimeUnit.MILLISECONDS);
             cache.del(acKey(userId, Constants.WILDCARD));
             cache.del(rfKey(userId, Constants.WILDCARD));
         });
 
-        long l = TimeUtils.parseTimeValueTotal(properties.getToken().getLiveTime(), properties.getToken().getRefreshTime(), "10s");
-        return Async.joinAndCheck(Async
-                .combine(
+        return Async.joinAndCheck(
+                Async.combine(
                         () -> cache.set(acKey(userId, tokenPair), accessInfo, properties.getToken().getLiveTime()),
-                        () -> cache.set(rfKey(userId, tokenPair), refreshInfo, l, TimeUnit.MILLISECONDS)
+                        () -> cache.set(rfKey(userId, tokenPair), refreshInfo, rfLiveTime, TimeUnit.MILLISECONDS)
                 )
         );
     }
@@ -177,9 +177,8 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         String rfKey = rfKey(userId, tokenPair);
         if (cache.notKey(rfKey)) return false;
 
-        Set<String> accessInfoKeys = cache.keysAndLoad(acKey(userId, Constants.WILDCARD));
         String k = null;
-        for (String key : accessInfoKeys) {
+        for (String key : cache.keysAndLoad(acKey(userId, Constants.WILDCARD))) {
             Device deviceInfo = getDeviceOe(userId, key);
             if (deviceInfo == null) continue;
             if (StringUtils.equals(accessToken.getDeviceType(), deviceInfo.getType())
@@ -190,28 +189,24 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         }
 
         if (k != null) cache.del(k);
-        Device de = (Device) cache.get(rfKey);
-        if (de != null) {
-            HttpMeta httpMeta = (HttpMeta) ((ServletRequestAttributes) (RequestContextHolder.currentRequestAttributes())).getRequest().getAttribute("AU_HTTP_META");
-            de.setIp(httpMeta.getIp());
-            de.setLastRequestTime(TimeUtils.now());
-            cache.set(rfKey, de);
-        }
+
         AccessInfo accessInfo = new AccessInfo().setRefreshTokenId(tokenPair.getRefreshToken().getTokenId());
+        Async.run(() -> {
+            cache.del(acKey(userId, Constants.WILDCARD));
+            cache.del(rfKey(userId, Constants.WILDCARD));
+        });
         cache.set(acKey(userId, tokenPair), accessInfo, properties.getToken().getLiveTime());
-        cache.del(acKey(userId, Constants.WILDCARD));
-        cache.del(rfKey(userId, Constants.WILDCARD));
         return true;
     }
 
     @Override
     public void removeAllDeviceByUserId(Object userId) {
-        Set<String> acKeys = cache.keys(acKey(userId, Constants.WILDCARD));
-        Set<String> rfKeys = cache.keys(rfKey(userId, Constants.WILDCARD));
-        cache.del(acKeys);
-        cache.del(rfKeys);
-        cache.del(acKey(userId, Constants.WILDCARD));
-        cache.del(rfKey(userId, Constants.WILDCARD));
+        HashSet<String> keys = new HashSet<>();
+        keys.addAll(cache.keys(acKey(userId, Constants.WILDCARD)));
+        keys.addAll(cache.keys(rfKey(userId, Constants.WILDCARD)));
+        keys.add(acKey(userId, Constants.WILDCARD));
+        keys.add(rfKey(userId, Constants.WILDCARD));
+        cache.del(keys);
     }
 
     @Override
@@ -224,8 +219,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
 
     @Override
     public void removeDeviceByUserIdAndAccessTokenId(Object userId, String accessTokenId) {
-        cache.del(acKey(userId, accessTokenId));
-        cache.del(acKey(userId, Constants.WILDCARD));
+        cache.del(acKey(userId, accessTokenId), acKey(userId, Constants.WILDCARD));
     }
 
     @Override
@@ -239,15 +233,15 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     private void removeUser(Object userId, String deviceId, String deviceType) {
         Set<String> acKeys = cache.keysAndLoad(acKey(userId, Constants.WILDCARD));
         Set<String> rfKeys = cache.keysAndLoad(rfKey(userId, Constants.WILDCARD));
-
-        cache.del(acKey(userId, Constants.WILDCARD));
-        cache.del(rfKey(userId, Constants.WILDCARD));
+        HashSet<String> keys = new HashSet<>();
+        keys.add(acKey(userId, Constants.WILDCARD));
+        keys.add(rfKey(userId, Constants.WILDCARD));
         if (deviceId != null) {
             acKeys.removeIf(acKey -> {
                 Device deviceOe = getDeviceOe(userId, acKey);
                 if (deviceOe != null) {
                     if (equalsDeviceById(deviceOe, deviceId)) {
-                        cache.del(acKey);
+                        keys.add(acKey);
                         return true;
                     } else {
                         return false;
@@ -259,7 +253,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
                 Device device = (Device) cache.get(rfKey);
                 if (!device.isEmpty()) {
                     if (equalsDeviceById(device, deviceId)) {
-                        cache.del(rfKey);
+                        keys.add(rfKey);
                         return true;
                     } else {
                         return false;
@@ -274,7 +268,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
                 Device deviceOe = getDeviceOe(userId, acKey);
                 if (deviceOe != null) {
                     if (equalsDeviceByType(deviceOe, deviceType)) {
-                        cache.del(acKey);
+                        keys.add(acKey);
                         return true;
                     } else {
                         return false;
@@ -286,7 +280,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
                 Device device = (Device) cache.get(rfKey);
                 if (!device.isEmpty()) {
                     if (equalsDeviceByType(device, deviceType)) {
-                        cache.del(rfKey);
+                        keys.add(rfKey);
                         return true;
                     } else {
                         return false;
@@ -295,6 +289,8 @@ public class UserDevicesDictByCache implements UserDevicesDict {
                 return true;
             });
         }
+
+        cache.del(keys);
     }
 
     private Device getDeviceOe(Object userId, String acKey) {
@@ -402,16 +398,19 @@ public class UserDevicesDictByCache implements UserDevicesDict {
             if (o == null) return;
             String rtid = ((AccessInfo) o).getRefreshTokenId();
             if (rtid != null) {
-                String rfKey = rfKey(token.getUserId(), rtid);
-                Device device = (Device) cache.get(rfKey);
-                if (!device.isEmpty()) {
-                    device.setIp(currentHttpMeta.getIp());
-                    device.setLastRequestTime(TimeUtils.now());
-                    cache.set(rfKey, device);
-                }
+                cache.setSneaky(requestKeyByTokenId(token.getUserId(), rtid),
+                        RequestInfo.of(currentHttpMeta), Cache.INHERIT);
             }
         } catch (Exception ignored) {
         }
+    }
+
+    private String requestKey(Object userId, String rfKey) {
+        return Constants.DEVICE_REQUEST_INFO_KEY_PREFIX + userId + Constants.SEPARATOR + rfKey.split(Constants.SEPARATOR)[3];
+    }
+
+    private String requestKeyByTokenId(Object userId, String tokenId) {
+        return Constants.DEVICE_REQUEST_INFO_KEY_PREFIX + userId + Constants.SEPARATOR + tokenId;
     }
 
     private String acKey(Object userId, String tokenId) {

@@ -2,7 +2,6 @@ package cn.omisheep.authz.core.auth.rpd;
 
 import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.auth.PermLibrary;
-import cn.omisheep.authz.core.auth.deviced.DefaultDevice;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.tk.Token;
@@ -10,11 +9,10 @@ import cn.omisheep.authz.core.tk.TokenHelper;
 import cn.omisheep.authz.core.tk.TokenPair;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.CollectionUtils;
+import cn.omisheep.commons.util.HttpUtils;
 import cn.omisheep.commons.util.TimeUtils;
 import io.jsonwebtoken.ExpiredJwtException;
 import lombok.SneakyThrows;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.HashSet;
@@ -50,15 +48,14 @@ public class AuthzDefender {
      */
     public TokenPair grant(Object userId, String deviceType, String deviceId) {
         TokenPair tokenPair = TokenHelper.createTokenPair(userId, deviceType, deviceId);
-        HttpServletResponse response = ((ServletRequestAttributes) (RequestContextHolder.currentRequestAttributes())).getResponse();
-        HttpMeta httpMeta = (HttpMeta) ((ServletRequestAttributes) (RequestContextHolder.currentRequestAttributes())).getRequest().getAttribute("AU_HTTP_META");
+
+        HttpServletResponse response = HttpUtils.getCurrentResponse();
+        HttpMeta httpMeta = (HttpMeta) HttpUtils.getCurrentRequest().getAttribute("AU_HTTP_META");
         if (response != null) {
             response.addCookie(TokenHelper.generateCookie(tokenPair.getAccessToken()));
         }
-        DefaultDevice device = new DefaultDevice();
-        device.setType(deviceType).setId(deviceId).setLastRequestTime(TimeUtils.now()).setIp(httpMeta.getIp());
         try {
-            if (userDevicesDict.addUser(userId, tokenPair, device)) return tokenPair;
+            if (userDevicesDict.addUser(userId, tokenPair, deviceType, deviceId, httpMeta)) return tokenPair;
             else return null;
         } catch (Exception e) {
             return null;
@@ -77,7 +74,7 @@ public class AuthzDefender {
         try {
             TokenPair tokenPair = TokenHelper.refreshToken(refreshToken);
             if (userDevicesDict.refreshUser(tokenPair)) {
-                HttpServletResponse response = ((ServletRequestAttributes) (RequestContextHolder.currentRequestAttributes())).getResponse();
+                HttpServletResponse response = HttpUtils.getCurrentResponse();
                 if (response != null) {
                     response.addCookie(TokenHelper.generateCookie(tokenPair.getAccessToken()));
                 }
@@ -148,7 +145,7 @@ public class AuthzDefender {
         if (!e1 || !e2) {
             long nowTime = TimeUtils.nowTime();
             roles = permLibrary.getRolesByUserId(accessToken.getUserId());
-            LogUtils.logDebug("permLibrary.getRolesByUserId({})  {}",accessToken.getUserId(), TimeUtils.diff(nowTime));
+            LogUtils.logDebug("permLibrary.getRolesByUserId({})  {}", accessToken.getUserId(), TimeUtils.diff(nowTime));
             if (!e1 && !CollectionUtils.containsSub(permRolesMeta.getRequireRoles(), roles) || !e2 && CollectionUtils.containsSub(permRolesMeta.getExcludeRoles(), roles)) {
                 logs("Forbid : permissions exception", httpMeta, permRolesMeta);
                 return ExceptionStatus.PERM_EXCEPTION;

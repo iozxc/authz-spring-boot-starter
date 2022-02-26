@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core.auth.deviced;
 
+import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.tk.TokenPair;
 
 /**
@@ -25,7 +26,7 @@ public interface UserDevicesDict {
      */
     int userStatus(Object userId, String deviceType, String deviceId, String accessTokenId);
 
-    boolean addUser(Object userId, TokenPair tokenPair, Device device);
+    boolean addUser(Object userId, TokenPair tokenPair, String deviceType, String deviceId, HttpMeta httpMeta);
 
     boolean refreshUser(TokenPair tokenPair);
 

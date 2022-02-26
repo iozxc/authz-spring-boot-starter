@@ -186,7 +186,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
             rolesPerms.forEach(perms -> map.put(iterator.next(), perms));
             map.forEach((role, v) -> {
                 Set<String> permissions = permLibrary.getPermissionsByRole(role);
-                cache.set("permissionsByRole:" + role, permissions, Cache.INFINITE);
+                cache.setSneaky(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX + role, permissions, Cache.INFINITE);
             });
         });
 

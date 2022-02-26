@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core.cache;
 
+import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.commons.util.TimeUtils;
 import com.github.benmanes.caffeine.cache.Expiry;
 import lombok.Getter;
@@ -8,9 +9,7 @@ import lombok.experimental.Accessors;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static cn.omisheep.commons.util.Utils.castValue;
@@ -120,7 +119,7 @@ public interface Cache {
      * @param pattern redis 风格的匹配
      * @return 匹配上的key
      */
-    Set<String> keys(String pattern);
+    @NonNull Set<String> keys(String pattern);
 
     /**
      * 返回匹配的key同时将对应的object加载进缓存
@@ -128,7 +127,7 @@ public interface Cache {
      * @param pattern redis 风格的匹配
      * @return 匹配上的key
      */
-    default Set<String> keysAndLoad(String pattern) {
+    @NonNull default Set<String> keysAndLoad(String pattern) {
         return keys(pattern);
     }
 
@@ -160,6 +159,17 @@ public interface Cache {
     <E> E set(String key, E element, long ttl);
 
     /**
+     * @param key     键
+     * @param element 值
+     * @param ttl     秒，为-1时将继承之前的key的ttl ,  {@link Cache#INFINITE} 为永久存在
+     * @param <E>     值的类型
+     * @return 所添加的值
+     */
+    default <E> E setSneaky(String key, E element, long ttl) {
+        return set(key, element, ttl);
+    }
+
+    /**
      * 注意，在这里添加缓存时，如果原key存在过期时间，当再次添加同key的值时，不会清空之前的ttl
      *
      * @param key     键
@@ -181,6 +191,17 @@ public interface Cache {
      */
     default <E> E set(String key, E element, long number, TimeUnit unit) {
         return set(key, element, unit.toSeconds(number));
+    }
+
+    /**
+     * @param key     键
+     * @param element 值
+     * @param number  存活的时间数值
+     * @param unit    存活的时间单位
+     * @param <E>     值的类型
+     */
+    default <E> void setSneaky(String key, E element, long number, TimeUnit unit) {
+        set(key, element, unit.toSeconds(number));
     }
 
     /**
@@ -237,6 +258,10 @@ public interface Cache {
      * @param keys keys
      */
     void del(Set<String> keys);
+
+    default void del(String... keys) {
+        del(CollectionUtils.newSet(keys));
+    }
 
     default Map<String, CacheItem> asMap() {
         return new HashMap<>();
