@@ -134,9 +134,9 @@ public class AuHelper {
      * {
      *     "operate": "modify",
      *     "method": "get",
-     *     "api": "/api/test/role-admin_or_zoc",
-     *     "requireRoles": ["zxc","zxc2"],
-     *     "excludeRoles": ["admin, sat","apple"],
+     *     "api": "/api/test/role-ada",
+     *     "requireRoles": ["admin","zxc"],
+     *     "excludeRoles": ["small-black,dog", cat","apple"],
      *     "requirePermissions": ["cur"]
      * }
      * </pre>
