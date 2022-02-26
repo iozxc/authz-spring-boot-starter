@@ -126,6 +126,9 @@ public class AuHelper {
     /**
      * 可使用{@link org.springframework.web.bind.annotation.RequestBody}获得，或者new
      * <p>
+     * 支持四种操作
+     * ADD,DELETE,MODIFY,GET （可小写）
+     * <p>
      * example ：
      * <pre>
      * {
@@ -137,7 +140,7 @@ public class AuHelper {
      *     "requirePermissions": ["cur"]
      * }
      * </pre>
-     *
+     * <p>
      * 缺失为不修改
      *
      * @param permRolesMetaVo permRolesMetaVo
