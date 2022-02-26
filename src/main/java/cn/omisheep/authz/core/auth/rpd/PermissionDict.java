@@ -1,8 +1,5 @@
 package cn.omisheep.authz.core.auth.rpd;
 
-import lombok.Getter;
-import lombok.Setter;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,14 +8,25 @@ import java.util.Map;
  * @version 1.0.0
  * @since 1.0.0
  */
-@Getter
 public class PermissionDict {
 
-    @Setter
-    private String permSeparator;
+    private static String permSeparator = ",";
 
     /**
      * 权限
      */
     private final Map<String, Map<String, PermRolesMeta>> authzMetadata = new HashMap<>();
+
+    public static String getPermSeparator() {
+        return permSeparator;
+    }
+
+    public static void setPermSeparator(String permSeparator) {
+        PermissionDict.permSeparator = permSeparator;
+    }
+
+    public Map<String, Map<String, PermRolesMeta>> getAuthzMetadata() {
+        return authzMetadata;
+    }
+
 }

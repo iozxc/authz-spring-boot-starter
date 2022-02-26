@@ -32,13 +32,7 @@ import static cn.omisheep.commons.util.Utils.castValue;
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class L2Cache implements Cache {
 
-    final LoadingCache<String, CacheItem> cache;
-
-    public static void main(String[] args) {
-
-        CacheItem<String> w = new CacheItem<>("w");
-        System.out.println(w);
-    }
+    private final LoadingCache<String, CacheItem> cache;
 
     public L2Cache(AuthzProperties properties) {
         Caffeine<String, CacheItem> caffeine = Caffeine.newBuilder()

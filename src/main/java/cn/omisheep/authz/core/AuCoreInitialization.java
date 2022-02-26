@@ -108,7 +108,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
 
     private void initPermissionDict(ApplicationContext applicationContext, Map<RequestMappingInfo, HandlerMethod> mapRet) {
-        permissionDict.setPermSeparator(properties.getPermSeparator());
+        PermissionDict.setPermSeparator(properties.getPermSeparator());
         Set<String> roles = new HashSet<>();
         Map<String, Map<String, PermRolesMeta>> authzMetadata = permissionDict.getAuthzMetadata();
         Map<String, PermRolesMeta> pMap = new HashMap<>();

@@ -4,6 +4,8 @@ package cn.omisheep.authz;
 import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
 import cn.omisheep.authz.core.auth.deviced.Device;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
+import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
+import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.tk.TokenPair;
 import cn.omisheep.authz.core.util.AUtils;
@@ -11,10 +13,7 @@ import cn.omisheep.commons.util.TimeUtils;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -122,6 +121,55 @@ public class AuHelper {
         return userDevicesDict.listDevicesByUserId(userId);
     }
 
+    // *************************************     api权限、rate-limit 自定义      ************************************* //
+
+    /**
+     * 可使用{@link org.springframework.web.bind.annotation.RequestBody}获得，或者new
+     * <p>
+     * example ：
+     * <pre>
+     * {
+     *     "operate": "modify",
+     *     "method": "get",
+     *     "api": "/api/test/role-admin_or_zoc",
+     *     "requireRoles": ["zxc","zxc2"],
+     *     "excludeRoles": ["admin, sat","apple"],
+     *     "requirePermissions": ["cur"]
+     * }
+     * </pre>
+     *
+     * 缺失为不修改
+     *
+     * @param permRolesMetaVo permRolesMetaVo
+     * @return 操作之后的结果
+     */
+    public static PermRolesMeta operatePermRolesMeta(PermRolesMeta.Vo permRolesMetaVo) {
+        try {
+            switch (permRolesMetaVo.getOperate()) {
+                case ADD:
+                    return permissionDict.getAuthzMetadata().get(permRolesMetaVo.getMethod()).put(permRolesMetaVo.getApi(), permRolesMetaVo.build());
+                case MODIFY:
+                    return permissionDict.getAuthzMetadata().get(permRolesMetaVo.getMethod()).get(permRolesMetaVo.getApi()).merge(permRolesMetaVo.build());
+                case DELETE:
+                    return permissionDict.getAuthzMetadata().get(permRolesMetaVo.getMethod()).remove(permRolesMetaVo.getApi());
+                case GET:
+                    return permissionDict.getAuthzMetadata().get(permRolesMetaVo.getMethod()).get(permRolesMetaVo.getApi());
+                default:
+                    return null;
+            }
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static PermRolesMeta getPermRolesMeta(String method, String api) {
+        try {
+            return permissionDict.getAuthzMetadata().get(method.toUpperCase(Locale.ROOT)).remove(api);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     // **************************************     缓存      ************************************** //
 
 
@@ -209,6 +257,7 @@ public class AuHelper {
 
     private static final AuthzDefender auDefender;
     private static final UserDevicesDict userDevicesDict;
+    private static final PermissionDict permissionDict;
     private static final Cache cache;
 
     private AuHelper() {
@@ -216,6 +265,7 @@ public class AuHelper {
 
     static {
         userDevicesDict = AUtils.getBean(UserDevicesDict.class);
+        permissionDict = AUtils.getBean(PermissionDict.class);
         auDefender = AUtils.getBean(AuthzDefender.class);
         cache = AUtils.getBean(Cache.class);
     }
