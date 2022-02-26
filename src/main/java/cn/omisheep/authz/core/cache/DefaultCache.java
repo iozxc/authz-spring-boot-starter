@@ -47,6 +47,7 @@ public class DefaultCache implements cn.omisheep.authz.core.cache.Cache {
     }
 
     @Override
+    @NonNull
     public Set<String> keys(String pattern) {
         if (pattern == null || pattern.equals(EMPTY)) return new HashSet<>();
         if (pattern.equals(ALL)) return cache.asMap().keySet();
