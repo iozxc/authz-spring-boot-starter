@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core.cache;
 
 import cn.omisheep.authz.core.AuthzProperties;
+import cn.omisheep.authz.core.Constants;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.authz.core.util.RedisUtils;
 import cn.omisheep.commons.util.Async;
@@ -10,7 +11,8 @@ import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.Scheduler;
-import lombok.extern.slf4j.Slf4j;
+import com.sun.javafx.collections.ObservableMapWrapper;
+import com.sun.javafx.collections.UnmodifiableObservableMap;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -21,15 +23,22 @@ import java.util.concurrent.TimeUnit;
 import static cn.omisheep.commons.util.Utils.castValue;
 
 /**
+ * Double Deck Cache
+ *
  * @author zhouxinchen[1269670415@qq.com]
  * @version 1.0.0
  * @since 1.0.0
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
-@Slf4j
 public class L2Cache implements Cache {
 
     final LoadingCache<String, CacheItem> cache;
+
+    public static void main(String[] args) {
+
+        CacheItem<String> w = new CacheItem<>("w");
+        System.out.println(w);
+    }
 
     public L2Cache(AuthzProperties properties) {
         Caffeine<String, CacheItem> caffeine = Caffeine.newBuilder()
@@ -43,9 +52,13 @@ public class L2Cache implements Cache {
             public @Nullable CacheItem load(@NonNull String key) {
                 Object o = RedisUtils.Obj.get(key); // cache中没有，加载redis
                 long ttl = RedisUtils.ttl(key);
+                boolean b = ttl != -2;
+                if (key.startsWith(Constants.USER_ROLES_KEY_PREFIX) || key.startsWith(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX)) {
+                    ttl = INFINITE;
+                }
                 if (o != null) { // redis中有 且值不为空
                     return new CacheItem(ttl, o);
-                } else if (ttl != -2) { // redis中有 但值为空
+                } else if (b) { // redis中有 但值为空
                     // 如果这个key存在，则说明 key->"" 而不是 key->nil
                     return new CacheItem(ttl, null);
                 }
@@ -62,9 +75,13 @@ public class L2Cache implements Cache {
                 for (Object o : objects) {
                     String key = iterator.next();
                     long ttl = RedisUtils.ttl(key);
+                    boolean b = ttl != -2;
+                    if (key.startsWith(Constants.USER_ROLES_KEY_PREFIX) || key.startsWith(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX)) {
+                        ttl = INFINITE;
+                    }
                     if (o != null) { // redis中有 且值不为空
                         map.put(key, new CacheItem(ttl, o));
-                    } else if (ttl != -2) { // redis中有 但值为空
+                    } else if (b) { // redis中有 但值为空
                         // 如果这个key存在，则说明 key->"" 而不是 key->nil
                         map.put(key, new CacheItem(ttl, null));
                     }
@@ -122,7 +139,6 @@ public class L2Cache implements Cache {
         return map;
     }
 
-
     /**
      * @param key     键
      * @param element 值
@@ -131,11 +147,16 @@ public class L2Cache implements Cache {
      */
     @Override
     public <E> E set(String key, E element, long ttl) {
+        if (ttl == 0) return element;
         try {
             if (ttl == -1) {
                 RedisUtils.Obj.update(key, element);
             } else {
-                RedisUtils.Obj.set(key, element, ttl);
+                if (ttl == Cache.INFINITE) {
+                    RedisUtils.Obj.set(key, element);
+                } else {
+                    RedisUtils.Obj.set(key, element, ttl);
+                }
             }
         } catch (Exception e) {
             LogUtils.logError("{}", e.getMessage());
@@ -175,19 +196,17 @@ public class L2Cache implements Cache {
 
     private void setSync(Message message) {
         Set<String> keys = message.getKeys();
-        if (keys.size() == 1) {
+        String pattern = message.getPattern();
+        if (pattern != null) {
+            cache.put(pattern, new CacheItem(keys));
+        } else {
             String key = CollectionUtils.resolveSingletonSet(keys);
             Object o = RedisUtils.Obj.get(key);
             long ttl = RedisUtils.ttl(key);
             if (ttl != -2) {
                 cache.put(key, new CacheItem(ttl, o));
             } else cache.invalidate(key);
-        } else if (keys.size() > 1) {
-            String pattern = message.getPattern();
-            if (pattern == null) return;
-            cache.put(pattern, new CacheItem(keys));
         }
-
     }
 
     private void delSync(Set<String> keys) {
@@ -204,5 +223,10 @@ public class L2Cache implements Cache {
             map.remove(key);
             map.put(key, item);
         }
+    }
+
+    @Override
+    public Map<String, CacheItem> asMap() {
+        return new UnmodifiableObservableMap<String, CacheItem>(new ObservableMapWrapper(cache.asMap()));
     }
 }

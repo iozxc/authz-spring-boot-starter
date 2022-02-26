@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core.cache;
 
+import cn.omisheep.authz.core.Constants;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -25,7 +26,7 @@ public class PermLibraryCache {
     public Object Before(ProceedingJoinPoint joinPoint) throws Throwable {
         Object[] args = joinPoint.getArgs();
         if (args.length != 1) return joinPoint.proceed();
-        return handle("userRoles:" + args[0], joinPoint);
+        return handle(Constants.USER_ROLES_KEY_PREFIX + args[0], joinPoint);
     }
 
     @Around("execution(* cn.omisheep.authz.core.auth.PermLibrary+.getPermissionsByRole(..))")
@@ -34,14 +35,7 @@ public class PermLibraryCache {
         MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
         Class<?>[] parameterTypes = methodSignature.getParameterTypes();
         if (parameterTypes.length != 1 || parameterTypes[0] != String.class) return joinPoint.proceed();
-        return handle("permissionsByRole:" + args[0], joinPoint);
-    }
-
-    @Around("execution(* cn.omisheep.authz.core.auth.PermLibrary+.getPermissionsByUserId(..))")
-    public Object Before3(ProceedingJoinPoint joinPoint) throws Throwable {
-        Object[] args = joinPoint.getArgs();
-        if (args.length != 1) return joinPoint.proceed();
-        return handle("permissionsByUserId:" + args[0], joinPoint);
+        return handle(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX + args[0], joinPoint);
     }
 
     private Object handle(String key, ProceedingJoinPoint joinPoint) throws Throwable {
@@ -49,7 +43,7 @@ public class PermLibraryCache {
         if (o != null) return o;
         if (cache.notKey(key)) {
             Object result = joinPoint.proceed();
-            cache.set(key, result);
+            cache.set(key, result, Cache.INFINITE);
             return result;
         }
         return null;

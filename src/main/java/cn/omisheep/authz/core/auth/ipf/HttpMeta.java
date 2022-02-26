@@ -10,6 +10,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Date;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -33,6 +34,11 @@ public class HttpMeta {
     private Token token;
     private TokenException tokenException;
     private boolean hasTokenCookie;
+    private Set<String> permissions;
+    private Set<String> roles;
+//    @JsonIgnore
+//    private CompletableFuture<Void> cfrps;
+
 
     public enum TokenException {
         ExpiredJwtException,

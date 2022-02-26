@@ -5,7 +5,6 @@ import cn.omisheep.authz.core.AuCoreInitialization;
 import cn.omisheep.authz.core.AuInit;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.aggregate.AggregateManager;
-import cn.omisheep.authz.core.auth.AuthzDefender;
 import cn.omisheep.authz.core.auth.DefaultPermLibrary;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
@@ -14,6 +13,7 @@ import cn.omisheep.authz.core.auth.deviced.UserDevicesDictByHashMap;
 import cn.omisheep.authz.core.auth.ipf.AuthzCookieFilter;
 import cn.omisheep.authz.core.auth.ipf.AuthzHttpFilter;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
+import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.cache.*;
 import cn.omisheep.authz.core.interceptor.*;
@@ -33,6 +33,7 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.data.redis.connection.RedisConnectionCommands;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisCallback;
@@ -42,6 +43,7 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
 
@@ -54,6 +56,7 @@ import org.springframework.web.client.RestTemplate;
 @EnableConfigurationProperties({AuthzProperties.class})
 @ConditionalOnClass(AuInit.class)
 @Import({AuInit.class})
+@SuppressWarnings("rawtypes")
 public class AuthzAutoConfiguration {
 
     @Configuration
@@ -93,7 +96,7 @@ public class AuthzAutoConfiguration {
             return template;
         }
 
-        @Bean
+        @Bean("authzCache")
         public Cache cache(AuthzProperties properties) {
             if (properties.getCache().isEnableRedis()) {
                 return new L2Cache(properties);
@@ -110,13 +113,31 @@ public class AuthzAutoConfiguration {
 
         @Bean("authzCacheMessageListenerAdapter")
         @ConditionalOnBean(value = MessageReceive.class, name = "authzCacheMessageReceive")
-        public MessageListenerAdapter listenerAdapter(@Qualifier("authzCacheMessageReceive") MessageReceive receiver) {
+        public MessageListenerAdapter authzCacheMessageListenerAdapter(@Qualifier("authzCacheMessageReceive") MessageReceive receiver) {
             return new MessageListenerAdapter(receiver);
         }
 
+        @Bean("authzRequestCacheMessageListenerAdapter")
+        @ConditionalOnBean(value = MessageReceive.class, name = "authzCacheMessageReceive")
+        public MessageListenerAdapter authzRequestCacheMessageListenerAdapter(@Qualifier("authzCacheMessageReceive") MessageReceive receiver) {
+            return new MessageListenerAdapter(receiver);
+        }
+
+        @Autowired
+        private void getApplicationId(ConfigurableEnvironment environment) {
+            String name = environment.getProperty("spring.application.name");
+            appName = StringUtils.hasText(name) ? name : "application";
+        }
+
+        private String appName;
+
         @Bean("auCacheRedisMessageListenerContainer")
         @ConditionalOnBean(value = MessageReceive.class, name = "authzCacheMessageReceive")
-        public RedisMessageListenerContainer container(@Qualifier("authzRedisTemplate") RedisTemplate redisTemplate, RedisConnectionFactory connectionFactory, @Qualifier("authzCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter) {
+        public RedisMessageListenerContainer container(@Qualifier("authzRedisTemplate") RedisTemplate redisTemplate,
+                                                       RedisConnectionFactory connectionFactory,
+                                                       @Qualifier("authzCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter1,
+                                                       @Qualifier("authzRequestCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter2
+        ) {
             try {
                 redisTemplate.execute((RedisCallback<Object>) RedisConnectionCommands::ping);
             } catch (Exception e) {
@@ -124,7 +145,8 @@ public class AuthzAutoConfiguration {
             }
             RedisMessageListenerContainer container = new RedisMessageListenerContainer();
             container.setConnectionFactory(connectionFactory);
-            container.addMessageListener(listenerAdapter, new PatternTopic(Cache.CHANNEL));
+            container.addMessageListener(listenerAdapter1, new PatternTopic(Cache.CHANNEL));
+            container.addMessageListener(listenerAdapter2, new PatternTopic("AU_CONTEXT_CLOUD_APP_ID:" + appName));
             container.setTopicSerializer(jackson2JsonRedisSerializer);
             return container;
         }
@@ -149,7 +171,7 @@ public class AuthzAutoConfiguration {
         @Bean
         @ConditionalOnMissingBean(PermLibrary.class)
         public PermLibrary<Object> permLibrary() {
-            return new AuthzDefaultPermLibrary();
+            return new DefaultPermLibrary();
         }
 
     }
@@ -180,13 +202,11 @@ public class AuthzAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    @SuppressWarnings("rawtypes")
     public PermLibrary permLibrary() {
         return new DefaultPermLibrary();
     }
 
     @Bean
-    @SuppressWarnings("rawtypes")
     public AuthzDefender auDefender(UserDevicesDict userDevicesDict, PermissionDict permissionDict, PermLibrary permLibrary) {
         return new AuthzDefender(userDevicesDict, permissionDict, permLibrary);
     }
@@ -213,9 +233,9 @@ public class AuthzAutoConfiguration {
     }
 
     @Bean("AuthzCookieFilter")
-    public FilterRegistrationBean<AuthzCookieFilter> filterRegistrationBean(UserDevicesDict userDevicesDict, AuthzProperties properties) {
+    public FilterRegistrationBean<AuthzCookieFilter> filterRegistrationBean(UserDevicesDict userDevicesDict, PermLibrary permLibrary, AuthzProperties properties) {
         FilterRegistrationBean<AuthzCookieFilter> registration = new FilterRegistrationBean<>();
-        registration.setFilter(new AuthzCookieFilter(userDevicesDict, properties));
+        registration.setFilter(new AuthzCookieFilter(userDevicesDict, permLibrary, properties));
         registration.addUrlPatterns("/*");
         registration.setName("authzCookieFilter");
         registration.setOrder(2);
@@ -223,8 +243,8 @@ public class AuthzAutoConfiguration {
     }
 
     @Bean
-    public AuCoreInitialization auCoreInitialization(AuthzProperties properties, Httpd httpd, UserDevicesDict userDevicesDict, PermissionDict permissionDict) {
-        return new AuCoreInitialization(properties, httpd, userDevicesDict, permissionDict);
+    public AuCoreInitialization auCoreInitialization(AuthzProperties properties, Httpd httpd, UserDevicesDict userDevicesDict, PermissionDict permissionDict, PermLibrary permLibrary, Cache cache) {
+        return new AuCoreInitialization(properties, httpd, userDevicesDict, permissionDict, permLibrary, cache);
     }
 
 }

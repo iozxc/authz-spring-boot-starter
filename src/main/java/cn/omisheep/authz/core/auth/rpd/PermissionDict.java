@@ -1,6 +1,5 @@
 package cn.omisheep.authz.core.auth.rpd;
 
-import cn.omisheep.authz.core.auth.PermRolesMeta;
 import lombok.Getter;
 import lombok.Setter;
 

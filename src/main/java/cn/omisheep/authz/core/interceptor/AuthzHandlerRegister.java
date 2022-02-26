@@ -1,6 +1,6 @@
 package cn.omisheep.authz.core.interceptor;
 
-import cn.omisheep.authz.core.auth.AuthzDefender;
+import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
 import cn.omisheep.authz.core.resolver.AuHttpMetaResolver;
 import cn.omisheep.authz.core.resolver.AuTokenOrHttpMetaResolver;
 import lombok.extern.slf4j.Slf4j;

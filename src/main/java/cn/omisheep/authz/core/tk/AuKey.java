@@ -1,4 +1,4 @@
-package cn.omisheep.authz.core.auth;
+package cn.omisheep.authz.core.tk;
 
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.RsaHelper;

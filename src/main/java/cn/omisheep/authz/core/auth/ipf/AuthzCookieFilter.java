@@ -2,6 +2,7 @@ package cn.omisheep.authz.core.auth.ipf;
 
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.Constants;
+import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.tk.TokenHelper;
@@ -30,11 +31,13 @@ public class AuthzCookieFilter extends OncePerRequestFilter {
     private final UserDevicesDict userDevicesDict;
     private final boolean isEnableRedis;
     private final String cookieName;
+    private final PermLibrary permLibrary;
 
-    public AuthzCookieFilter(UserDevicesDict userDevicesDict, AuthzProperties properties) {
+    public AuthzCookieFilter(UserDevicesDict userDevicesDict, PermLibrary permLibrary, AuthzProperties properties) {
         this.userDevicesDict = userDevicesDict;
         this.isEnableRedis = properties.getCache().isEnableRedis();
         this.cookieName = properties.getCookieName();
+        this.permLibrary = permLibrary;
     }
 
     @Override

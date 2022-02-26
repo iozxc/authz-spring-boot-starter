@@ -49,6 +49,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
         String method = request.getMethod();
 
         String api = execLimit(ip, uri, method);
+
         if (api == null) {
             filterChain.doFilter(request, response);
             return;

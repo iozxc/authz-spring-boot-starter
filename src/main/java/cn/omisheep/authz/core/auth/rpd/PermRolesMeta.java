@@ -1,4 +1,4 @@
-package cn.omisheep.authz.core.auth;
+package cn.omisheep.authz.core.auth.rpd;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;

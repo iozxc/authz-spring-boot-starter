@@ -1,10 +1,10 @@
-package cn.omisheep.authz.core.auth;
+package cn.omisheep.authz.core.auth.rpd;
 
 import cn.omisheep.authz.core.ExceptionStatus;
+import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.DefaultDevice;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.tk.TokenHelper;
 import cn.omisheep.authz.core.tk.TokenPair;
@@ -17,7 +17,10 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletResponse;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.*;
 
@@ -139,11 +142,13 @@ public class AuthzDefender {
                 return ExceptionStatus.LOGIN_EXCEPTION;
         }
 
-        List<String> roles = null;
+        Set<String> roles = null;
         boolean e1 = CollectionUtils.isEmpty(permRolesMeta.getRequireRoles());
         boolean e2 = CollectionUtils.isEmpty(permRolesMeta.getExcludeRoles());
         if (!e1 || !e2) {
+            long nowTime = TimeUtils.nowTime();
             roles = permLibrary.getRolesByUserId(accessToken.getUserId());
+            LogUtils.logDebug("permLibrary.getRolesByUserId({})  {}",accessToken.getUserId(), TimeUtils.diff(nowTime));
             if (!e1 && !CollectionUtils.containsSub(permRolesMeta.getRequireRoles(), roles) || !e2 && CollectionUtils.containsSub(permRolesMeta.getExcludeRoles(), roles)) {
                 logs("Forbid : permissions exception", httpMeta, permRolesMeta);
                 return ExceptionStatus.PERM_EXCEPTION;
@@ -153,31 +158,27 @@ public class AuthzDefender {
         boolean e3 = CollectionUtils.isEmpty(permRolesMeta.getRequirePermissions());
         boolean e4 = CollectionUtils.isEmpty(permRolesMeta.getExcludePermissions());
         if (!e3 || !e4) {
-            List permissions = permLibrary.getPermissionsByUserId(accessToken.getUserId());
-            if (permissions != null) {
-                if (!e3 && !CollectionUtils.containsSub(permRolesMeta.getRequirePermissions(), permissions) || !e4 && CollectionUtils.containsSub(permRolesMeta.getExcludePermissions(), permissions)) {
+            if (e1 && e2) {
+                long nowTime = TimeUtils.nowTime();
+                roles = permLibrary.getRolesByUserId(accessToken.getUserId());
+                LogUtils.logDebug("e1 && e2 permLibrary.getRolesByUserId({})  {}", accessToken.getUserId(), TimeUtils.diff(nowTime));
+            }
+            HashSet<String> perms = new HashSet<>(); // 用户所拥有的权限
+            for (String role : Optional.of(roles).orElse(new HashSet<>())) {
+                long nowTime = TimeUtils.nowTime();
+                Set<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
+                LogUtils.logDebug("permLibrary.getPermissionsByRole({}) {}", role, TimeUtils.diff(nowTime));
+                if (permissionsByRole != null) {
+                    perms.addAll(permissionsByRole);
+                }
+                if (!e4 && CollectionUtils.containsSub(permRolesMeta.getExcludePermissions(), permissionsByRole)) {
                     logs("Forbid : permissions exception", httpMeta, permRolesMeta);
                     return ExceptionStatus.PERM_EXCEPTION;
                 }
-            } else {
-                if (e1 && e2) {
-                    roles = permLibrary.getRolesByUserId(accessToken.getUserId());
-                }
-                HashSet<String> perms = new HashSet<>(); // 用户所拥有的权限
-                for (String role : Optional.of(roles).orElse(new ArrayList<>())) {
-                    List permissionsByRole = permLibrary.getPermissionsByRole(role);
-                    if (permissionsByRole != null) {
-                        perms.addAll(permissionsByRole);
-                    }
-                    if (!e4 && CollectionUtils.containsSub(permRolesMeta.getExcludePermissions(), permissionsByRole)) {
-                        logs("Forbid : permissions exception", httpMeta, permRolesMeta);
-                        return ExceptionStatus.PERM_EXCEPTION;
-                    }
-                }
-                if (!e3 && !CollectionUtils.containsSub(permRolesMeta.getRequirePermissions(), perms)) {
-                    logs("Forbid : permissions exception", httpMeta, permRolesMeta);
-                    return ExceptionStatus.PERM_EXCEPTION;
-                }
+            }
+            if (!e3 && !CollectionUtils.containsSub(permRolesMeta.getRequirePermissions(), perms)) {
+                logs("Forbid : permissions exception", httpMeta, permRolesMeta);
+                return ExceptionStatus.PERM_EXCEPTION;
             }
         }
 

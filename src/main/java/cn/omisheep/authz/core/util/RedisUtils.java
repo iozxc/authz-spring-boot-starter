@@ -29,7 +29,7 @@ import static cn.omisheep.commons.util.Utils.castValue;
  * @version 1.0.0
  * @since 1.0.0
  */
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "rawtypes"})
 @Slf4j
 public class RedisUtils {
 
@@ -107,6 +107,7 @@ public class RedisUtils {
     }
 
     public static void publish(String channel, Message message) {
+        LogUtils.logDebug("time: {} message: {}", TimeUtils.nowTime(), message);
         redisTemplate.convertAndSend(channel, message);
     }
 
@@ -129,8 +130,8 @@ public class RedisUtils {
             return Utils.castValue(redisTemplate.opsForValue().get(key), requiredType);
         }
 
-        public static List<?> get(List<String> key) {
-            List<?> objects = redisTemplate.opsForValue().multiGet(key);
+        public static List get(List<String> key) {
+            List objects = redisTemplate.opsForValue().multiGet(key);
             if (objects == null) return new ArrayList<>();
             return objects;
         }

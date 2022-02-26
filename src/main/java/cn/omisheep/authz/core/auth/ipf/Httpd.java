@@ -53,18 +53,4 @@ public class Httpd {
             new FilterBuilder(1000,
                     0.001).countingBits(8).buildCountingBloomFilter();
 
-//    /**
-//     * 所有的api集合，提供快速访问
-//     */
-//    private final HashSet<String> paths = new HashSet<>();
-//
-//    /**
-//     * 所有的api集合，提供快速访问，(加上contextPath)
-//     */
-//    private final HashSet<String> paddingPath = new HashSet<>();
-//
-//    /**
-//     * 格式化之后的path 其中 {xx} 替换为 *
-//     */
-//    private final HashSet<String> patternPath = new HashSet<>();
 }

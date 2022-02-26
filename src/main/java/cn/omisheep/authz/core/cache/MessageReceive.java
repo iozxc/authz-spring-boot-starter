@@ -2,6 +2,7 @@ package cn.omisheep.authz.core.cache;
 
 import cn.omisheep.authz.AuthzAutoConfiguration;
 import cn.omisheep.authz.core.util.LogUtils;
+import cn.omisheep.commons.util.TimeUtils;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -23,9 +24,14 @@ public class MessageReceive {
         if (oo instanceof Message) {
             Message message = (Message) oo;
             if (!Message.ignore(message)) {
-                LogUtils.logDebug("MessageReceive: {}", message);
+                LogUtils.logDebug("MessageReceive time: {} message: {}", TimeUtils.nowTime(), message);
                 cache.receive(message);
             }
+            return;
+        }
+        if (oo instanceof RequestMessage) {
+            RequestMessage message = (RequestMessage) oo;
+            LogUtils.logDebug("MessageReceive time: {} message: {}", TimeUtils.nowTime(), message);
         }
     }
 }

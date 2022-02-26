@@ -1,7 +1,7 @@
 package cn.omisheep.authz;
 
 
-import cn.omisheep.authz.core.auth.AuthzDefender;
+import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
 import cn.omisheep.authz.core.auth.deviced.Device;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.cache.Cache;

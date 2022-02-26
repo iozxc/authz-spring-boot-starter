@@ -4,11 +4,11 @@ import cn.omisheep.commons.util.TimeUtils;
 import com.github.benmanes.caffeine.cache.Expiry;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -28,8 +28,9 @@ public interface Cache {
     String EMPTY = "";
     String SEPARATOR = ":";
     String CHANNEL = "AU_CACHE_DATA_UPDATE";
+    long INFINITE = Integer.MAX_VALUE;
+    long INHERIT = -1L;
 
-    @ToString
     class CacheItem<E> {
         // 到期的时间，用毫秒表示
         protected final long expiration;
@@ -49,16 +50,16 @@ public interface Cache {
         }
 
         public CacheItem(E value) {
-            this(-1, value);
+            this(INHERIT, value);
         }
 
         /**
-         * 返回的ttl值 秒
+         * 返回的ttl值 秒 （INHERIT）1 为跟随cache刷新，（INFINITE） 为永驻 0x7fffffff
          *
          * @return 秒
          */
         public long ttl() {
-            if (expiration == 0) return -1;
+            if (expiration == INFINITE || expiration == INHERIT) return expiration;
             return TimeUnit.MILLISECONDS.toSeconds(expiration - TimeUtils.nowTime());
         }
 
@@ -152,7 +153,7 @@ public interface Cache {
     /**
      * @param key     键
      * @param element 值
-     * @param ttl     秒，为-1时将继承之前的key的ttl
+     * @param ttl     秒，为-1时将继承之前的key的ttl ,  {@link Cache#INFINITE} 为永久存在
      * @param <E>     值的类型
      * @return 所添加的值
      */
@@ -167,7 +168,7 @@ public interface Cache {
      * @return 所添加的值
      */
     default <E> E set(String key, E element) {
-        return set(key, element, -1L);
+        return set(key, element, INHERIT);
     }
 
     /**
@@ -236,6 +237,10 @@ public interface Cache {
      * @param keys keys
      */
     void del(Set<String> keys);
+
+    default Map<String, CacheItem> asMap() {
+        return new HashMap<>();
+    }
 
     default void receive(Message message) {
     }

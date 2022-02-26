@@ -2,7 +2,7 @@ package cn.omisheep.authz.core.interceptor;
 
 import cn.omisheep.authz.core.AuthzException;
 import cn.omisheep.authz.core.ExceptionStatus;
-import cn.omisheep.authz.core.auth.AuthzDefender;
+import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.util.ExceptionUtils;
 import org.springframework.web.method.HandlerMethod;
@@ -55,6 +55,7 @@ public class AuthzCoreInterceptor implements HandlerInterceptor {
             ExceptionStatus error = auDefender.verify(httpMeta);
             if (error != null) ExceptionUtils.error(error);
         } catch (Exception e) {
+            e.printStackTrace();
             ExceptionUtils.error(ExceptionStatus.UNKNOWN, e.getCause());
         }
         return true;

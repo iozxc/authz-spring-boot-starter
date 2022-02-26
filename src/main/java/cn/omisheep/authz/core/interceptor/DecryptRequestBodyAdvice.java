@@ -2,7 +2,7 @@ package cn.omisheep.authz.core.interceptor;
 
 
 import cn.omisheep.authz.annotation.Decrypt;
-import cn.omisheep.authz.core.auth.AuKey;
+import cn.omisheep.authz.core.tk.AuKey;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.commons.util.RsaHelper;
 import lombok.extern.slf4j.Slf4j;

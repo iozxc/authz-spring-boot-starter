@@ -3,16 +3,20 @@ package cn.omisheep.authz.core;
 import cn.omisheep.authz.annotation.Perms;
 import cn.omisheep.authz.annotation.RateLimit;
 import cn.omisheep.authz.annotation.Roles;
-import cn.omisheep.authz.core.auth.AuKey;
-import cn.omisheep.authz.core.auth.PermRolesMeta;
+import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.DeviceConfig;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.ipf.LimitMeta;
+import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
+import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.cache.Message;
+import cn.omisheep.authz.core.tk.AuKey;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
+import cn.omisheep.authz.core.util.RedisUtils;
+import cn.omisheep.commons.util.Async;
 import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.commons.util.TaskBuilder;
 import lombok.SneakyThrows;
@@ -26,10 +30,9 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.handler.AbstractHandlerMethodMapping;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -50,13 +53,24 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
     private final PermissionDict permissionDict;
 
+    private final PermLibrary permLibrary;
+
+    private final Cache cache;
+
     private ApplicationContext ctx;
 
-    public AuCoreInitialization(AuthzProperties properties, Httpd httpd, UserDevicesDict userDevicesDict, PermissionDict permissionDict) {
+    public AuCoreInitialization(AuthzProperties properties,
+                                Httpd httpd,
+                                UserDevicesDict userDevicesDict,
+                                PermissionDict permissionDict,
+                                PermLibrary permLibrary,
+                                Cache cache) {
         this.properties = properties;
         this.httpd = httpd;
         this.userDevicesDict = userDevicesDict;
         this.permissionDict = permissionDict;
+        this.cache = cache;
+        this.permLibrary = permLibrary;
     }
 
     @Override
@@ -87,6 +101,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
         TaskBuilder.schedule(Pelcron::GC, properties.getGcPeriod());
 
         AuInit.log.info("Started Authz  Message id: {}", Message.id);
+
 //        initJob(CountingTaskForMinute.class, "1m", TimeUtils.nextIntactDateForMinute(), AggregateManager.class);
 //        initJob(CountingTaskForDay.class, "1d", TimeUtils.nextIntactDateForDay(), AggregateManager.class);
     }
@@ -94,6 +109,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
     private void initPermissionDict(ApplicationContext applicationContext, Map<RequestMappingInfo, HandlerMethod> mapRet) {
         permissionDict.setPermSeparator(properties.getPermSeparator());
+        Set<String> roles = new HashSet<>();
         Map<String, Map<String, PermRolesMeta>> authzMetadata = permissionDict.getAuthzMetadata();
         Map<String, PermRolesMeta> pMap = new HashMap<>();
         Map<String, PermRolesMeta> rMap = new HashMap<>();
@@ -138,8 +154,12 @@ public class AuCoreInitialization implements ApplicationContextAware {
                     permRolesMeta.setExcludePermissions(rFc.getExcludePermissions());
                 }
             }
-
             if (permRolesMeta != null) {
+                Set<Set<String>> requireRoles = permRolesMeta.getRequireRoles();
+                Set<Set<String>> excludeRoles = permRolesMeta.getExcludeRoles();
+                if (requireRoles != null) requireRoles.forEach(roles::addAll);
+                if (excludeRoles != null) excludeRoles.forEach(roles::addAll);
+
                 key.getMethodsCondition().getMethods().forEach(method -> {
                     key.getPatternsCondition().getPatterns().forEach(patternValue -> {
                         Map<String, PermRolesMeta> map = authzMetadata.get(method.toString());
@@ -151,6 +171,23 @@ public class AuCoreInitialization implements ApplicationContextAware {
                     });
                 });
             }
+        });
+
+
+        Async.run(() -> {
+            List<String> collect = roles.stream().collect(Collectors.toList());
+            List<Set<String>> rolesPerms = RedisUtils.Obj.get(
+                    collect.stream()
+                            .map(role -> Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX + role)
+                            .collect(Collectors.toList())
+            );
+            Iterator<String> iterator = collect.iterator();
+            HashMap<String, Set<String>> map = new HashMap<>();
+            rolesPerms.forEach(perms -> map.put(iterator.next(), perms));
+            map.forEach((role, v) -> {
+                Set<String> permissions = permLibrary.getPermissionsByRole(role);
+                cache.set("permissionsByRole:" + role, permissions, Cache.INFINITE);
+            });
         });
 
     }

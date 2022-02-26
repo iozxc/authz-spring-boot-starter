@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.interceptor;
 
 import cn.omisheep.authz.annotation.Decrypt;
-import cn.omisheep.authz.core.auth.AuKey;
+import cn.omisheep.authz.core.tk.AuKey;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.MethodParameter;
 import org.springframework.web.bind.support.WebDataBinderFactory;
