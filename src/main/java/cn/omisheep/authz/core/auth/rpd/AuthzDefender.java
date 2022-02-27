@@ -16,11 +16,8 @@ import lombok.SneakyThrows;
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
-import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.*;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -86,12 +83,6 @@ public class AuthzDefender {
         }
     }
 
-    public boolean requireProtect(String method, String api) {
-        Map<String, PermRolesMeta> map = permissionDict.getAuthzMetadata().get(method);
-        if (map == null) return false;
-        return map.get(api) != null;
-    }
-
     /**
      * 合法性判断
      *
@@ -102,42 +93,7 @@ public class AuthzDefender {
     @SuppressWarnings("all")
     public ExceptionStatus verify(HttpMeta httpMeta) {
         PermRolesMeta permRolesMeta = permissionDict.getAuthzMetadata().get(httpMeta.getMethod()).get(httpMeta.getApi());
-
-        if (!httpMeta.isHasTokenCookie()) {
-            logs("Require Login", httpMeta, permRolesMeta);
-            return ExceptionStatus.REQUIRE_LOGIN;
-        }
-
-        if (httpMeta.getTokenException() != null) {
-            switch (httpMeta.getTokenException()) {
-                case ExpiredJwtException:
-                    logs("Forbid : expired token exception", httpMeta, permRolesMeta);
-                    return ExceptionStatus.ACCESS_TOKEN_OVERDUE;
-                case MalformedJwtException:
-                    logs("Forbid : malformed token exception", httpMeta, permRolesMeta);
-                    return ExceptionStatus.TOKEN_EXCEPTION;
-                case SignatureException:
-                    logs("Forbid : signature exception", httpMeta, permRolesMeta);
-                    return ExceptionStatus.TOKEN_EXCEPTION;
-            }
-        }
-
         Token accessToken = httpMeta.getToken();
-
-        switch (userDevicesDict.userStatus(accessToken.getUserId(), accessToken.getDeviceType(), accessToken.getDeviceId(), accessToken.getTokenId())) {
-            case ACCESS_TOKEN_OVERDUE:
-                // accessToken过期
-                logs("Forbid : expired token exception", httpMeta, permRolesMeta);
-                return ExceptionStatus.ACCESS_TOKEN_OVERDUE;
-            case REQUIRE_LOGIN:
-                // 需要重新登录
-                logs("Require Login", httpMeta, permRolesMeta);
-                return ExceptionStatus.REQUIRE_LOGIN;
-            case LOGIN_EXCEPTION:
-                // 在别处登录
-                logs("forbid : may have logged in elsewhere", httpMeta, permRolesMeta);
-                return ExceptionStatus.LOGIN_EXCEPTION;
-        }
 
         Set<String> roles = null;
         boolean e1 = CollectionUtils.isEmpty(permRolesMeta.getRequireRoles());
@@ -183,7 +139,7 @@ public class AuthzDefender {
         return null;
     }
 
-    private void logs(String status, HttpMeta httpMeta, PermRolesMeta meta) {
+    public static void logs(String status, HttpMeta httpMeta, PermRolesMeta meta) {
         Token token = httpMeta.getToken();
         if (token == null) {
             LogUtils.pushLogToRequest("「{}」\t{}",

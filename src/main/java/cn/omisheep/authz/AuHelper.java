@@ -124,7 +124,7 @@ public class AuHelper {
     // *************************************     api权限、rate-limit 自定义      ************************************* //
 
     /**
-     * 可使用{@link org.springframework.web.bind.annotation.RequestBody}获得，或者new {@link PermRolesMeta.Vo#Vo()}
+     * 可使用{@link org.springframework.web.bind.annotation.RequestBody}获得，或者{@code new PermRolesMeta.Vo()}
      * <p>
      *
      * 必须要的三个字段：{@code operate, method, api}

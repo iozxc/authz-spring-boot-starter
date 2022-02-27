@@ -9,7 +9,7 @@ import java.lang.annotation.*;
  * @version 1.0.0
  * @since 1.0.0
  */
-@Target({ElementType.TYPE, ElementType.METHOD})
+@Target({ElementType.TYPE, ElementType.METHOD, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface Perms {
@@ -36,4 +36,6 @@ public @interface Perms {
      * @return -
      */
     String[] exclude() default {};
+
+    String[] resources() default {};
 }

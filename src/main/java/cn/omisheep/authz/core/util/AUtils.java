@@ -10,6 +10,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -49,6 +50,10 @@ public class AUtils implements ApplicationContextAware {
 
     public static <T> T getBean(String name, Class<T> clz) {
         return ctx.getBean(name, clz);
+    }
+
+    public static <T> Map<String, T> getBeansOfType(Class<T> clz) {
+        return ctx.getBeansOfType(clz);
     }
 
     @Override

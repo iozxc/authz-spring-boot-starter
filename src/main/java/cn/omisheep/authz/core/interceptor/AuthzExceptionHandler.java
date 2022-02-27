@@ -15,8 +15,7 @@ public interface AuthzExceptionHandler {
      * @param request   request
      * @param response  response
      * @param exception 不为空
-     * @return 是否继续通过
      * @throws Exception 抛出异常
      */
-    boolean handle(HttpServletRequest request, HttpServletResponse response, AuthzException exception) throws Exception;
+    void handle(HttpServletRequest request, HttpServletResponse response, AuthzException exception) throws Exception;
 }

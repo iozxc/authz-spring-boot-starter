@@ -14,6 +14,9 @@ public class PermissionDict {
 
     private static String permSeparator = ",";
 
+    /**
+     * 权限
+     */
     public Map<String, Map<String, PermRolesMeta>> authzMetadata;
 
     private UnmodifiableObservableMap<String, Map<String, PermRolesMeta>> unmodifiableAuthzMetadata;

@@ -15,11 +15,10 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class DefaultAuthzExceptionHandler implements AuthzExceptionHandler {
     @Override
-    public boolean handle(HttpServletRequest request, HttpServletResponse response, AuthzException exception) throws Exception {
+    public void handle(HttpServletRequest request, HttpServletResponse response, AuthzException exception) throws Exception {
         ExceptionStatus exceptionStatus = exception.getExceptionStatus();
 
         HttpUtils.returnResponse(exceptionStatus.getHttpStatus(),
                 Result.of(exceptionStatus.getCode(), exceptionStatus.getMessage()));
-        return false;
     }
 }

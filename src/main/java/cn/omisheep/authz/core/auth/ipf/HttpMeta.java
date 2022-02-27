@@ -1,5 +1,7 @@
 package cn.omisheep.authz.core.auth.ipf;
 
+import cn.omisheep.authz.core.AuthzException;
+import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.util.LogUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -36,6 +38,22 @@ public class HttpMeta {
     private boolean hasTokenCookie;
     private Set<String> permissions;
     private Set<String> roles;
+    private AuthzException authzException;
+
+    public HttpMeta error(AuthzException authzException) {
+        this.authzException = authzException;
+        return this;
+    }
+
+    public HttpMeta error(ExceptionStatus exceptionStatus) {
+        return error(new AuthzException(null, exceptionStatus));
+    }
+
+    public HttpMeta error(ExceptionStatus exceptionStatus, Throwable e) {
+        return error(new AuthzException(e, exceptionStatus));
+    }
+
+
 //    @JsonIgnore
 //    private CompletableFuture<Void> cfrps;
 

@@ -23,10 +23,6 @@ public class ExceptionUtils {
         error(HttpUtils.getCurrentRequest(), new AuthzException(e, exceptionStatus));
     }
 
-    public static void error(AuthzException authzException) {
-        error(HttpUtils.getCurrentRequest(), authzException);
-    }
-
     public static void error(HttpServletRequest request, AuthzException authzException) {
         request.setAttribute(AUTHZ_EXCEPTION, authzException);
     }
@@ -50,15 +46,8 @@ public class ExceptionUtils {
         return authzException;
     }
 
-    public static AuthzException clear() {
-        return clear(HttpUtils.getCurrentRequest());
-    }
 
     public static boolean isSafe(HttpServletRequest request) {
         return get(request) == null;
-    }
-
-    public static boolean isSafe() {
-        return isSafe(HttpUtils.getCurrentRequest());
     }
 }

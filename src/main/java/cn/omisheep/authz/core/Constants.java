@@ -11,6 +11,7 @@ public interface Constants {
     String BLANK = " ";
     String WILDCARD = "*";
     String CRLF = "\n";
+    String EMPTY = "";
 
     String HTTP_META = "AU_HTTP_META";
     String DEBUG_PREFIX = "[DEBUG]  ";

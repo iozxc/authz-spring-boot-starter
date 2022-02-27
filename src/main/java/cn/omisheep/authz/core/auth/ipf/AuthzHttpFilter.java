@@ -42,7 +42,6 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
     public void doFilterInternal(HttpServletRequest rrequest,
                                  HttpServletResponse response,
                                  FilterChain filterChain) throws ServletException, IOException {
-
         HttpServletRequest request = new BufferedServletRequestWrapper(rrequest);
         String ip = getIp(request);
         String uri = request.getRequestURI();
@@ -50,14 +49,9 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
 
         String api = execLimit(ip, uri, method);
 
-        if (api == null) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         HttpMeta httpMeta = new HttpMeta(
                 request,
-                ip, uri, api, method, new Date());
+                ip, uri, api, method, new Date()).error(ExceptionUtils.clear(request));
         request.setAttribute(HTTP_META, httpMeta);
 
         filterChain.doFilter(request, response);

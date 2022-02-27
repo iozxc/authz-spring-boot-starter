@@ -10,7 +10,6 @@ import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDictByCache;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDictByHashMap;
-import cn.omisheep.authz.core.auth.ipf.AuthzCookieFilter;
 import cn.omisheep.authz.core.auth.ipf.AuthzHttpFilter;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
@@ -218,8 +217,8 @@ public class AuthzAutoConfiguration {
     }
 
     @Bean
-    public AuthzHandlerRegister authzHandlerRegister(AuthzDefender auDefender, AuthzExceptionHandler authzExceptionHandler) {
-        return new AuthzHandlerRegister(auDefender, authzExceptionHandler);
+    public AuthzHandlerRegister authzHandlerRegister(AuthzExceptionHandler authzExceptionHandler) {
+        return new AuthzHandlerRegister(authzExceptionHandler);
     }
 
     @Bean("AuthzHttpFilter")
@@ -231,16 +230,16 @@ public class AuthzAutoConfiguration {
         registration.setOrder(1);
         return registration;
     }
-
-    @Bean("AuthzCookieFilter")
-    public FilterRegistrationBean<AuthzCookieFilter> filterRegistrationBean(UserDevicesDict userDevicesDict, PermLibrary permLibrary, AuthzProperties properties) {
-        FilterRegistrationBean<AuthzCookieFilter> registration = new FilterRegistrationBean<>();
-        registration.setFilter(new AuthzCookieFilter(userDevicesDict, permLibrary, properties));
-        registration.addUrlPatterns("/*");
-        registration.setName("authzCookieFilter");
-        registration.setOrder(2);
-        return registration;
-    }
+//
+//    @Bean("AuthzCookieFilter")
+//    public FilterRegistrationBean<AuthzCookieFilter> filterRegistrationBean(UserDevicesDict userDevicesDict, PermLibrary permLibrary, AuthzProperties properties) {
+//        FilterRegistrationBean<AuthzCookieFilter> registration = new FilterRegistrationBean<>();
+//        registration.setFilter(new AuthzCookieFilter(userDevicesDict, permLibrary, properties));
+//        registration.addUrlPatterns("/*");
+//        registration.setName("authzCookieFilter");
+//        registration.setOrder(2);
+//        return registration;
+//    }
 
     @Bean
     public AuCoreInitialization auCoreInitialization(AuthzProperties properties, Httpd httpd, UserDevicesDict userDevicesDict, PermissionDict permissionDict, PermLibrary permLibrary, Cache cache) {

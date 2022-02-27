@@ -2,6 +2,7 @@ package cn.omisheep.authz.core;
 
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
+import cn.omisheep.authz.core.slot.SlotScan;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
 import io.jsonwebtoken.lang.Assert;
@@ -14,6 +15,7 @@ import org.springframework.context.annotation.Import;
  * @version 1.0.0
  * @since 1.0.0
  */
+@SlotScan("cn.omisheep.authz")
 @Import({Httpd.class, PermissionDict.class, AUtils.class})
 public class AuInit {
 

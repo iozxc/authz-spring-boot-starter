@@ -7,7 +7,7 @@ import java.lang.annotation.*;
 /**
  * @author zhou xin chen
  */
-@Target({ElementType.TYPE, ElementType.METHOD})
+@Target({ElementType.TYPE, ElementType.METHOD, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface Roles {
@@ -34,4 +34,7 @@ public @interface Roles {
      * @return -
      */
     String[] exclude() default {};
+
+    String[] resources() default {};
+
 }

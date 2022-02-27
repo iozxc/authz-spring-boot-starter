@@ -5,21 +5,54 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-import java.util.Collection;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
+
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
  * @version 1.0.0
  * @since 1.0.0
  */
-@JsonInclude(JsonInclude.Include.NON_EMPTY)
+@JsonInclude(NON_EMPTY)
 public class PermRolesMeta {
     private Set<Set<String>> requireRoles;
     private Set<Set<String>> excludeRoles;
     private Set<Set<String>> requirePermissions;
     private Set<Set<String>> excludePermissions;
+
+    @JsonInclude(NON_NULL)
+    private Map<ParamType, Map<String, ParamMetadata>> paramPermissionsMetadata;
+
+    public Map<ParamType, Map<String, ParamMetadata>> getParamPermissionsMetadata() {
+        return paramPermissionsMetadata;
+    }
+
+    public void put(ParamType paramType, String name, ParamMetadata paramMetadata) {
+        if (paramPermissionsMetadata == null) paramPermissionsMetadata = new HashMap<>();
+        paramPermissionsMetadata.computeIfAbsent(paramType, r -> new HashMap<>()).put(name, paramMetadata);
+    }
+
+    public Map<ParamType, Map<String, ParamMetadata>> initParamPermissionsMetadata() {
+        if (paramPermissionsMetadata == null) {
+            paramPermissionsMetadata = new HashMap<>();
+        }
+        return paramPermissionsMetadata;
+    }
+
+
+    @Data
+    @Accessors(chain = true)
+    public static class ParamMetadata {
+        private Set<String> resources; // required protect resources
+        private PermRolesMeta permRolesMeta; // required permissions or roles
+    }
+
+    public enum ParamType {
+        PATH_VARIABLE,
+        REQUEST_PARAM
+    }
 
     @Data
     @Accessors(chain = true)

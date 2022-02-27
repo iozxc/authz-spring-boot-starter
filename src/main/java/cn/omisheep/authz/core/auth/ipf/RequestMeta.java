@@ -3,7 +3,6 @@ package cn.omisheep.authz.core.auth.ipf;
 import cn.omisheep.commons.util.TimeUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
-import lombok.Setter;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.util.Date;
@@ -17,11 +16,13 @@ import java.util.stream.Collectors;
  * @since 1.0.0
  */
 public class RequestMeta {
-    @Getter private final String ip;
-    @Getter private boolean ban;
+    @Getter
+    private final String ip;
+    @Getter
+    private boolean ban;
     private int punishmentLevel;
     private long reliveTime;
-    @Setter private long lastRequestTime;
+    private long lastRequestTime;
     private long sinceLastTime;
     private final LinkedList<Long> requestTimeList = new LinkedList<>();
 
@@ -33,6 +34,11 @@ public class RequestMeta {
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     public List<Date> getRequestTimeList() {
         return requestTimeList.stream().map(Date::new).collect(Collectors.toList());
+    }
+
+    public void setLastRequestTime(long lastRequestTime) {
+        this.sinceLastTime = lastRequestTime - this.lastRequestTime;
+        this.lastRequestTime = lastRequestTime;
     }
 
     public Date getLastRequestTime() {

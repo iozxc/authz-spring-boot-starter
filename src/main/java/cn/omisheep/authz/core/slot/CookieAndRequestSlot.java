@@ -1,54 +1,40 @@
-package cn.omisheep.authz.core.auth.ipf;
+package cn.omisheep.authz.core.slot;
 
 import cn.omisheep.authz.core.AuthzProperties;
-import cn.omisheep.authz.core.Constants;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
+import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.tk.TokenHelper;
-import cn.omisheep.authz.core.util.ExceptionUtils;
 import cn.omisheep.commons.util.Async;
 import cn.omisheep.commons.util.HttpUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
-import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.method.HandlerMethod;
 
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
  * @version 1.0.0
  * @since 1.0.0
  */
+@Order(0)
 @SuppressWarnings("all")
-public class AuthzCookieFilter extends OncePerRequestFilter {
+public class CookieAndRequestSlot implements Slot {
 
     private final UserDevicesDict userDevicesDict;
     private final boolean isEnableRedis;
     private final String cookieName;
-    private final PermLibrary permLibrary;
 
-    public AuthzCookieFilter(UserDevicesDict userDevicesDict, PermLibrary permLibrary, AuthzProperties properties) {
+    public CookieAndRequestSlot(UserDevicesDict userDevicesDict, PermLibrary permLibrary, AuthzProperties properties) {
         this.userDevicesDict = userDevicesDict;
         this.isEnableRedis = properties.getCache().isEnableRedis();
         this.cookieName = properties.getCookieName();
-        this.permLibrary = permLibrary;
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        if (!ExceptionUtils.isSafe(request)) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        HttpMeta httpMeta = (HttpMeta) request.getAttribute(Constants.HTTP_META);
-        // 获取Cookie
+    public boolean chain(HttpMeta httpMeta, HandlerMethod handler) throws Exception {
         Cookie cookie = HttpUtils.readSingleCookieInRequestByName(cookieName);
         if (httpMeta.setHasTokenCookie(cookie != null)) {
             try {
@@ -65,6 +51,7 @@ public class AuthzCookieFilter extends OncePerRequestFilter {
                 }
             }
         }
-        filterChain.doFilter(request, response);
+        return true;
     }
+
 }
