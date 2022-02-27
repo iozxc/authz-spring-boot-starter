@@ -15,12 +15,24 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
  * @version 1.0.0
  * @since 1.0.0
  */
-@JsonInclude(NON_EMPTY)
+@JsonInclude(NON_NULL)
 public class PermRolesMeta {
-    private Set<Set<String>> requireRoles;
-    private Set<Set<String>> excludeRoles;
-    private Set<Set<String>> requirePermissions;
-    private Set<Set<String>> excludePermissions;
+
+    @Data
+    @JsonInclude(NON_NULL)
+    public static class Meta {
+        private Set<Set<String>> require;
+        private Set<Set<String>> exclude;
+        private Set<String> resources; // required protect resources
+
+        @Override
+        public String toString() {
+            return (require != null ? "require: " + require : "") + (exclude != null ? "\t, exclude: " + exclude : "");
+        }
+    }
+
+    private Meta role;
+    private Meta permissions;
 
     @JsonInclude(NON_NULL)
     private Map<ParamType, Map<String, ParamMetadata>> paramPermissionsMetadata;
@@ -31,22 +43,20 @@ public class PermRolesMeta {
 
     public void put(ParamType paramType, String name, ParamMetadata paramMetadata) {
         if (paramPermissionsMetadata == null) paramPermissionsMetadata = new HashMap<>();
-        paramPermissionsMetadata.computeIfAbsent(paramType, r -> new HashMap<>()).put(name, paramMetadata);
+        paramPermissionsMetadata
+                .computeIfAbsent(paramType, r -> new HashMap<>()).put(name, paramMetadata);
     }
 
-    public Map<ParamType, Map<String, ParamMetadata>> initParamPermissionsMetadata() {
-        if (paramPermissionsMetadata == null) {
-            paramPermissionsMetadata = new HashMap<>();
-        }
-        return paramPermissionsMetadata;
+    public boolean non() {
+        return role == null && permissions == null;
     }
-
 
     @Data
     @Accessors(chain = true)
+    @JsonInclude(NON_EMPTY)
     public static class ParamMetadata {
-        private Set<String> resources; // required protect resources
-        private PermRolesMeta permRolesMeta; // required permissions or roles
+        private List<Meta> rolesMeta;
+        private List<Meta> permissionsMeta;
     }
 
     public enum ParamType {
@@ -124,62 +134,74 @@ public class PermRolesMeta {
     }
 
     public Set<Set<String>> getRequireRoles() {
-        return requireRoles;
+        if (role != null) return role.require;
+        return null;
     }
 
     public void setRequireRoles(Set<Set<String>> requireRoles) {
         if (requireRoles == null) return;
-        this.requireRoles = requireRoles;
+        if (role == null) role = new Meta();
+        this.role.require = requireRoles;
     }
 
     public Set<Set<String>> getExcludeRoles() {
-        return excludeRoles;
+        if (role != null) return role.exclude;
+        return null;
     }
 
     public void setExcludeRoles(Set<Set<String>> excludeRoles) {
         if (excludeRoles == null) return;
-        this.excludeRoles = excludeRoles;
+        if (role == null) role = new Meta();
+        this.role.exclude = excludeRoles;
     }
 
     public Set<Set<String>> getRequirePermissions() {
-        return requirePermissions;
+        if (permissions != null) return permissions.require;
+        return null;
     }
 
     public void setRequirePermissions(Set<Set<String>> requirePermissions) {
         if (requirePermissions == null) return;
-        this.requirePermissions = requirePermissions;
+        if (permissions == null) permissions = new Meta();
+        this.permissions.require = requirePermissions;
     }
 
     public Set<Set<String>> getExcludePermissions() {
-        return excludePermissions;
+        if (permissions != null) return permissions.exclude;
+        return null;
     }
 
     public void setExcludePermissions(Set<Set<String>> excludePermissions) {
         if (excludePermissions == null) return;
-        this.excludePermissions = excludePermissions;
+        if (permissions == null) permissions = new Meta();
+        this.permissions.exclude = excludePermissions;
     }
 
     public void setRequireRoles(Collection<String> requireRoles) {
         if (requireRoles == null) return;
-        this.requireRoles = CollectionUtils.splitStrValsToSets(PermissionDict.getPermSeparator(),
+        if (role == null) role = new Meta();
+        this.role.require = CollectionUtils.splitStrValsToSets(PermissionDict.getPermSeparator(),
                 requireRoles.toArray(new String[]{}));
     }
 
     public void setExcludeRoles(Collection<String> excludeRoles) {
         if (excludeRoles == null) return;
-        this.excludeRoles = CollectionUtils.splitStrValsToSets(PermissionDict.getPermSeparator(),
+        if (role == null) role = new Meta();
+        this.role.exclude = CollectionUtils.splitStrValsToSets(PermissionDict.getPermSeparator(),
                 excludeRoles.toArray(new String[]{}));
     }
 
     public void setRequirePermissions(Collection<String> requirePermissions) {
         if (requirePermissions == null) return;
-        this.requirePermissions = CollectionUtils.splitStrValsToSets(PermissionDict.getPermSeparator(),
+        if (permissions == null) permissions = new Meta();
+        this.permissions.require = CollectionUtils.splitStrValsToSets(PermissionDict.getPermSeparator(),
                 requirePermissions.toArray(new String[]{}));
     }
 
     public void setExcludePermissions(Collection<String> excludePermissions) {
         if (excludePermissions == null) return;
-        this.excludePermissions = CollectionUtils.splitStrValsToSets(PermissionDict.getPermSeparator(),
+        if (permissions == null) permissions = new Meta();
+        this.permissions.exclude = CollectionUtils.splitStrValsToSets(PermissionDict.getPermSeparator(),
                 excludePermissions.toArray(new String[]{}));
     }
 
@@ -191,12 +213,11 @@ public class PermRolesMeta {
         return this;
     }
 
+
     @Override
     public String toString() {
-        return "requireRoles: " + requireRoles +
-                "\t, excludeRoles: " + excludeRoles +
-                "\t, requirePermissions: " + requirePermissions +
-                "\t, excludePermissions: " + excludePermissions;
+        return (role != null ? "( role> " + role + " )" : "") +
+                (permissions != null ? "\t, ( permissions> " + permissions + " )" : "");
     }
 
 }

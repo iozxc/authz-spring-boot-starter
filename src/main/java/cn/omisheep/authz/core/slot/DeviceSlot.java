@@ -30,8 +30,8 @@ public class DeviceSlot implements Slot {
 
     @Override
     public boolean chain(HttpMeta httpMeta, HandlerMethod handler) {
-
         PermRolesMeta permRolesMeta = permissionDict.getAuthzMetadata().get(httpMeta.getMethod()).get(httpMeta.getApi());
+        if (permRolesMeta.non()) return true;
 
         if (!httpMeta.isHasTokenCookie()) {
             logs("Require Login", httpMeta, permRolesMeta);

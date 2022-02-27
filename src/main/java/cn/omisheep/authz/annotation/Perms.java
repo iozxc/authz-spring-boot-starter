@@ -37,5 +37,5 @@ public @interface Perms {
      */
     String[] exclude() default {};
 
-    String[] resources() default {};
+    String[] resources() default {"*"};
 }

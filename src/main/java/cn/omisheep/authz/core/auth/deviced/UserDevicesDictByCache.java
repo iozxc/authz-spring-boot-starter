@@ -87,7 +87,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         Set<String> accessInfoKeys = new HashSet<>();
         Set<String> refreshInfoKeys = new HashSet<>();
         DefaultDevice device = new DefaultDevice();
-        device.setType(deviceType).setId(deviceId).setLastRequestTime(TimeUtils.now()).setIp(httpMeta.getIp());
+        device.setType(deviceType).setId(deviceId);
 
         Async.combine(
                 () -> accessInfoKeys.addAll(cache.keysAndLoad(acKey(userId, Constants.WILDCARD))),

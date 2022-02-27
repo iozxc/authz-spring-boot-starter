@@ -37,6 +37,10 @@ public class LogUtils {
         if (logLevel.ordinal() <= LogLevel.ERROR.ordinal()) log.error(MARKER, msg, args);
     }
 
+    public static void logError(String msg, Throwable throwable) {
+        if (logLevel.ordinal() <= LogLevel.ERROR.ordinal()) log.error(msg, throwable);
+    }
+
     public static void logWarn(String msg, Object... args) {
         if (logLevel.ordinal() <= LogLevel.WARN.ordinal()) log.warn(MARKER, msg, args);
     }

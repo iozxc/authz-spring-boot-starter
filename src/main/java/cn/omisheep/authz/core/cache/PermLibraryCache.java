@@ -7,6 +7,8 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 
+import java.util.HashSet;
+
 /**
  * @author zhouxinchen[1269670415@qq.com]
  * @version 1.0.0
@@ -46,7 +48,7 @@ public class PermLibraryCache {
             cache.set(key, result, Cache.INFINITE);
             return result;
         }
-        return null;
+        return new HashSet<String>();
     }
 
 }

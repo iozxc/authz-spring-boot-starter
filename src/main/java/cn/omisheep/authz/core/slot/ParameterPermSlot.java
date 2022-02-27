@@ -1,7 +1,24 @@
 package cn.omisheep.authz.core.slot;
 
+import cn.omisheep.authz.core.ExceptionStatus;
+import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
+import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
+import cn.omisheep.authz.core.auth.rpd.PermissionDict;
+import cn.omisheep.commons.util.CollectionUtils;
+import org.springframework.core.MethodParameter;
+import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.HandlerMapping;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static cn.omisheep.authz.core.auth.rpd.AuthzDefender.logs;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -9,42 +26,143 @@ import org.springframework.web.method.HandlerMethod;
  * @since 1.0.0
  */
 @Order(40)
+@SuppressWarnings("all")
 public class ParameterPermSlot implements Slot {
+
+    private final PermissionDict permissionDict;
+    private final PermLibrary permLibrary;
+
+    public ParameterPermSlot(PermissionDict permissionDict, PermLibrary permLibrary) {
+        this.permissionDict = permissionDict;
+        this.permLibrary = permLibrary;
+    }
 
     @Override
     public boolean chain(HttpMeta httpMeta, HandlerMethod handler) throws Exception {
-//        Map<String, String> pathVariables = (Map<String, String>) httpMeta.getRequest().getAttribute(
-//                HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+        PermRolesMeta permRolesMeta = permissionDict.getAuthzMetadata().get(httpMeta.getMethod()).get(httpMeta.getApi());
 
-//        System.out.println(pathVariables.isEmpty());
-//        String id = pathVariables.get("ids");
-//        String x = pathVariables.get("x");
+        Set<String> roles = null;
+        Set<String> permissions = new HashSet<>();
 
-//        MethodParameter[] methodParameters = handler.getMethodParameters();
-//        for (MethodParameter methodParameter : methodParameters) {
-//            Constructor<?> constructor = methodParameter.getParameterType().getConstructor(String.class);
-//            String text = httpMeta.getRequest().getParameter(methodParameter.getParameterName());
-//            System.out.println("====");
-//            System.out.println(methodParameter.getParameter().getName());
-//            RequestParam param = AnnotationUtils.getAnnotation(methodParameter.getParameter(), RequestParam.class);
-//            System.out.println(param.name());
-//            System.out.println(text);
-//            Object o = constructor.newInstance(text);
-//            System.out.println(o);
-//            System.out.println(o.getClass());
-//            System.out.println("===");
-//            System.out.println(httpMeta.getRequest().getParameter(methodParameter.getParameter().getName()));
-//            System.out.println("===");
-//            Roles roles = AnnotationUtils.getAnnotation(methodParameter.getParameter(), Roles.class);
-//            Perms perms = AnnotationUtils.getAnnotation(methodParameter.getParameter(), Perms.class);
-//            if (roles != null) {
-//                boolean b = Arrays.asList(roles.hd()).contains("123");
-//                if (b) return false;
-//            }
-//            if (perms != null) {
-//                System.out.println(Arrays.toString(perms.require()));
-//            }
-//        }
+        for (MethodParameter parameter : handler.getMethodParameters()) {
+            RequestParam requestParam = AnnotationUtils.getAnnotation(parameter.getParameter(), RequestParam.class);
+            PathVariable pathVariable = AnnotationUtils.getAnnotation(parameter.getParameter(), PathVariable.class);
+
+            String paramName = parameter.getParameter().getName();
+            PermRolesMeta.ParamType type = null;
+            String value = null;
+            if (pathVariable != null) {
+                type = PermRolesMeta.ParamType.PATH_VARIABLE;
+                if (!pathVariable.name().equals("")) paramName = pathVariable.name();
+
+                Map<String, String> pathVariables = (Map<String, String>) httpMeta.getRequest().getAttribute(
+                        HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+                value = pathVariables.get(paramName);
+            } else if (requestParam != null) {
+                type = PermRolesMeta.ParamType.REQUEST_PARAM;
+                if (!requestParam.name().equals("")) paramName = requestParam.name();
+                value = httpMeta.getRequest().getParameter(paramName);
+            }
+
+            // 类型匹配上了
+            if (type != null) {
+                if (value == null) continue; // value不为空
+
+                PermRolesMeta.ParamMetadata paramMetadata = null;
+                try {
+                    paramMetadata = permRolesMeta.getParamPermissionsMetadata().get(type).get(paramName);
+                } catch (Exception e) {
+                    continue;
+                }
+                if (paramMetadata == null) continue; // 且需要保护
+
+                List<PermRolesMeta.Meta> rolesMeta = paramMetadata.getRolesMeta();
+
+                rolesMetaCheck:
+                if (rolesMeta != null && !rolesMeta.isEmpty()) {
+                    if (roles == null) {
+                        if (httpMeta.getToken() == null) {
+                            logs("Require Login", httpMeta, permRolesMeta);
+                            httpMeta.error(ExceptionStatus.REQUIRE_LOGIN);
+                            return false;
+                        }
+                        roles = permLibrary.getRolesByUserId(httpMeta.getToken().getUserId());
+                    }
+                    boolean next = false;
+                    label:
+                    for (PermRolesMeta.Meta meta : rolesMeta) {
+                        if (match(meta.getResources(), value)) { // 值是否匹配，若匹配上
+                            if (CollectionUtils.containsSub(meta.getRequire(), roles)) { // 判断是否权限匹配
+                                // 匹配失败继续看后面的是否有匹配上的，如果都匹配失败，则返回权限不足
+                                // 匹配成功则直接过
+                                next = true;
+                                break label;
+                            }
+                        }
+                    }
+                    if (!next) {
+                        if (rolesMeta.stream().filter(meta -> meta.getResources().contains("*")).count() == 0) {
+                            // 如果没有带*的匹配，那么如果值不属于其中，默认通过
+                            String finalValue = value;
+                            if (!rolesMeta.stream().anyMatch(meta -> match(meta.getResources(), finalValue))) {
+                                break rolesMetaCheck;
+                            }
+                        }
+                        logs("Forbid : permissions exception by request parameter", httpMeta, permRolesMeta);
+                        httpMeta.error(ExceptionStatus.PERM_EXCEPTION);
+                        return false;
+                    }
+                }
+
+                List<PermRolesMeta.Meta> permissionsMeta = paramMetadata.getPermissionsMeta();
+                permMetaCheck:
+                if (permissionsMeta != null && !permissionsMeta.isEmpty()) {
+                    if (httpMeta.getToken() == null) {
+                        logs("Require Login", httpMeta, permRolesMeta);
+                        httpMeta.error(ExceptionStatus.REQUIRE_LOGIN);
+                        return false;
+                    }
+                    if (roles == null) {
+                        roles = permLibrary.getRolesByUserId(httpMeta.getToken().getUserId());
+                    }
+                    for (String role : roles) {
+                        Set<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
+                        permissions.addAll(permissionsByRole);
+                    }
+
+                    boolean next = false;
+                    label:
+                    for (PermRolesMeta.Meta meta : permissionsMeta) {
+                        if (match(meta.getResources(), value)) { // 值是否匹配，若匹配上
+                            if (CollectionUtils.containsSub(meta.getRequire(), permissions)) { // 判断是否权限匹配
+                                // 匹配失败继续看后面的是否有匹配上的，如果都匹配失败，则返回权限不足
+                                // 匹配成功则直接过
+                                next = true;
+                                break label;
+                            }
+                        }
+                    }
+
+                    if (!next) {
+                        if (permissionsMeta.stream().filter(meta -> meta.getResources().contains("*")).count() == 0) {
+                            // 如果没有带*的匹配，那么如果值不属于其中，默认通过
+                            String finalValue = value;
+                            if (!permissionsMeta.stream().anyMatch(meta -> match(meta.getResources(), finalValue))) {
+                                break permMetaCheck;
+                            }
+                        }
+                        logs("Forbid : permissions exception by request parameter", httpMeta, permRolesMeta);
+                        httpMeta.error(ExceptionStatus.PERM_EXCEPTION);
+                        return false;
+                    }
+                }
+            }
+        }
         return true;
+    }
+
+    // TODO: (+) 匹配范围
+    private boolean match(Set<String> resoureces, String value) {
+        return resoureces.contains("*") || resoureces.contains(value);
     }
 }

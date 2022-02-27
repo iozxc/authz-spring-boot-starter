@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core;
 
+import cn.omisheep.authz.annotation.BatchAuthority;
 import cn.omisheep.authz.annotation.Perms;
 import cn.omisheep.authz.annotation.RateLimit;
 import cn.omisheep.authz.annotation.Roles;
@@ -24,8 +25,11 @@ import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.handler.AbstractHandlerMethodMapping;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
@@ -101,9 +105,6 @@ public class AuCoreInitialization implements ApplicationContextAware {
         TaskBuilder.schedule(Pelcron::GC, properties.getGcPeriod());
 
         AuInit.log.info("Started Authz  Message id: {}", Message.id);
-
-//        initJob(CountingTaskForMinute.class, "1m", TimeUtils.nextIntactDateForMinute(), AggregateManager.class);
-//        initJob(CountingTaskForDay.class, "1d", TimeUtils.nextIntactDateForDay(), AggregateManager.class);
     }
 
 
@@ -114,15 +115,13 @@ public class AuCoreInitialization implements ApplicationContextAware {
         Map<String, PermRolesMeta> pMap = new HashMap<>();
         Map<String, PermRolesMeta> rMap = new HashMap<>();
         applicationContext.getBeansWithAnnotation(Perms.class).forEach((key, value) -> {
-            Perms permsFromController = AnnotationUtils.getAnnotation(value.getClass(), Perms.class);
             pMap.put(value.getClass().getName(),
-                    generatePermRolesMeta(permsFromController, null));
+                    generatePermRolesMeta(AnnotationUtils.getAnnotation(value.getClass(), Perms.class), null));
         });
 
         applicationContext.getBeansWithAnnotation(Roles.class).forEach((key, value) -> {
-            Roles rolesFromController = AnnotationUtils.getAnnotation(value.getClass(), Roles.class);
             rMap.put(value.getClass().getName(),
-                    generatePermRolesMeta(null, rolesFromController));
+                    generatePermRolesMeta(null, AnnotationUtils.getAnnotation(value.getClass(), Roles.class)));
         });
 
         mapRet.forEach((key, value) -> {
@@ -161,16 +160,70 @@ public class AuCoreInitialization implements ApplicationContextAware {
                 if (excludeRoles != null) excludeRoles.forEach(roles::addAll);
 
                 key.getMethodsCondition().getMethods().forEach(method -> {
-                    key.getPatternsCondition().getPatterns().forEach(patternValue -> {
-                        Map<String, PermRolesMeta> map = authzMetadata.get(method.toString());
-                        if (map == null) {
-                            map = new HashMap<>();
-                            authzMetadata.put(method.toString(), map);
-                        }
-                        map.put(contextPath + patternValue, permRolesMeta);
-                    });
+                    key.getPatternsCondition().getPatterns().forEach(patternValue ->
+                            authzMetadata.computeIfAbsent(method.toString(), r -> new HashMap<>()).put(contextPath + patternValue, permRolesMeta)
+                    );
                 });
             }
+
+            // ------------- parameters init --------------- //
+            key.getMethodsCondition().getMethods().forEach(method -> {
+                key.getPatternsCondition().getPatterns().forEach(patternValue -> {
+                    for (MethodParameter param : value.getMethodParameters()) {
+                        Roles rolesByParam = param.getParameterAnnotation(Roles.class);
+                        Perms permsByParam = param.getParameterAnnotation(Perms.class);
+                        BatchAuthority batchAuthority = param.getParameterAnnotation(BatchAuthority.class);
+
+                        if (rolesByParam != null || permsByParam != null || batchAuthority != null) {
+                            RequestParam requestParam = param.getParameterAnnotation(RequestParam.class);
+                            PathVariable pathVariable = param.getParameterAnnotation(PathVariable.class);
+                            String paramName = param.getParameter().getName();
+
+                            PermRolesMeta.ParamType type = null;
+                            if (pathVariable != null) {
+                                type = PermRolesMeta.ParamType.PATH_VARIABLE;
+                                if (!pathVariable.name().equals("")) paramName = pathVariable.name();
+                            } else if (requestParam != null) {
+                                type = PermRolesMeta.ParamType.REQUEST_PARAM;
+                                if (!requestParam.name().equals("")) paramName = requestParam.name();
+                            }
+
+                            ArrayList<PermRolesMeta.Meta> rolesMeta = new ArrayList<>();
+                            ArrayList<PermRolesMeta.Meta> permsMeta = new ArrayList<>();
+                            PermRolesMeta.Meta vr = generateRolesMeta(rolesByParam);
+                            PermRolesMeta.Meta vp = generatePermMeta(permsByParam);
+                            if (vr != null) rolesMeta.add(vr);
+                            if (vp != null) permsMeta.add(vp);
+
+                            if (batchAuthority != null) {
+                                Roles[] rs = batchAuthority.roles();
+                                for (Roles r : rs) {
+                                    PermRolesMeta.Meta v = generateRolesMeta(r);
+                                    if (v != null) rolesMeta.add(v);
+                                }
+                                Perms[] ps = batchAuthority.perms();
+                                for (Perms p : ps) {
+                                    PermRolesMeta.Meta v = generatePermMeta(p);
+                                    if (v != null) permsMeta.add(v);
+                                }
+                            }
+
+                            if (type != null) {
+                                PermRolesMeta meta = authzMetadata.computeIfAbsent(method.toString(), r -> new HashMap<>())
+                                        .computeIfAbsent(contextPath + patternValue, r -> new PermRolesMeta());
+                                meta.put(type, paramName,
+                                        new PermRolesMeta.ParamMetadata()
+                                                .setRolesMeta(rolesMeta)
+                                                .setPermissionsMeta(permsMeta)
+                                );
+                            }
+                        }
+
+                    }
+
+                });
+            });
+
         });
 
         try {
@@ -195,6 +248,38 @@ public class AuCoreInitialization implements ApplicationContextAware {
             });
         });
 
+    }
+
+    private PermRolesMeta.Meta generatePermMeta(Perms p) {
+        if (p == null) return null;
+        PermRolesMeta.Meta permsMeta = new PermRolesMeta.Meta();
+        boolean flag = false;
+        if (p.require() != null && p.require().length != 0) {
+            permsMeta.setRequire(CollectionUtils.splitStrValsToSets(properties.getPermSeparator(), p.require()));
+            flag = true;
+        }
+        if (p.exclude() != null && p.exclude().length != 0) {
+            permsMeta.setExclude(CollectionUtils.splitStrValsToSets(properties.getPermSeparator(), p.exclude()));
+            flag = true;
+        }
+        permsMeta.setResources(CollectionUtils.newSet(p.resources()));
+        return flag ? permsMeta : null;
+    }
+
+    private PermRolesMeta.Meta generateRolesMeta(Roles r) {
+        if (r == null) return null;
+        PermRolesMeta.Meta rolesMeta = new PermRolesMeta.Meta();
+        boolean flag = false;
+        if (r.require() != null && r.require().length != 0) {
+            rolesMeta.setRequire(CollectionUtils.splitStrValsToSets(properties.getPermSeparator(), r.require()));
+            flag = true;
+        }
+        if (r.exclude() != null && r.exclude().length != 0) {
+            rolesMeta.setExclude(CollectionUtils.splitStrValsToSets(properties.getPermSeparator(), r.exclude()));
+            flag = true;
+        }
+        rolesMeta.setResources(CollectionUtils.newSet(r.resources()));
+        return flag ? rolesMeta : null;
     }
 
     private PermRolesMeta generatePermRolesMeta(Perms p, Roles r) {
@@ -237,46 +322,36 @@ public class AuCoreInitialization implements ApplicationContextAware {
         mapRet.forEach((key, value) -> {
             Set<RequestMethod> methods = key.getMethodsCondition().getMethods();
             Set<String> patternValues = key.getPatternsCondition().getPatterns();
-            RateLimit rateLimit = value.getMethodAnnotation(RateLimit.class); // 方法上的au
+            RateLimit rateLimit = value.getMethodAnnotation(RateLimit.class);
             if (rateLimit != null) {
                 LimitMeta limitMeta = new LimitMeta(rateLimit.window(), rateLimit.maxRequests(), rateLimit.punishmentTime(), rateLimit.minInterval(), rateLimit.associatedPatterns(), rateLimit.bannedType());
-                for (RequestMethod method : methods) {
-                    for (String patternValue : patternValues) {
-                        Map<String, LimitMeta> map = httpdLimitedMetaMap.get(method.toString());
-                        if (map == null) {
-                            map = new HashMap<>();
-                            httpdLimitedMetaMap.put(method.toString(), map);
-                        }
-                        map.put(contextPath + patternValue, limitMeta);
-                    }
-                }
+                methods.forEach(
+                        method -> patternValues.forEach(
+                                patternValue -> httpdLimitedMetaMap.computeIfAbsent(method.toString(), r -> new HashMap<>()).put(contextPath + patternValue, limitMeta))
+                );
             } else {
-                for (RequestMethod method : methods) {
-                    for (String patternValue : patternValues) {
-                        LimitMeta limitMeta = cMap.get(value.getBeanType().getName());
-                        if (limitMeta != null) {
-                            Map<String, LimitMeta> map = httpdLimitedMetaMap.get(method.toString());
-                            if (map == null) {
-                                map = new HashMap<>();
-                                httpdLimitedMetaMap.put(method.toString(), map);
-                            }
-                            map.put(contextPath + patternValue, limitMeta);
-                        }
-                    }
-                }
+                methods.forEach(
+                        method -> {
+                            patternValues.forEach(
+                                    patternValue -> {
+                                        LimitMeta limitMeta = cMap.get(value.getBeanType().getName());
+                                        if (limitMeta != null)
+                                            httpdLimitedMetaMap
+                                                    .computeIfAbsent(method.toString(), r -> new HashMap<>()).put(contextPath + patternValue, limitMeta);
+                                    });
+                        });
             }
 
             HashMap<String, Httpd.RequestPool> requestPool = new HashMap<>();
 
-            key.getMethodsCondition().getMethods().forEach(method -> {
-                key.getPatternsCondition().getPatterns().forEach(patternValue -> requestPool.put(contextPath + patternValue, new Httpd.RequestPool()));
-                ConcurrentHashMap<String, Httpd.RequestPool> reqMap = httpd.getRequestPools().get(method.toString());
-                if (reqMap == null) {
-                    reqMap = new ConcurrentHashMap<>();
-                    httpd.getRequestPools().put(method.toString(), reqMap);
-                }
-                reqMap.putAll(requestPool);
-            });
+            key.getMethodsCondition().getMethods().forEach(
+                    method -> {
+                        key.getPatternsCondition()
+                                .getPatterns()
+                                .forEach(
+                                        patternValue -> requestPool.put(contextPath + patternValue, new Httpd.RequestPool()));
+                        httpd.getRequestPools().computeIfAbsent(method.toString(), r -> new ConcurrentHashMap<>()).putAll(requestPool);
+                    });
         });
 
     }

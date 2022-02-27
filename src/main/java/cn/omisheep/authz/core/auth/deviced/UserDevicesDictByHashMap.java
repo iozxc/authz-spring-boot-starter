@@ -87,7 +87,7 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
         Map<String, AccessInfo> accessInfoHeap = usersAccessInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
         Map<String, RefreshInfo> refreshInfoHeap = usersRefreshInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
         DefaultDevice device = new DefaultDevice();
-        device.setType(deviceType).setId(deviceId);
+        device.setType(deviceType).setId(deviceId).setLastRequestTime(TimeUtils.now()).setIp(httpMeta.getIp());
 
         if (!isSupportMultiDevice) {
             accessInfoHeap.clear();

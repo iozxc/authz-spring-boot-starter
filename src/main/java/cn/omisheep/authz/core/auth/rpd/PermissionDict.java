@@ -17,7 +17,7 @@ public class PermissionDict {
     /**
      * 权限
      */
-    public Map<String, Map<String, PermRolesMeta>> authzMetadata;
+    private Map<String, Map<String, PermRolesMeta>> authzMetadata;
 
     private UnmodifiableObservableMap<String, Map<String, PermRolesMeta>> unmodifiableAuthzMetadata;
 

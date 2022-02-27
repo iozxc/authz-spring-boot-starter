@@ -37,6 +37,8 @@ public class RbacSlot implements Slot {
     @Override
     public boolean chain(HttpMeta httpMeta, HandlerMethod handler) {
         PermRolesMeta permRolesMeta = permissionDict.getAuthzMetadata().get(httpMeta.getMethod()).get(httpMeta.getApi());
+        if (permRolesMeta.non()) return true;
+
         Token accessToken = httpMeta.getToken();
 
         Set<String> roles = null;
@@ -66,9 +68,7 @@ public class RbacSlot implements Slot {
                 long nowTime = TimeUtils.nowTime();
                 Set<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
                 LogUtils.logDebug("permLibrary.getPermissionsByRole({}) {}", role, TimeUtils.diff(nowTime));
-                if (permissionsByRole != null) {
-                    perms.addAll(permissionsByRole);
-                }
+                perms.addAll(permissionsByRole);
                 if (!e4 && CollectionUtils.containsSub(permRolesMeta.getExcludePermissions(), permissionsByRole)) {
                     logs("Forbid : permissions exception", httpMeta, permRolesMeta);
                     httpMeta.error(ExceptionStatus.PERM_EXCEPTION);

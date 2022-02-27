@@ -35,6 +35,6 @@ public @interface Roles {
      */
     String[] exclude() default {};
 
-    String[] resources() default {};
+    String[] resources() default {"*"};
 
 }
