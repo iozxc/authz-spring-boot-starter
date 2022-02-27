@@ -1,9 +1,6 @@
 package cn.omisheep.authz.core.slot;
 
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import org.springframework.core.MethodParameter;
-import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.method.HandlerMethod;
 
 /**
@@ -12,7 +9,6 @@ import org.springframework.web.method.HandlerMethod;
  * @since 1.0.0
  */
 @Order(40)
-@SuppressWarnings("unchecked")
 public class ParameterPermSlot implements Slot {
 
     @Override
@@ -48,7 +44,7 @@ public class ParameterPermSlot implements Slot {
 //            if (perms != null) {
 //                System.out.println(Arrays.toString(perms.require()));
 //            }
-        }
+//        }
         return true;
     }
 }
