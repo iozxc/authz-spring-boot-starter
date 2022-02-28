@@ -24,12 +24,12 @@ import static cn.omisheep.authz.core.auth.rpd.AuthzDefender.logs;
  */
 @SuppressWarnings("all")
 @Order(30)
-public class RbacSlot implements Slot {
+public class APIPermSlot implements Slot {
 
     private final PermissionDict permissionDict;
     private final PermLibrary permLibrary;
 
-    public RbacSlot(PermissionDict permissionDict, PermLibrary permLibrary) {
+    public APIPermSlot(PermissionDict permissionDict, PermLibrary permLibrary) {
         this.permissionDict = permissionDict;
         this.permLibrary = permLibrary;
     }
