@@ -38,16 +38,6 @@ public class PermRolesMeta {
     private Meta role;
     private Meta permissions;
 
-    public static void main(String[] args) {
-        HashMap<String, HashMap<String, String>> map = new HashMap<>();
-//        map.put("1", new HashMap<>());
-//        map.put("2", new HashMap<>());
-        map.put("3", null);
-        System.out.println(map.values());
-        System.out.println(map.values().stream().count());
-        System.out.println(map.values().stream().noneMatch(Objects::nonNull));
-    }
-
     @JsonInclude(NON_NULL)
     private Map<ParamType, Map<String, ParamMetadata>> paramPermissionsMetadata;
 
