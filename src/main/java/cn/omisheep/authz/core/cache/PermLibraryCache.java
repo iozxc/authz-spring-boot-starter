@@ -46,6 +46,7 @@ public class PermLibraryCache {
         if (cache.notKey(key)) {
             Object result = joinPoint.proceed();
             cache.set(key, result, Cache.INFINITE);
+            if (result == null) return new HashSet<String>();
             return result;
         }
         return new HashSet<String>();

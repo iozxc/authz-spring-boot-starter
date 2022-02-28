@@ -17,6 +17,7 @@ import cn.omisheep.authz.core.tk.AuKey;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.authz.core.util.RedisUtils;
+import cn.omisheep.authz.core.util.ValueMatcher;
 import cn.omisheep.commons.util.Async;
 import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.commons.util.TaskBuilder;
@@ -110,7 +111,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
     private void initPermissionDict(ApplicationContext applicationContext, Map<RequestMappingInfo, HandlerMethod> mapRet) {
         PermissionDict.setPermSeparator(properties.getPermSeparator());
-        Set<String> roles = new HashSet<>();
+        Set<String> toBeLoadedRoles = new HashSet<>();
         HashMap<String, Map<String, PermRolesMeta>> authzMetadata = new HashMap<>();
         Map<String, PermRolesMeta> pMap = new HashMap<>();
         Map<String, PermRolesMeta> rMap = new HashMap<>();
@@ -156,8 +157,8 @@ public class AuCoreInitialization implements ApplicationContextAware {
             if (permRolesMeta != null) {
                 Set<Set<String>> requireRoles = permRolesMeta.getRequireRoles();
                 Set<Set<String>> excludeRoles = permRolesMeta.getExcludeRoles();
-                if (requireRoles != null) requireRoles.forEach(roles::addAll);
-                if (excludeRoles != null) excludeRoles.forEach(roles::addAll);
+                if (requireRoles != null) requireRoles.forEach(toBeLoadedRoles::addAll);
+                if (excludeRoles != null) excludeRoles.forEach(toBeLoadedRoles::addAll);
 
                 key.getMethodsCondition().getMethods().forEach(method -> {
                     key.getPatternsCondition().getPatterns().forEach(patternValue ->
@@ -170,6 +171,10 @@ public class AuCoreInitialization implements ApplicationContextAware {
             key.getMethodsCondition().getMethods().forEach(method -> {
                 key.getPatternsCondition().getPatterns().forEach(patternValue -> {
                     for (MethodParameter param : value.getMethodParameters()) {
+                        Class<?> paramType = param.getParameter().getType();
+                        if (ValueMatcher.checkType(paramType).equals(ValueMatcher.ValueType.OTHER)) {
+                            continue;
+                        }
                         Roles rolesByParam = param.getParameterAnnotation(Roles.class);
                         Perms permsByParam = param.getParameterAnnotation(Perms.class);
                         BatchAuthority batchAuthority = param.getParameterAnnotation(BatchAuthority.class);
@@ -188,23 +193,27 @@ public class AuCoreInitialization implements ApplicationContextAware {
                                 if (!requestParam.name().equals("")) paramName = requestParam.name();
                             }
 
-                            ArrayList<PermRolesMeta.Meta> rolesMeta = new ArrayList<>();
-                            ArrayList<PermRolesMeta.Meta> permsMeta = new ArrayList<>();
+                            ArrayList<PermRolesMeta.Meta> rolesMetaList = new ArrayList<>();
+                            ArrayList<PermRolesMeta.Meta> permsMetaList = new ArrayList<>();
                             PermRolesMeta.Meta vr = generateRolesMeta(rolesByParam);
                             PermRolesMeta.Meta vp = generatePermMeta(permsByParam);
-                            if (vr != null) rolesMeta.add(vr);
-                            if (vp != null) permsMeta.add(vp);
+                            if (vr != null) rolesMetaList.add(vr);
+                            if (vp != null) permsMetaList.add(vp);
 
                             if (batchAuthority != null) {
                                 Roles[] rs = batchAuthority.roles();
                                 for (Roles r : rs) {
                                     PermRolesMeta.Meta v = generateRolesMeta(r);
-                                    if (v != null) rolesMeta.add(v);
+                                    if (v != null) {
+                                        rolesMetaList.add(v);
+                                        if (v.getRequire() != null) v.getRequire().forEach(toBeLoadedRoles::addAll);
+                                        if (v.getExclude() != null) v.getExclude().forEach(toBeLoadedRoles::addAll);
+                                    }
                                 }
                                 Perms[] ps = batchAuthority.perms();
                                 for (Perms p : ps) {
                                     PermRolesMeta.Meta v = generatePermMeta(p);
-                                    if (v != null) permsMeta.add(v);
+                                    if (v != null) permsMetaList.add(v);
                                 }
                             }
 
@@ -213,8 +222,9 @@ public class AuCoreInitialization implements ApplicationContextAware {
                                         .computeIfAbsent(contextPath + patternValue, r -> new PermRolesMeta());
                                 meta.put(type, paramName,
                                         new PermRolesMeta.ParamMetadata()
-                                                .setRolesMeta(rolesMeta)
-                                                .setPermissionsMeta(permsMeta)
+                                                .setParamType(paramType)
+                                                .setRolesMetaList(rolesMetaList)
+                                                .setPermissionsMetaList(permsMetaList)
                                 );
                             }
                         }
@@ -233,7 +243,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
         }
 
         Async.run(() -> {
-            List<String> collect = roles.stream().collect(Collectors.toList());
+            List<String> collect = toBeLoadedRoles.stream().collect(Collectors.toList());
             List<Set<String>> rolesPerms = RedisUtils.Obj.get(
                     collect.stream()
                             .map(role -> Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX + role)

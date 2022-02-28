@@ -25,6 +25,10 @@ public class PermRolesMeta {
         private Set<Set<String>> exclude;
         private Set<String> resources; // required protect resources
 
+        public boolean non() {
+            return (require == null || require.size() == 0) && (exclude == null || exclude.size() == 0);
+        }
+
         @Override
         public String toString() {
             return (require != null ? "require: " + require : "") + (exclude != null ? "\t, exclude: " + exclude : "");
@@ -33,6 +37,16 @@ public class PermRolesMeta {
 
     private Meta role;
     private Meta permissions;
+
+    public static void main(String[] args) {
+        HashMap<String, HashMap<String, String>> map = new HashMap<>();
+//        map.put("1", new HashMap<>());
+//        map.put("2", new HashMap<>());
+        map.put("3", null);
+        System.out.println(map.values());
+        System.out.println(map.values().stream().count());
+        System.out.println(map.values().stream().noneMatch(Objects::nonNull));
+    }
 
     @JsonInclude(NON_NULL)
     private Map<ParamType, Map<String, ParamMetadata>> paramPermissionsMetadata;
@@ -48,15 +62,41 @@ public class PermRolesMeta {
     }
 
     public boolean non() {
-        return role == null && permissions == null;
+        return (role == null || role.non()) && (permissions == null || permissions.non());
+    }
+
+    public boolean nonAll() {
+        return (role == null || role.non()) && (permissions == null || permissions.non())
+                && (paramPermissionsMetadata == null
+                || paramPermissionsMetadata.size() == 0
+                || paramPermissionsMetadata.values().stream().noneMatch(Objects::nonNull));
+    }
+
+    public PermRolesMeta overrideApi(PermRolesMeta permRolesMeta) {
+        this.setRequireRoles(permRolesMeta.getRequireRoles());
+        this.setExcludeRoles(permRolesMeta.getExcludeRoles());
+        this.setRequirePermissions(permRolesMeta.getRequirePermissions());
+        this.setExcludePermissions(permRolesMeta.getExcludePermissions());
+        return this;
+    }
+
+    public PermRolesMeta removeApi() {
+        role = null;
+        permissions = null;
+        return this;
     }
 
     @Data
     @Accessors(chain = true)
     @JsonInclude(NON_EMPTY)
     public static class ParamMetadata {
-        private List<Meta> rolesMeta;
-        private List<Meta> permissionsMeta;
+        private Class<?> paramType;
+        private List<Meta> rolesMetaList;
+        private List<Meta> permissionsMetaList;
+
+        public boolean non() {
+            return (rolesMetaList == null || rolesMetaList.isEmpty()) && (permissionsMetaList == null || permissionsMetaList.isEmpty());
+        }
     }
 
     public enum ParamType {
@@ -70,11 +110,11 @@ public class PermRolesMeta {
         Operate operate;
 
         public enum Operate {
-            ADD,
-            DELETE,
-            MODIFY,
-            GET,
-            EMPTY
+            ADD, OVERRIDE,
+            DELETE, DEL,
+            MODIFY, UPDATE,
+            GET, READ,
+            EMPTY, NON,
         }
 
         public Vo setOperate(Operate operate) {

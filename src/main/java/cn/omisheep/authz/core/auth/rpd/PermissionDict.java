@@ -40,22 +40,41 @@ public class PermissionDict {
     }
 
     public synchronized PermRolesMeta modify(PermRolesMeta.Vo permRolesMetaVo) {
+        boolean change = false;
         try {
+            Map<String, PermRolesMeta> target = authzMetadata.get(permRolesMetaVo.getMethod());
+            PermRolesMeta meta = target.get(permRolesMetaVo.getApi());
             switch (permRolesMetaVo.getOperate()) {
                 case ADD:
-                    return authzMetadata.get(permRolesMetaVo.getMethod()).put(permRolesMetaVo.getApi(), permRolesMetaVo.build());
+                case OVERRIDE:
+                    change = true;
+                    if (meta != null) return meta.overrideApi(permRolesMetaVo.build());
+                    else return target.put(permRolesMetaVo.getApi(), permRolesMetaVo.build());
                 case MODIFY:
-                    return authzMetadata.get(permRolesMetaVo.getMethod()).get(permRolesMetaVo.getApi()).merge(permRolesMetaVo.build());
+                case UPDATE:
+                    change = true;
+                    return meta.merge(permRolesMetaVo.build());
                 case DELETE:
-                    return authzMetadata.get(permRolesMetaVo.getMethod()).remove(permRolesMetaVo.getApi());
+                case DEL:
+                    if (meta != null) return meta.removeApi();
+                    else return null;
                 case GET:
-                    return authzMetadata.get(permRolesMetaVo.getMethod()).get(permRolesMetaVo.getApi());
+                case READ:
+                    return meta;
                 default:
                     return null;
             }
         } catch (Exception e) {
             return null;
         } finally {
+            if (change) {
+                PermRolesMeta meta = authzMetadata.get(permRolesMetaVo.getMethod()).get(permRolesMetaVo.getApi());
+                if (meta == null || meta.nonAll()) {
+                    authzMetadata.get(permRolesMetaVo.getMethod()).remove(permRolesMetaVo.getApi());
+                }
+                Map<String, PermRolesMeta> metaMap = authzMetadata.get(permRolesMetaVo.getMethod());
+                if (metaMap.size() == 0) authzMetadata.remove(permRolesMetaVo.getMethod());
+            }
             unmodifiableAuthzMetadata = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(authzMetadata));
         }
     }

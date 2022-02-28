@@ -61,6 +61,7 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
                 return false;
             } else return true;
         } catch (Exception e) {
+            e.printStackTrace();
             LogUtils.logError(e.getMessage(), e.getCause());
             authzExceptionHandler.handle(request, response, new AuthzException(e.getCause(), ExceptionStatus.UNKNOWN));
             return false;

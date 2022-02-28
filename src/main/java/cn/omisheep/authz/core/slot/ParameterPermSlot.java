@@ -5,6 +5,7 @@ import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
+import cn.omisheep.authz.core.util.ValueMatcher;
 import cn.omisheep.commons.util.CollectionUtils;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -49,6 +50,7 @@ public class ParameterPermSlot implements Slot {
             PathVariable pathVariable = AnnotationUtils.getAnnotation(parameter.getParameter(), PathVariable.class);
 
             String paramName = parameter.getParameter().getName();
+            Class<?> paramType = parameter.getParameter().getType();
             PermRolesMeta.ParamType type = null;
             String value = null;
             if (pathVariable != null) {
@@ -63,7 +65,6 @@ public class ParameterPermSlot implements Slot {
                 if (!requestParam.name().equals("")) paramName = requestParam.name();
                 value = httpMeta.getRequest().getParameter(paramName);
             }
-
             // 类型匹配上了
             if (type != null) {
                 if (value == null) continue; // value不为空
@@ -76,10 +77,10 @@ public class ParameterPermSlot implements Slot {
                 }
                 if (paramMetadata == null) continue; // 且需要保护
 
-                List<PermRolesMeta.Meta> rolesMeta = paramMetadata.getRolesMeta();
+                List<PermRolesMeta.Meta> rolesMetaList = paramMetadata.getRolesMetaList();
 
                 rolesMetaCheck:
-                if (rolesMeta != null && !rolesMeta.isEmpty()) {
+                if (rolesMetaList != null && !rolesMetaList.isEmpty()) {
                     if (roles == null) {
                         if (httpMeta.getToken() == null) {
                             logs("Require Login", httpMeta, permRolesMeta);
@@ -90,8 +91,8 @@ public class ParameterPermSlot implements Slot {
                     }
                     boolean next = false;
                     label:
-                    for (PermRolesMeta.Meta meta : rolesMeta) {
-                        if (match(meta.getResources(), value)) { // 值是否匹配，若匹配上
+                    for (PermRolesMeta.Meta meta : rolesMetaList) {
+                        if (ValueMatcher.match(meta.getResources(), value, paramType)) { // 值是否匹配，若匹配上
                             if (CollectionUtils.containsSub(meta.getRequire(), roles)) { // 判断是否权限匹配
                                 // 匹配失败继续看后面的是否有匹配上的，如果都匹配失败，则返回权限不足
                                 // 匹配成功则直接过
@@ -101,10 +102,10 @@ public class ParameterPermSlot implements Slot {
                         }
                     }
                     if (!next) {
-                        if (rolesMeta.stream().filter(meta -> meta.getResources().contains("*")).count() == 0) {
+                        if (rolesMetaList.stream().filter(meta -> meta.getResources().contains("*")).count() == 0) {
                             // 如果没有带*的匹配，那么如果值不属于其中，默认通过
                             String finalValue = value;
-                            if (!rolesMeta.stream().anyMatch(meta -> match(meta.getResources(), finalValue))) {
+                            if (!rolesMetaList.stream().anyMatch(meta -> ValueMatcher.match(meta.getResources(), finalValue, paramType))) {
                                 break rolesMetaCheck;
                             }
                         }
@@ -114,9 +115,9 @@ public class ParameterPermSlot implements Slot {
                     }
                 }
 
-                List<PermRolesMeta.Meta> permissionsMeta = paramMetadata.getPermissionsMeta();
+                List<PermRolesMeta.Meta> permissionsMetaList = paramMetadata.getPermissionsMetaList();
                 permMetaCheck:
-                if (permissionsMeta != null && !permissionsMeta.isEmpty()) {
+                if (permissionsMetaList != null && !permissionsMetaList.isEmpty()) {
                     if (httpMeta.getToken() == null) {
                         logs("Require Login", httpMeta, permRolesMeta);
                         httpMeta.error(ExceptionStatus.REQUIRE_LOGIN);
@@ -132,8 +133,8 @@ public class ParameterPermSlot implements Slot {
 
                     boolean next = false;
                     label:
-                    for (PermRolesMeta.Meta meta : permissionsMeta) {
-                        if (match(meta.getResources(), value)) { // 值是否匹配，若匹配上
+                    for (PermRolesMeta.Meta meta : permissionsMetaList) {
+                        if (ValueMatcher.match(meta.getResources(), value, paramType)) { // 值是否匹配，若匹配上
                             if (CollectionUtils.containsSub(meta.getRequire(), permissions)) { // 判断是否权限匹配
                                 // 匹配失败继续看后面的是否有匹配上的，如果都匹配失败，则返回权限不足
                                 // 匹配成功则直接过
@@ -144,10 +145,10 @@ public class ParameterPermSlot implements Slot {
                     }
 
                     if (!next) {
-                        if (permissionsMeta.stream().filter(meta -> meta.getResources().contains("*")).count() == 0) {
+                        if (permissionsMetaList.stream().filter(meta -> meta.getResources().contains("*")).count() == 0) {
                             // 如果没有带*的匹配，那么如果值不属于其中，默认通过
                             String finalValue = value;
-                            if (!permissionsMeta.stream().anyMatch(meta -> match(meta.getResources(), finalValue))) {
+                            if (!permissionsMetaList.stream().anyMatch(meta -> ValueMatcher.match(meta.getResources(), finalValue, paramType))) {
                                 break permMetaCheck;
                             }
                         }
@@ -161,8 +162,5 @@ public class ParameterPermSlot implements Slot {
         return true;
     }
 
-    // TODO: (+) 匹配范围
-    private boolean match(Set<String> resoureces, String value) {
-        return resoureces.contains("*") || resoureces.contains(value);
-    }
+
 }
