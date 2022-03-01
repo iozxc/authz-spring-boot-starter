@@ -4,7 +4,6 @@ import org.apache.commons.lang.ObjectUtils;
 
 import java.util.Set;
 
-import static cn.omisheep.authz.core.Constants.EMPTY;
 import static cn.omisheep.authz.core.Constants.WILDCARD;
 
 /**
@@ -26,7 +25,7 @@ public class ValueMatcher {
 
     @SuppressWarnings({"all"})
     public static boolean match(String resources, String rawValue, Class<?> valueType) {
-        if (resources == null || resources.equals(EMPTY)) return false;
+        if (resources == null) return false;
         if (resources.equals(WILDCARD)) return true;
         try {
             ValueType type = checkType(valueType);
@@ -53,24 +52,23 @@ public class ValueMatcher {
         }
     }
 
-    private static Object parse(String value, Class<?> type) throws Exception {
+    private static Object parse(String value, Class<?> type) {
         if (type.equals(String.class)) return value;
         if (type.equals(Integer.class) || type.equals(Integer.TYPE)) {
-            return Integer.class.getConstructor(String.class).newInstance(value);
+            return new Integer(value);
         } else if (type.equals(Long.class) || type.equals(Long.TYPE)) {
-            return Long.class.getConstructor(String.class).newInstance(value);
+            return new Long(value);
         } else if (type.equals(Short.class) || type.equals(Short.TYPE)) {
-            return Short.class.getConstructor(String.class).newInstance(value);
+            return new Short(value);
         } else if (type.equals(Double.class) || type.equals(Double.TYPE)) {
-            return Double.class.getConstructor(String.class).newInstance(value);
+            return new Double(value);
         } else if (type.equals(Float.class) || type.equals(Float.TYPE)) {
-            return Float.class.getConstructor(String.class).newInstance(value);
+            return new Float(value);
         } else if (type.equals(Character.class) || type.equals(Character.TYPE)) {
             return value.charAt(0);
         } else if (type.equals(Boolean.class) || type.equals(Boolean.TYPE)) {
-            return Boolean.class.getConstructor(String.class).newInstance(value);
-        }
-        return null;
+            return Boolean.valueOf(value);
+        } return null;
     }
 
     public static ValueType checkType(Class<?> type) {
