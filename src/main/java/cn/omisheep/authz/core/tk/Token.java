@@ -1,7 +1,6 @@
 package cn.omisheep.authz.core.tk;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.ToString;
 
@@ -24,7 +23,6 @@ public class Token {
     /**
      * 用户id
      */
-    @JsonIgnore
     private final Object userId;
 
     /**
@@ -47,13 +45,11 @@ public class Token {
     /**
      * 登录设备系统类型
      */
-    @JsonIgnore
     private final String deviceType;
 
     /**
      * 登录设备id
      */
-    @JsonIgnore
     private final String deviceId;
 
     /**

@@ -126,7 +126,7 @@ public class AuHelper {
     /**
      * 可使用{@link org.springframework.web.bind.annotation.RequestBody}获得，或者{@code new PermRolesMeta.Vo()}
      * <p>
-     *
+     * <p>
      * 必须要的三个字段：{@code operate, method, api}
      * <p>
      * operate 支持四种操作: ADD, DELETE, MODIFY, GET （可小写）
@@ -247,7 +247,7 @@ public class AuHelper {
 
     static {
         userDevicesDict = AUtils.getBean(UserDevicesDict.class);
-        permissionDict = AUtils.getBean(PermissionDict.class);
+        permissionDict = PermissionDict.self();
         auDefender = AUtils.getBean(AuthzDefender.class);
         cache = AUtils.getBean(Cache.class);
     }

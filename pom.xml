@@ -70,7 +70,7 @@
         <dependency>
             <groupId>com.baqend</groupId>
             <artifactId>bloom-filter</artifactId>
-            <version>1.0.7</version>
+            <version>2.2.4</version>
         </dependency>
         <dependency>
             <groupId>com.alibaba</groupId>
@@ -86,12 +86,12 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.6</version>
+            <version>2.11.0</version>
         </dependency>
         <dependency>
             <groupId>com.clearspring.analytics</groupId>
             <artifactId>stream</artifactId>
-            <version>2.9.5</version>
+            <version>2.9.8</version>
         </dependency>
         <!--^.^-->
         <dependency>
@@ -102,7 +102,7 @@
         <dependency>
             <groupId>io.github.openfeign</groupId>
             <artifactId>feign-core</artifactId>
-            <version>10.12</version>
+            <version>11.8</version>
         </dependency>
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
@@ -112,12 +112,7 @@
         <dependency>
             <groupId>org.mybatis</groupId>
             <artifactId>mybatis</artifactId>
-            <version>3.5.6</version>
-        </dependency>
-        <dependency>
-            <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus</artifactId>
-            <version>3.4.2</version>
+            <version>3.5.9</version>
         </dependency>
     </dependencies>
 

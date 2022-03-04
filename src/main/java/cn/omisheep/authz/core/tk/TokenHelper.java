@@ -44,7 +44,7 @@ public class TokenHelper {
         keyBytes = TextCodec.BASE64.decode(properties.getToken().getKey());
         issuer = properties.getToken().getIssuer();
         expire = (int) (TimeUtils.parseTimeValue(properties.getToken().getRefreshTime()) / 1000);
-        cookieName = properties.getCookieName();
+        cookieName = properties.getToken().getCookieName();
         alg = SignatureAlgorithm.HS256;
         liveTime = TimeUtils.parseTimeValue(properties.getToken().getLiveTime());
         refreshTime = TimeUtils.parseTimeValue(properties.getToken().getRefreshTime());

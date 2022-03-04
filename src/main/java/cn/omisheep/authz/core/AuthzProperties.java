@@ -10,7 +10,7 @@ import org.springframework.boot.logging.LogLevel;
  * @since 1.0.0
  */
 @Data
-@ConfigurationProperties(prefix = "spring.authz")
+@ConfigurationProperties(prefix = "authz")
 public class AuthzProperties {
 
     private TokenConfig token = new TokenConfig();
@@ -19,24 +19,18 @@ public class AuthzProperties {
 
     private CacheConfig cache = new CacheConfig();
 
-    /**
-     * role/permission分隔符
-     * <p>
-     * role :  "zxc,user"
-     * <p>
-     * permission :   "user:create,user:update"
-     */
-    private String permSeparator = ",";
+    private MybatisConfig mybatis = new MybatisConfig();
 
-    /**
-     * cookie name
-     */
-    private String cookieName = "atkn";
+    private boolean dataFilter = true;
 
-    /**
-     * header name
-     */
-    private String headerName = "Authorization";
+//    /**
+//     * role/permission分隔符
+//     * <p>
+//     * role :  "zxc,user"
+//     * <p>
+//     * permission :   "user:create,user:update"
+//     */
+//    private String permSeparator = ",";
 
     /**
      * rsa的key刷新时间，单位 s|m|h|d
@@ -96,6 +90,21 @@ public class AuthzProperties {
         private String key;
 
         /**
+         * cookie name
+         */
+        private String cookieName = "atkn";
+
+        /**
+         * header name
+         */
+        private String headerName = "Authorization";
+
+        /**
+         * 头模版
+         */
+        private String headerTemplate = "Bearer <token>";
+
+        /**
          * 存活时间，默认 7d ，单位 ms|s|m|h|d
          */
         private String liveTime = "7d";
@@ -112,9 +121,6 @@ public class AuthzProperties {
 
     }
 
-    /**
-     * 全局默认配置，当全部配置时生效，默认作用于所有路由，优先级最低，会被其他AuLimit和Au覆盖
-     */
     @Data
     public static class UserConfig {
 
@@ -130,4 +136,24 @@ public class AuthzProperties {
 
     }
 
+    @Data
+    public static class MybatisConfig {
+
+        private Version version = Version.V_3_4_0_up;
+
+        enum Version {
+            V_3_4_0_up("3.4.0+"),
+            V_3_4_0_low("3.4.0-");
+
+            Version(String version) {
+                this.version = version;
+            }
+
+            private final String version;
+
+            public String getVersion() {
+                return version;
+            }
+        }
+    }
 }

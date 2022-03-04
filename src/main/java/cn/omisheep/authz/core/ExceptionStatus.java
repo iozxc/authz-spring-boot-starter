@@ -22,7 +22,8 @@ public enum ExceptionStatus {
     REQUEST_REPEAT(401, "Request repeat error", TOO_MANY_REQUESTS),
     LOGIN_EXCEPTION(402, "You are offline, or you may have logged in elsewhere", FORBIDDEN),
 
-    CONTENT_TYPE_ERROR(500, "Content type not supported, must be json", INTERNAL_SERVER_ERROR);
+    CONTENT_TYPE_ERROR(500, "Content type not supported, must be json", INTERNAL_SERVER_ERROR),
+    PAGE_NOT_SUPPORT(501, "Page not support, check database type, only mysql and oracle", INTERNAL_SERVER_ERROR);
 
     private final int code;
     private final String message;

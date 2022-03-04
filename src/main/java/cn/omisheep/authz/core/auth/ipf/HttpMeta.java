@@ -1,9 +1,11 @@
 package cn.omisheep.authz.core.auth.ipf;
 
 import cn.omisheep.authz.core.AuthzException;
+import cn.omisheep.authz.core.Constants;
 import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.util.LogUtils;
+import cn.omisheep.commons.util.HttpUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
@@ -12,7 +14,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Date;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
  * @since 1.0.0
  */
 @Data
+@SuppressWarnings("all")
 public class HttpMeta {
 
     @JsonIgnore
@@ -34,11 +36,26 @@ public class HttpMeta {
     private String body;
     private final Date date;
     private Token token;
+    private Object userId;
     private TokenException tokenException;
     private boolean hasTokenCookie;
-    private Set<String> permissions;
-    private Set<String> roles;
     private AuthzException authzException;
+
+    public static Token currentToken() {
+        try {
+            return ((HttpMeta) HttpUtils.getCurrentRequest().getAttribute(Constants.HTTP_META)).token;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static Object currentUserId() {
+        try {
+            return currentToken().getUserId();
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
     public HttpMeta error(AuthzException authzException) {
         this.authzException = authzException;
@@ -52,11 +69,6 @@ public class HttpMeta {
     public HttpMeta error(ExceptionStatus exceptionStatus, Throwable e) {
         return error(new AuthzException(e, exceptionStatus));
     }
-
-
-//    @JsonIgnore
-//    private CompletableFuture<Void> cfrps;
-
 
     public enum TokenException {
         ExpiredJwtException,
@@ -94,6 +106,7 @@ public class HttpMeta {
     public void setToken(Token token) {
         if (this.token == null) {
             this.token = token;
+            this.userId = token.getUserId();
         }
     }
 

@@ -9,7 +9,7 @@ import java.lang.annotation.*;
  * @version 1.0.0
  * @since 1.0.0
  */
-@Target({ElementType.PARAMETER, ElementType.METHOD})
+@Target({ElementType.PARAMETER, ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface BatchAuthority {

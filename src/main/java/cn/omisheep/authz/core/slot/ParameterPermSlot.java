@@ -3,6 +3,7 @@ package cn.omisheep.authz.core.slot;
 import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
+import cn.omisheep.authz.core.auth.rpd.ParamMetadata;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.util.ValueMatcher;
@@ -50,17 +51,17 @@ public class ParameterPermSlot implements Slot {
 
             String paramName = parameter.getParameter().getName();
             Class<?> paramType = parameter.getParameter().getType();
-            PermRolesMeta.ParamType type = null;
+            ParamMetadata.ParamType type = null;
             String value = null;
             if (pathVariable != null) {
-                type = PermRolesMeta.ParamType.PATH_VARIABLE;
+                type = ParamMetadata.ParamType.PATH_VARIABLE;
                 if (!pathVariable.name().equals("")) paramName = pathVariable.name();
 
                 Map<String, String> pathVariables = (Map<String, String>) httpMeta.getRequest().getAttribute(
                         HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
                 value = pathVariables.get(paramName);
             } else if (requestParam != null) {
-                type = PermRolesMeta.ParamType.REQUEST_PARAM;
+                type = ParamMetadata.ParamType.REQUEST_PARAM;
                 if (!requestParam.name().equals("")) paramName = requestParam.name();
                 value = httpMeta.getRequest().getParameter(paramName);
             }
@@ -68,7 +69,7 @@ public class ParameterPermSlot implements Slot {
             if (type != null) {
                 if (value == null) continue; // value不为空
 
-                PermRolesMeta.ParamMetadata paramMetadata = null;
+                ParamMetadata paramMetadata = null;
                 try {
                     paramMetadata = permRolesMeta.getParamPermissionsMetadata().get(type).get(paramName);
                 } catch (Exception e) {
@@ -80,14 +81,12 @@ public class ParameterPermSlot implements Slot {
 
                 rolesMetaCheck:
                 if (rolesMetaList != null && !rolesMetaList.isEmpty()) {
-                    if (roles == null) {
-                        if (httpMeta.getToken() == null) {
-                            logs("Require Login", httpMeta, permRolesMeta);
-                            httpMeta.error(ExceptionStatus.REQUIRE_LOGIN);
-                            return false;
-                        }
-                        roles = permLibrary.getRolesByUserId(httpMeta.getToken().getUserId());
+                    if (httpMeta.getToken() == null) {
+                        logs("Require Login", httpMeta, permRolesMeta);
+                        httpMeta.error(ExceptionStatus.REQUIRE_LOGIN);
+                        return false;
                     }
+                    roles = permLibrary.getRolesByUserId(httpMeta.getToken().getUserId());
                     boolean next = false;
                     label:
                     for (PermRolesMeta.Meta meta : rolesMetaList) {

@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core.util;
 
 import org.apache.commons.lang.ObjectUtils;
+import org.springframework.lang.NonNull;
 
 import java.util.Set;
 
@@ -16,7 +17,15 @@ public class ValueMatcher {
     public enum ValueType {
         RANGE, // int long double float short chart
         EQUALS, // boolean,  String
-        OTHER
+        OTHER;
+
+        public boolean isOther() {
+            return this == OTHER;
+        }
+
+        public boolean notOther() {
+            return this != OTHER;
+        }
     }
 
     public static boolean match(Set<String> resources, String rawValue, Class<?> valueType) {
@@ -70,6 +79,43 @@ public class ValueMatcher {
             return Boolean.valueOf(value);
         }
         return null;
+    }
+
+    public static Class<?> getType(String type) {
+        if (type.equals(String.class.getTypeName())) return String.class;
+        if (type.equals(Integer.class.getTypeName()) || type.equals(int.class.getTypeName())) {
+            return Integer.class;
+        } else if (type.equals(Long.class.getTypeName()) || type.equals(long.class.getTypeName())) {
+            return Long.class;
+        } else if (type.equals(Short.class.getTypeName()) || type.equals(short.class.getTypeName())) {
+            return Short.class;
+        } else if (type.equals(Double.class.getTypeName()) || type.equals(double.class.getTypeName())) {
+            return Double.class;
+        } else if (type.equals(Float.class.getTypeName()) || type.equals(float.class.getTypeName())) {
+            return Float.class;
+        } else if (type.equals(Character.class.getTypeName()) || type.equals(char.class.getTypeName())) {
+            return Character.class;
+        } else if (type.equals(Boolean.class.getTypeName()) || type.equals(boolean.class.getTypeName())) {
+            return Boolean.class;
+        }
+        try {
+            return Class.forName(type);
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
+
+    public static ValueType checkType(String type) {
+        try {
+            return checkType(Class.forName(type));
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return ValueType.OTHER;
+        }
+    }
+
+    public static ValueType checkType(@NonNull Object obj) {
+        return checkType(obj.getClass());
     }
 
     public static ValueType checkType(Class<?> type) {

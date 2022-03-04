@@ -7,7 +7,6 @@ import lombok.experimental.Accessors;
 
 import java.util.*;
 
-import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
 /**
@@ -19,6 +18,7 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 public class PermRolesMeta {
 
     @Data
+    @Accessors(chain = true)
     @JsonInclude(NON_NULL)
     public static class Meta {
         private Set<Set<String>> require;
@@ -39,13 +39,13 @@ public class PermRolesMeta {
     private Meta permissions;
 
     @JsonInclude(NON_NULL)
-    private Map<ParamType, Map<String, ParamMetadata>> paramPermissionsMetadata;
+    private Map<ParamMetadata.ParamType, Map<String, ParamMetadata>> paramPermissionsMetadata;
 
-    public Map<ParamType, Map<String, ParamMetadata>> getParamPermissionsMetadata() {
+    public Map<ParamMetadata.ParamType, Map<String, ParamMetadata>> getParamPermissionsMetadata() {
         return paramPermissionsMetadata;
     }
 
-    public void put(ParamType paramType, String name, ParamMetadata paramMetadata) {
+    public void put(ParamMetadata.ParamType paramType, String name, ParamMetadata paramMetadata) {
         if (paramPermissionsMetadata == null) paramPermissionsMetadata = new HashMap<>();
         paramPermissionsMetadata
                 .computeIfAbsent(paramType, r -> new HashMap<>()).put(name, paramMetadata);
@@ -74,24 +74,6 @@ public class PermRolesMeta {
         role = null;
         permissions = null;
         return this;
-    }
-
-    @Data
-    @Accessors(chain = true)
-    @JsonInclude(NON_EMPTY)
-    public static class ParamMetadata {
-        private Class<?> paramType;
-        private List<Meta> rolesMetaList;
-        private List<Meta> permissionsMetaList;
-
-        public boolean non() {
-            return (rolesMetaList == null || rolesMetaList.isEmpty()) && (permissionsMetaList == null || permissionsMetaList.isEmpty());
-        }
-    }
-
-    public enum ParamType {
-        PATH_VARIABLE,
-        REQUEST_PARAM
     }
 
     @Data

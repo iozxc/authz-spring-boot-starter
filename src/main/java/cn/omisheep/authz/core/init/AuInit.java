@@ -1,5 +1,6 @@
-package cn.omisheep.authz.core;
+package cn.omisheep.authz.core.init;
 
+import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.slot.SlotScan;

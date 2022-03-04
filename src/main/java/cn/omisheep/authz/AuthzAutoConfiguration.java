@@ -1,8 +1,8 @@
 package cn.omisheep.authz;
 
 
-import cn.omisheep.authz.core.AuCoreInitialization;
-import cn.omisheep.authz.core.AuInit;
+import cn.omisheep.authz.core.init.AuCoreInitialization;
+import cn.omisheep.authz.core.init.AuInit;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.aggregate.AggregateManager;
 import cn.omisheep.authz.core.auth.DefaultPermLibrary;
@@ -16,6 +16,7 @@ import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.cache.*;
 import cn.omisheep.authz.core.interceptor.*;
+import cn.omisheep.authz.core.interceptor.mybatis.DataInterceptor;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -76,14 +77,14 @@ public class AuthzAutoConfiguration {
         }
 
         @Bean(name = "redisHealthIndicator")
-        @ConditionalOnProperty(name = "spring.authz.cache.enable-redis-actuator", havingValue = "false", matchIfMissing = true)
+        @ConditionalOnProperty(name = "authz.cache.enable-redis-actuator", havingValue = "false", matchIfMissing = true)
         public Object nonRedisActuator() {
             return new Object();
         }
 
         @Bean("authzRedisTemplate")
         @ConditionalOnMissingBean(name = "authzRedisTemplate")
-        @ConditionalOnProperty(prefix = "spring.authz.cache", name = "enable-redis", havingValue = "true")
+        @ConditionalOnProperty(prefix = "authz.cache", name = "enable-redis", havingValue = "true")
         public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
             RedisTemplate<String, Object> template = new RedisTemplate<>();
             template.setConnectionFactory(redisConnectionFactory);
@@ -105,7 +106,7 @@ public class AuthzAutoConfiguration {
         }
 
         @Bean("authzCacheMessageReceive")
-        @ConditionalOnProperty(prefix = "spring.authz.cache", name = "enable-redis", havingValue = "true")
+        @ConditionalOnProperty(prefix = "authz.cache", name = "enable-redis", havingValue = "true")
         public MessageReceive messageReceive(Cache cache) {
             return new MessageReceive(cache);
         }
@@ -145,7 +146,7 @@ public class AuthzAutoConfiguration {
             RedisMessageListenerContainer container = new RedisMessageListenerContainer();
             container.setConnectionFactory(connectionFactory);
             container.addMessageListener(listenerAdapter1, new PatternTopic(Cache.CHANNEL));
-            container.addMessageListener(listenerAdapter2, new PatternTopic("AU_CONTEXT_CLOUD_APP_ID:" + appName));
+            container.addMessageListener(listenerAdapter2, new PatternTopic("AU_CONTEXT_CLOUD_APP_ID:" + appName)); // (+) request 同步
             container.setTopicSerializer(jackson2JsonRedisSerializer);
             return container;
         }
@@ -230,20 +231,22 @@ public class AuthzAutoConfiguration {
         registration.setOrder(1);
         return registration;
     }
-//
-//    @Bean("AuthzCookieFilter")
-//    public FilterRegistrationBean<AuthzCookieFilter> filterRegistrationBean(UserDevicesDict userDevicesDict, PermLibrary permLibrary, AuthzProperties properties) {
-//        FilterRegistrationBean<AuthzCookieFilter> registration = new FilterRegistrationBean<>();
-//        registration.setFilter(new AuthzCookieFilter(userDevicesDict, permLibrary, properties));
-//        registration.addUrlPatterns("/*");
-//        registration.setName("authzCookieFilter");
-//        registration.setOrder(2);
-//        return registration;
-//    }
 
     @Bean
     public AuCoreInitialization auCoreInitialization(AuthzProperties properties, Httpd httpd, UserDevicesDict userDevicesDict, PermissionDict permissionDict, PermLibrary permLibrary, Cache cache) {
         return new AuCoreInitialization(properties, httpd, userDevicesDict, permissionDict, permLibrary, cache);
+    }
+
+    @Configuration
+    @ConditionalOnProperty(name = "authz.data-interceptor", havingValue = "true", matchIfMissing = true)
+    public static class DataFilterAutoConfiguration {
+        @Bean
+        @ConditionalOnProperty(name = "authz.mybatis.version", havingValue = "v_3_4_0_up")
+        @ConditionalOnMissingBean
+        public DataInterceptor dataInterceptor(PermissionDict permissionDict, PermLibrary permLibrary) {
+            System.out.println("pageInterceptor");
+            return new DataInterceptor(permissionDict, permLibrary);
+        }
     }
 
 }

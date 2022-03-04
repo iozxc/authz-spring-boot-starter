@@ -30,7 +30,7 @@ public class CookieAndRequestSlot implements Slot {
     public CookieAndRequestSlot(UserDevicesDict userDevicesDict, PermLibrary permLibrary, AuthzProperties properties) {
         this.userDevicesDict = userDevicesDict;
         this.isEnableRedis = properties.getCache().isEnableRedis();
-        this.cookieName = properties.getCookieName();
+        this.cookieName = properties.getToken().getCookieName();
     }
 
     @Override

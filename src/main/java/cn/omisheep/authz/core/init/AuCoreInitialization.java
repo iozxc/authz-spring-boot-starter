@@ -1,14 +1,18 @@
-package cn.omisheep.authz.core;
+package cn.omisheep.authz.core.init;
 
 import cn.omisheep.authz.annotation.BatchAuthority;
 import cn.omisheep.authz.annotation.Perms;
 import cn.omisheep.authz.annotation.RateLimit;
 import cn.omisheep.authz.annotation.Roles;
+import cn.omisheep.authz.core.AuthzProperties;
+import cn.omisheep.authz.core.Constants;
+import cn.omisheep.authz.core.Pelcron;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.DeviceConfig;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.ipf.LimitMeta;
+import cn.omisheep.authz.core.auth.rpd.ParamMetadata;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.cache.Cache;
@@ -108,9 +112,8 @@ public class AuCoreInitialization implements ApplicationContextAware {
         AuInit.log.info("Started Authz  Message id: {}", Message.id);
     }
 
-
     private void initPermissionDict(ApplicationContext applicationContext, Map<RequestMappingInfo, HandlerMethod> mapRet) {
-        PermissionDict.setPermSeparator(properties.getPermSeparator());
+        PermissionDict.setPermSeparator(Constants.COMMA);
         Set<String> toBeLoadedRoles = new HashSet<>();
         HashMap<String, Map<String, PermRolesMeta>> authzMetadata = new HashMap<>();
         Map<String, PermRolesMeta> pMap = new HashMap<>();
@@ -172,7 +175,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
                 key.getPatternsCondition().getPatterns().forEach(patternValue -> {
                     for (MethodParameter param : value.getMethodParameters()) {
                         Class<?> paramType = param.getParameter().getType();
-                        if (ValueMatcher.checkType(paramType).equals(ValueMatcher.ValueType.OTHER)) {
+                        if (ValueMatcher.checkType(paramType).isOther()) {
                             continue;
                         }
                         Roles rolesByParam = param.getParameterAnnotation(Roles.class);
@@ -184,26 +187,26 @@ public class AuCoreInitialization implements ApplicationContextAware {
                             PathVariable pathVariable = param.getParameterAnnotation(PathVariable.class);
                             String paramName = param.getParameter().getName();
 
-                            PermRolesMeta.ParamType type = null;
+                            ParamMetadata.ParamType type = null;
                             if (pathVariable != null) {
-                                type = PermRolesMeta.ParamType.PATH_VARIABLE;
+                                type = ParamMetadata.ParamType.PATH_VARIABLE;
                                 if (!pathVariable.name().equals("")) paramName = pathVariable.name();
                             } else if (requestParam != null) {
-                                type = PermRolesMeta.ParamType.REQUEST_PARAM;
+                                type = ParamMetadata.ParamType.REQUEST_PARAM;
                                 if (!requestParam.name().equals("")) paramName = requestParam.name();
                             }
 
                             ArrayList<PermRolesMeta.Meta> rolesMetaList = new ArrayList<>();
                             ArrayList<PermRolesMeta.Meta> permsMetaList = new ArrayList<>();
-                            PermRolesMeta.Meta vr = generateRolesMeta(rolesByParam);
-                            PermRolesMeta.Meta vp = generatePermMeta(permsByParam);
+                            PermRolesMeta.Meta vr = generateRolesMeta(rolesByParam, true);
+                            PermRolesMeta.Meta vp = generatePermMeta(permsByParam, true);
                             if (vr != null) rolesMetaList.add(vr);
                             if (vp != null) permsMetaList.add(vp);
 
                             if (batchAuthority != null) {
                                 Roles[] rs = batchAuthority.roles();
                                 for (Roles r : rs) {
-                                    PermRolesMeta.Meta v = generateRolesMeta(r);
+                                    PermRolesMeta.Meta v = generateRolesMeta(r, true);
                                     if (v != null) {
                                         rolesMetaList.add(v);
                                         if (v.getRequire() != null) v.getRequire().forEach(toBeLoadedRoles::addAll);
@@ -212,7 +215,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
                                 }
                                 Perms[] ps = batchAuthority.perms();
                                 for (Perms p : ps) {
-                                    PermRolesMeta.Meta v = generatePermMeta(p);
+                                    PermRolesMeta.Meta v = generatePermMeta(p, true);
                                     if (v != null) permsMetaList.add(v);
                                 }
                             }
@@ -221,7 +224,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
                                 PermRolesMeta meta = authzMetadata.computeIfAbsent(method.toString(), r -> new HashMap<>())
                                         .computeIfAbsent(contextPath + patternValue, r -> new PermRolesMeta());
                                 meta.put(type, paramName,
-                                        new PermRolesMeta.ParamMetadata()
+                                        new ParamMetadata()
                                                 .setParamType(paramType)
                                                 .setRolesMetaList(rolesMetaList)
                                                 .setPermissionsMetaList(permsMetaList)
@@ -237,10 +240,12 @@ public class AuCoreInitialization implements ApplicationContextAware {
         });
 
         try {
-            permissionDict.init(authzMetadata);
-        } catch (IllegalAccessException e) {
+            permissionDict.initAuthzMetadata(authzMetadata);
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
+        PermissionDict.init(permissionDict);
 
         Async.run(() -> {
             List<String> collect = toBeLoadedRoles.stream().collect(Collectors.toList());
@@ -260,56 +265,64 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
     }
 
-    private PermRolesMeta.Meta generatePermMeta(Perms p) {
+    public static PermRolesMeta.Meta generatePermMeta(Perms p, boolean hasDefault) {
         if (p == null) return null;
         PermRolesMeta.Meta permsMeta = new PermRolesMeta.Meta();
         boolean flag = false;
         if (p.require() != null && p.require().length != 0) {
-            permsMeta.setRequire(CollectionUtils.splitStrValsToSets(properties.getPermSeparator(), p.require()));
+            permsMeta.setRequire(CollectionUtils.splitStrValsToSets(Constants.COMMA, p.require()));
             flag = true;
         }
         if (p.exclude() != null && p.exclude().length != 0) {
-            permsMeta.setExclude(CollectionUtils.splitStrValsToSets(properties.getPermSeparator(), p.exclude()));
+            permsMeta.setExclude(CollectionUtils.splitStrValsToSets(Constants.COMMA, p.exclude()));
             flag = true;
         }
-        permsMeta.setResources(CollectionUtils.newSet(p.resources()));
+        if (p.resources().length == 0) {
+            if (hasDefault) permsMeta.setResources(CollectionUtils.newSet("*"));
+        } else {
+            permsMeta.setResources(CollectionUtils.newSet(p.resources()));
+        }
         return flag ? permsMeta : null;
     }
 
-    private PermRolesMeta.Meta generateRolesMeta(Roles r) {
+    public static PermRolesMeta.Meta generateRolesMeta(Roles r, boolean hasDefault) {
         if (r == null) return null;
         PermRolesMeta.Meta rolesMeta = new PermRolesMeta.Meta();
         boolean flag = false;
         if (r.require() != null && r.require().length != 0) {
-            rolesMeta.setRequire(CollectionUtils.splitStrValsToSets(properties.getPermSeparator(), r.require()));
+            rolesMeta.setRequire(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.require()));
             flag = true;
         }
         if (r.exclude() != null && r.exclude().length != 0) {
-            rolesMeta.setExclude(CollectionUtils.splitStrValsToSets(properties.getPermSeparator(), r.exclude()));
+            rolesMeta.setExclude(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.exclude()));
             flag = true;
         }
-        rolesMeta.setResources(CollectionUtils.newSet(r.resources()));
+        if (r.resources().length == 0) {
+            if (hasDefault) rolesMeta.setResources(CollectionUtils.newSet("*"));
+        } else {
+            rolesMeta.setResources(CollectionUtils.newSet(r.resources()));
+        }
         return flag ? rolesMeta : null;
     }
 
-    private PermRolesMeta generatePermRolesMeta(Perms p, Roles r) {
+    public static PermRolesMeta generatePermRolesMeta(Perms p, Roles r) {
         PermRolesMeta prm = new PermRolesMeta();
         boolean flag = false;
         if (p != null) {
             if (p.require() != null && p.require().length != 0) {
-                prm.setRequirePermissions(CollectionUtils.splitStrValsToSets(properties.getPermSeparator(), p.require()));
+                prm.setRequirePermissions(CollectionUtils.splitStrValsToSets(Constants.COMMA, p.require()));
             }
             if (p.exclude() != null && p.exclude().length != 0) {
-                prm.setExcludePermissions(CollectionUtils.splitStrValsToSets(properties.getPermSeparator(), p.exclude()));
+                prm.setExcludePermissions(CollectionUtils.splitStrValsToSets(Constants.COMMA, p.exclude()));
             }
             flag = true;
         }
         if (r != null) {
             if (r.require() != null && r.require().length != 0) {
-                prm.setRequireRoles(CollectionUtils.splitStrValsToSets(properties.getPermSeparator(), r.require()));
+                prm.setRequireRoles(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.require()));
             }
             if (r.exclude() != null && r.exclude().length != 0) {
-                prm.setExcludeRoles(CollectionUtils.splitStrValsToSets(properties.getPermSeparator(), r.exclude()));
+                prm.setExcludeRoles(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.exclude()));
             }
             flag = true;
         }
