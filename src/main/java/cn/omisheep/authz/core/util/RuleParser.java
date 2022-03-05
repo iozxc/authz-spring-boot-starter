@@ -1,7 +1,6 @@
 package cn.omisheep.authz.core.util;
 
 import cn.omisheep.authz.core.auth.rpd.Rule;
-import cn.omisheep.commons.util.Utils;
 
 import java.util.*;
 
@@ -134,13 +133,4 @@ public class RuleParser {
         return rr;
     }
 
-    public static void main(String[] args) {
-        String str = "id = #{userID} OR ( #{userId} IN #{销售经理Id} AND ( id in (10,13,124) or amount > 100000 OR amount < 4000 and ( name = 'zxc' or name = 'fxf' and age > 10 ) ) AND user = 1) Or (name = 'zxc')";
-//        str = "username in (201803010224,201803010212,201803010222)";
-        System.out.println(str);
-        Rule rule5 = parseStringToRule(str);
-        System.out.println(parseRuleToString(rule5));
-
-        System.out.println(Utils.beautifulJson(rule5));
-    }
 }

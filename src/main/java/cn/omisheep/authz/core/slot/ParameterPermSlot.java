@@ -15,10 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerMapping;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static cn.omisheep.authz.core.auth.rpd.AuthzDefender.logs;
 
@@ -43,7 +40,7 @@ public class ParameterPermSlot implements Slot {
     public boolean chain(HttpMeta httpMeta, HandlerMethod handler) throws Exception {
         PermRolesMeta permRolesMeta = permissionDict.getAuthzMetadata().get(httpMeta.getMethod()).get(httpMeta.getApi());
         Set<String> roles = null;
-        Set<String> permissions = new HashSet<>();
+        Set<String> permissions = null;
 
         for (MethodParameter parameter : handler.getMethodParameters()) {
             RequestParam requestParam = AnnotationUtils.getAnnotation(parameter.getParameter(), RequestParam.class);
@@ -86,7 +83,9 @@ public class ParameterPermSlot implements Slot {
                         httpMeta.error(ExceptionStatus.REQUIRE_LOGIN);
                         return false;
                     }
-                    roles = permLibrary.getRolesByUserId(httpMeta.getToken().getUserId());
+
+                    roles = Optional.ofNullable(httpMeta.getRoles()).orElse(permLibrary.getRolesByUserId(httpMeta.getToken().getUserId()));
+                    httpMeta.setRoles(roles);
                     boolean next = false;
                     label:
                     for (PermRolesMeta.Meta meta : rolesMetaList) {
@@ -122,11 +121,18 @@ public class ParameterPermSlot implements Slot {
                         return false;
                     }
                     if (roles == null) {
-                        roles = permLibrary.getRolesByUserId(httpMeta.getToken().getUserId());
+                        roles = Optional.ofNullable(httpMeta.getRoles()).orElse(permLibrary.getRolesByUserId(httpMeta.getToken().getUserId()));
+                        httpMeta.setRoles(roles);
                     }
-                    for (String role : roles) {
-                        Set<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
-                        permissions.addAll(permissionsByRole);
+
+                    Set<String> perms = httpMeta.getPermissions();
+                    if (perms != null) permissions = perms;
+                    else {
+                        for (String role : roles) {
+                            Set<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
+                            permissions.addAll(permissionsByRole);
+                        }
+                        httpMeta.setPermissions(permissions);
                     }
 
                     boolean next = false;
@@ -157,6 +163,7 @@ public class ParameterPermSlot implements Slot {
                 }
             }
         }
+
         return true;
     }
 

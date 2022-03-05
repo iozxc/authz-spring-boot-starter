@@ -11,6 +11,14 @@ import org.springframework.web.method.HandlerMethod;
  * {@link HttpMeta#error(ExceptionStatus)}
  * <p>
  * {@link HttpMeta#error(ExceptionStatus, Throwable)}
+ * <p>
+ * <p>
+ * (1) CookieAndRequestSlot(0)
+ * (2) CheckerSlot(1)
+ * (3) DeviceSlot(10)
+ * (4) APIPermSlot(30)
+ * (5) ParameterPermSlot(40)
+ * (6) LogSlot(Int:max)
  *
  * @author zhouxinchen[1269670415@qq.com]
  * @version 1.0.0

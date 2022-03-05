@@ -24,36 +24,6 @@ import java.util.stream.Stream;
  */
 public class ArgsParser {
 
-
-    public List<String> gos1(String s) {
-        return new ArrayList<>(Arrays.asList("1", "3", s));
-    }
-
-    public List<String> gos2(List<String> i) {
-        i.add("4");
-        return i;
-    }
-
-    public List<String> gos3(List<String> i) {
-        i.add("33");
-        return i;
-    }
-
-    public static void main(String[] args) throws NoSuchMethodException {
-        String info = "user in #{gos3} or user in #{gos2} or user in #{gos1}";
-        HashMap<String, PermissionDict.ArgsMeta> map = new HashMap<>();
-        map.put("gos1", PermissionDict.ArgsMeta.of(ArgsParser.class, "gos1", String.class));
-        map.put("gos2", PermissionDict.ArgsMeta.of(ArgsParser.class, "gos2", List.class));
-        map.put("gos3", PermissionDict.ArgsMeta.of(ArgsParser.class, "gos3", List.class));
-
-        DataPermMeta dataPermMeta = DataPermMeta.of(info)
-                .addArg("gos1", "zxc")
-                .addArg("gos2", "#{gos1}")
-                .addArg("gos3", "#{gos2}");
-        PermissionDict.initArgs(map);
-        System.out.println(parse(dataPermMeta));
-    }
-
     public static String parse(DataPermMeta dataPermMeta) {
         StringBuilder stringBuilder = new StringBuilder();
         String condition = dataPermMeta.getCondition();
@@ -64,7 +34,10 @@ public class ArgsParser {
             if (i % 2 == 0) {
                 int k = condition.indexOf("{", index);
                 if (k != -1) {
-                    char o = condition.charAt(k - 1);
+                    char o;
+                    if (k - 1 < 0) {
+                        o = '#';
+                    } else o = condition.charAt(k - 1);
                     if (o == '#' || o == '$') {
                         op = o;
                         stringBuilder.append(condition, index, k - 1);
@@ -100,30 +73,29 @@ public class ArgsParser {
     public static final Pattern c = Pattern.compile("[#$]?\\{(.*?)}");
 
     private static Object ref(String argName, DataPermMeta dataPermMeta) {
+        Map<String, List<String>> argsMap = dataPermMeta.getArgsMap();
+        if (argsMap == null) return argsHandle(argName);
         List<String> list = dataPermMeta.getArgsMap().get(argName);
+        if (list == null || list.isEmpty()) return argsHandle(argName);
         ArrayList<Object> argsList = new ArrayList<>();
-        if (list != null) {
-            for (int i = 0; i < list.size(); i++) {
-                Matcher matcher = c.matcher(list.get(i));
-                if (matcher.find()) {
-                    argsList.add(ref(matcher.group(1), dataPermMeta));
-                } else {
-                    List<Class<?>> paramType = PermissionDict.argType(argName);
-                    if (paramType == null) {
-                        throw new RuntimeException("参数个数不匹配");
-                    }
-                    Class<?> aClass = paramType.get(i);
-                    try {
-                        argsList.add(aClass.getConstructor(String.class).newInstance(list.get(i)));
-                    } catch (InstantiationException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                        e.printStackTrace();
-                    }
+        for (int i = 0; i < list.size(); i++) {
+            Matcher matcher = c.matcher(list.get(i));
+            if (matcher.find()) {
+                argsList.add(ref(matcher.group(1), dataPermMeta));
+            } else {
+                List<Class<?>> paramType = PermissionDict.argType(argName);
+                if (paramType == null) {
+                    throw new RuntimeException("参数个数不匹配");
+                }
+                Class<?> aClass = paramType.get(i);
+                try {
+                    argsList.add(aClass.getConstructor(String.class).newInstance(list.get(i)));
+                } catch (InstantiationException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                    e.printStackTrace();
                 }
             }
-            return argsHandle(argName, argsList.toArray());
-        } else {
-            return argsHandle(argName);
         }
+        return argsHandle(argName, argsList.toArray());
     }
 
     private static String parseObject(char op, String[] trace, Object value) {
@@ -163,7 +135,6 @@ public class ArgsParser {
                 isObject = false;
                 a = (JSONArray) json;
             }
-
             for (int i = 1; i < trace.length - 1; i++) {
                 Matcher matcher = compile.matcher(trace[i]);
                 if (matcher.find()) {
@@ -454,4 +425,5 @@ public class ArgsParser {
 
         return b.toString();
     }
+
 }

@@ -47,6 +47,7 @@ public class APIPermSlot implements Slot {
         if (!e1 || !e2) {
             long nowTime = TimeUtils.nowTime();
             roles = permLibrary.getRolesByUserId(accessToken.getUserId());
+            httpMeta.setRoles(roles);
             LogUtils.logDebug("permLibrary.getRolesByUserId({})  {}", accessToken.getUserId(), TimeUtils.diff(nowTime));
             if (!e1 && !CollectionUtils.containsSub(permRolesMeta.getRequireRoles(), roles) || !e2 && CollectionUtils.containsSub(permRolesMeta.getExcludeRoles(), roles)) {
                 logs("Forbid : permissions exception", httpMeta, permRolesMeta);
@@ -61,10 +62,11 @@ public class APIPermSlot implements Slot {
             if (e1 && e2) {
                 long nowTime = TimeUtils.nowTime();
                 roles = permLibrary.getRolesByUserId(accessToken.getUserId());
+                httpMeta.setRoles(roles);
                 LogUtils.logDebug("e1 && e2 permLibrary.getRolesByUserId({})  {}", accessToken.getUserId(), TimeUtils.diff(nowTime));
             }
             HashSet<String> perms = new HashSet<>(); // 用户所拥有的权限
-            for (String role : Optional.of(roles).orElse(new HashSet<>())) {
+            for (String role : Optional.ofNullable(roles).orElse(new HashSet<>())) {
                 long nowTime = TimeUtils.nowTime();
                 Set<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
                 LogUtils.logDebug("permLibrary.getPermissionsByRole({}) {}", role, TimeUtils.diff(nowTime));
@@ -73,7 +75,6 @@ public class APIPermSlot implements Slot {
                     logs("Forbid : permissions exception", httpMeta, permRolesMeta);
                     httpMeta.error(ExceptionStatus.PERM_EXCEPTION);
                     return false;
-
                 }
             }
             if (!e3 && !CollectionUtils.containsSub(permRolesMeta.getRequirePermissions(), perms)) {
@@ -81,6 +82,7 @@ public class APIPermSlot implements Slot {
                 httpMeta.error(ExceptionStatus.PERM_EXCEPTION);
                 return false;
             }
+            httpMeta.setPermissions(perms);
         }
 
         logs("Success", httpMeta, permRolesMeta);

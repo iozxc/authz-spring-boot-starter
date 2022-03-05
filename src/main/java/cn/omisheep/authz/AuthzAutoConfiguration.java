@@ -1,8 +1,6 @@
 package cn.omisheep.authz;
 
 
-import cn.omisheep.authz.core.init.AuCoreInitialization;
-import cn.omisheep.authz.core.init.AuInit;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.aggregate.AggregateManager;
 import cn.omisheep.authz.core.auth.DefaultPermLibrary;
@@ -15,8 +13,10 @@ import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.cache.*;
+import cn.omisheep.authz.core.init.AuCoreInitialization;
+import cn.omisheep.authz.core.init.AuInit;
 import cn.omisheep.authz.core.interceptor.*;
-import cn.omisheep.authz.core.interceptor.mybatis.DataInterceptor;
+import cn.omisheep.authz.core.interceptor.mybatis.DataSecurityInterceptorForMybatis;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -146,7 +146,7 @@ public class AuthzAutoConfiguration {
             RedisMessageListenerContainer container = new RedisMessageListenerContainer();
             container.setConnectionFactory(connectionFactory);
             container.addMessageListener(listenerAdapter1, new PatternTopic(Cache.CHANNEL));
-            container.addMessageListener(listenerAdapter2, new PatternTopic("AU_CONTEXT_CLOUD_APP_ID:" + appName)); // (+) request 同步
+            container.addMessageListener(listenerAdapter2, new PatternTopic("AU_CONTEXT_CLOUD_APP_ID:" + appName)); //  (+) request 同步
             container.setTopicSerializer(jackson2JsonRedisSerializer);
             return container;
         }
@@ -243,9 +243,14 @@ public class AuthzAutoConfiguration {
         @Bean
         @ConditionalOnProperty(name = "authz.mybatis.version", havingValue = "v_3_4_0_up")
         @ConditionalOnMissingBean
-        public DataInterceptor dataInterceptor(PermissionDict permissionDict, PermLibrary permLibrary) {
-            System.out.println("pageInterceptor");
-            return new DataInterceptor(permissionDict, permLibrary);
+        public DataSecurityInterceptorForMybatis dataSecurityInterceptorForMybatis(PermissionDict permissionDict, PermLibrary permLibrary, DataFinderSecurityInterceptor dataFinderSecurityInterceptor) {
+            return new DataSecurityInterceptorForMybatis(permissionDict, permLibrary, dataFinderSecurityInterceptor);
+        }
+
+        @Bean
+        @ConditionalOnMissingBean
+        public DataFinderSecurityInterceptor dataFinderSecurityInterceptor() {
+            return new DefaultDataSecurityInterceptor();
         }
     }
 

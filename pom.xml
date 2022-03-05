@@ -114,6 +114,11 @@
             <artifactId>mybatis</artifactId>
             <version>3.5.9</version>
         </dependency>
+        <dependency>
+            <groupId>com.github.jsqlparser</groupId>
+            <artifactId>jsqlparser</artifactId>
+            <version>4.3</version>
+        </dependency>
     </dependencies>
 
 
@@ -223,19 +228,6 @@
                             <source>1.8</source>
                             <target>1.8</target>
                         </configuration>
-                    </plugin>
-                    <!-- Source -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>jar-no-fork</goal>
-                                </goals>
-                            </execution>
-                        </executions>
                     </plugin>
 
                     <plugin>

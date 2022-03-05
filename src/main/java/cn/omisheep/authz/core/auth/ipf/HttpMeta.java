@@ -14,6 +14,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Date;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -40,6 +41,20 @@ public class HttpMeta {
     private TokenException tokenException;
     private boolean hasTokenCookie;
     private AuthzException authzException;
+    private Set<String> roles;
+    private Set<String> permissions;
+
+    public HttpMeta setRoles(Set<String> roles) {
+        if (roles == null) return this;
+        this.roles = roles;
+        return this;
+    }
+
+    public HttpMeta setPermissions(Set<String> permissions) {
+        if (permissions == null) return this;
+        this.permissions = permissions;
+        return this;
+    }
 
     public static Token currentToken() {
         try {
