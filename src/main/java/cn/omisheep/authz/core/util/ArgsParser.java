@@ -50,7 +50,7 @@ public class ArgsParser {
                         return null;
                     } else {
                         if (stringBuilder.length() == 0) return condition;
-                        return stringBuilder.toString();
+                        return reduce(stringBuilder.append(condition, index, condition.length()).toString());
                     }
                 }
             } else {
@@ -58,8 +58,7 @@ public class ArgsParser {
                 if (k != -1) {
                     String item = condition.substring(index + 1, k);
                     String[] trace = item.split("\\.");
-                    Object o = ref(trace[0], dataPermMeta);
-                    stringBuilder.append(parseObject(op, trace, o));
+                    stringBuilder.append(parseObject(op, trace, ref(trace[0], dataPermMeta)));
                     index = k + 1;
                 } else {
                     return null;
@@ -68,6 +67,32 @@ public class ArgsParser {
             i++;
         }
         return null;
+    }
+
+    private static String reduce(String s) {
+        char[] chars = s.toCharArray();
+        StringBuilder builder = new StringBuilder();
+        int is = 0;
+        boolean in = false;
+        for (int i = 0; i < chars.length; i++) {
+            if (i + 2 < chars.length) {
+                if (s.substring(i, i + 2).equalsIgnoreCase("in")) {
+                    in = true;
+                }
+            }
+            if (in) {
+                if (chars[i] == '(') {
+                    is++;
+                    if (is > 1) continue;
+                } else if (chars[i] == ')') {
+                    is--;
+                    if (is != 0) continue;
+                    in = false;
+                }
+            }
+            builder.append(chars[i]);
+        }
+        return builder.toString();
     }
 
     public static final Pattern c = Pattern.compile("[#$]?\\{(.*?)}");
