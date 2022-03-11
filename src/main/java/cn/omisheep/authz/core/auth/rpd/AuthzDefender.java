@@ -9,8 +9,8 @@ import cn.omisheep.authz.core.tk.TokenHelper;
 import cn.omisheep.authz.core.tk.TokenPair;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.CollectionUtils;
-import cn.omisheep.commons.util.HttpUtils;
 import cn.omisheep.commons.util.TimeUtils;
+import cn.omisheep.web.utils.HttpUtils;
 import io.jsonwebtoken.ExpiredJwtException;
 import lombok.SneakyThrows;
 
@@ -101,7 +101,7 @@ public class AuthzDefender {
         if (!e1 || !e2) {
             long nowTime = TimeUtils.nowTime();
             roles = permLibrary.getRolesByUserId(accessToken.getUserId());
-            LogUtils.logDebug("permLibrary.getRolesByUserId({})  {}", accessToken.getUserId(), TimeUtils.diff(nowTime));
+            LogUtils.logDebug("permLibrary.getRolesByUserId({})  {}", accessToken.getUserId(), TimeUtils.diff(nowTime)); // todo: 减少耗时
             if (!e1 && !CollectionUtils.containsSub(permRolesMeta.getRequireRoles(), roles) || !e2 && CollectionUtils.containsSub(permRolesMeta.getExcludeRoles(), roles)) {
                 logs("Forbid : permissions exception", httpMeta, permRolesMeta);
                 return ExceptionStatus.PERM_EXCEPTION;
@@ -120,7 +120,7 @@ public class AuthzDefender {
             for (String role : Optional.of(roles).orElse(new HashSet<>())) {
                 long nowTime = TimeUtils.nowTime();
                 Set<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
-                LogUtils.logDebug("permLibrary.getPermissionsByRole({}) {}", role, TimeUtils.diff(nowTime));
+                LogUtils.logDebug("permLibrary.getPermissionsByRole({}) {}", role, TimeUtils.diff(nowTime)); // todo: 减少耗时
                 if (permissionsByRole != null) {
                     perms.addAll(permissionsByRole);
                 }

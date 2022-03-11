@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.util;
 
 import cn.omisheep.authz.core.Constants;
-import cn.omisheep.commons.util.HttpUtils;
+import cn.omisheep.web.utils.HttpUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;

@@ -11,7 +11,6 @@ import java.util.List;
  * @version 1.0.0
  * @since 1.0.0
  */
-
 public interface DataFinderSecurityInterceptor {
     @SuppressWarnings("rawtypes")
     String change(HttpMeta httpMeta, PermLibrary permLibrary, List<DataPermMeta> dataPermMetaList, Class<?> resultType, String sql) throws Exception;

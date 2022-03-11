@@ -16,7 +16,7 @@ import cn.omisheep.authz.core.auth.rpd.ParamMetadata;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.cache.Cache;
-import cn.omisheep.authz.core.cache.Message;
+import cn.omisheep.authz.core.msg.Message;
 import cn.omisheep.authz.core.tk.AuKey;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
@@ -109,7 +109,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
         }
         TaskBuilder.schedule(Pelcron::GC, properties.getGcPeriod());
 
-        AuInit.log.info("Started Authz  Message id: {}", Message.id);
+        AuInit.log.info("Started Authz  Message id: {}", Message.uuid);
     }
 
     private void initPermissionDict(ApplicationContext applicationContext, Map<RequestMappingInfo, HandlerMethod> mapRet) {

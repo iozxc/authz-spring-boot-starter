@@ -1,6 +1,8 @@
-package cn.omisheep.authz.core.cache;
+package cn.omisheep.authz.core.msg;
 
 import cn.omisheep.authz.AuthzAutoConfiguration;
+import cn.omisheep.authz.core.auth.ipf.Httpd;
+import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.TimeUtils;
 
@@ -13,25 +15,28 @@ import cn.omisheep.commons.util.TimeUtils;
 public class MessageReceive {
 
     private final Cache cache;
+    private final Httpd httpd;
 
-    public MessageReceive(Cache cache) {
+    public MessageReceive(Cache cache, Httpd httpd) {
         this.cache = cache;
+        this.httpd = httpd;
     }
 
     public void handleMessage(String o) {
         Object oo = AuthzAutoConfiguration.CacheAutoConfiguration.jackson2JsonRedisSerializer.deserialize(o.getBytes());
-        if (oo == null) return;
-        if (oo instanceof Message) {
-            Message message = (Message) oo;
-            if (!Message.ignore(message)) {
+        if (oo == null || !(oo instanceof Message)) return;
+        if (oo instanceof CacheMessage) {
+            CacheMessage message = (CacheMessage) oo;
+            if (!CacheMessage.ignore(message)) {
                 LogUtils.logDebug("MessageReceive time: {} message: {}", TimeUtils.nowTime(), message);
                 cache.receive(message);
             }
-            return;
-        }
-        if (oo instanceof RequestMessage) {
+        } else if (oo instanceof RequestMessage) {
             RequestMessage message = (RequestMessage) oo;
-            LogUtils.logDebug("MessageReceive time: {} message: {}", TimeUtils.nowTime(), message);
+            if (!RequestMessage.ignore(message)) {
+                LogUtils.logDebug("RequestMessage time: {} message: {}", TimeUtils.nowTime(), message);
+                httpd.receive(message);
+            }
         }
     }
 }

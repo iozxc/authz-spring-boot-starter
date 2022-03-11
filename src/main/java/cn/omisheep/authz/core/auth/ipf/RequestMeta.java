@@ -72,6 +72,37 @@ public class RequestMeta {
         return this;
     }
 
+    public boolean pushRequest(long now, int maxRequests, long window, long minInterval) {
+        if (requestTimeList.isEmpty() || requestTimeList.getLast() < now) {
+            return request(now, maxRequests, window, minInterval);
+        }
+
+        for (int i = 0; i < requestTimeList.size(); i++) {
+            if (requestTimeList.get(i) >= now) {
+                requestTimeList.add(i, now);
+                break;
+            }
+        }
+
+        int size = requestTimeList.size();
+        if (minInterval > 0 && size >= 2) {
+            if (requestTimeList.get(size - 1) - requestTimeList.get(size - 2) > minInterval) {
+                return false;
+            }
+        }
+
+        if (size > maxRequests) {
+            Long first = requestTimeList.getFirst();
+            return requestTimeList.getLast() - first >= window;
+        }
+        return true;
+    }
+
+
+    public boolean pushRequest(long now, LimitMeta limitMeta) {
+        return pushRequest(now, limitMeta.getMaxRequests(), limitMeta.getWindow(), limitMeta.getMinInterval());
+    }
+
     /**
      * @param now         nowMills
      * @param maxRequests 请求限制最大次数

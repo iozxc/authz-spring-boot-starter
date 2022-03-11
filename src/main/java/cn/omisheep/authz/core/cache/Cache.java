@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core.cache;
 
+import cn.omisheep.authz.core.msg.CacheMessage;
 import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.commons.util.TimeUtils;
 import com.github.benmanes.caffeine.cache.Expiry;
@@ -26,7 +27,6 @@ public interface Cache {
     String ALL = "*";
     String EMPTY = "";
     String SEPARATOR = ":";
-    String CHANNEL = "AU_CACHE_DATA_UPDATE";
     long INFINITE = Integer.MAX_VALUE;
     long INHERIT = -1L;
 
@@ -267,7 +267,7 @@ public interface Cache {
         return new HashMap<>();
     }
 
-    default void receive(Message message) {
+    default void receive(CacheMessage message) {
     }
 
     default void reload() {

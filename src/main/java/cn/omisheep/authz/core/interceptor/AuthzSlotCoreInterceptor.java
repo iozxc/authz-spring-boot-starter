@@ -6,6 +6,7 @@ import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.slot.Order;
 import cn.omisheep.authz.core.slot.Slot;
 import cn.omisheep.authz.core.util.LogUtils;
+import cn.omisheep.commons.util.TimeUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -46,25 +47,25 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
         HttpMeta httpMeta = (HttpMeta) request.getAttribute(HTTP_META);
         AuthzException httpException = httpMeta.getAuthzException();
         if (httpException != null) {
-            authzExceptionHandler.handle(request, response, httpException);
             LogUtils.exportLogsFromRequest(request);
-            return false;
+            return authzExceptionHandler.handle(request, response, httpException);
         }
         if (!(handler instanceof HandlerMethod)) return false;
+        long nowTime = TimeUtils.nowTime();
         HandlerMethod handlerMethod = (HandlerMethod) handler;
         try {
             boolean next = true;
             for (Slot slot : slots) if (next || slot.must()) next = slot.chain(httpMeta, handlerMethod);
             AuthzException exception = httpMeta.getAuthzException();
             if (exception != null) {
-                authzExceptionHandler.handle(request, response, exception);
-                return false;
+                return authzExceptionHandler.handle(request, response, exception);
             } else return true;
         } catch (Exception e) {
             e.printStackTrace();
             LogUtils.logError(e.getMessage(), e.getCause());
-            authzExceptionHandler.handle(request, response, new AuthzException(e.getCause(), ExceptionStatus.UNKNOWN));
-            return false;
+            return authzExceptionHandler.handle(request, response, new AuthzException(e.getCause(), ExceptionStatus.UNKNOWN));
+        } finally {
+            LogUtils.logDebug("preHandle {}", TimeUtils.diff(nowTime)); // todo: 减少耗时
         }
     }
 

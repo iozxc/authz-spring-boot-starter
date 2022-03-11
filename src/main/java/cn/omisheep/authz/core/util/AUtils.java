@@ -2,7 +2,7 @@ package cn.omisheep.authz.core.util;
 
 import cn.omisheep.authz.core.Constants;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.commons.util.HttpUtils;
+import cn.omisheep.web.utils.HttpUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;

@@ -23,15 +23,6 @@ public class AuthzProperties {
 
     private boolean dataFilter = true;
 
-//    /**
-//     * role/permission分隔符
-//     * <p>
-//     * role :  "zxc,user"
-//     * <p>
-//     * permission :   "user:create,user:update"
-//     */
-//    private String permSeparator = ",";
-
     /**
      * rsa的key刷新时间，单位 s|m|h|d
      */
@@ -75,9 +66,9 @@ public class AuthzProperties {
         private Long cacheMaximumSize;
 
         /**
-         * 在读取或者更新之后刷新缓存存活的时间 默认1分钟
+         * 在读取或者更新之后刷新缓存存活的时间 默认10分钟
          */
-        private String expireAfterReadOrUpdateTime = "1m";
+        private String expireAfterReadOrUpdateTime = "10m";
 
     }
 

@@ -7,7 +7,7 @@ import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.tk.TokenHelper;
 import cn.omisheep.commons.util.Async;
-import cn.omisheep.commons.util.HttpUtils;
+import cn.omisheep.web.utils.HttpUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import org.springframework.web.method.HandlerMethod;

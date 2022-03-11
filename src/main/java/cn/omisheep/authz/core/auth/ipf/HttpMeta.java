@@ -5,7 +5,7 @@ import cn.omisheep.authz.core.Constants;
 import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.util.LogUtils;
-import cn.omisheep.commons.util.HttpUtils;
+import cn.omisheep.web.utils.HttpUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 

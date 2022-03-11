@@ -2,7 +2,7 @@ package cn.omisheep.authz.core.util;
 
 import cn.omisheep.authz.core.AuthzException;
 import cn.omisheep.authz.core.ExceptionStatus;
-import cn.omisheep.commons.util.HttpUtils;
+import cn.omisheep.web.utils.HttpUtils;
 
 import javax.servlet.http.HttpServletRequest;
 

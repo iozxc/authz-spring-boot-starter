@@ -2,8 +2,8 @@ package cn.omisheep.authz.core.interceptor;
 
 import cn.omisheep.authz.core.AuthzException;
 import cn.omisheep.authz.core.ExceptionStatus;
-import cn.omisheep.commons.util.HttpUtils;
-import cn.omisheep.commons.web.entity.Result;
+import cn.omisheep.web.entity.Result;
+import cn.omisheep.web.utils.HttpUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -15,10 +15,14 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class DefaultAuthzExceptionHandler implements AuthzExceptionHandler {
     @Override
-    public void handle(HttpServletRequest request, HttpServletResponse response, AuthzException exception) throws Exception {
+    public boolean handle(HttpServletRequest request, HttpServletResponse response, AuthzException exception) throws Exception {
         ExceptionStatus exceptionStatus = exception.getExceptionStatus();
+
+        if (exceptionStatus.equals(ExceptionStatus.MISMATCHED_URL)) return true;
 
         HttpUtils.returnResponse(exceptionStatus.getHttpStatus(),
                 Result.of(exceptionStatus.getCode(), exceptionStatus.getMessage()));
+
+        return false;
     }
 }

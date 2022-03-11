@@ -3,13 +3,15 @@ package cn.omisheep.authz.core.auth.ipf;
 import cn.omisheep.authz.annotation.BannedType;
 import cn.omisheep.authz.core.Constants;
 import cn.omisheep.authz.core.ExceptionStatus;
+import cn.omisheep.authz.core.msg.RequestMessage;
 import cn.omisheep.authz.core.util.ExceptionUtils;
 import cn.omisheep.authz.core.util.LogUtils;
-import cn.omisheep.commons.web.BufferedServletRequestWrapper;
+import cn.omisheep.authz.core.util.RedisUtils;
+import cn.omisheep.commons.util.Async;
+import cn.omisheep.web.utils.BufferedServletRequestWrapper;
 import lombok.extern.slf4j.Slf4j;
 import orestes.bloomfilter.CountingBloomFilter;
 import org.springframework.boot.logging.LogLevel;
-import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.FilterChain;
@@ -17,10 +19,12 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Map;
 
 import static cn.omisheep.authz.core.Constants.HTTP_META;
+import static cn.omisheep.authz.core.auth.ipf.Httpd.antPathMatcher;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -31,7 +35,6 @@ import static cn.omisheep.authz.core.Constants.HTTP_META;
 @SuppressWarnings("all")
 public class AuthzHttpFilter extends OncePerRequestFilter {
 
-    private final AntPathMatcher antPathMatcher = new AntPathMatcher("/");
     private final Httpd httpd;
 
     public AuthzHttpFilter(Httpd httpd) {
@@ -53,6 +56,8 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
                 request,
                 ip, uri, api, method, new Date()).error(ExceptionUtils.clear(request));
         request.setAttribute(HTTP_META, httpMeta);
+
+        Async.run(() -> RedisUtils.publish(RequestMessage.CHANNEL, new RequestMessage()));
 
         filterChain.doFilter(request, response);
     }
@@ -111,24 +116,13 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
                             return null;
                         } else {
                             LogUtils.pushLogToRequest("「解除封禁(解封)」  \tmethod: [{}] , ip : [{}] , uri: [{}]  ", method, ip, uri);
-                            ipMeta.relive();
-                            oIpPools(limitMeta).forEach(ipPool -> {
-                                if (ipPool.containsKey(ip)) ipPool.get(ip).relive();
-                            });
+                            httpd.relive(ipMeta, limitMeta);
                         }
                     }
                     if (ipMeta.request(now, limitMeta.getMaxRequests(), limitMeta.getWindow(), limitMeta.getMinInterval())) {
                         LogUtils.pushLogToRequest("「普通访问(正常)」\t距上次访问: [{}] , method: [{}] , ip : [{}] , uri: [{}]  ", ipMeta.sinceLastTime(), method, ip, uri);
                     } else {
-                        ipMeta.forbidden(limitMeta.getPunishmentTime());
-
-                        for (Httpd.RequestPool ipPool : oIpPools(limitMeta)) {
-                            long time = ipMeta.getLastRequestTime().getTime();
-                            if (!ipPool.contains(ip)) {
-                                ipPool.put(ip, new RequestMeta(now, ip).forbidden(limitMeta.getPunishmentTime()));
-                            } else ipPool.get(ip).forbidden(limitMeta.getPunishmentTime());
-                        }
-
+                        httpd.forbid(now, ipMeta, limitMeta);
                         LogUtils.pushLogToRequest(LogLevel.WARN, "「请求频繁(封禁)」 \t距上次访问: [{}] , method: [{}] , ip : [{}] , uri: [{}]  ", ipMeta.sinceLastTime(), method, ip, uri);
                         ExceptionUtils.error(ExceptionStatus.REQUEST_REPEAT);
                         if (BannedType.IP.equals(limitMeta.getBannedType())) {
@@ -147,39 +141,6 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
         ExceptionUtils.error(ExceptionStatus.MISMATCHED_URL);
         return null;
     }
-
-    public List<Httpd.RequestPool> oIpPools(LimitMeta limitMeta) {
-        List<Httpd.RequestPool> requestPools = httpd.getAssociatedIpPoolsCache().get(limitMeta);
-        if (requestPools != null) return requestPools;
-
-        List<LimitMeta.AssociatedPattern> associatedPatterns = limitMeta.getAssociatedPatterns();
-        List<Httpd.RequestPool> oIpPools = new ArrayList<>();
-        if (associatedPatterns != null) {
-            associatedPatterns.stream().forEach(associatedPattern -> {
-                associatedPattern.getMethods().forEach(meth -> {
-                    ConcurrentHashMap<String, Httpd.RequestPool> map = httpd.getRequestPools()
-                            .get(meth);
-                    if (map != null) {
-                        map.keySet()
-                                .stream().filter(path -> antPathMatcher.match(associatedPattern.getPattern(), path))
-                                .forEach(path -> oIpPools.add(map.get(path)));
-                    }
-                });
-            });
-        }
-
-        httpd.getAssociatedIpPoolsCache().put(limitMeta, oIpPools);
-        return oIpPools;
-    }
-
-
-    private static final String UNKNOWN = "unknown";
-    private static final String X_FORWARDED_FOR = "x-forwarded-for";
-    private static final String PROXY_CLIENT_IP = "Proxy-Client-IP";
-    private static final String WL_PROXY_CLIENT_IP = "WL-Proxy-Client-IP";
-    private static final String HTTP_CLIENT_IP = "HTTP_CLIENT_IP";
-    private static final String HTTP_X_FORWARDED_FOR = "HTTP_X_FORWARDED_FOR";
-    private static final String X_REAL_IP = "X-Real-IP";
 
     private String getIp(HttpServletRequest request) {
         String ip = request.getHeader(X_FORWARDED_FOR);
@@ -213,6 +174,14 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
         }
         return ip.equals("0:0:0:0:0:0:0:1") ? "127.0.0.1" : ip;
     }
+
+    private static final String UNKNOWN = "unknown";
+    private static final String X_FORWARDED_FOR = "x-forwarded-for";
+    private static final String PROXY_CLIENT_IP = "Proxy-Client-IP";
+    private static final String WL_PROXY_CLIENT_IP = "WL-Proxy-Client-IP";
+    private static final String HTTP_CLIENT_IP = "HTTP_CLIENT_IP";
+    private static final String HTTP_X_FORWARDED_FOR = "HTTP_X_FORWARDED_FOR";
+    private static final String X_REAL_IP = "X-Real-IP";
 
 }
 

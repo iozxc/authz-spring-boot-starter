@@ -12,11 +12,17 @@ import cn.omisheep.authz.core.auth.ipf.AuthzHttpFilter;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
-import cn.omisheep.authz.core.cache.*;
+import cn.omisheep.authz.core.cache.Cache;
+import cn.omisheep.authz.core.cache.DefaultCache;
+import cn.omisheep.authz.core.cache.L2Cache;
+import cn.omisheep.authz.core.cache.PermLibraryCache;
 import cn.omisheep.authz.core.init.AuCoreInitialization;
 import cn.omisheep.authz.core.init.AuInit;
 import cn.omisheep.authz.core.interceptor.*;
 import cn.omisheep.authz.core.interceptor.mybatis.DataSecurityInterceptorForMybatis;
+import cn.omisheep.authz.core.msg.CacheMessage;
+import cn.omisheep.authz.core.msg.MessageReceive;
+import cn.omisheep.authz.core.msg.RequestMessage;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -107,8 +113,8 @@ public class AuthzAutoConfiguration {
 
         @Bean("authzCacheMessageReceive")
         @ConditionalOnProperty(prefix = "authz.cache", name = "enable-redis", havingValue = "true")
-        public MessageReceive messageReceive(Cache cache) {
-            return new MessageReceive(cache);
+        public MessageReceive messageReceive(Cache cache, Httpd httpd) {
+            return new MessageReceive(cache, httpd);
         }
 
         @Bean("authzCacheMessageListenerAdapter")
@@ -126,10 +132,8 @@ public class AuthzAutoConfiguration {
         @Autowired
         private void getApplicationId(ConfigurableEnvironment environment) {
             String name = environment.getProperty("spring.application.name");
-            appName = StringUtils.hasText(name) ? name : "application";
+            RequestMessage.c.accept(StringUtils.hasText(name) ? name : "application");
         }
-
-        private String appName;
 
         @Bean("auCacheRedisMessageListenerContainer")
         @ConditionalOnBean(value = MessageReceive.class, name = "authzCacheMessageReceive")
@@ -145,8 +149,8 @@ public class AuthzAutoConfiguration {
             }
             RedisMessageListenerContainer container = new RedisMessageListenerContainer();
             container.setConnectionFactory(connectionFactory);
-            container.addMessageListener(listenerAdapter1, new PatternTopic(Cache.CHANNEL));
-            container.addMessageListener(listenerAdapter2, new PatternTopic("AU_CONTEXT_CLOUD_APP_ID:" + appName)); //  (+) request 同步
+            container.addMessageListener(listenerAdapter1, new PatternTopic(CacheMessage.CHANNEL));
+            container.addMessageListener(listenerAdapter2, new PatternTopic(RequestMessage.CHANNEL)); //  (+) request 同步
             container.setTopicSerializer(jackson2JsonRedisSerializer);
             return container;
         }
@@ -166,12 +170,6 @@ public class AuthzAutoConfiguration {
         @ConditionalOnBean(RestTemplate.class)
         public void authzRestTemplateInterceptor(RestTemplate restTemplate) {
             restTemplate.getInterceptors().add(new AuthzRestTemplateInterceptor());
-        }
-
-        @Bean
-        @ConditionalOnMissingBean(PermLibrary.class)
-        public PermLibrary<Object> permLibrary() {
-            return new DefaultPermLibrary();
         }
 
     }

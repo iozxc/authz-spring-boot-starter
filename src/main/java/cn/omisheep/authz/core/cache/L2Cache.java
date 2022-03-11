@@ -2,6 +2,7 @@ package cn.omisheep.authz.core.cache;
 
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.Constants;
+import cn.omisheep.authz.core.msg.CacheMessage;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.authz.core.util.RedisUtils;
 import cn.omisheep.commons.util.Async;
@@ -58,7 +59,6 @@ public class L2Cache implements Cache {
                 }
                 return null; // redis中也没有
             }
-
             @Override
             public @NonNull Map<@NonNull String, @NonNull CacheItem> loadAll(@NonNull Iterable<? extends @NonNull String> keys) {
                 List<String> list = new ArrayList<>();
@@ -91,7 +91,7 @@ public class L2Cache implements Cache {
         CacheItem cacheItem = cache.asMap().get(pattern);
         if (cacheItem != null) return (Set<String>) cacheItem.value;
         Set<String> scan = RedisUtils.scan(pattern);
-        RedisUtils.publish(Cache.CHANNEL, Message.write(pattern, scan));
+        RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.write(pattern, scan));
         if (!scan.isEmpty()) cache.put(pattern, new CacheItem(scan));
         return scan;
     }
@@ -144,7 +144,7 @@ public class L2Cache implements Cache {
     @Override
     public <E> E set(String key, E element, long ttl) {
         E e = setSneaky(key, element, ttl);
-        RedisUtils.publish(Cache.CHANNEL, Message.write(key));
+        RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.write(key));
         return e;
     }
 
@@ -179,7 +179,7 @@ public class L2Cache implements Cache {
         cache.invalidate(key);
         Async.run(() -> {
             RedisUtils.Obj.del(key);
-            RedisUtils.publish(Cache.CHANNEL, Message.delete(key));
+            RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.delete(key));
         });
     }
 
@@ -188,20 +188,20 @@ public class L2Cache implements Cache {
         cache.invalidateAll(keys);
         Async.run(() -> {
             RedisUtils.Obj.del(keys);
-            RedisUtils.publish(Cache.CHANNEL, Message.delete(keys));
+            RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.delete(keys));
         });
     }
 
     @Override
-    public void receive(Message message) {
-        if (Message.MessageType.WRITE.equals(message.getType())) {
+    public void receive(CacheMessage message) {
+        if (CacheMessage.Type.WRITE.equals(message.getType())) {
             setSync(message);
         } else {
             delSync(message.getKeys());
         }
     }
 
-    private void setSync(Message message) {
+    private void setSync(CacheMessage message) {
         Set<String> keys = message.getKeys();
         String pattern = message.getPattern();
         if (pattern != null) {
