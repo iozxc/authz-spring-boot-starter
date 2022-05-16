@@ -12,6 +12,7 @@ import cn.omisheep.authz.core.auth.deviced.DeviceConfig;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.ipf.LimitMeta;
+import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
 import cn.omisheep.authz.core.auth.rpd.ParamMetadata;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
@@ -41,6 +42,7 @@ import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -62,6 +64,8 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
     private final PermissionDict permissionDict;
 
+    private final AuthzDefender authzDefender;
+
     private final PermLibrary permLibrary;
 
     private final Cache cache;
@@ -73,6 +77,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
                                 UserDevicesDict userDevicesDict,
                                 PermissionDict permissionDict,
                                 PermLibrary permLibrary,
+                                AuthzDefender authzDefender,
                                 Cache cache) {
         this.properties = properties;
         this.httpd = httpd;
@@ -80,6 +85,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
         this.permissionDict = permissionDict;
         this.cache = cache;
         this.permLibrary = permLibrary;
+        this.authzDefender = authzDefender;
     }
 
     @Override
@@ -102,8 +108,20 @@ public class AuCoreInitialization implements ApplicationContextAware {
         initUserDevicesDict();
         LogUtils.logDebug("UserDevicesDict init success");
 
+        AuthzDefender.init(authzDefender);
+
         // init Jobs
-        TaskBuilder.schedule(AuKey::refreshKeyGroup, properties.getRsaKeyRefreshWithPeriod());
+        AuKey.setTime(properties.getUserBufferRefreshWithPeriod());
+        if (properties.getRsaConfig().isAuto() && properties.getRsaConfig().getCustomPrivateKey() != null && properties.getRsaConfig().getCustomPublicKey() != null) {
+            ScheduledFuture<?> schedule = TaskBuilder.schedule(AuKey::refreshKeyGroup, properties.getRsaConfig().getRsaKeyRefreshWithPeriod());
+            AuKey.setAuto(true);
+            AuKey.setScheduledFuture(schedule);
+        } else {
+            AuKey.setAuto(false);
+            AuthzProperties.RSAConfig rsaConfig = properties.getRsaConfig();
+            AuKey.setAuKeyPair(rsaConfig.getCustomPublicKey(), rsaConfig.getCustomPrivateKey());
+        }
+
         if (!properties.getCache().isEnableRedis()) {
             TaskBuilder.schedule(Pelcron::activeExpireCycle, properties.getUserBufferRefreshWithPeriod());
         }
@@ -164,7 +182,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
                 if (excludeRoles != null) excludeRoles.forEach(toBeLoadedRoles::addAll);
 
                 key.getMethodsCondition().getMethods().forEach(method -> {
-                    key.getPatternsCondition().getPatterns().forEach(patternValue ->
+                    getPatterns(key).forEach(patternValue ->
                             authzMetadata.computeIfAbsent(method.toString(), r -> new HashMap<>()).put(contextPath + patternValue, permRolesMeta)
                     );
                 });
@@ -172,7 +190,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
             // ------------- parameters init --------------- //
             key.getMethodsCondition().getMethods().forEach(method -> {
-                key.getPatternsCondition().getPatterns().forEach(patternValue -> {
+                getPatterns(key).forEach(patternValue -> {
                     for (MethodParameter param : value.getMethodParameters()) {
                         Class<?> paramType = param.getParameter().getType();
                         if (ValueMatcher.checkType(paramType).isOther()) {
@@ -198,15 +216,15 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
                             ArrayList<PermRolesMeta.Meta> rolesMetaList = new ArrayList<>();
                             ArrayList<PermRolesMeta.Meta> permsMetaList = new ArrayList<>();
-                            PermRolesMeta.Meta vr = generateRolesMeta(rolesByParam, true);
-                            PermRolesMeta.Meta vp = generatePermMeta(permsByParam, true);
+                            PermRolesMeta.Meta vr = generateRolesMeta(rolesByParam);
+                            PermRolesMeta.Meta vp = generatePermMeta(permsByParam);
                             if (vr != null) rolesMetaList.add(vr);
                             if (vp != null) permsMetaList.add(vp);
 
                             if (batchAuthority != null) {
                                 Roles[] rs = batchAuthority.roles();
                                 for (Roles r : rs) {
-                                    PermRolesMeta.Meta v = generateRolesMeta(r, true);
+                                    PermRolesMeta.Meta v = generateRolesMeta(r);
                                     if (v != null) {
                                         rolesMetaList.add(v);
                                         if (v.getRequire() != null) v.getRequire().forEach(toBeLoadedRoles::addAll);
@@ -215,7 +233,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
                                 }
                                 Perms[] ps = batchAuthority.perms();
                                 for (Perms p : ps) {
-                                    PermRolesMeta.Meta v = generatePermMeta(p, true);
+                                    PermRolesMeta.Meta v = generatePermMeta(p);
                                     if (v != null) permsMetaList.add(v);
                                 }
                             }
@@ -265,7 +283,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
     }
 
-    public static PermRolesMeta.Meta generatePermMeta(Perms p, boolean hasDefault) {
+    public static PermRolesMeta.Meta generatePermMeta(Perms p) {
         if (p == null) return null;
         PermRolesMeta.Meta permsMeta = new PermRolesMeta.Meta();
         boolean flag = false;
@@ -277,15 +295,16 @@ public class AuCoreInitialization implements ApplicationContextAware {
             permsMeta.setExclude(CollectionUtils.splitStrValsToSets(Constants.COMMA, p.exclude()));
             flag = true;
         }
-        if (p.resources().length == 0) {
-            if (hasDefault) permsMeta.setResources(CollectionUtils.newSet("*"));
-        } else {
-            permsMeta.setResources(CollectionUtils.newSet(p.resources()));
+        if (p.paramResources().length != 0) {
+            permsMeta.setResources(CollectionUtils.ofSet(p.paramResources()));
+        }
+        if (p.paramRange().length != 0) {
+            permsMeta.setRange(CollectionUtils.ofSet(p.paramRange()));
         }
         return flag ? permsMeta : null;
     }
 
-    public static PermRolesMeta.Meta generateRolesMeta(Roles r, boolean hasDefault) {
+    public static PermRolesMeta.Meta generateRolesMeta(Roles r) {
         if (r == null) return null;
         PermRolesMeta.Meta rolesMeta = new PermRolesMeta.Meta();
         boolean flag = false;
@@ -297,10 +316,11 @@ public class AuCoreInitialization implements ApplicationContextAware {
             rolesMeta.setExclude(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.exclude()));
             flag = true;
         }
-        if (r.resources().length == 0) {
-            if (hasDefault) rolesMeta.setResources(CollectionUtils.newSet("*"));
-        } else {
-            rolesMeta.setResources(CollectionUtils.newSet(r.resources()));
+        if (r.paramResources().length != 0) {
+            rolesMeta.setResources(CollectionUtils.ofSet(r.paramResources()));
+        }
+        if (r.paramRange().length != 0) {
+            rolesMeta.setRange(CollectionUtils.ofSet(r.paramRange()));
         }
         return flag ? rolesMeta : null;
     }
@@ -344,18 +364,18 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
         mapRet.forEach((key, value) -> {
             Set<RequestMethod> methods = key.getMethodsCondition().getMethods();
-            Set<String> patternValues = key.getPatternsCondition().getPatterns();
             RateLimit rateLimit = value.getMethodAnnotation(RateLimit.class);
             if (rateLimit != null) {
                 LimitMeta limitMeta = new LimitMeta(rateLimit.window(), rateLimit.maxRequests(), rateLimit.punishmentTime(), rateLimit.minInterval(), rateLimit.associatedPatterns(), rateLimit.bannedType());
                 methods.forEach(
-                        method -> patternValues.forEach(
+                        method -> getPatterns(key).forEach(
                                 patternValue -> httpdLimitedMetaMap.computeIfAbsent(method.toString(), r -> new HashMap<>()).put(contextPath + patternValue, limitMeta))
                 );
             } else {
                 methods.forEach(
                         method -> {
-                            patternValues.forEach(
+
+                            getPatterns(key).forEach(
                                     patternValue -> {
                                         LimitMeta limitMeta = cMap.get(value.getBeanType().getName());
                                         if (limitMeta != null)
@@ -369,8 +389,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
             key.getMethodsCondition().getMethods().forEach(
                     method -> {
-                        key.getPatternsCondition()
-                                .getPatterns()
+                        getPatterns(key)
                                 .forEach(
                                         patternValue -> requestPool.put(contextPath + patternValue, new Httpd.RequestPool()));
                         httpd.getRequestPools().computeIfAbsent(method.toString(), r -> new ConcurrentHashMap<>()).putAll(requestPool);
@@ -382,6 +401,15 @@ public class AuCoreInitialization implements ApplicationContextAware {
     private void initUserDevicesDict() {
         DeviceConfig.isSupportMultiDevice = properties.getUser().isSupportMultiDevice();
         DeviceConfig.isSupportMultiUserForSameDeviceType = properties.getUser().isSupportMultiUserForSameDeviceType();
+    }
+
+    @SneakyThrows
+    private Set<String> getPatterns(RequestMappingInfo info) {
+        try {
+            return info.getPatternsCondition().getPatterns();
+        } catch (Exception e) {
+            return (Set<String>) RequestMappingInfo.class.getMethod("getPatternValues").invoke(info);
+        }
     }
 
 }

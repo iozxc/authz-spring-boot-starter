@@ -35,19 +35,22 @@ public class PermissionDict {
 
     private static Map<String, List<DataPermMeta>> dataPermMetadata;
 
-    private static final Map<String, Map<String, Object>> authzResourcesNameAndTemplate = new HashMap<>();
+    private static final Map<String, Map<String, String>> authzResourcesNameAndTemplate = new HashMap<>();
+
+    private static Map<String, Map<String, FieldData>> fieldMetadata;
 
     // ----------------------------------------- json ----------------------------------------- //
     private static Map<String, Map<String, PermRolesMeta>> m1;
-    private static Map<String, Map<String, Object>> m2;
+    private static Map<String, Map<String, String>> m2;
     private static Map<String, List<DataPermMeta>> m3;
     private static Map<String, ArgsMeta> m4;
+    private static Map<String, Map<String, FieldData>> m5;
 
     public Map<String, Map<String, PermRolesMeta>> getAuthzMetadata() {
         return m1;
     }
 
-    public Map<String, Map<String, Object>> getAuthzResourcesNameAndTemplate() {
+    public Map<String, Map<String, String>> getAuthzResourcesNameAndTemplate() {
         return m2;
     }
 
@@ -59,66 +62,8 @@ public class PermissionDict {
         return m4;
     }
 
-    // ----------------------------------------- init ----------------------------------------- //
-
-    public static void init(PermissionDict permissionDict) {
-        if (SELF != null) {
-            AuInit.log.error("permissionDict 已经初始化");
-            return;
-        }
-        SELF = permissionDict;
-    }
-
-    public static void initAuthzMetadata(Map<String, Map<String, PermRolesMeta>> authzMetadata) {
-        if (PermissionDict.authzMetadata != null) {
-            AuInit.log.error("authzMetadata 已经初始化");
-            return;
-        }
-        PermissionDict.authzMetadata = authzMetadata;
-        m1 = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(authzMetadata));
-    }
-
-    public static void addAuthzResourcesNames(Set<String> authzResourcesNames) {
-        if (authzResourcesNames == null) return;
-        Set<String> names = new HashSet<>();
-        for (String authzResourcesName : authzResourcesNames) {
-            try {
-                Map<String, Object> fieldMap = PermissionDict.authzResourcesNameAndTemplate.computeIfAbsent(authzResourcesName, r -> new HashMap<>());
-                fieldMap.putAll(parseTypeForTemplate(authzResourcesName));
-                names.add(authzResourcesName);
-            } catch (Exception ignored) {
-            }
-        }
-        m2 = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(authzResourcesNameAndTemplate));
-        AuInit.log.info("authz resources add success ⬇: \n{}", names);
-    }
-
-    public static void initDataPerm(Map<String, List<DataPermMeta>> dataPermMetadata) {
-        if (PermissionDict.dataPermMetadata != null) {
-            AuInit.log.error("dataPermMetadata 已经初始化");
-            return;
-        }
-        PermissionDict.dataPermMetadata = dataPermMetadata;
-        m3 = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(dataPermMetadata));
-    }
-
-    public static void initArgs(Map<String, ArgsMeta> argsMetadata) {
-        if (PermissionDict.argsMetadata != null) {
-            AuInit.log.error("authzMetadata 已经初始化");
-            return;
-        }
-        PermissionDict.argsMetadata = argsMetadata;
-        m4 = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(argsMetadata));
-    }
-
-    public static void setPermSeparator(String permSeparator) {
-        PermissionDict.permSeparator = permSeparator;
-    }
-
-    private static String permSeparator = ",";
-
-    public static String getPermSeparator() {
-        return permSeparator;
+    public Map<String, Map<String, FieldData>> getFieldMetadata() {
+        return m5;
     }
 
     // ----------------------------------------- func ----------------------------------------- //
@@ -157,8 +102,8 @@ public class PermissionDict {
         }
     }
 
-    public static Map<String, Object> parseTypeForTemplate(String className) {
-        HashMap<String, Object> typeTemplate = new HashMap<>();
+    public static Map<String, String> parseTypeForTemplate(String className) {
+        HashMap<String, String> typeTemplate = new HashMap<>();
         try {
             Class<?> clz = Class.forName(className);
             for (Method method : clz.getMethods()) {
@@ -220,6 +165,77 @@ public class PermissionDict {
         }
     }
 
+    // ----------------------------------------- init ----------------------------------------- //
+
+    public static void init(PermissionDict permissionDict) {
+        if (SELF != null) {
+            AuInit.log.error("permissionDict 已经初始化");
+            return;
+        }
+        SELF = permissionDict;
+    }
+
+    public static void initAuthzMetadata(Map<String, Map<String, PermRolesMeta>> authzMetadata) {
+        if (PermissionDict.authzMetadata != null) {
+            AuInit.log.error("authzMetadata 已经初始化");
+            return;
+        }
+        PermissionDict.authzMetadata = authzMetadata;
+        m1 = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(authzMetadata));
+    }
+
+    public static void addAuthzResourcesNames(Set<String> authzResourcesNames) {
+        if (authzResourcesNames == null) return;
+        Set<String> names = new HashSet<>();
+        for (String authzResourcesName : authzResourcesNames) {
+            try {
+                Map<String, String> fieldMap = PermissionDict.authzResourcesNameAndTemplate.computeIfAbsent(authzResourcesName, r -> new HashMap<>());
+                fieldMap.putAll(parseTypeForTemplate(authzResourcesName));
+                names.add(authzResourcesName);
+            } catch (Exception ignored) {
+            }
+        }
+        m2 = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(authzResourcesNameAndTemplate));
+        AuInit.log.info("authz resources add success ⬇: \n{}", names);
+    }
+
+    public static void initDataPerm(Map<String, List<DataPermMeta>> dataPermMetadata) {
+        if (PermissionDict.dataPermMetadata != null) {
+            AuInit.log.error("dataPermMetadata 已经初始化");
+            return;
+        }
+        PermissionDict.dataPermMetadata = dataPermMetadata;
+        m3 = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(dataPermMetadata));
+    }
+
+    public static void initArgs(Map<String, ArgsMeta> argsMetadata) {
+        if (PermissionDict.argsMetadata != null) {
+            AuInit.log.error("authzMetadata 已经初始化");
+            return;
+        }
+        PermissionDict.argsMetadata = argsMetadata;
+        m4 = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(argsMetadata));
+    }
+
+    public static void initFieldMetadata(Map<String, Map<String, FieldData>> fieldMetadata) {
+        if (PermissionDict.fieldMetadata != null) {
+            AuInit.log.error("fieldMetadata 已经初始化");
+            return;
+        }
+        PermissionDict.fieldMetadata = fieldMetadata;
+        m5 = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(fieldMetadata));
+    }
+
+    public static void setPermSeparator(String permSeparator) {
+        PermissionDict.permSeparator = permSeparator;
+    }
+
+    private static String permSeparator = ",";
+
+    public static String getPermSeparator() {
+        return permSeparator;
+    }
+
     @Getter
     public static class ArgsMeta {
         private final Class<?> type;
@@ -227,7 +243,7 @@ public class PermissionDict {
         private final List<Class<?>> parameterList;
         private final Class<?> returnType;
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
-        private final Map<String, Object> returnTypeTemplate;
+        private final Map<String, String> returnTypeTemplate;
 
         private ArgsMeta(Class<?> type, Method method) {
             this.type = type;

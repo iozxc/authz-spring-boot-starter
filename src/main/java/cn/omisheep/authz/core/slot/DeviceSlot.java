@@ -33,7 +33,7 @@ public class DeviceSlot implements Slot {
         PermRolesMeta permRolesMeta = permissionDict.getAuthzMetadata().get(httpMeta.getMethod()).get(httpMeta.getApi());
         if (permRolesMeta.nonAll()) return true;
 
-        if (!httpMeta.isHasTokenCookie()) {
+        if (!httpMeta.isHasToken()) {
             logs("Require Login", httpMeta, permRolesMeta);
             httpMeta.error(ExceptionStatus.REQUIRE_LOGIN);
             return false;

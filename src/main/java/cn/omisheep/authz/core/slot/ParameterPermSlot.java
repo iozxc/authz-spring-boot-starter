@@ -16,6 +16,7 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerMapping;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static cn.omisheep.authz.core.auth.rpd.AuthzDefender.logs;
 
@@ -48,8 +49,11 @@ public class ParameterPermSlot implements Slot {
 
             String paramName = parameter.getParameter().getName();
             Class<?> paramType = parameter.getParameter().getType();
+
             ParamMetadata.ParamType type = null;
             String value = null;
+
+            // 找到参数的类型和值
             if (pathVariable != null) {
                 type = ParamMetadata.ParamType.PATH_VARIABLE;
                 if (!pathVariable.name().equals("")) paramName = pathVariable.name();
@@ -62,7 +66,8 @@ public class ParameterPermSlot implements Slot {
                 if (!requestParam.name().equals("")) paramName = requestParam.name();
                 value = httpMeta.getRequest().getParameter(paramName);
             }
-            // 类型匹配上了
+
+            // 类型匹配上
             if (type != null) {
                 if (value == null) continue; // value不为空
 
@@ -75,7 +80,6 @@ public class ParameterPermSlot implements Slot {
                 if (paramMetadata == null) continue; // 且需要保护
 
                 List<PermRolesMeta.Meta> rolesMetaList = paramMetadata.getRolesMetaList();
-
                 rolesMetaCheck:
                 if (rolesMetaList != null && !rolesMetaList.isEmpty()) {
                     if (httpMeta.getToken() == null) {
@@ -86,26 +90,31 @@ public class ParameterPermSlot implements Slot {
 
                     roles = Optional.ofNullable(httpMeta.getRoles()).orElse(permLibrary.getRolesByUserId(httpMeta.getToken().getUserId()));
                     httpMeta.setRoles(roles);
-                    boolean next = false;
-                    label:
-                    for (PermRolesMeta.Meta meta : rolesMetaList) {
+
+                    List<PermRolesMeta.Meta> resourcesMeta = rolesMetaList.stream().filter(meta -> meta.getResources() != null).collect(Collectors.toList());
+                    List<PermRolesMeta.Meta> rangeMeta = rolesMetaList.stream().filter(meta -> meta.getRange() != null).collect(Collectors.toList());
+                    boolean next_resources = true; // 默认让过，但是如果值匹配上但没有对应role，则不让通过
+                    boolean next_range = true; // 默认让过。但是如果某个用户有对应的role。则看这些角色里面是否能拿出一个让过。如果都不让过。则不通过。反之通过
+                    label_resources:
+                    for (PermRolesMeta.Meta meta : resourcesMeta) {
                         if (ValueMatcher.match(meta.getResources(), value, paramType)) { // 值是否匹配，若匹配上
-                            if (CollectionUtils.containsSub(meta.getRequire(), roles)) { // 判断是否权限匹配
-                                // 匹配失败继续看后面的是否有匹配上的，如果都匹配失败，则返回权限不足
-                                // 匹配成功则直接过
-                                next = true;
-                                break label;
+                            if (!CollectionUtils.containsSub(meta.getRequire(), roles)) { // 判断是否权限匹配
+                                // 但是如果值匹配上但没有对应role，则不让通过
+                                next_resources = false;
+                                break label_resources;
                             }
                         }
                     }
-                    if (!next) {
-                        if (rolesMetaList.stream().filter(meta -> meta.getResources().contains("*")).count() == 0) {
-                            // 如果没有带*的匹配，那么如果值不属于其中，默认通过
-                            String finalValue = value;
-                            if (!rolesMetaList.stream().anyMatch(meta -> ValueMatcher.match(meta.getResources(), finalValue, paramType))) {
-                                break rolesMetaCheck;
+                    boolean flag = false;
+                    for (PermRolesMeta.Meta meta : rangeMeta) {
+                        if (CollectionUtils.containsSub(meta.getRequire(), roles)) { // 如果这个meta匹配上了。则判断value是否在内
+                            next_range = false; // 如果有匹配上过role，那么就不能无损通过，则需要判断值是否在内
+                            if (ValueMatcher.match(meta.getRange(), value, paramType)) {
+                                flag = true; // 有一个匹配上就让过
                             }
                         }
+                    }
+                    if (!next_resources || !(next_range || !next_range && flag)) {
                         logs("Forbid : permissions exception by request parameter", httpMeta, permRolesMeta);
                         httpMeta.error(ExceptionStatus.PERM_EXCEPTION);
                         return false;
@@ -126,8 +135,10 @@ public class ParameterPermSlot implements Slot {
                     }
 
                     Set<String> perms = httpMeta.getPermissions();
+
                     if (perms != null) permissions = perms;
                     else {
+                        permissions = new HashSet<>();
                         for (String role : roles) {
                             Set<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
                             permissions.addAll(permissionsByRole);
@@ -135,27 +146,30 @@ public class ParameterPermSlot implements Slot {
                         httpMeta.setPermissions(permissions);
                     }
 
-                    boolean next = false;
-                    label:
-                    for (PermRolesMeta.Meta meta : permissionsMetaList) {
-                        if (ValueMatcher.match(meta.getResources(), value, paramType)) { // 值是否匹配，若匹配上
+                    List<PermRolesMeta.Meta> resourcesMeta = permissionsMetaList.stream().filter(meta -> meta.getResources() != null).collect(Collectors.toList());
+                    List<PermRolesMeta.Meta> rangeMeta = permissionsMetaList.stream().filter(meta -> meta.getRange() != null).collect(Collectors.toList());
+                    boolean next_resources = true; // 默认让过，但是如果值匹配上但没有对应perm，则不让通过
+                    boolean next_range = true;  // 默认让过。但是如果某个用户有对应的perm。则看这些角色里面是否能拿出一个让过。如果都不让过。则不通过。反之通过
+                    label_resources:
+                    for (PermRolesMeta.Meta meta : resourcesMeta) {
+                        if (!ValueMatcher.match(meta.getResources(), value, paramType)) { // 值是否匹配，若匹配上
                             if (CollectionUtils.containsSub(meta.getRequire(), permissions)) { // 判断是否权限匹配
-                                // 匹配失败继续看后面的是否有匹配上的，如果都匹配失败，则返回权限不足
-                                // 匹配成功则直接过
-                                next = true;
-                                break label;
+                                // 但是如果值匹配上但没有对应perm，则不让通过
+                                next_resources = false;
+                                break label_resources;
                             }
                         }
                     }
-
-                    if (!next) {
-                        if (permissionsMetaList.stream().filter(meta -> meta.getResources().contains("*")).count() == 0) {
-                            // 如果没有带*的匹配，那么如果值不属于其中，默认通过
-                            String finalValue = value;
-                            if (!permissionsMetaList.stream().anyMatch(meta -> ValueMatcher.match(meta.getResources(), finalValue, paramType))) {
-                                break permMetaCheck;
+                    boolean flag = false;
+                    for (PermRolesMeta.Meta meta : rangeMeta) {
+                        if (CollectionUtils.containsSub(meta.getRequire(), permissions)) { // 如果这个meta匹配上了。则判断value是否在内
+                            next_range = false; // 如果有匹配上过role，那么就不能无损通过，则需要判断值是否在内
+                            if (ValueMatcher.match(meta.getRange(), value, paramType)) {
+                                flag = true; // 有一个匹配上就让过
                             }
                         }
+                    }
+                    if (!next_resources || !(next_range || !next_range && flag)) {
                         logs("Forbid : permissions exception by request parameter", httpMeta, permRolesMeta);
                         httpMeta.error(ExceptionStatus.PERM_EXCEPTION);
                         return false;

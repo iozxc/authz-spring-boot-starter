@@ -11,8 +11,11 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -51,7 +54,7 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
 
         if (accessInfoHeap == null || accessInfoHeap.isEmpty()) { // 没有accessToken
             if (refreshInfoHeap == null || !hasTargetDeviceInfo) return 2; // refreshToken不存在，或者不存在对应的设备，则返回需要登录
-            return 1; // refreshToken存在 对应type和id设备的refreshToken存在，返回accessToken过期 虽然此时不一定是这次登录的
+            return ACCESS_TOKEN_OVERDUE; // refreshToken存在 对应type和id设备的refreshToken存在，返回accessToken过期 虽然此时不一定是这次登录的
         }
 
         // 2） 验证device 若不存在，但是userId存在，也是重新登录 如果不允许多设备登录 那么此时也是 账号在别处登录
@@ -67,22 +70,22 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
                 }).findFirst().orElse(null);
         if (d == null) { // 如果没有这个设备
             if (!isSupportMultiDevice) { // 如果不允许多设备登录，说明现在存在其他设备。
-                return 3;
+                return LOGIN_EXCEPTION;
             } else {
-                if (!hasTargetDeviceInfo) return 2; // 如果允许多设备登录 则说明不存在该设备 返回重新登录
-                return 1;
+                if (!hasTargetDeviceInfo) return REQUIRE_LOGIN; // 如果允许多设备登录 则说明不存在该设备 返回重新登录
+                return ACCESS_TOKEN_OVERDUE;
             }
         }
 
         // 3）如果设备存在，但是tokenId不是自己的，则在别处登录
         if (!StringUtils.equals(d.getKey(), accessTokenId)) {
-            return 3;
+            return LOGIN_EXCEPTION;
         }
-        return 0;
+        return SUCCESS;
     }
 
     @Override
-    public boolean  addUser(Object userId, TokenPair tokenPair, String deviceType, String deviceId, HttpMeta httpMeta)  {
+    public boolean addUser(Object userId, TokenPair tokenPair, String deviceType, String deviceId, HttpMeta httpMeta) {
         inertDeletion(userId);
         Map<String, AccessInfo> accessInfoHeap = usersAccessInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
         Map<String, RefreshInfo> refreshInfoHeap = usersRefreshInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
@@ -148,21 +151,6 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
         return true;
     }
 
-    @Override
-    public void removeAllDeviceByUserId(Object userId) {
-        usersAccessInfoHeap.remove(userId);
-        usersRefreshInfoHeap.remove(userId);
-    }
-
-    @Override
-    public void removeAllDeviceByCurrentUser() {
-        try {
-            removeAllDeviceByUserId(AUtils.getCurrentHttpMeta().getToken().getUserId());
-        } catch (Exception ignored) {
-        }
-    }
-
-    @Override
     public void removeDeviceByUserIdAndAccessTokenId(Object userId, String accessTokenId) {
         Map<String, AccessInfo> accessInfoHeap = usersAccessInfoHeap.get(userId);
         if (accessInfoHeap != null) {
@@ -172,54 +160,79 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
     }
 
     @Override
-    public void removeDeviceByCurrentUserAndAccessTokenId(String accessTokenId) {
-        try {
-            removeDeviceByUserIdAndAccessTokenId(AUtils.getCurrentHttpMeta().getToken().getUserId(), accessTokenId);
-        } catch (Exception ignored) {
-        }
-
-    }
-
-    private void removeUser(Object userId, String deviceId, String deviceType) {
-        Map<String, AccessInfo> accessInfoHeap = usersAccessInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
-        Map<String, RefreshInfo> refreshInfoHeap = usersRefreshInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
-
-        if (deviceId != null) {
-            accessInfoHeap.entrySet().removeIf(entry -> StringUtils.equals(getRefreshInfo(refreshInfoHeap, entry.getValue()).getId(), deviceId));
-            refreshInfoHeap.entrySet().removeIf(entry -> StringUtils.equals(entry.getValue().getId(), deviceId));
-        }
-        if (deviceType != null) {
-            accessInfoHeap.entrySet().removeIf(entry -> StringUtils.equals(getRefreshInfo(refreshInfoHeap, entry.getValue()).getType(), deviceType));
-            refreshInfoHeap.entrySet().removeIf(entry -> StringUtils.equals(entry.getValue().getType(), deviceType));
-        }
-        inertDeletion(userId);
+    public void removeAllDeviceByUserId(Object userId) {
+        usersAccessInfoHeap.remove(userId);
+        usersRefreshInfoHeap.remove(userId);
     }
 
     @Override
     public void removeDeviceByUserIdAndDeviceType(Object userId, String deviceType) {
-        removeUser(userId, null, deviceType);
+        removeDevice(userId, deviceType);
     }
 
     @Override
-    public void removeDeviceByCurrentUserAndDeviceType(String deviceType) {
+    public void removeDeviceByUserIdAndDeviceTypeAndDeviceId(Object userId, String deviceType, String deviceId) {
+        removeDevice(userId, deviceType, deviceId);
+    }
+
+    @Override
+    public void removeAllDeviceFromCurrentUser() {
         try {
-            removeDeviceByUserIdAndDeviceType(AUtils.getCurrentHttpMeta().getToken().getUserId(), deviceType);
+            removeAllDeviceByUserId(AUtils.getCurrentHttpMeta().getToken().getUserId());
         } catch (Exception ignored) {
         }
-
     }
 
     @Override
-    public void removeDeviceByUserIdAndDeviceId(Object userId, String deviceId) {
-        removeUser(userId, deviceId, null);
-    }
-
-    @Override
-    public void removeDeviceByCurrentUserAndDeviceId(String deviceId) {
+    public void removeCurrentDeviceFromCurrentUser() {
         try {
-            removeDeviceByUserIdAndDeviceId(AUtils.getCurrentHttpMeta().getToken().getUserId(), deviceId);
+            Token token = AUtils.getCurrentHttpMeta().getToken();
+            removeDevice(token.getUserId(), token.getDeviceType(), token.getDeviceId());
         } catch (Exception ignored) {
         }
+    }
+
+    @Override
+    public void removeDeviceFromCurrentUserByDeviceType(String deviceType) {
+        try {
+            removeDevice(AUtils.getCurrentHttpMeta().getToken().getUserId(), deviceType);
+        } catch (Exception ignored) {
+        }
+    }
+
+    @Override
+    public void removeDeviceFromCurrentUserByDeviceTypeAndDeviceId(String deviceType, String deviceId) {
+        try {
+            removeDevice(AUtils.getCurrentHttpMeta().getToken().getUserId(), deviceType, deviceId);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void removeDevice(Object userId, String deviceType) {
+        Map<String, AccessInfo> accessInfoHeap = usersAccessInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
+        Map<String, RefreshInfo> refreshInfoHeap = usersRefreshInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
+
+        if (deviceType != null) {
+            accessInfoHeap.entrySet().removeIf(entry -> StringUtils.equals(getRefreshInfo(refreshInfoHeap, entry.getValue()).getType(), deviceType));
+            refreshInfoHeap.entrySet().removeIf(entry -> StringUtils.equals(entry.getValue().getType(), deviceType));
+        }
+
+        inertDeletion(userId);
+    }
+
+    private void removeDevice(Object userId, String deviceType, String deviceId) {
+        Map<String, AccessInfo> accessInfoHeap = usersAccessInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
+        Map<String, RefreshInfo> refreshInfoHeap = usersRefreshInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
+
+        if (deviceType != null) {
+            accessInfoHeap.entrySet().removeIf(entry ->
+                    StringUtils.equals(getRefreshInfo(refreshInfoHeap, entry.getValue()).getType(), deviceType) &&
+                            StringUtils.equals(getRefreshInfo(refreshInfoHeap, entry.getValue()).getId(), deviceId));
+            refreshInfoHeap.entrySet().removeIf(entry -> StringUtils.equals(entry.getValue().getType(), deviceType)
+                    && StringUtils.equals(entry.getValue().getId(), deviceId));
+        }
+
+        inertDeletion(userId);
     }
 
     @Override
@@ -238,48 +251,48 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
     }
 
     @Override
-    public Object[] listUserId() {
-        return usersAccessInfoHeap.keySet().toArray();
+    public List<Object> listUserId() {
+        return new ArrayList<>(usersAccessInfoHeap.keySet());
     }
 
     @Override
-    public Device[] listDevicesByUserId(Object userId) {
-        if (!inertDeletion(userId)) return null;
+    public List<Device> listDevicesByUserId(Object userId) {
+        if (!inertDeletion(userId)) return new ArrayList<>();
         Map<String, RefreshInfo> refreshInfoHeap = usersRefreshInfoHeap.get(userId);
-        if (refreshInfoHeap == null) return null;
-        return usersAccessInfoHeap.get(userId).values().stream().map(v -> (Device) refreshInfoHeap.get(v.getRefreshTokenId())).toArray(Device[]::new);
+        if (refreshInfoHeap == null) return new ArrayList<>();
+        return usersAccessInfoHeap.get(userId).values().stream().map(v -> (Device) refreshInfoHeap.get(v.getRefreshTokenId())).collect(Collectors.toList());
     }
 
     @Override
-    public Device[] listDevicesForCurrentUser() {
+    public List<Device> listDevicesForCurrentUser() {
         try {
             return listDevicesByUserId(AUtils.getCurrentHttpMeta().getToken().getUserId());
         } catch (Exception ignored) {
-            return new Device[0];
+            return new ArrayList<>();
         }
     }
 
     @Override
-    public Object[] listActiveUsers(long ms) {
+    public List<Object> listActiveUsers(long ms) {
         long now = TimeUtils.nowTime();
 
         return usersRefreshInfoHeap.keySet().stream()
                 .filter(userId ->
                         usersRefreshInfoHeap.get(userId).values().stream().anyMatch(device -> (now - device.getLastRequestTime().getTime()) < ms)
-                ).toArray();
+                ).collect(Collectors.toList());
     }
 
     @Override
-    public Device[] listActiveUserDevices(Object userId, long ms) {
+    public List<Device> listActiveUserDevices(Object userId, long ms) {
         long now = TimeUtils.nowTime();
 
         Map<String, RefreshInfo> refreshInfoHeap = usersRefreshInfoHeap.get(userId);
-        if (refreshInfoHeap == null) return new Device[0];
+        if (refreshInfoHeap == null) return new ArrayList<>();
 
         return refreshInfoHeap.values().stream()
                 .filter(refreshInfo -> (now - refreshInfo.getLastRequestTime().getTime()) < ms)
                 .map(RefreshInfo::getDevice)
-                .toArray(Device[]::new);
+                .collect(Collectors.toList());
     }
 
     @Override

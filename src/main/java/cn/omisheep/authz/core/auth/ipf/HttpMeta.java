@@ -39,7 +39,7 @@ public class HttpMeta {
     private Token token;
     private Object userId;
     private TokenException tokenException;
-    private boolean hasTokenCookie;
+    private boolean hasToken;
     private AuthzException authzException;
     private Set<String> roles;
     private Set<String> permissions;
@@ -91,9 +91,9 @@ public class HttpMeta {
         SignatureException
     }
 
-    public boolean setHasTokenCookie(boolean hasTokenCookie) {
-        this.hasTokenCookie = hasTokenCookie;
-        return hasTokenCookie;
+    public boolean setHasToken(boolean hasToken) {
+        this.hasToken = hasToken;
+        return hasToken;
     }
 
     /**

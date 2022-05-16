@@ -73,7 +73,7 @@ public class LimitMeta {
                         .collect(Collectors.toSet());
             } else {
                 this.pattern = split[0];
-                this.methods = CollectionUtils.newSet("GET");
+                this.methods = CollectionUtils.ofSet("GET");
             }
 
         }

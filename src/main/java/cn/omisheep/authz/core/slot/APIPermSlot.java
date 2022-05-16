@@ -6,9 +6,7 @@ import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.tk.Token;
-import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.CollectionUtils;
-import cn.omisheep.commons.util.TimeUtils;
 import org.springframework.web.method.HandlerMethod;
 
 import java.util.HashSet;
@@ -45,10 +43,8 @@ public class APIPermSlot implements Slot {
         boolean e1 = CollectionUtils.isEmpty(permRolesMeta.getRequireRoles());
         boolean e2 = CollectionUtils.isEmpty(permRolesMeta.getExcludeRoles());
         if (!e1 || !e2) {
-            long nowTime = TimeUtils.nowTime();
             roles = permLibrary.getRolesByUserId(accessToken.getUserId());
             httpMeta.setRoles(roles);
-            LogUtils.logDebug("permLibrary.getRolesByUserId({})  {}", accessToken.getUserId(), TimeUtils.diff(nowTime));
             if (!e1 && !CollectionUtils.containsSub(permRolesMeta.getRequireRoles(), roles) || !e2 && CollectionUtils.containsSub(permRolesMeta.getExcludeRoles(), roles)) {
                 logs("Forbid : permissions exception", httpMeta, permRolesMeta);
                 httpMeta.error(ExceptionStatus.PERM_EXCEPTION);
@@ -60,16 +56,12 @@ public class APIPermSlot implements Slot {
         boolean e4 = CollectionUtils.isEmpty(permRolesMeta.getExcludePermissions());
         if (!e3 || !e4) {
             if (e1 && e2) {
-                long nowTime = TimeUtils.nowTime();
                 roles = permLibrary.getRolesByUserId(accessToken.getUserId());
                 httpMeta.setRoles(roles);
-                LogUtils.logDebug("e1 && e2 permLibrary.getRolesByUserId({})  {}", accessToken.getUserId(), TimeUtils.diff(nowTime));
             }
             HashSet<String> perms = new HashSet<>(); // 用户所拥有的权限
             for (String role : Optional.ofNullable(roles).orElse(new HashSet<>())) {
-                long nowTime = TimeUtils.nowTime();
                 Set<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
-                LogUtils.logDebug("permLibrary.getPermissionsByRole({}) {}", role, TimeUtils.diff(nowTime));
                 perms.addAll(permissionsByRole);
                 if (!e4 && CollectionUtils.containsSub(permRolesMeta.getExcludePermissions(), permissionsByRole)) {
                     logs("Forbid : permissions exception", httpMeta, permRolesMeta);

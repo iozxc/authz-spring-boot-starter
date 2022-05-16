@@ -3,6 +3,8 @@ package cn.omisheep.authz.core.init;
 import cn.omisheep.authz.annotation.*;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.rpd.DataPermMeta;
+import cn.omisheep.authz.core.auth.rpd.FieldData;
+import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.commons.util.ClassUtils;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -13,6 +15,7 @@ import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.lang.NonNull;
 
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -26,25 +29,25 @@ public class AuthzResourcesInit implements ImportSelector {
 
     private DataPermMeta generateDataPermMeta(Perms perms) {
         DataPermMeta dataPermMeta = DataPermMeta.of(perms.condition());
-        Arg[] conditionArgs = perms.conditionArgs();
+        Arg[] conditionArgs = perms.args();
         for (Arg arg : conditionArgs) {
             String resource = arg.resource();
             String[] resourceArgs = arg.args();
             dataPermMeta.addArg(resource, resourceArgs);
         }
-        dataPermMeta.setPermissions(AuCoreInitialization.generatePermMeta(perms, false).setResources(null));
+        dataPermMeta.setPermissions(AuCoreInitialization.generatePermMeta(perms).setResources(null));
         return dataPermMeta;
     }
 
     private DataPermMeta generateDataRolesMeta(Roles roles) {
         DataPermMeta dataPermMeta = DataPermMeta.of(roles.condition());
-        Arg[] conditionArgs = roles.conditionArgs();
+        Arg[] conditionArgs = roles.args();
         for (Arg arg : conditionArgs) {
             String resource = arg.resource();
             String[] resourceArgs = arg.args();
             dataPermMeta.addArg(resource, resourceArgs);
         }
-        dataPermMeta.setRoles(AuCoreInitialization.generateRolesMeta(roles, false).setResources(null));
+        dataPermMeta.setRoles(AuCoreInitialization.generateRolesMeta(roles).setResources(null));
         return dataPermMeta;
     }
 
@@ -87,6 +90,7 @@ public class AuthzResourcesInit implements ImportSelector {
         Set<String> entityClasses = new HashSet<>();
         Arrays.stream(entityBasePackages).forEach(basePackage -> scannerEntity.findCandidateComponents(basePackage).stream().map(BeanDefinition::getBeanClassName).forEach(entityClasses::add));
         PermissionDict.addAuthzResourcesNames(entityClasses);
+        PermissionDict.initFieldMetadata(ge(entityClasses));
 
         HashMap<String, List<DataPermMeta>> map = new HashMap<>();
         entityClasses.stream().map(this::dataPerm)
@@ -116,4 +120,26 @@ public class AuthzResourcesInit implements ImportSelector {
         return new String[0];
     }
 
+
+    private Map<String, Map<String, FieldData>> ge(Set<String> entityClasses) {
+        Map<String, Map<String, FieldData>> map = new HashMap<>();
+        for (String clz : entityClasses) {
+            try {
+                Class<?> aClass = Class.forName(clz);
+                Map<String, FieldData> fmap = map.computeIfAbsent(clz, r -> new HashMap<>());
+
+                for (Field field : aClass.getDeclaredFields()) {
+                    Roles roles = AnnotationUtils.getAnnotation(field, Roles.class);
+                    Perms perms = AnnotationUtils.getAnnotation(field, Perms.class);
+                    if (roles == null && perms == null) continue;
+                    PermRolesMeta.Meta rm = AuCoreInitialization.generateRolesMeta(roles);
+                    PermRolesMeta.Meta pm = AuCoreInitialization.generatePermMeta(perms);
+                    fmap.put(field.getName(), new FieldData(field.getType().getTypeName(), rm, pm));
+                }
+
+            } catch (Exception ignored) {
+            }
+        }
+        return map;
+    }
 }

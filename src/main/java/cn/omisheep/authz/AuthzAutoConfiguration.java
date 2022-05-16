@@ -2,7 +2,6 @@ package cn.omisheep.authz;
 
 
 import cn.omisheep.authz.core.AuthzProperties;
-import cn.omisheep.authz.core.aggregate.AggregateManager;
 import cn.omisheep.authz.core.auth.DefaultPermLibrary;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
@@ -180,11 +179,6 @@ public class AuthzAutoConfiguration {
     }
 
     @Bean
-    public AggregateManager aggregateManager() {
-        return new AggregateManager();
-    }
-
-    @Bean
     public PermLibraryCache permLibraryCache(Cache cache) {
         return new PermLibraryCache(cache);
     }
@@ -231,17 +225,18 @@ public class AuthzAutoConfiguration {
     }
 
     @Bean
-    public AuCoreInitialization auCoreInitialization(AuthzProperties properties, Httpd httpd, UserDevicesDict userDevicesDict, PermissionDict permissionDict, PermLibrary permLibrary, Cache cache) {
-        return new AuCoreInitialization(properties, httpd, userDevicesDict, permissionDict, permLibrary, cache);
+    public AuCoreInitialization auCoreInitialization(AuthzProperties properties, Httpd httpd, UserDevicesDict userDevicesDict, PermissionDict permissionDict, PermLibrary permLibrary, AuthzDefender authzDefender, Cache cache) {
+        return new AuCoreInitialization(properties, httpd, userDevicesDict, permissionDict, permLibrary, authzDefender, cache);
     }
 
     @Configuration
-    @ConditionalOnProperty(name = "authz.data-interceptor", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnProperty(name = "authz.data-filter", havingValue = "true", matchIfMissing = true)
     public static class DataFilterAutoConfiguration {
         @Bean
         @ConditionalOnProperty(name = "authz.mybatis.version", havingValue = "v_3_4_0_up")
         @ConditionalOnMissingBean
-        public DataSecurityInterceptorForMybatis dataSecurityInterceptorForMybatis(PermissionDict permissionDict, PermLibrary permLibrary, DataFinderSecurityInterceptor dataFinderSecurityInterceptor) {
+        public DataSecurityInterceptorForMybatis dataSecurityInterceptorForMybatis(PermissionDict permissionDict, PermLibrary permLibrary,
+                                                                                   DataFinderSecurityInterceptor dataFinderSecurityInterceptor) {
             return new DataSecurityInterceptorForMybatis(permissionDict, permLibrary, dataFinderSecurityInterceptor);
         }
 
@@ -250,6 +245,7 @@ public class AuthzAutoConfiguration {
         public DataFinderSecurityInterceptor dataFinderSecurityInterceptor() {
             return new DefaultDataSecurityInterceptor();
         }
+
     }
 
 }

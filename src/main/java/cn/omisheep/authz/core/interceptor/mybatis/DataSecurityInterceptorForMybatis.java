@@ -2,6 +2,7 @@ package cn.omisheep.authz.core.interceptor.mybatis;
 
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.rpd.DataPermMeta;
+import cn.omisheep.authz.core.auth.rpd.FieldData;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.interceptor.DataFinderSecurityInterceptor;
 import cn.omisheep.authz.core.util.AUtils;
@@ -21,9 +22,15 @@ import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 
 import java.sql.Connection;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
-
+/**
+ * @author zhouxinchen[1269670415@qq.com]
+ * @version 1.0.0
+ * @since 1.0.0
+ */
 @Intercepts({
         @Signature(type = StatementHandler.class, method = "prepare", args = {Connection.class, Integer.class}),
         @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}),
@@ -38,7 +45,8 @@ public class DataSecurityInterceptorForMybatis implements Interceptor {
     private final PermLibrary permLibrary;
     private final DataFinderSecurityInterceptor dataFinderSecurityInterceptor;
 
-    public DataSecurityInterceptorForMybatis(PermissionDict permissionDict, PermLibrary permLibrary, DataFinderSecurityInterceptor dataFinderSecurityInterceptor) {
+    public DataSecurityInterceptorForMybatis(PermissionDict permissionDict, PermLibrary permLibrary,
+                                             DataFinderSecurityInterceptor dataFinderSecurityInterceptor) {
         this.permissionDict = permissionDict;
         this.permLibrary = permLibrary;
         this.dataFinderSecurityInterceptor = dataFinderSecurityInterceptor;
@@ -58,8 +66,7 @@ public class DataSecurityInterceptorForMybatis implements Interceptor {
                 BoundSql boundSql = rsh.getBoundSql();
                 Class<?> type = resultMap.getType();
                 List<DataPermMeta> dataPermMetaList = permissionDict.getDataPermMetadata().get(type.getTypeName());
-                String change = dataFinderSecurityInterceptor.change(AUtils.getCurrentHttpMeta(), permLibrary, dataPermMetaList, type, boundSql.getSql());
-                System.out.println(change);
+                String change = dataFinderSecurityInterceptor.sqlChange(AUtils.getCurrentHttpMeta(), permLibrary, dataPermMetaList, type, boundSql.getSql());
                 ReflectUtils.setFieldValue(boundSql, "sql", change);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -67,7 +74,14 @@ public class DataSecurityInterceptorForMybatis implements Interceptor {
                 return invocation.proceed();
             }
         }
-        return invocation.proceed();
+        Object obj = invocation.proceed();
+        Class<?> type = resultMapThreadLocal.get().getType();
+        if (obj instanceof Collection || obj.getClass().equals(type)) {
+            Map<String, FieldData> fieldDataMap = permissionDict.getFieldMetadata().get(type.getTypeName());
+            obj = dataFinderSecurityInterceptor.dataTrim(AUtils.getCurrentHttpMeta(), permLibrary, fieldDataMap, type, obj);
+        }
+
+        return obj;
     }
 
 }

@@ -4,6 +4,7 @@ import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
+import cn.omisheep.authz.core.init.AuInit;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.tk.TokenHelper;
 import cn.omisheep.authz.core.tk.TokenPair;
@@ -27,6 +28,12 @@ import java.util.Set;
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class AuthzDefender {
 
+    private static AuthzDefender SELF;
+
+    public static AuthzDefender self() {
+        return SELF;
+    }
+
     private final UserDevicesDict userDevicesDict;
     private final PermissionDict permissionDict;
     private final PermLibrary permLibrary;
@@ -35,6 +42,14 @@ public class AuthzDefender {
         this.userDevicesDict = userDevicesDict;
         this.permissionDict = permissionDict;
         this.permLibrary = permLibrary;
+    }
+
+    public static void init(AuthzDefender authzDefender) {
+        if (SELF != null) {
+            AuInit.log.error("authzDefender 已经初始化");
+            return;
+        }
+        SELF = authzDefender;
     }
 
     /**

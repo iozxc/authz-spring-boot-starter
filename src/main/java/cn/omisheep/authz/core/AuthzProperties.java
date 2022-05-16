@@ -21,12 +21,9 @@ public class AuthzProperties {
 
     private MybatisConfig mybatis = new MybatisConfig();
 
-    private boolean dataFilter = true;
+    private RSAConfig rsaConfig = new RSAConfig();
 
-    /**
-     * rsa的key刷新时间，单位 s|m|h|d
-     */
-    private String rsaKeyRefreshWithPeriod = "7d";
+    private boolean dataFilter = true;
 
     /**
      * 开启redis缓存时可以不用设置。用户缓存刷新频率，清除掉过期掉值 默认10秒一次，单位 s|m|h|d
@@ -39,6 +36,9 @@ public class AuthzProperties {
      */
     private String gcPeriod;
 
+    /**
+     * authz的日志等级
+     */
     private LogLevel log = LogLevel.INFO;
 
     @Data
@@ -91,9 +91,9 @@ public class AuthzProperties {
         private String headerName = "Authorization";
 
         /**
-         * 头模版
+         * prefix 例如："Bearer <token>"
          */
-        private String headerTemplate = "Bearer <token>";
+        private String headerPrefix = "Bearer";
 
         /**
          * 存活时间，默认 7d ，单位 ms|s|m|h|d
@@ -125,6 +125,30 @@ public class AuthzProperties {
          */
         private boolean supportMultiUserForSameDeviceType = false;
 
+    }
+
+    @Data
+    public static class RSAConfig {
+        /**
+         * 是否开启自动刷新RSA
+         */
+        private boolean auto = true;
+
+        /**
+         * auto为true时生效
+         * rsa的key刷新时间，单位 s|m|h|d
+         */
+        private String rsaKeyRefreshWithPeriod = "7d";
+
+        /**
+         * 自定义公钥
+         */
+        private String customPublicKey;
+
+        /**
+         * 自定义私钥
+         */
+        private String customPrivateKey;
     }
 
     @Data

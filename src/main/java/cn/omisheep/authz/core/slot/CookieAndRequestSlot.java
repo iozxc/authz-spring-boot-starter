@@ -13,6 +13,7 @@ import io.jsonwebtoken.ExpiredJwtException;
 import org.springframework.web.method.HandlerMethod;
 
 import javax.servlet.http.Cookie;
+import java.util.Locale;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -26,19 +27,34 @@ public class CookieAndRequestSlot implements Slot {
     private final UserDevicesDict userDevicesDict;
     private final boolean isEnableRedis;
     private final String cookieName;
+    private final String headerName;
+    private final String headerPrefix;
 
     public CookieAndRequestSlot(UserDevicesDict userDevicesDict, PermLibrary permLibrary, AuthzProperties properties) {
         this.userDevicesDict = userDevicesDict;
         this.isEnableRedis = properties.getCache().isEnableRedis();
         this.cookieName = properties.getToken().getCookieName();
+        this.headerName = properties.getToken().getHeaderName().toLowerCase(Locale.ROOT);
+        this.headerPrefix = properties.getToken().getHeaderPrefix();
     }
 
     @Override
     public boolean chain(HttpMeta httpMeta, HandlerMethod handler) throws Exception {
         Cookie cookie = HttpUtils.readSingleCookieInRequestByName(cookieName);
-        if (httpMeta.setHasTokenCookie(cookie != null)) {
+        String tokenValue = null;
+
+        String s = HttpUtils.getCurrentRequestHeaders().get(headerName);
+        if (s != null && s.startsWith(headerPrefix)) {
+            tokenValue = s.substring(headerPrefix.length());
+        }
+
+        if (tokenValue == null && cookie != null) {
+            tokenValue = cookie.getValue();
+        }
+
+        if (tokenValue != null) {
             try {
-                Token token = TokenHelper.parseToken(cookie.getValue());
+                Token token = TokenHelper.parseToken(tokenValue);
                 httpMeta.setToken(token);
                 // 每次访问将最后一次访问时间和ip存入缓存中
                 Async.run(userDevicesDict::request);
@@ -51,6 +67,8 @@ public class CookieAndRequestSlot implements Slot {
                 }
             }
         }
+
+        httpMeta.setHasToken(tokenValue != null);
         return true;
     }
 

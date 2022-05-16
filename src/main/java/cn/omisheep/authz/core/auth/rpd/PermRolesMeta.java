@@ -23,6 +23,7 @@ public class PermRolesMeta {
     public static class Meta {
         private Set<Set<String>> require;
         private Set<Set<String>> exclude;
+        private Set<String> range; // scope of access
         private Set<String> resources; // required protect resources
 
         public boolean non() {

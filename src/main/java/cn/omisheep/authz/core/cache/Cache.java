@@ -260,7 +260,7 @@ public interface Cache {
     void del(Set<String> keys);
 
     default void del(String... keys) {
-        del(CollectionUtils.newSet(keys));
+        del(CollectionUtils.ofSet(keys));
     }
 
     default Map<String, CacheItem> asMap() {

@@ -3,6 +3,8 @@ package cn.omisheep.authz.core.auth.deviced;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.tk.TokenPair;
 
+import java.util.List;
+
 /**
  * @author zhouxinchen[1269670415@qq.com]
  * @version 1.0.0
@@ -26,37 +28,43 @@ public interface UserDevicesDict {
      */
     int userStatus(Object userId, String deviceType, String deviceId, String accessTokenId);
 
+    // =========================   登入   ========================= //
+
     boolean addUser(Object userId, TokenPair tokenPair, String deviceType, String deviceId, HttpMeta httpMeta);
+
+    // =========================   刷新   ========================= //
 
     boolean refreshUser(TokenPair tokenPair);
 
     // =========================   登出   ========================= //
 
-    void removeAllDeviceByUserId(Object userId);
-
-    void removeAllDeviceByCurrentUser();
-
     void removeDeviceByUserIdAndAccessTokenId(Object userId, String accessTokenId);
 
-    void removeDeviceByCurrentUserAndAccessTokenId(String accessTokenId);
+    void removeAllDeviceByUserId(Object userId);
 
     void removeDeviceByUserIdAndDeviceType(Object userId, String deviceType);
 
-    void removeDeviceByCurrentUserAndDeviceType(String deviceType);
+    void removeDeviceByUserIdAndDeviceTypeAndDeviceId(Object userId, String deviceType, String deviceId);
 
-    void removeDeviceByUserIdAndDeviceId(Object userId, String deviceId);
+    void removeAllDeviceFromCurrentUser();
 
-    void removeDeviceByCurrentUserAndDeviceId(String deviceId);
+    void removeCurrentDeviceFromCurrentUser();
+
+    void removeDeviceFromCurrentUserByDeviceType(String deviceType);
+
+    void removeDeviceFromCurrentUserByDeviceTypeAndDeviceId(String deviceType, String deviceId);
 
     // =========================   查找   ========================= //
 
     Device getDevice(Object userId, String deviceType, String deviceId);
 
-    Object[] listUserId();
+    List<Object> listUserId();
 
-    Device[] listDevicesByUserId(Object userId);
+    List<Device> listDevicesByUserId(Object userId);
 
-    Device[] listDevicesForCurrentUser();
+    List<Device> listDevicesForCurrentUser();
+
+    // =========================   活跃用户   ========================= //
 
     /**
      * 所有【在线/活跃】用户id
@@ -64,7 +72,7 @@ public interface UserDevicesDict {
      * @param ms 毫秒数
      * @return 用户id数组
      */
-    Object[] listActiveUsers(long ms);
+    List<Object> listActiveUsers(long ms);
 
     /**
      * 某个用户【在线/活跃】 设备
@@ -73,7 +81,7 @@ public interface UserDevicesDict {
      * @param ms     毫秒书
      * @return 【在线/活跃】设备数组
      */
-    Device[] listActiveUserDevices(Object userId, long ms);
+    List<Device> listActiveUserDevices(Object userId, long ms);
 
     // =========================   other   ========================= //
 
