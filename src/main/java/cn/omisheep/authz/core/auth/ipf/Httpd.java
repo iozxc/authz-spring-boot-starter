@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core.auth.ipf;
 
+import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.msg.RequestMessage;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
@@ -113,5 +114,37 @@ public class Httpd {
         associatedIpPools(limitMeta).forEach(ipPool -> {
             if (ipPool.containsKey(ip)) ipPool.get(ip).relive();
         });
+    }
+
+    public synchronized Object modify(AuthzModifier authzModifier) {
+        try {
+            switch (authzModifier.getOperate()) {
+                case ADD:
+                case MODIFY:
+                case UPDATE:
+                    AuthzModifier.RateLimitInfo rateLimit = authzModifier.getRateLimit();
+                    LimitMeta limitMeta = new LimitMeta(rateLimit.getWindow(),
+                            rateLimit.getMaxRequests(),
+                            rateLimit.getPunishmentTime().toArray(new String[0]),
+                            rateLimit.getMinInterval(),
+                            rateLimit.getAssociatedPatterns().toArray(new String[0]),
+                            rateLimit.getBannedType());
+                    rateLimitMetadata.get(authzModifier.getMethod()).put(authzModifier.getApi(), limitMeta);
+                    return limitMeta;
+                case DEL:
+                case DELETE:
+                    return rateLimitMetadata.get(authzModifier.getMethod()).remove(authzModifier.getApi());
+                case READ:
+                case GET:
+                    return rateLimitMetadata.get(authzModifier.getMethod()).get(authzModifier.getApi());
+                case NON:
+                case EMPTY:
+                    return null;
+                default:
+                    return null;
+            }
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

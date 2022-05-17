@@ -15,18 +15,13 @@ import java.util.stream.Collectors;
  * @version 1.0.0
  * @since 1.0.0
  */
+@Getter
 public class LimitMeta {
-    @Getter
     private final long window;
-    @Getter
     private final int maxRequests;
-    @Getter
     private final List<Long> punishmentTime = new ArrayList<>();
-    @Getter
     private final long minInterval;
-    @Getter
     private final List<AssociatedPattern> associatedPatterns;
-    @Getter
     private final BannedType bannedType;
 
     public LimitMeta(String window,
@@ -54,11 +49,10 @@ public class LimitMeta {
                 }
             }
         } else this.associatedPatterns = null;
-
     }
 
     @Getter
-    static class AssociatedPattern {
+    public static class AssociatedPattern {
         private final Set<String> methods;
         private final String pattern;
 

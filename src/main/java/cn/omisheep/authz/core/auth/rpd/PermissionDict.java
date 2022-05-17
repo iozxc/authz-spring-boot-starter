@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core.auth.rpd;
 
+import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.init.AuInit;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
@@ -150,6 +151,9 @@ public class PermissionDict {
                 case REQUEST_PARAM_PERMISSION:
                 case PARAM_PERMISSION:
                     return modifyParam(authzModifier);
+                case DATA_ROW:
+                case DATA_COL:
+                    return modifyData(authzModifier);
                 case NON:
                     return null;
             }
@@ -225,7 +229,6 @@ public class PermissionDict {
             PermRolesMeta meta = target.get(authzModifier.getApi());
             switch (authzModifier.getOperate()) {
                 case ADD:
-                case OVERRIDE:
                     if (meta != null) meta.overrideApi(authzModifier.build());
                     else target.put(authzModifier.getApi(), authzModifier.build());
                     return target.get(authzModifier.getApi());
@@ -267,9 +270,8 @@ public class PermissionDict {
 
             switch (authzModifier.getOperate()) {
                 case ADD:
-                case OVERRIDE:
                     PermRolesMeta.Meta _m;
-                    if (Arrays.asList(authzModifier.getTarget().with).contains("role")) {
+                    if (authzModifier.getTarget().contains("role")) {
                         _m = authzModifier.build().role;
                     } else {
                         _m = authzModifier.build().permissions;
@@ -301,7 +303,7 @@ public class PermissionDict {
                 case UPDATE:
                     PermRolesMeta build = authzModifier.build();
                     PermRolesMeta.Meta m = metaList.get(authzModifier.getIndex());
-                    if (Arrays.asList(authzModifier.getTarget().with).contains("role")) {
+                    if (authzModifier.getTarget().contains("role")) {
                         if (build.getRequireRoles() != null)
                             m.setRequire(build.getRequireRoles());
                         if (build.getExcludeRoles() != null)
@@ -339,7 +341,7 @@ public class PermissionDict {
     }
 
     private Object[] getParamMetaList(PermRolesMeta meta, AuthzModifier authzModifier) {
-        boolean isAdd = authzModifier.getOperate() == AuthzModifier.Operate.ADD || authzModifier.getOperate() == AuthzModifier.Operate.OVERRIDE;
+        boolean isAdd = authzModifier.getOperate() == AuthzModifier.Operate.ADD;
         ParamMetadata paramMetadata;
         if (meta == null) {
             if (isAdd) {
@@ -468,6 +470,82 @@ public class PermissionDict {
                 }
         }
         return null;
+    }
+
+    public Object modifyData(AuthzModifier authzModifier) {
+        try {
+            lock.lock();
+            String className = authzModifier.getClassName();
+            if (className == null) return null;
+            if (authzResourcesNameAndTemplate.get(className) == null) return null;
+            if (authzModifier.getTarget() == AuthzModifier.Target.DATA_ROW) {
+                switch (authzModifier.getOperate()) {
+                    case ADD:
+                        DataPermMeta dataPermMeta;
+                        Rule rule = authzModifier.getRule();
+                        if (rule == null) {
+                            dataPermMeta = DataPermMeta.of(authzModifier.getCondition());
+                        } else {
+                            dataPermMeta = DataPermMeta.of(rule);
+                        }
+                        PermRolesMeta build = authzModifier.build();
+                        dataPermMeta.setRoles(build.role);
+                        dataPermMeta.setPermissions(build.permissions);
+                        dataPermMeta.setArgsMap(authzModifier.getArgsMap());
+                        dataPermMetadata.computeIfAbsent(className, r -> new ArrayList<>()).add(dataPermMeta);
+                        break;
+                    case MODIFY:
+                    case UPDATE:
+                        if (authzModifier.getIndex() == null) return null;
+                        if (dataPermMetadata.get(className) == null) return null;
+                        DataPermMeta old_data_mata = dataPermMetadata.get(className).get(authzModifier.getIndex());
+                        DataPermMeta new_data_mata = null;
+
+                        if (authzModifier.getCondition() != null) {
+                            new_data_mata = DataPermMeta.of(authzModifier.getCondition());
+                        }
+                        if (authzModifier.getRule() != null) {
+                            new_data_mata = DataPermMeta.of(authzModifier.getRule());
+                        }
+                        if (new_data_mata != null) {
+                            old_data_mata.setRule(new_data_mata.getRule());
+                            old_data_mata.setCondition(new_data_mata.getCondition());
+                        }
+                        PermRolesMeta build_new = authzModifier.build();
+                        if (build_new.role != null) {
+                            old_data_mata.setRoles(build_new.role);
+                        }
+                        if (build_new.permissions != null) {
+                            old_data_mata.setPermissions(build_new.permissions);
+                        }
+                        if (authzModifier.getArgsMap() != null) {
+                            old_data_mata.setArgsMap(authzModifier.getArgsMap());
+                        }
+                        break;
+                    case DEL:
+                    case DELETE:
+                        Integer index = authzModifier.getIndex();
+                        if (dataPermMetadata.get(className) == null) return dataPermMetadata.get(className);
+                        if (index == null) dataPermMetadata.get(className).clear();
+                        else dataPermMetadata.get(className).remove(index.intValue());
+                        break;
+                    case GET:
+                    case READ:
+                        if (dataPermMetadata.get(className) == null) return dataPermMetadata.get(className);
+                        if (authzModifier.getIndex() == null) return dataPermMetadata.get(className);
+                        else return dataPermMetadata.get(className).get(authzModifier.getIndex());
+                    default:
+                        return null;
+                }
+                return dataPermMetadata.get(className);
+            } else {
+                return null;
+            }
+        } catch (Exception e) {
+            return null;
+        } finally {
+            lock.unlock();
+        }
     }
 
     // ----------------------------------------- init ----------------------------------------- //

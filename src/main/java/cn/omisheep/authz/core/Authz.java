@@ -3,9 +3,11 @@ package cn.omisheep.authz.core;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
+import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.util.AUtils;
+import org.springframework.lang.NonNull;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -28,6 +30,14 @@ public class Authz {
         userDevicesDict = AUtils.getBean(UserDevicesDict.class);
         cache = AUtils.getBean(Cache.class);
         httpd = AUtils.getBean(Httpd.class);
+    }
+
+    public static Object modify(@NonNull AuthzModifier authzModifier) {
+        if (authzModifier.getTarget() == AuthzModifier.Target.RATE) {
+            return httpd.modify(authzModifier);
+        } else {
+            return permissionDict.modify(authzModifier);
+        }
     }
 
 }

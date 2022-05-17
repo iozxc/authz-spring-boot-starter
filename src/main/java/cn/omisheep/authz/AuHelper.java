@@ -1,9 +1,9 @@
 package cn.omisheep.authz;
 
 
+import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.auth.deviced.Device;
 import cn.omisheep.authz.core.auth.ipf.RequestMeta;
-import cn.omisheep.authz.core.auth.rpd.AuthzModifier;
 import cn.omisheep.authz.core.tk.AuKey;
 import cn.omisheep.authz.core.tk.TokenPair;
 import cn.omisheep.commons.util.TimeUtils;
@@ -306,11 +306,8 @@ public class AuHelper {
         return httpd.getIpBlacklist().stream().map(RequestMeta::getIp).collect(Collectors.toList());
     }
 
-    // *************************************     api权限、rate-limit 自定义      ************************************* //
+    // *************************************     api权限、数据权限、rate-limit 动态修改      ************************************* //
 
-    // 1、配置api的 param权限
-    // 2、path权限
-    // 3、配置数据权限
     // 4、rate速率配置
 
     /**
@@ -318,10 +315,10 @@ public class AuHelper {
      * 可使用{@link org.springframework.web.bind.annotation.RequestBody}获得，或者{@code new AuthzModifier();}
      * <p>
      * <p>
-     * 必须要的四个字段：{@code operate, target, method, api}
+     * 共的13个字段：{@code 1.operate 2.target 3.method, 4.api 5.value 6.index 7.range 8.resources 9.className 10.condition 11.argsMap 12.role 13.permission }
      * <p>
      * operate 支持四种操作:
-     * <li>ADD(OVERRIDE)</li>
+     * <li>ADD</li>
      * <li>DELETE(DEL)</li>
      * <li>MODIFY(UPDATE)</li>
      * <li>GET(READ)</li>
@@ -488,7 +485,7 @@ public class AuHelper {
      */
     @Nullable
     public static Object authzModify(@NonNull AuthzModifier authzModifier) {
-        return permissionDict.modify(authzModifier);
+        return modify(authzModifier);
     }
 
     // **************************************     RSA      ************************************** //

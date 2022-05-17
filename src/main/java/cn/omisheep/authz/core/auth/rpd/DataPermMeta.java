@@ -46,12 +46,11 @@ public class DataPermMeta {
         return this;
     }
 
-    public DataPermMeta addArg(String source, String... args) {
+    public void addArg(String source, String... args) {
         if (argsMap == null) {
             argsMap = new HashMap<>();
         }
         if (args != null) argsMap.put(source, Arrays.stream(args).collect(Collectors.toList()));
-        return this;
     }
 
 }
