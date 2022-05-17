@@ -245,7 +245,6 @@ public class PermissionDict {
         } catch (Exception e) {
             return null;
         } finally {
-            m1 = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(authzMetadata));
             lock.unlock();
         }
     }
