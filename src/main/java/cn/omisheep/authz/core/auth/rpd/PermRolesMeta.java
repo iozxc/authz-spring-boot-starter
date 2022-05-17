@@ -17,6 +17,12 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 @JsonInclude(NON_NULL)
 public class PermRolesMeta {
 
+    Meta role;
+    Meta permissions;
+
+    @JsonInclude(NON_NULL)
+    private Map<ParamMetadata.ParamType, Map<String, ParamMetadata>> paramPermissionsMetadata;
+
     @Data
     @Accessors(chain = true)
     @JsonInclude(NON_NULL)
@@ -35,12 +41,6 @@ public class PermRolesMeta {
             return (require != null ? "require: " + require : "") + (exclude != null ? "\t, exclude: " + exclude : "");
         }
     }
-
-    private Meta role;
-    private Meta permissions;
-
-    @JsonInclude(NON_NULL)
-    private Map<ParamMetadata.ParamType, Map<String, ParamMetadata>> paramPermissionsMetadata;
 
     public Map<ParamMetadata.ParamType, Map<String, ParamMetadata>> getParamPermissionsMetadata() {
         return paramPermissionsMetadata;
@@ -63,84 +63,17 @@ public class PermRolesMeta {
                 || paramPermissionsMetadata.values().stream().noneMatch(Objects::nonNull));
     }
 
-    public PermRolesMeta overrideApi(PermRolesMeta permRolesMeta) {
+    public void overrideApi(PermRolesMeta permRolesMeta) {
         this.setRequireRoles(permRolesMeta.getRequireRoles());
         this.setExcludeRoles(permRolesMeta.getExcludeRoles());
         this.setRequirePermissions(permRolesMeta.getRequirePermissions());
         this.setExcludePermissions(permRolesMeta.getExcludePermissions());
-        return this;
     }
 
     public PermRolesMeta removeApi() {
         role = null;
         permissions = null;
         return this;
-    }
-
-    @Data
-    @Accessors(chain = true)
-    public static class Vo {
-        Operate operate;
-
-        public enum Operate {
-            ADD, OVERRIDE,
-            DELETE, DEL,
-            MODIFY, UPDATE,
-            GET, READ,
-            EMPTY, NON,
-        }
-
-        public Vo setOperate(Operate operate) {
-
-            this.operate = operate;
-            return this;
-        }
-
-        public Vo setOperate(String operate) {
-            try {
-                this.operate = Operate.valueOf(operate.toUpperCase(Locale.ROOT));
-            } catch (Exception e) {
-                this.operate = Operate.EMPTY;
-            }
-            return this;
-        }
-
-        String method;
-        String api;
-        Collection<String> requireRoles;
-        Collection<String> excludeRoles;
-        Collection<String> requirePermissions;
-        Collection<String> excludePermissions;
-
-        public Vo setMethod(String method) {
-            if (method != null) {
-                this.method = method.toUpperCase(Locale.ROOT);
-            } else {
-                this.method = null;
-            }
-            return this;
-        }
-
-        public PermRolesMeta build() {
-            PermRolesMeta permRolesMeta = new PermRolesMeta();
-            permRolesMeta.setRequireRoles(requireRoles);
-            permRolesMeta.setExcludeRoles(excludeRoles);
-            permRolesMeta.setRequirePermissions(requirePermissions);
-            permRolesMeta.setExcludePermissions(excludePermissions);
-            return permRolesMeta;
-        }
-
-        public static PermRolesMeta build(Collection<String> requireRoles,
-                                          Collection<String> excludeRoles,
-                                          Collection<String> requirePermissions,
-                                          Collection<String> excludePermissions) {
-            PermRolesMeta permRolesMeta = new PermRolesMeta();
-            permRolesMeta.setRequireRoles(requireRoles);
-            permRolesMeta.setExcludeRoles(excludeRoles);
-            permRolesMeta.setRequirePermissions(requirePermissions);
-            permRolesMeta.setExcludePermissions(excludePermissions);
-            return permRolesMeta;
-        }
     }
 
     public PermRolesMeta() {

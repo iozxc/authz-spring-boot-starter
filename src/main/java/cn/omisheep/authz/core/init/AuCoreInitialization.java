@@ -191,29 +191,35 @@ public class AuCoreInitialization implements ApplicationContextAware {
             // ------------- parameters init --------------- //
             key.getMethodsCondition().getMethods().forEach(method -> {
                 getPatterns(key).forEach(patternValue -> {
+                    Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>> methodRawMap = permissionDict.getRawMap().computeIfAbsent(method.toString(), r -> new HashMap<>());
+                    Map<ParamMetadata.ParamType, Map<String, Class<?>>> rawParamTypeMapMap = methodRawMap.computeIfAbsent(contextPath + patternValue, r -> new HashMap<>());
                     for (MethodParameter param : value.getMethodParameters()) {
                         Class<?> paramType = param.getParameter().getType();
                         if (ValueMatcher.checkType(paramType).isOther()) {
                             continue;
                         }
+
+                        RequestParam requestParam = param.getParameterAnnotation(RequestParam.class);
+                        PathVariable pathVariable = param.getParameterAnnotation(PathVariable.class);
+                        String paramName = param.getParameter().getName();
+
+                        ParamMetadata.ParamType type = null;
+                        if (pathVariable != null) {
+                            type = ParamMetadata.ParamType.PATH_VARIABLE;
+                            if (!pathVariable.name().equals("")) paramName = pathVariable.name();
+                        } else if (requestParam != null) {
+                            type = ParamMetadata.ParamType.REQUEST_PARAM;
+                            if (!requestParam.name().equals("")) paramName = requestParam.name();
+                        }
+
+                        Map<String, Class<?>> rawParamMap = rawParamTypeMapMap.computeIfAbsent(type, r -> new HashMap<>());
+                        rawParamMap.put(paramName, paramType);
+
                         Roles rolesByParam = param.getParameterAnnotation(Roles.class);
                         Perms permsByParam = param.getParameterAnnotation(Perms.class);
                         BatchAuthority batchAuthority = param.getParameterAnnotation(BatchAuthority.class);
 
                         if (rolesByParam != null || permsByParam != null || batchAuthority != null) {
-                            RequestParam requestParam = param.getParameterAnnotation(RequestParam.class);
-                            PathVariable pathVariable = param.getParameterAnnotation(PathVariable.class);
-                            String paramName = param.getParameter().getName();
-
-                            ParamMetadata.ParamType type = null;
-                            if (pathVariable != null) {
-                                type = ParamMetadata.ParamType.PATH_VARIABLE;
-                                if (!pathVariable.name().equals("")) paramName = pathVariable.name();
-                            } else if (requestParam != null) {
-                                type = ParamMetadata.ParamType.REQUEST_PARAM;
-                                if (!requestParam.name().equals("")) paramName = requestParam.name();
-                            }
-
                             ArrayList<PermRolesMeta.Meta> rolesMetaList = new ArrayList<>();
                             ArrayList<PermRolesMeta.Meta> permsMetaList = new ArrayList<>();
                             PermRolesMeta.Meta vr = generateRolesMeta(rolesByParam);
@@ -251,7 +257,6 @@ public class AuCoreInitialization implements ApplicationContextAware {
                         }
 
                     }
-
                 });
             });
 
