@@ -16,11 +16,11 @@ import java.util.Set;
 @Data
 @Accessors(chain = true)
 public class CacheMessage implements Message {
-    public static final String CHANNEL = "AU_CACHE_DATA_UPDATE";
-    private String id = uuid;
-    private Type type;
-    private String pattern;
-    private Set<String> keys;
+    public static final String      CHANNEL = "AU_CACHE_DATA_UPDATE";
+    private             String      id      = uuid;
+    private             Type        type;
+    private             String      pattern;
+    private             Set<String> keys;
 
     public static CacheMessage write(String key) {
         return single(key).setType(Type.WRITE);

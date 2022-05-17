@@ -63,13 +63,13 @@ public class Token {
     }
 
     public Token(String tokenVal, Object userId, String tokenId, Date issueTime, Date expiredTime, String deviceType, String deviceId, Type type) {
-        this.tokenVal = tokenVal;
-        this.userId = userId;
-        this.tokenId = tokenId;
-        this.issueTime = issueTime;
+        this.tokenVal    = tokenVal;
+        this.userId      = userId;
+        this.tokenId     = tokenId;
+        this.issueTime   = issueTime;
         this.expiredTime = expiredTime;
-        this.deviceType = deviceType;
-        this.deviceId = deviceId;
-        this.type = type;
+        this.deviceType  = deviceType;
+        this.deviceId    = deviceId;
+        this.type        = type;
     }
 }

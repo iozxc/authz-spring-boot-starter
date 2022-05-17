@@ -25,11 +25,11 @@ import static cn.omisheep.authz.core.auth.rpd.AuthzDefender.logs;
 public class APIPermSlot implements Slot {
 
     private final PermissionDict permissionDict;
-    private final PermLibrary permLibrary;
+    private final PermLibrary    permLibrary;
 
     public APIPermSlot(PermissionDict permissionDict, PermLibrary permLibrary) {
         this.permissionDict = permissionDict;
-        this.permLibrary = permLibrary;
+        this.permLibrary    = permLibrary;
     }
 
     @Override
@@ -40,8 +40,8 @@ public class APIPermSlot implements Slot {
         Token accessToken = httpMeta.getToken();
 
         Set<String> roles = null;
-        boolean e1 = CollectionUtils.isEmpty(permRolesMeta.getRequireRoles());
-        boolean e2 = CollectionUtils.isEmpty(permRolesMeta.getExcludeRoles());
+        boolean     e1    = CollectionUtils.isEmpty(permRolesMeta.getRequireRoles());
+        boolean     e2    = CollectionUtils.isEmpty(permRolesMeta.getExcludeRoles());
         if (!e1 || !e2) {
             roles = permLibrary.getRolesByUserId(accessToken.getUserId());
             httpMeta.setRoles(roles);

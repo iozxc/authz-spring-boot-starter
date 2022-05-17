@@ -20,11 +20,11 @@ import static cn.omisheep.authz.core.auth.rpd.AuthzDefender.logs;
 @Order(10)
 public class DeviceSlot implements Slot {
 
-    private final PermissionDict permissionDict;
+    private final PermissionDict  permissionDict;
     private final UserDevicesDict userDevicesDict;
 
     public DeviceSlot(PermissionDict permissionDict, UserDevicesDict userDevicesDict) {
-        this.permissionDict = permissionDict;
+        this.permissionDict  = permissionDict;
         this.userDevicesDict = userDevicesDict;
     }
 

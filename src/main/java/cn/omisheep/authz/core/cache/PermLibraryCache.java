@@ -33,9 +33,9 @@ public class PermLibraryCache {
 
     @Around("execution(* cn.omisheep.authz.core.auth.PermLibrary+.getPermissionsByRole(..))")
     public Object Before2(ProceedingJoinPoint joinPoint) throws Throwable {
-        Object[] args = joinPoint.getArgs();
+        Object[]        args            = joinPoint.getArgs();
         MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-        Class<?>[] parameterTypes = methodSignature.getParameterTypes();
+        Class<?>[]      parameterTypes  = methodSignature.getParameterTypes();
         if (parameterTypes.length != 1 || parameterTypes[0] != String.class) return joinPoint.proceed();
         return handle(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX + args[0], joinPoint);
     }

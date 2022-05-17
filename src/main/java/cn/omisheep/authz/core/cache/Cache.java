@@ -24,17 +24,17 @@ import static cn.omisheep.commons.util.Utils.castValue;
 @SuppressWarnings({"rawtypes,", "uncheked", "unused"})
 public interface Cache {
 
-    String ALL = "*";
-    String EMPTY = "";
+    String ALL       = "*";
+    String EMPTY     = "";
     String SEPARATOR = ":";
-    long INFINITE = Integer.MAX_VALUE;
-    long INHERIT = -1L;
+    long   INFINITE  = Integer.MAX_VALUE;
+    long   INHERIT   = -1L;
 
     class CacheItem<E> {
         // 到期的时间，用毫秒表示
-        protected final long expiration;
+        protected final long   expiration;
         @Getter
-        protected Object value;
+        protected       Object value;
 
         /**
          * @param ttl   存活时间 单位秒， -1表示在【创建】【更新】【读取】时，xx秒后会过期，这个时间取决与配置
@@ -127,7 +127,8 @@ public interface Cache {
      * @param pattern redis 风格的匹配
      * @return 匹配上的key
      */
-    @NonNull default Set<String> keysAndLoad(String pattern) {
+    @NonNull
+    default Set<String> keysAndLoad(String pattern) {
         return keys(pattern);
     }
 

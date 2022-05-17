@@ -25,22 +25,22 @@ import java.util.Locale;
 public class CookieAndRequestSlot implements Slot {
 
     private final UserDevicesDict userDevicesDict;
-    private final boolean isEnableRedis;
-    private final String cookieName;
-    private final String headerName;
-    private final String headerPrefix;
+    private final boolean         isEnableRedis;
+    private final String          cookieName;
+    private final String          headerName;
+    private final String          headerPrefix;
 
     public CookieAndRequestSlot(UserDevicesDict userDevicesDict, PermLibrary permLibrary, AuthzProperties properties) {
         this.userDevicesDict = userDevicesDict;
-        this.isEnableRedis = properties.getCache().isEnableRedis();
-        this.cookieName = properties.getToken().getCookieName();
-        this.headerName = properties.getToken().getHeaderName().toLowerCase(Locale.ROOT);
-        this.headerPrefix = properties.getToken().getHeaderPrefix();
+        this.isEnableRedis   = properties.getCache().isEnableRedis();
+        this.cookieName      = properties.getToken().getCookieName();
+        this.headerName      = properties.getToken().getHeaderName().toLowerCase(Locale.ROOT);
+        this.headerPrefix    = properties.getToken().getHeaderPrefix();
     }
 
     @Override
     public boolean chain(HttpMeta httpMeta, HandlerMethod handler) throws Exception {
-        Cookie cookie = HttpUtils.readSingleCookieInRequestByName(cookieName);
+        Cookie cookie     = HttpUtils.readSingleCookieInRequestByName(cookieName);
         String tokenValue = null;
 
         String s = HttpUtils.getCurrentRequestHeaders().get(headerName);

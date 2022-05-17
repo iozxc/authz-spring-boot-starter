@@ -86,7 +86,7 @@ public class DefaultCache implements cn.omisheep.authz.core.cache.Cache {
     @Override
     public @NonNull <T> Map<String, T> get(Set<String> keys, Class<T> requiredType) {
         Map<String, CacheItem> items = cache.getAllPresent(keys);
-        HashMap<String, T> map = new HashMap<>();
+        HashMap<String, T>     map   = new HashMap<>();
         for (Map.Entry<String, CacheItem> entry : items.entrySet()) {
             map.put(entry.getKey(), castValue(entry.getValue(), requiredType));
         }

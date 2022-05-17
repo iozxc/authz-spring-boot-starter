@@ -79,13 +79,13 @@ public class AuCoreInitialization implements ApplicationContextAware {
                                 PermLibrary permLibrary,
                                 AuthzDefender authzDefender,
                                 Cache cache) {
-        this.properties = properties;
-        this.httpd = httpd;
+        this.properties      = properties;
+        this.httpd           = httpd;
         this.userDevicesDict = userDevicesDict;
-        this.permissionDict = permissionDict;
-        this.cache = cache;
-        this.permLibrary = permLibrary;
-        this.authzDefender = authzDefender;
+        this.permissionDict  = permissionDict;
+        this.cache           = cache;
+        this.permLibrary     = permLibrary;
+        this.authzDefender   = authzDefender;
     }
 
     @Override
@@ -132,10 +132,10 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
     private void initPermissionDict(ApplicationContext applicationContext, Map<RequestMappingInfo, HandlerMethod> mapRet) {
         PermissionDict.setPermSeparator(Constants.COMMA);
-        Set<String> toBeLoadedRoles = new HashSet<>();
-        HashMap<String, Map<String, PermRolesMeta>> authzMetadata = new HashMap<>();
-        Map<String, PermRolesMeta> pMap = new HashMap<>();
-        Map<String, PermRolesMeta> rMap = new HashMap<>();
+        Set<String>                                 toBeLoadedRoles = new HashSet<>();
+        HashMap<String, Map<String, PermRolesMeta>> authzMetadata   = new HashMap<>();
+        Map<String, PermRolesMeta>                  pMap            = new HashMap<>();
+        Map<String, PermRolesMeta>                  rMap            = new HashMap<>();
         applicationContext.getBeansWithAnnotation(Perms.class).forEach((key, value) -> {
             pMap.put(value.getClass().getName(),
                     generatePermRolesMeta(AnnotationUtils.getAnnotation(value.getClass(), Perms.class), null));
@@ -147,8 +147,8 @@ public class AuCoreInitialization implements ApplicationContextAware {
         });
 
         mapRet.forEach((key, value) -> {
-            PermRolesMeta pFc = pMap.get(value.getBeanType().getName());
-            PermRolesMeta rFc = rMap.get(value.getBeanType().getName());
+            PermRolesMeta pFc           = pMap.get(value.getBeanType().getName());
+            PermRolesMeta rFc           = rMap.get(value.getBeanType().getName());
             PermRolesMeta permRolesMeta = generatePermRolesMeta(value.getMethodAnnotation(Perms.class), value.getMethodAnnotation(Roles.class));
 
             if (rFc != null) {
@@ -191,8 +191,8 @@ public class AuCoreInitialization implements ApplicationContextAware {
             // ------------- parameters init --------------- //
             key.getMethodsCondition().getMethods().forEach(method -> {
                 getPatterns(key).forEach(patternValue -> {
-                    Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>> methodRawMap = permissionDict.getRawMap().computeIfAbsent(method.toString(), r -> new HashMap<>());
-                    Map<ParamMetadata.ParamType, Map<String, Class<?>>> rawParamTypeMapMap = methodRawMap.computeIfAbsent(contextPath + patternValue, r -> new HashMap<>());
+                    Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>> methodRawMap       = permissionDict.getRawMap().computeIfAbsent(method.toString(), r -> new HashMap<>());
+                    Map<ParamMetadata.ParamType, Map<String, Class<?>>>              rawParamTypeMapMap = methodRawMap.computeIfAbsent(contextPath + patternValue, r -> new HashMap<>());
                     for (MethodParameter param : value.getMethodParameters()) {
                         Class<?> paramType = param.getParameter().getType();
                         if (ValueMatcher.checkType(paramType).isOther()) {
@@ -201,7 +201,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
                         RequestParam requestParam = param.getParameterAnnotation(RequestParam.class);
                         PathVariable pathVariable = param.getParameterAnnotation(PathVariable.class);
-                        String paramName = param.getParameter().getName();
+                        String       paramName    = param.getParameter().getName();
 
                         ParamMetadata.ParamType type = null;
                         if (pathVariable != null) {
@@ -215,15 +215,15 @@ public class AuCoreInitialization implements ApplicationContextAware {
                         Map<String, Class<?>> rawParamMap = rawParamTypeMapMap.computeIfAbsent(type, r -> new HashMap<>());
                         rawParamMap.put(paramName, paramType);
 
-                        Roles rolesByParam = param.getParameterAnnotation(Roles.class);
-                        Perms permsByParam = param.getParameterAnnotation(Perms.class);
+                        Roles          rolesByParam   = param.getParameterAnnotation(Roles.class);
+                        Perms          permsByParam   = param.getParameterAnnotation(Perms.class);
                         BatchAuthority batchAuthority = param.getParameterAnnotation(BatchAuthority.class);
 
                         if (rolesByParam != null || permsByParam != null || batchAuthority != null) {
                             ArrayList<PermRolesMeta.Meta> rolesMetaList = new ArrayList<>();
                             ArrayList<PermRolesMeta.Meta> permsMetaList = new ArrayList<>();
-                            PermRolesMeta.Meta vr = generateRolesMeta(rolesByParam);
-                            PermRolesMeta.Meta vp = generatePermMeta(permsByParam);
+                            PermRolesMeta.Meta            vr            = generateRolesMeta(rolesByParam);
+                            PermRolesMeta.Meta            vp            = generatePermMeta(permsByParam);
                             if (vr != null) rolesMetaList.add(vr);
                             if (vp != null) permsMetaList.add(vp);
 
@@ -277,8 +277,8 @@ public class AuCoreInitialization implements ApplicationContextAware {
                             .map(role -> Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX + role)
                             .collect(Collectors.toList())
             );
-            Iterator<String> iterator = collect.iterator();
-            HashMap<String, Set<String>> map = new HashMap<>();
+            Iterator<String>             iterator = collect.iterator();
+            HashMap<String, Set<String>> map      = new HashMap<>();
             rolesPerms.forEach(perms -> map.put(iterator.next(), perms));
             map.forEach((role, v) -> {
                 Set<String> permissions = permLibrary.getPermissionsByRole(role);
@@ -291,7 +291,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
     public static PermRolesMeta.Meta generatePermMeta(Perms p) {
         if (p == null) return null;
         PermRolesMeta.Meta permsMeta = new PermRolesMeta.Meta();
-        boolean flag = false;
+        boolean            flag      = false;
         if (p.require() != null && p.require().length != 0) {
             permsMeta.setRequire(CollectionUtils.splitStrValsToSets(Constants.COMMA, p.require()));
             flag = true;
@@ -312,7 +312,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
     public static PermRolesMeta.Meta generateRolesMeta(Roles r) {
         if (r == null) return null;
         PermRolesMeta.Meta rolesMeta = new PermRolesMeta.Meta();
-        boolean flag = false;
+        boolean            flag      = false;
         if (r.require() != null && r.require().length != 0) {
             rolesMeta.setRequire(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.require()));
             flag = true;
@@ -331,8 +331,8 @@ public class AuCoreInitialization implements ApplicationContextAware {
     }
 
     public static PermRolesMeta generatePermRolesMeta(Perms p, Roles r) {
-        PermRolesMeta prm = new PermRolesMeta();
-        boolean flag = false;
+        PermRolesMeta prm  = new PermRolesMeta();
+        boolean       flag = false;
         if (p != null) {
             if (p.require() != null && p.require().length != 0) {
                 prm.setRequirePermissions(CollectionUtils.splitStrValsToSets(Constants.COMMA, p.require()));
@@ -356,10 +356,10 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
     private void initHttpd(ApplicationContext applicationContext, Map<RequestMappingInfo, HandlerMethod> mapRet) {
         Map<String, Map<String, LimitMeta>> httpdLimitedMetaMap = httpd.getRateLimitMetadata();
-        HashMap<String, LimitMeta> cMap = new HashMap<>();
+        HashMap<String, LimitMeta>          cMap                = new HashMap<>();
 
         applicationContext.getBeansWithAnnotation(RateLimit.class).forEach((key, value) -> {
-            Class<?> aClass = AopUtils.getTargetClass(value);
+            Class<?>  aClass    = AopUtils.getTargetClass(value);
             RateLimit rateLimit = aClass.getAnnotation(RateLimit.class);
             if (rateLimit != null) {
                 cMap.put(aClass.getName(),
@@ -368,8 +368,8 @@ public class AuCoreInitialization implements ApplicationContextAware {
         });
 
         mapRet.forEach((key, value) -> {
-            Set<RequestMethod> methods = key.getMethodsCondition().getMethods();
-            RateLimit rateLimit = value.getMethodAnnotation(RateLimit.class);
+            Set<RequestMethod> methods   = key.getMethodsCondition().getMethods();
+            RateLimit          rateLimit = value.getMethodAnnotation(RateLimit.class);
             if (rateLimit != null) {
                 LimitMeta limitMeta = new LimitMeta(rateLimit.window(), rateLimit.maxRequests(), rateLimit.punishmentTime(), rateLimit.minInterval(), rateLimit.associatedPatterns(), rateLimit.bannedType());
                 methods.forEach(
@@ -404,7 +404,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
     }
 
     private void initUserDevicesDict() {
-        DeviceConfig.isSupportMultiDevice = properties.getUser().isSupportMultiDevice();
+        DeviceConfig.isSupportMultiDevice                = properties.getUser().isSupportMultiDevice();
         DeviceConfig.isSupportMultiUserForSameDeviceType = properties.getUser().isSupportMultiUserForSameDeviceType();
     }
 

@@ -22,6 +22,7 @@ import cn.omisheep.authz.core.interceptor.mybatis.DataSecurityInterceptorForMyba
 import cn.omisheep.authz.core.msg.CacheMessage;
 import cn.omisheep.authz.core.msg.MessageReceive;
 import cn.omisheep.authz.core.msg.RequestMessage;
+import cn.omisheep.authz.support.http.SupportServlet;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,6 +36,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -50,6 +52,8 @@ import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.HashMap;
 
 
 /**
@@ -70,7 +74,7 @@ public class AuthzAutoConfiguration {
     public static class CacheAutoConfiguration {
 
         public static Jackson2JsonRedisSerializer jackson2JsonRedisSerializer;
-        public static StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
+        public static StringRedisSerializer       stringRedisSerializer = new StringRedisSerializer();
 
         static {
             jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer(Object.class);
@@ -246,6 +250,23 @@ public class AuthzAutoConfiguration {
             return new DefaultDataSecurityInterceptor();
         }
 
+    }
+
+
+    // 后台监控
+    @Bean
+    public ServletRegistrationBean StatViewServlet() {
+        ServletRegistrationBean<SupportServlet> bean = new ServletRegistrationBean<>(new SupportServlet(), "/authz-api/*");
+
+        HashMap<String, String> initParameters = new HashMap<>();
+
+        initParameters.put("loginUsername", "admin");
+        initParameters.put("loginPassword", "123456");
+        initParameters.put("allow", "");
+
+        // 后台需要有人登录
+        bean.setInitParameters(initParameters);
+        return bean;
     }
 
 }

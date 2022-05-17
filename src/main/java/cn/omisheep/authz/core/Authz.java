@@ -17,19 +17,19 @@ import org.springframework.lang.NonNull;
 public class Authz {
 
     public static final PermissionDict permissionDict;
-    public static final AuthzDefender auDefender;
+    public static final AuthzDefender  auDefender;
 
     public static final UserDevicesDict userDevicesDict;
-    public static final Cache cache;
-    public static final Httpd httpd;
+    public static final Cache           cache;
+    public static final Httpd           httpd;
 
     static {
         permissionDict = PermissionDict.self();
-        auDefender = AuthzDefender.self();
+        auDefender     = AuthzDefender.self();
 
         userDevicesDict = AUtils.getBean(UserDevicesDict.class);
-        cache = AUtils.getBean(Cache.class);
-        httpd = AUtils.getBean(Httpd.class);
+        cache           = AUtils.getBean(Cache.class);
+        httpd           = AUtils.getBean(Httpd.class);
     }
 
     public static Object modify(@NonNull AuthzModifier authzModifier) {

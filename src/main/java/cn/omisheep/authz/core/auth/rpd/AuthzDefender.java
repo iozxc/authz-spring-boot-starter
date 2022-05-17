@@ -35,13 +35,13 @@ public class AuthzDefender {
     }
 
     private final UserDevicesDict userDevicesDict;
-    private final PermissionDict permissionDict;
-    private final PermLibrary permLibrary;
+    private final PermissionDict  permissionDict;
+    private final PermLibrary     permLibrary;
 
     public AuthzDefender(UserDevicesDict userDevicesDict, PermissionDict permissionDict, PermLibrary permLibrary) {
         this.userDevicesDict = userDevicesDict;
-        this.permissionDict = permissionDict;
-        this.permLibrary = permLibrary;
+        this.permissionDict  = permissionDict;
+        this.permLibrary     = permLibrary;
     }
 
     public static void init(AuthzDefender authzDefender) {
@@ -62,7 +62,7 @@ public class AuthzDefender {
         TokenPair tokenPair = TokenHelper.createTokenPair(userId, deviceType, deviceId);
 
         HttpServletResponse response = HttpUtils.getCurrentResponse();
-        HttpMeta httpMeta = (HttpMeta) HttpUtils.getCurrentRequest().getAttribute("AU_HTTP_META");
+        HttpMeta            httpMeta = (HttpMeta) HttpUtils.getCurrentRequest().getAttribute("AU_HTTP_META");
         if (response != null) {
             response.addCookie(TokenHelper.generateCookie(tokenPair.getAccessToken()));
         }
@@ -108,11 +108,11 @@ public class AuthzDefender {
     @SuppressWarnings("all")
     public ExceptionStatus verify(HttpMeta httpMeta) {
         PermRolesMeta permRolesMeta = permissionDict.getAuthzMetadata().get(httpMeta.getMethod()).get(httpMeta.getApi());
-        Token accessToken = httpMeta.getToken();
+        Token         accessToken   = httpMeta.getToken();
 
         Set<String> roles = null;
-        boolean e1 = CollectionUtils.isEmpty(permRolesMeta.getRequireRoles());
-        boolean e2 = CollectionUtils.isEmpty(permRolesMeta.getExcludeRoles());
+        boolean     e1    = CollectionUtils.isEmpty(permRolesMeta.getRequireRoles());
+        boolean     e2    = CollectionUtils.isEmpty(permRolesMeta.getExcludeRoles());
         if (!e1 || !e2) {
             long nowTime = TimeUtils.nowTime();
             roles = permLibrary.getRolesByUserId(accessToken.getUserId());
@@ -133,7 +133,7 @@ public class AuthzDefender {
             }
             HashSet<String> perms = new HashSet<>(); // 用户所拥有的权限
             for (String role : Optional.of(roles).orElse(new HashSet<>())) {
-                long nowTime = TimeUtils.nowTime();
+                long        nowTime           = TimeUtils.nowTime();
                 Set<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
                 LogUtils.logDebug("permLibrary.getPermissionsByRole({}) {}", role, TimeUtils.diff(nowTime)); // todo: 减少耗时
                 if (permissionsByRole != null) {

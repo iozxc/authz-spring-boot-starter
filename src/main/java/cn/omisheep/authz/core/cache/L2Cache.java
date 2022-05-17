@@ -45,9 +45,9 @@ public class L2Cache implements Cache {
         cache = caffeine.build(new CacheLoader<String, CacheItem>() {
             @Override
             public @Nullable CacheItem load(@NonNull String key) {
-                Object o = RedisUtils.Obj.get(key); // cache中没有，加载redis
-                long ttl = RedisUtils.ttl(key);
-                boolean b = ttl != -2;
+                Object  o   = RedisUtils.Obj.get(key); // cache中没有，加载redis
+                long    ttl = RedisUtils.ttl(key);
+                boolean b   = ttl != -2;
                 if (key.startsWith(Constants.USER_ROLES_KEY_PREFIX) || key.startsWith(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX)) {
                     ttl = INFINITE;
                 }
@@ -59,17 +59,18 @@ public class L2Cache implements Cache {
                 }
                 return null; // redis中也没有
             }
+
             @Override
             public @NonNull Map<@NonNull String, @NonNull CacheItem> loadAll(@NonNull Iterable<? extends @NonNull String> keys) {
                 List<String> list = new ArrayList<>();
                 keys.forEach(list::add);
-                List objects = RedisUtils.Obj.get(list);
-                HashMap<String, CacheItem> map = new HashMap<>();
+                List                                objects  = RedisUtils.Obj.get(list);
+                HashMap<String, CacheItem>          map      = new HashMap<>();
                 Iterator<? extends @NonNull String> iterator = keys.iterator();
                 for (Object o : objects) {
-                    String key = iterator.next();
-                    long ttl = RedisUtils.ttl(key);
-                    boolean b = ttl != -2;
+                    String  key = iterator.next();
+                    long    ttl = RedisUtils.ttl(key);
+                    boolean b   = ttl != -2;
                     if (key.startsWith(Constants.USER_ROLES_KEY_PREFIX) || key.startsWith(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX)) {
                         ttl = INFINITE;
                     }
@@ -128,7 +129,7 @@ public class L2Cache implements Cache {
     @Override
     public @NonNull <T> Map<String, T> get(Set<String> keys, Class<T> requiredType) {
         Map<String, CacheItem> items = cache.getAll(keys);
-        HashMap<String, T> map = new HashMap<>();
+        HashMap<String, T>     map   = new HashMap<>();
         for (Map.Entry<String, CacheItem> entry : items.entrySet()) {
             map.put(entry.getKey(), castValue(entry.getValue(), requiredType));
         }
@@ -202,14 +203,14 @@ public class L2Cache implements Cache {
     }
 
     private void setSync(CacheMessage message) {
-        Set<String> keys = message.getKeys();
-        String pattern = message.getPattern();
+        Set<String> keys    = message.getKeys();
+        String      pattern = message.getPattern();
         if (pattern != null) {
             cache.put(pattern, new CacheItem(keys));
         } else {
             String key = CollectionUtils.resolveSingletonSet(keys);
-            Object o = RedisUtils.Obj.get(key);
-            long ttl = RedisUtils.ttl(key);
+            Object o   = RedisUtils.Obj.get(key);
+            long   ttl = RedisUtils.ttl(key);
             if (ttl != -2) {
                 cache.put(key, new CacheItem(ttl, o));
             } else cache.invalidate(key);
@@ -225,7 +226,7 @@ public class L2Cache implements Cache {
     public void reload() {
         ConcurrentMap<String, CacheItem> map = cache.asMap();
         for (Map.Entry<String, CacheItem> next : map.entrySet()) {
-            String key = next.getKey();
+            String            key  = next.getKey();
             CacheItem<Object> item = new CacheItem<>(RedisUtils.ttl(next.getKey()), RedisUtils.Obj.get(next.getKey()));
             map.remove(key);
             map.put(key, item);

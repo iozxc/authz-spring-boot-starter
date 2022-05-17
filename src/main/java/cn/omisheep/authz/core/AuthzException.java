@@ -7,10 +7,10 @@ import lombok.Getter;
  * @version 1.0.0
  * @since 1.0.0
  */
+@SuppressWarnings("serial")
 public class AuthzException extends RuntimeException {
-    private static final long serialVersionUID = 4959504555711655485L;
     @Getter
-    private final ExceptionStatus exceptionStatus;
+    private final        ExceptionStatus exceptionStatus;
 
     public AuthzException(ExceptionStatus exceptionStatus) {
         super(exceptionStatus.getMessage());

@@ -55,9 +55,9 @@ public class RedisUtils {
     public static Set<String> scan(String pattern) {
         RedisConnectionFactory connectionFactory = redisTemplate.getConnectionFactory();
         if (connectionFactory == null) return new HashSet<>();
-        Set<String> keys = new HashSet<>();
+        Set<String>     keys       = new HashSet<>();
         RedisConnection connection = connectionFactory.getConnection();
-        Cursor<byte[]> scan;
+        Cursor<byte[]>  scan;
         if (connection instanceof JedisClusterConnection || connection instanceof LettuceClusterConnection) {
             RedisClusterConnection clusterConnection = connectionFactory.getClusterConnection();
             for (RedisClusterNode next : clusterConnection.clusterGetNodes()) {
@@ -138,8 +138,8 @@ public class RedisUtils {
         public static Map<String, Object> getToMap(List<String> key) {
             List<?> objects = redisTemplate.opsForValue().multiGet(key);
             if (objects == null) return new HashMap<>();
-            HashMap<String, Object> map = new HashMap<>();
-            Iterator<String> iterator = key.iterator();
+            HashMap<String, Object> map      = new HashMap<>();
+            Iterator<String>        iterator = key.iterator();
             for (Object value : objects) {
                 map.put(iterator.next(), value);
             }
@@ -149,8 +149,8 @@ public class RedisUtils {
         public static <E> Map<String, E> getToMap(List<String> key, Class<E> requiredType) {
             List<?> objects = redisTemplate.opsForValue().multiGet(key);
             if (objects == null) return new HashMap<>();
-            HashMap<String, E> map = new HashMap<>();
-            Iterator<String> iterator = key.iterator();
+            HashMap<String, E> map      = new HashMap<>();
+            Iterator<String>   iterator = key.iterator();
             for (Object value : objects) {
                 map.put(iterator.next(), castValue(value, requiredType));
             }
@@ -176,11 +176,11 @@ public class RedisUtils {
     }
 
     private static final RedisTemplate<String, Object> redisTemplate;
-    private static final int SCAN_COUNT;
+    private static final int                           SCAN_COUNT;
 
     static {
         redisTemplate = AUtils.getBean("authzRedisTemplate", RedisTemplate.class);
-        RedisProperties properties = AUtils.getBean(RedisProperties.class);
+        RedisProperties properties      = AUtils.getBean(RedisProperties.class);
         AuthzProperties authzProperties = AUtils.getBean(AuthzProperties.class);
         SCAN_COUNT = authzProperties.getCache().getRedisScanCount();
         Duration timeout = properties.getTimeout();

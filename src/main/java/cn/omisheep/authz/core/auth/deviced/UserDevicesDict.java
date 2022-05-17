@@ -12,10 +12,10 @@ import java.util.List;
  */
 public interface UserDevicesDict {
 
-    short SUCCESS = 0;
+    short SUCCESS              = 0;
     short ACCESS_TOKEN_OVERDUE = 1;
-    short REQUIRE_LOGIN = 2;
-    short LOGIN_EXCEPTION = 3;
+    short REQUIRE_LOGIN        = 2;
+    short LOGIN_EXCEPTION      = 3;
 
     /**
      * 用户设备状态判断，以及第二次惰性删除

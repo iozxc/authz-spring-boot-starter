@@ -37,11 +37,11 @@ public class RuleParser {
     }
 
     public static Rule parseStringToRule(String rule) {
-        Stack<String> stack = new Stack<>();
-        char[] chars = rule.toCharArray();
-        int start = 0;
-        HashMap<String, Rule> km = new HashMap<>();
-        int n = 1;
+        Stack<String>         stack = new Stack<>();
+        char[]                chars = rule.toCharArray();
+        int                   start = 0;
+        HashMap<String, Rule> km    = new HashMap<>();
+        int                   n     = 1;
         for (int i = 0; i < chars.length; i++) {
             if (chars[i] == '(') {
                 stack.push(String.valueOf(chars, start, i - start).trim());
@@ -50,7 +50,7 @@ public class RuleParser {
             } else if (chars[i] == ')') {
                 stack.push(String.valueOf(chars, start, i - start).trim());
                 StringBuilder sb = new StringBuilder();
-                String p = stack.pop();
+                String        p  = stack.pop();
                 while (!p.equals("(")) {
                     sb.insert(0, " ").insert(0, p).insert(0, " ");
                     p = stack.pop();
@@ -82,7 +82,7 @@ public class RuleParser {
                 String[] and = s.split(" [aA][nN][dD] ");
                 and = Arrays.stream(and).map(String::trim).toArray(String[]::new);
                 if (and.length >= 2) {
-                    Rule r = new Rule().setOp("and");
+                    Rule            r     = new Rule().setOp("and");
                     ArrayList<Rule> rules = new ArrayList<>();
                     for (String v : and) {
                         if (v.startsWith("@")) {

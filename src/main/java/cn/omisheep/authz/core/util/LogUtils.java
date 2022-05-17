@@ -25,9 +25,9 @@ import java.util.ArrayList;
 public class LogUtils {
 
     @Setter
-    private static LogLevel logLevel;
-    private static final String AU_LOGS = "au_logs";
-    private static final Marker MARKER = MarkerFactory.getMarker("cn.omisheep.au");
+    private static       LogLevel logLevel;
+    private static final String   AU_LOGS = "au_logs";
+    private static final Marker   MARKER  = MarkerFactory.getMarker("cn.omisheep.au");
 
     public static void logInfo(String msg, Object... args) {
         if (logLevel.ordinal() <= LogLevel.INFO.ordinal()) log.info(MARKER, msg, args);
@@ -73,8 +73,8 @@ public class LogUtils {
     public static void exportLogsFromRequest(HttpServletRequest request) {
         ArrayList<LogMeta> logs = (ArrayList<LogMeta>) request.getAttribute(AU_LOGS);
         if (logLevel.equals(LogLevel.OFF) || logs == null) return;
-        StringBuilder info = new StringBuilder();
-        StringBuilder warn = new StringBuilder();
+        StringBuilder info  = new StringBuilder();
+        StringBuilder warn  = new StringBuilder();
         StringBuilder debug = new StringBuilder();
         StringBuilder error = new StringBuilder();
         logs.forEach(logMeta -> {
@@ -111,14 +111,14 @@ public class LogUtils {
     @Getter
     public static class LogMeta {
         private final LogLevel logLevel;
-        private final String msg;
+        private final String   msg;
 
         public LogMeta(LogLevel logLevel, String msg) {
             if (logLevel == null) {
                 logLevel = LogLevel.INFO;
             }
             this.logLevel = logLevel;
-            this.msg = msg;
+            this.msg      = msg;
         }
     }
 

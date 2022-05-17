@@ -13,10 +13,10 @@ import java.util.Date;
 @Getter
 public class RequestInfo {
     private final String ip;
-    private final Date lastRequestTime;
+    private final Date   lastRequestTime;
 
     private RequestInfo(String ip, Date lastRequestTime) {
-        this.ip = ip;
+        this.ip              = ip;
         this.lastRequestTime = lastRequestTime;
     }
 

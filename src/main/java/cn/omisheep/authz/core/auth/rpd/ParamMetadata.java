@@ -17,7 +17,7 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
 @Accessors(chain = true)
 @JsonInclude(NON_EMPTY)
 public class ParamMetadata {
-    private Class<?> paramType;
+    private Class<?>                 paramType;
     private List<PermRolesMeta.Meta> rolesMetaList;
     private List<PermRolesMeta.Meta> permissionsMetaList;
 

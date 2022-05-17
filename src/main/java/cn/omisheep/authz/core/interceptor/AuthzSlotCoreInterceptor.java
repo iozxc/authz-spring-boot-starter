@@ -30,7 +30,7 @@ import static cn.omisheep.authz.core.Constants.HTTP_META;
 public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
 
     private final AuthzExceptionHandler authzExceptionHandler;
-    private final LinkedList<Slot> slots = new LinkedList<>();
+    private final LinkedList<Slot>      slots = new LinkedList<>();
 
     public AuthzSlotCoreInterceptor(AuthzExceptionHandler authzExceptionHandler, Collection<Slot> slots) {
         this.authzExceptionHandler = authzExceptionHandler;
@@ -44,14 +44,14 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        HttpMeta httpMeta = (HttpMeta) request.getAttribute(HTTP_META);
+        HttpMeta       httpMeta      = (HttpMeta) request.getAttribute(HTTP_META);
         AuthzException httpException = httpMeta.getAuthzException();
         if (httpException != null) {
             LogUtils.exportLogsFromRequest(request);
             return authzExceptionHandler.handle(request, response, httpException);
         }
         if (!(handler instanceof HandlerMethod)) return false;
-        long nowTime = TimeUtils.nowTime();
+        long          nowTime       = TimeUtils.nowTime();
         HandlerMethod handlerMethod = (HandlerMethod) handler;
         try {
             boolean next = true;

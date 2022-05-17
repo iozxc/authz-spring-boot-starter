@@ -40,33 +40,33 @@ import java.util.Map;
 @SuppressWarnings("all")
 public class DataSecurityInterceptorForMybatis implements Interceptor {
 
-    private ThreadLocal<ResultMap> resultMapThreadLocal = new ThreadLocal<>();
-    private final PermissionDict permissionDict;
-    private final PermLibrary permLibrary;
+    private       ThreadLocal<ResultMap>        resultMapThreadLocal = new ThreadLocal<>();
+    private final PermissionDict                permissionDict;
+    private final PermLibrary                   permLibrary;
     private final DataFinderSecurityInterceptor dataFinderSecurityInterceptor;
 
     public DataSecurityInterceptorForMybatis(PermissionDict permissionDict, PermLibrary permLibrary,
                                              DataFinderSecurityInterceptor dataFinderSecurityInterceptor) {
-        this.permissionDict = permissionDict;
-        this.permLibrary = permLibrary;
+        this.permissionDict                = permissionDict;
+        this.permLibrary                   = permLibrary;
         this.dataFinderSecurityInterceptor = dataFinderSecurityInterceptor;
     }
 
     public Object intercept(Invocation invocation) throws Throwable {
-        Object target = invocation.getTarget();
-        Object[] args = invocation.getArgs();
+        Object   target = invocation.getTarget();
+        Object[] args   = invocation.getArgs();
         if (target instanceof Executor) {
-            MappedStatement ms = (MappedStatement) args[0];
-            ResultMap resultMap = ms.getResultMaps().get(0);
+            MappedStatement ms        = (MappedStatement) args[0];
+            ResultMap       resultMap = ms.getResultMaps().get(0);
             resultMapThreadLocal.set(resultMap);
         } else {
             try {
-                ResultMap resultMap = resultMapThreadLocal.get();
-                StatementHandler rsh = (StatementHandler) target;
-                BoundSql boundSql = rsh.getBoundSql();
-                Class<?> type = resultMap.getType();
+                ResultMap          resultMap        = resultMapThreadLocal.get();
+                StatementHandler   rsh              = (StatementHandler) target;
+                BoundSql           boundSql         = rsh.getBoundSql();
+                Class<?>           type             = resultMap.getType();
                 List<DataPermMeta> dataPermMetaList = permissionDict.getDataPermMetadata().get(type.getTypeName());
-                String change = dataFinderSecurityInterceptor.sqlChange(AUtils.getCurrentHttpMeta(), permLibrary, dataPermMetaList, type, boundSql.getSql());
+                String             change           = dataFinderSecurityInterceptor.sqlChange(AUtils.getCurrentHttpMeta(), permLibrary, dataPermMetaList, type, boundSql.getSql());
                 ReflectUtils.setFieldValue(boundSql, "sql", change);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -74,7 +74,7 @@ public class DataSecurityInterceptorForMybatis implements Interceptor {
                 return invocation.proceed();
             }
         }
-        Object obj = invocation.proceed();
+        Object   obj  = invocation.proceed();
         Class<?> type = resultMapThreadLocal.get().getType();
         if (obj instanceof Collection || obj.getClass().equals(type)) {
             Map<String, FieldData> fieldDataMap = permissionDict.getFieldMetadata().get(type.getTypeName());

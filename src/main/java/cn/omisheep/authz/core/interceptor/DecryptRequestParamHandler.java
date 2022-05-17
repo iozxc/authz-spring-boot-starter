@@ -32,8 +32,8 @@ public class DecryptRequestParamHandler implements HandlerMethodArgumentResolver
         HttpServletRequest request = nativeWebRequest.getNativeRequest(HttpServletRequest.class);
         if (request != null) {
             Constructor<?> constructor = parameter.getParameterType().getConstructor(String.class);
-            String text = request.getParameter(parameter.getParameterName());
-            String decrypt = AuKey.decrypt(text);
+            String         text        = request.getParameter(parameter.getParameterName());
+            String         decrypt     = AuKey.decrypt(text);
             return constructor.newInstance(decrypt);
         }
         return null;

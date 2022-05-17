@@ -32,10 +32,10 @@ public class Rule {
     @Getter
     private List<Rule> rules;
     @Getter
-    private String field;
-    private Op op;
+    private String     field;
+    private Op         op;
     @Getter
-    private String value;
+    private String     value;
 
     public String getOp() {
         if (op == null) return null;

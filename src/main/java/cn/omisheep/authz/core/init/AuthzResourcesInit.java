@@ -28,10 +28,10 @@ import java.util.stream.Stream;
 public class AuthzResourcesInit implements ImportSelector {
 
     private DataPermMeta generateDataPermMeta(Perms perms) {
-        DataPermMeta dataPermMeta = DataPermMeta.of(perms.condition());
-        Arg[] conditionArgs = perms.args();
+        DataPermMeta dataPermMeta  = DataPermMeta.of(perms.condition());
+        Arg[]        conditionArgs = perms.args();
         for (Arg arg : conditionArgs) {
-            String resource = arg.resource();
+            String   resource     = arg.resource();
             String[] resourceArgs = arg.args();
             dataPermMeta.addArg(resource, resourceArgs);
         }
@@ -40,10 +40,10 @@ public class AuthzResourcesInit implements ImportSelector {
     }
 
     private DataPermMeta generateDataRolesMeta(Roles roles) {
-        DataPermMeta dataPermMeta = DataPermMeta.of(roles.condition());
-        Arg[] conditionArgs = roles.args();
+        DataPermMeta dataPermMeta  = DataPermMeta.of(roles.condition());
+        Arg[]        conditionArgs = roles.args();
         for (Arg arg : conditionArgs) {
-            String resource = arg.resource();
+            String   resource     = arg.resource();
             String[] resourceArgs = arg.args();
             dataPermMeta.addArg(resource, resourceArgs);
         }
@@ -53,11 +53,11 @@ public class AuthzResourcesInit implements ImportSelector {
 
     private Object[] dataPerm(String className) {
         try {
-            Class<?> aClass = Class.forName(className);
-            List<Roles> rolesList = new ArrayList<>();
-            List<Perms> permsList = new ArrayList<>();
-            Roles roles = AnnotationUtils.getAnnotation(aClass, Roles.class);
-            Perms perms = AnnotationUtils.getAnnotation(aClass, Perms.class);
+            Class<?>       aClass         = Class.forName(className);
+            List<Roles>    rolesList      = new ArrayList<>();
+            List<Perms>    permsList      = new ArrayList<>();
+            Roles          roles          = AnnotationUtils.getAnnotation(aClass, Roles.class);
+            Perms          perms          = AnnotationUtils.getAnnotation(aClass, Perms.class);
             BatchAuthority batchAuthority = AnnotationUtils.getAnnotation(aClass, BatchAuthority.class);
             rolesList.add(roles);
             permsList.add(perms);
@@ -83,7 +83,7 @@ public class AuthzResourcesInit implements ImportSelector {
     @SuppressWarnings("all")
     public String[] selectImports(AnnotationMetadata annotationMetadata) {
         Map<String, Object> annotationAttributes = annotationMetadata.getAnnotationAttributes(AuthzResourcesScan.class.getName());
-        String[] entityBasePackages = new String[0];
+        String[]            entityBasePackages   = new String[0];
         if (annotationAttributes != null) entityBasePackages = (String[]) annotationAttributes.get("entity");
         ClassPathScanningCandidateComponentProvider scannerEntity = new ClassPathScanningCandidateComponentProvider(false);
         scannerEntity.addIncludeFilter(new AssignableTypeFilter(Object.class));
@@ -125,8 +125,8 @@ public class AuthzResourcesInit implements ImportSelector {
         Map<String, Map<String, FieldData>> map = new HashMap<>();
         for (String clz : entityClasses) {
             try {
-                Class<?> aClass = Class.forName(clz);
-                Map<String, FieldData> fmap = map.computeIfAbsent(clz, r -> new HashMap<>());
+                Class<?>               aClass = Class.forName(clz);
+                Map<String, FieldData> fmap   = map.computeIfAbsent(clz, r -> new HashMap<>());
 
                 for (Field field : aClass.getDeclaredFields()) {
                     Roles roles = AnnotationUtils.getAnnotation(field, Roles.class);

@@ -26,10 +26,10 @@ public class ArgsParser {
 
     public static String parse(DataPermMeta dataPermMeta) {
         StringBuilder stringBuilder = new StringBuilder();
-        String condition = dataPermMeta.getCondition();
-        int index = 0;
-        int i = 0;
-        char op = '#';
+        String        condition     = dataPermMeta.getCondition();
+        int           index         = 0;
+        int           i             = 0;
+        char          op            = '#';
         while (index != -1) {
             if (i % 2 == 0) {
                 int k = condition.indexOf("{", index);
@@ -56,7 +56,7 @@ public class ArgsParser {
             } else {
                 int k = condition.indexOf("}", index);
                 if (k != -1) {
-                    String item = condition.substring(index + 1, k);
+                    String   item  = condition.substring(index + 1, k);
                     String[] trace = item.split("\\.");
                     stringBuilder.append(parseObject(op, trace, ref(trace[0], dataPermMeta)));
                     index = k + 1;
@@ -70,10 +70,10 @@ public class ArgsParser {
     }
 
     private static String reduce(String s) {
-        char[] chars = s.toCharArray();
+        char[]        chars   = s.toCharArray();
         StringBuilder builder = new StringBuilder();
-        int is = 0;
-        boolean in = false;
+        int           is      = 0;
+        boolean       in      = false;
         for (int i = 0; i < chars.length; i++) {
             if (i + 2 < chars.length) {
                 if (s.substring(i, i + 2).equalsIgnoreCase("in")) {
@@ -148,17 +148,17 @@ public class ArgsParser {
         if (trace.length == 1) {
             return obj;
         } else {
-            Object value;
-            Object json = JSON.toJSON(obj);
-            JSONObject o = null;
-            JSONArray a = null;
-            boolean isObject;
+            Object     value;
+            Object     json = JSON.toJSON(obj);
+            JSONObject o    = null;
+            JSONArray  a    = null;
+            boolean    isObject;
             if (json instanceof JSONObject) {
                 isObject = true;
-                o = (JSONObject) json;
+                o        = (JSONObject) json;
             } else {
                 isObject = false;
-                a = (JSONArray) json;
+                a        = (JSONArray) json;
             }
             for (int i = 1; i < trace.length - 1; i++) {
                 Matcher matcher = compile.matcher(trace[i]);
@@ -183,7 +183,7 @@ public class ArgsParser {
                         Object o1 = o.get(trace[i]);
                         if (o1 instanceof JSONObject) o = (JSONObject) o1;
                         else {
-                            a = (JSONArray) o1;
+                            a        = (JSONArray) o1;
                             isObject = false;
                         }
                     } else {
@@ -193,7 +193,7 @@ public class ArgsParser {
                 }
             }
 
-            String v = trace[trace.length - 1];
+            String  v       = trace[trace.length - 1];
             Matcher matcher = compile.matcher(v);
             if (!isObject) {
                 if (matcher.find()) {

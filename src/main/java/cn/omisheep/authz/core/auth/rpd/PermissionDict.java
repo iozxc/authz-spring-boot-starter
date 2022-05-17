@@ -51,11 +51,11 @@ public class PermissionDict {
 
     // ----------------------------------------- json ----------------------------------------- //
 
-    private static Map<String, Map<String, PermRolesMeta>> m1;
-    private static Map<String, Map<String, String>> m2;
-    private static Map<String, List<DataPermMeta>> m3;
-    private static Map<String, Map<String, FieldData>> m4;
-    private static Map<String, ArgsMeta> m5;
+    private static       Map<String, Map<String, PermRolesMeta>>                                       m1;
+    private static       Map<String, Map<String, String>>                                              m2;
+    private static       Map<String, List<DataPermMeta>>                                               m3;
+    private static       Map<String, Map<String, FieldData>>                                           m4;
+    private static       Map<String, ArgsMeta>                                                         m5;
     private static final Map<String, Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>>> m6 =
             new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(rawMap));
 
@@ -85,18 +85,18 @@ public class PermissionDict {
 
     @Getter
     public static class ArgsMeta {
-        private final Class<?> type;
-        private final Method method;
-        private final List<Class<?>> parameterList;
-        private final Class<?> returnType;
+        private final Class<?>            type;
+        private final Method              method;
+        private final List<Class<?>>      parameterList;
+        private final Class<?>            returnType;
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
         private final Map<String, String> returnTypeTemplate;
 
         private ArgsMeta(Class<?> type, Method method) {
-            this.type = type;
-            this.method = method;
-            this.returnType = method.getReturnType();
-            this.parameterList = Arrays.stream(method.getParameterTypes()).collect(Collectors.toList());
+            this.type               = type;
+            this.method             = method;
+            this.returnType         = method.getReturnType();
+            this.parameterList      = Arrays.stream(method.getParameterTypes()).collect(Collectors.toList());
             this.returnTypeTemplate = parseTypeForTemplate(this.returnType.getTypeName());
         }
 
@@ -226,7 +226,7 @@ public class PermissionDict {
         lock.lock();
         try {
             Map<String, PermRolesMeta> target = authzMetadata.get(authzModifier.getMethod());
-            PermRolesMeta meta = target.get(authzModifier.getApi());
+            PermRolesMeta              meta   = target.get(authzModifier.getApi());
             switch (authzModifier.getOperate()) {
                 case ADD:
                     if (meta != null) meta.overrideApi(authzModifier.build());
@@ -256,13 +256,13 @@ public class PermissionDict {
     public Object modifyParam(AuthzModifier authzModifier) {
         lock.lock();
         try {
-            PermRolesMeta meta = authzMetadata.get(authzModifier.getMethod()).get(authzModifier.getApi());
+            PermRolesMeta        meta   = authzMetadata.get(authzModifier.getMethod()).get(authzModifier.getApi());
             AuthzModifier.Target target = authzModifier.getTarget();
 
             Object[] objects = getParamMetaList(meta, authzModifier);
 
-            ParamMetadata paramMetadata = (ParamMetadata) objects[0];
-            List<PermRolesMeta.Meta> metaList = (List<PermRolesMeta.Meta>) objects[1]; // 可能需要操作的list
+            ParamMetadata            paramMetadata = (ParamMetadata) objects[0];
+            List<PermRolesMeta.Meta> metaList      = (List<PermRolesMeta.Meta>) objects[1]; // 可能需要操作的list
 
             if (metaList == null) {
                 return "api not found";
@@ -341,7 +341,7 @@ public class PermissionDict {
     }
 
     private Object[] getParamMetaList(PermRolesMeta meta, AuthzModifier authzModifier) {
-        boolean isAdd = authzModifier.getOperate() == AuthzModifier.Operate.ADD;
+        boolean       isAdd = authzModifier.getOperate() == AuthzModifier.Operate.ADD;
         ParamMetadata paramMetadata;
         if (meta == null) {
             if (isAdd) {
@@ -564,7 +564,7 @@ public class PermissionDict {
             return;
         }
         PermissionDict.authzMetadata = authzMetadata;
-        m1 = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(authzMetadata));
+        m1                           = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(authzMetadata));
     }
 
     public static void addAuthzResourcesNames(Set<String> authzResourcesNames) {
@@ -588,7 +588,7 @@ public class PermissionDict {
             return;
         }
         PermissionDict.dataPermMetadata = dataPermMetadata;
-        m3 = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(dataPermMetadata));
+        m3                              = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(dataPermMetadata));
     }
 
     public static void initFieldMetadata(Map<String, Map<String, FieldData>> fieldMetadata) {
@@ -597,7 +597,7 @@ public class PermissionDict {
             return;
         }
         PermissionDict.fieldMetadata = fieldMetadata;
-        m4 = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(fieldMetadata));
+        m4                           = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(fieldMetadata));
     }
 
     public static void initArgs(Map<String, ArgsMeta> argsMetadata) {
@@ -606,7 +606,7 @@ public class PermissionDict {
             return;
         }
         PermissionDict.argsMetadata = argsMetadata;
-        m5 = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(argsMetadata));
+        m5                          = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(argsMetadata));
     }
 
     public static void setPermSeparator(String permSeparator) {

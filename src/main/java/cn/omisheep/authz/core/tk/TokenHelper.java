@@ -27,12 +27,12 @@ import java.util.UUID;
 public class TokenHelper {
 
     @Getter
-    private static final Long liveTime; // 存活时间,单位 ms
-    private static final Long refreshTime; // 存活时间,单位 ms
-    private static final String issuer;
-    private static final int expire;
-    private static final String cookieName;
-    private static final byte[] keyBytes;
+    private static final Long               liveTime; // 存活时间,单位 ms
+    private static final Long               refreshTime; // 存活时间,单位 ms
+    private static final String             issuer;
+    private static final int                expire;
+    private static final String             cookieName;
+    private static final byte[]             keyBytes;
     private static final SignatureAlgorithm alg;
 
     private TokenHelper() {
@@ -41,12 +41,12 @@ public class TokenHelper {
     static {
         AuthzProperties properties = AUtils.getBean(AuthzProperties.class);
         Assert.hasText(properties.getToken().getKey(), "token配置异常,请在yml中配置key");
-        keyBytes = TextCodec.BASE64.decode(properties.getToken().getKey());
-        issuer = properties.getToken().getIssuer();
-        expire = (int) (TimeUtils.parseTimeValue(properties.getToken().getRefreshTime()) / 1000);
-        cookieName = properties.getToken().getCookieName();
-        alg = SignatureAlgorithm.HS256;
-        liveTime = TimeUtils.parseTimeValue(properties.getToken().getLiveTime());
+        keyBytes    = TextCodec.BASE64.decode(properties.getToken().getKey());
+        issuer      = properties.getToken().getIssuer();
+        expire      = (int) (TimeUtils.parseTimeValue(properties.getToken().getRefreshTime()) / 1000);
+        cookieName  = properties.getToken().getCookieName();
+        alg         = SignatureAlgorithm.HS256;
+        liveTime    = TimeUtils.parseTimeValue(properties.getToken().getLiveTime());
         refreshTime = TimeUtils.parseTimeValue(properties.getToken().getRefreshTime());
     }
 
@@ -85,7 +85,7 @@ public class TokenHelper {
                 Date.from(LocalDateTime.now().plus(refreshTime, ChronoUnit.MILLIS).atZone(ZoneId.systemDefault()).toInstant());
 
         Token refreshToken = createToken(userId, deviceType, deviceId, Token.Type.refresh, fromNow, toRefreshExpiredTime);
-        Token accessToken = createToken(userId, deviceType, deviceId, Token.Type.access, fromNow, toAccessExpiredTime);
+        Token accessToken  = createToken(userId, deviceType, deviceId, Token.Type.access, fromNow, toAccessExpiredTime);
         return new TokenPair(accessToken, refreshToken);
     }
 

@@ -17,13 +17,13 @@ import java.util.stream.Collectors;
  */
 public class RequestMeta {
     @Getter
-    private final String ip;
+    private final String           ip;
     @Getter
-    private boolean ban;
-    private int punishmentLevel;
-    private long reliveTime;
-    private long lastRequestTime;
-    private long sinceLastTime;
+    private       boolean          ban;
+    private       int              punishmentLevel;
+    private       long             reliveTime;
+    private       long             lastRequestTime;
+    private       long             sinceLastTime;
     private final LinkedList<Long> requestTimeList = new LinkedList<>();
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -37,7 +37,7 @@ public class RequestMeta {
     }
 
     public void setLastRequestTime(long lastRequestTime) {
-        this.sinceLastTime = lastRequestTime - this.lastRequestTime;
+        this.sinceLastTime   = lastRequestTime - this.lastRequestTime;
         this.lastRequestTime = lastRequestTime;
     }
 
@@ -116,7 +116,7 @@ public class RequestMeta {
 
         Long lastSecond = null;
         if (!requestTimeList.isEmpty()) {
-            lastSecond = requestTimeList.getLast();
+            lastSecond    = requestTimeList.getLast();
             sinceLastTime = now - lastSecond;
         }
         lastRequestTime = now;

@@ -48,7 +48,7 @@ public class AuKey {
             scheduledFuture.cancel(true);
             scheduledFuture = null;
         }
-        auto = false;
+        auto      = false;
         auKeyPair = new RsaHelper.RsaKeyPair(publicKey, privateKey);
         LogUtils.logDebug("⬇ auKeyPair ⬇ {} \n", auKeyPair);
     }

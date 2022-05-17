@@ -21,9 +21,9 @@ import java.util.Map;
 public class AuthzModifier {
 
     private Operate operate;
-    private Target target;
-    private String method;
-    private String api;
+    private Target  target;
+    private String  method;
+    private String  api;
 
     private String value;
 
@@ -32,12 +32,12 @@ public class AuthzModifier {
     private List<String> range;
     private List<String> resources;
 
-    private String className;
-    private String condition;
-    private Rule rule;
+    private String                    className;
+    private String                    condition;
+    private Rule                      rule;
     private Map<String, List<String>> argsMap;
 
-    private Role role;
+    private Role       role;
     private Permission permission;
 
     private RateLimitInfo rateLimit;
@@ -56,12 +56,12 @@ public class AuthzModifier {
 
     @Data
     public static class RateLimitInfo {
-        private String window;
-        private int maxRequests;
+        private String       window;
+        private int          maxRequests;
         private List<String> punishmentTime;
-        private String minInterval;
+        private String       minInterval;
         private List<String> associatedPatterns;
-        private BannedType bannedType;
+        private BannedType   bannedType;
     }
 
 
@@ -85,11 +85,11 @@ public class AuthzModifier {
         RATE(8),
         NON(0);
 
-        public final int i;
-        final String[] with;
+        public final int      i;
+        final        String[] with;
 
         Target(int i, String... with) {
-            this.i = i;
+            this.i    = i;
             this.with = with;
         }
 

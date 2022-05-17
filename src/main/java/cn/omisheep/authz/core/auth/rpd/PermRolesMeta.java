@@ -29,8 +29,8 @@ public class PermRolesMeta {
     public static class Meta {
         private Set<Set<String>> require;
         private Set<Set<String>> exclude;
-        private Set<String> range; // scope of access
-        private Set<String> resources; // required protect resources
+        private Set<String>      range; // scope of access
+        private Set<String>      resources; // required protect resources
 
         public boolean non() {
             return (require == null || require.size() == 0) && (exclude == null || exclude.size() == 0);
@@ -71,7 +71,7 @@ public class PermRolesMeta {
     }
 
     public PermRolesMeta removeApi() {
-        role = null;
+        role        = null;
         permissions = null;
         return this;
     }

@@ -27,7 +27,7 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
     private final AuthzProperties properties;
 
     @Getter
-    private final Map<Object, Map<String, AccessInfo>> usersAccessInfoHeap = new ConcurrentHashMap<>();
+    private final Map<Object, Map<String, AccessInfo>>  usersAccessInfoHeap  = new ConcurrentHashMap<>();
     @Getter
     private final Map<Object, Map<String, RefreshInfo>> usersRefreshInfoHeap = new ConcurrentHashMap<>();
 
@@ -40,7 +40,7 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
         inertDeletion(userId);
 
         // 1） 验证userId 若不存在则需重新登录 此时token正确，但是系统不存在，意味着系统重启了，或者redis重启了）
-        Map<String, AccessInfo> accessInfoHeap = usersAccessInfoHeap.get(userId);
+        Map<String, AccessInfo>  accessInfoHeap  = usersAccessInfoHeap.get(userId);
         Map<String, RefreshInfo> refreshInfoHeap = usersRefreshInfoHeap.get(userId);
 
         boolean hasTargetDeviceInfo = false;
@@ -87,9 +87,9 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
     @Override
     public boolean addUser(Object userId, TokenPair tokenPair, String deviceType, String deviceId, HttpMeta httpMeta) {
         inertDeletion(userId);
-        Map<String, AccessInfo> accessInfoHeap = usersAccessInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
+        Map<String, AccessInfo>  accessInfoHeap  = usersAccessInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
         Map<String, RefreshInfo> refreshInfoHeap = usersRefreshInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
-        DefaultDevice device = new DefaultDevice();
+        DefaultDevice            device          = new DefaultDevice();
         device.setType(deviceType).setId(deviceId).setLastRequestTime(TimeUtils.now()).setIp(httpMeta.getIp());
 
         if (!isSupportMultiDevice) {
@@ -105,7 +105,7 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
             refreshInfoHeap.entrySet().removeIf(entry -> StringUtils.equals(entry.getValue().getId(), device.getId()));
         }
 
-        Token accessToken = tokenPair.getAccessToken();
+        Token accessToken  = tokenPair.getAccessToken();
         Token refreshToken = tokenPair.getRefreshToken();
 
         accessInfoHeap.put(accessToken.getTokenId(),
@@ -121,7 +121,7 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
         Token accessToken = tokenPair.getAccessToken();
         inertDeletion(accessToken.getUserId());
 
-        Token refreshToken = tokenPair.getRefreshToken();
+        Token                    refreshToken    = tokenPair.getRefreshToken();
         Map<String, RefreshInfo> refreshInfoHeap = usersRefreshInfoHeap.computeIfAbsent(accessToken.getUserId(), k -> new ConcurrentHashMap<>());
 
         /* refresh 可用性判断 */
@@ -209,7 +209,7 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
     }
 
     private void removeDevice(Object userId, String deviceType) {
-        Map<String, AccessInfo> accessInfoHeap = usersAccessInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
+        Map<String, AccessInfo>  accessInfoHeap  = usersAccessInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
         Map<String, RefreshInfo> refreshInfoHeap = usersRefreshInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
 
         if (deviceType != null) {
@@ -221,7 +221,7 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
     }
 
     private void removeDevice(Object userId, String deviceType, String deviceId) {
-        Map<String, AccessInfo> accessInfoHeap = usersAccessInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
+        Map<String, AccessInfo>  accessInfoHeap  = usersAccessInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
         Map<String, RefreshInfo> refreshInfoHeap = usersRefreshInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
 
         if (deviceType != null) {
@@ -237,7 +237,7 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
 
     @Override
     public Device getDevice(Object userId, String deviceType, String deviceId) {
-        Map<String, AccessInfo> accessInfoHeap = usersAccessInfoHeap.get(userId);
+        Map<String, AccessInfo>  accessInfoHeap  = usersAccessInfoHeap.get(userId);
         Map<String, RefreshInfo> refreshInfoHeap = usersRefreshInfoHeap.get(userId);
         if (!inertDeletion(userId)) return null;
         Map.Entry<String, AccessInfo> d = accessInfoHeap.entrySet().stream().filter(
@@ -298,10 +298,10 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
     @Override
     public void request() {
         try {
-            HttpMeta currentHttpMeta = AUtils.getCurrentHttpMeta();
-            Token token = currentHttpMeta.getToken();
-            AccessInfo accessInfo = usersAccessInfoHeap.get(token.getUserId()).get(token.getTokenId());
-            Device device = usersRefreshInfoHeap.get(token.getUserId()).get(accessInfo.getRefreshTokenId());
+            HttpMeta   currentHttpMeta = AUtils.getCurrentHttpMeta();
+            Token      token           = currentHttpMeta.getToken();
+            AccessInfo accessInfo      = usersAccessInfoHeap.get(token.getUserId()).get(token.getTokenId());
+            Device     device          = usersRefreshInfoHeap.get(token.getUserId()).get(accessInfo.getRefreshTokenId());
             if (device != null) {
                 device.setLastRequestTime(TimeUtils.now());
                 device.setIp(currentHttpMeta.getIp());
@@ -335,9 +335,9 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
      * @return 删除后是否还存在用户设备列表
      */
     private boolean inertDeletion(Object userId) {
-        Map<String, AccessInfo> accessInfoHeap = usersAccessInfoHeap.get(userId);
+        Map<String, AccessInfo>  accessInfoHeap  = usersAccessInfoHeap.get(userId);
         Map<String, RefreshInfo> refreshInfoHeap = usersRefreshInfoHeap.get(userId);
-        long now = TimeUtils.nowTime();
+        long                     now             = TimeUtils.nowTime();
 
         if (refreshInfoHeap == null || refreshInfoHeap.isEmpty()) {
             usersRefreshInfoHeap.remove(userId);

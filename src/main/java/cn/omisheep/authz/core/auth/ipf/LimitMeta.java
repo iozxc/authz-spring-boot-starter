@@ -17,12 +17,12 @@ import java.util.stream.Collectors;
  */
 @Getter
 public class LimitMeta {
-    private final long window;
-    private final int maxRequests;
-    private final List<Long> punishmentTime = new ArrayList<>();
-    private final long minInterval;
+    private final long                    window;
+    private final int                     maxRequests;
+    private final List<Long>              punishmentTime = new ArrayList<>();
+    private final long                    minInterval;
     private final List<AssociatedPattern> associatedPatterns;
-    private final BannedType bannedType;
+    private final BannedType              bannedType;
 
     public LimitMeta(String window,
                      int maxRequests,
@@ -30,18 +30,18 @@ public class LimitMeta {
                      String minInterval,
                      String[] associatedPatterns,
                      BannedType bannedType) {
-        this.window = TimeUtils.parseTimeValue(window);
+        this.window      = TimeUtils.parseTimeValue(window);
         this.maxRequests = maxRequests;
         Arrays.stream(punishmentTime).forEach(val -> this.punishmentTime.add(TimeUtils.parseTimeValue(val)));
         Collections.sort(this.punishmentTime);
         this.minInterval = TimeUtils.parseTimeValue(minInterval);
-        this.bannedType = bannedType;
+        this.bannedType  = bannedType;
 
         if (associatedPatterns.length > 0) {
             this.associatedPatterns = new ArrayList<>();
             for (String info : associatedPatterns) {
                 AssociatedPattern associatedPattern = new AssociatedPattern(info);
-                int i = this.associatedPatterns.indexOf(associatedPattern);
+                int               i                 = this.associatedPatterns.indexOf(associatedPattern);
                 if (i == -1) this.associatedPatterns.add(associatedPattern);
                 else {
                     AssociatedPattern existedAssociatedPattern = this.associatedPatterns.get(i);
@@ -54,7 +54,7 @@ public class LimitMeta {
     @Getter
     public static class AssociatedPattern {
         private final Set<String> methods;
-        private final String pattern;
+        private final String      pattern;
 
         public AssociatedPattern(String info) {
             String[] split = info.split(Constants.BLANK);

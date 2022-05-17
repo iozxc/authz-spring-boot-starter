@@ -28,21 +28,21 @@ public class HttpMeta {
 
     @JsonIgnore
     private final HttpServletRequest request;
-    private final String ip;
-    private final String uri;
-    private final String api;
-    private final String method;
-    private final String userAgent;
-    private final String refer;
-    private String body;
-    private final Date date;
-    private Token token;
-    private Object userId;
-    private TokenException tokenException;
-    private boolean hasToken;
-    private AuthzException authzException;
-    private Set<String> roles;
-    private Set<String> permissions;
+    private final String             ip;
+    private final String             uri;
+    private final String             api;
+    private final String             method;
+    private final String             userAgent;
+    private final String             refer;
+    private       String             body;
+    private final Date               date;
+    private       Token              token;
+    private       Object             userId;
+    private       TokenException     tokenException;
+    private       boolean            hasToken;
+    private       AuthzException     authzException;
+    private       Set<String>        roles;
+    private       Set<String>        permissions;
 
     public HttpMeta setRoles(Set<String> roles) {
         if (roles == null) return this;
@@ -120,21 +120,21 @@ public class HttpMeta {
 
     public void setToken(Token token) {
         if (this.token == null) {
-            this.token = token;
+            this.token  = token;
             this.userId = token.getUserId();
         }
     }
 
     public HttpMeta(HttpServletRequest request, String ip, String uri, String api,
                     String method, Date date) {
-        this.request = request;
-        this.refer = request.getHeader("Referer");
-        this.ip = ip;
-        this.uri = uri;
-        this.api = api;
-        this.method = method.toUpperCase();
+        this.request   = request;
+        this.refer     = request.getHeader("Referer");
+        this.ip        = ip;
+        this.uri       = uri;
+        this.api       = api;
+        this.method    = method.toUpperCase();
         this.userAgent = request.getHeader("user-agent");
-        this.date = date;
+        this.date      = date;
     }
 
     public boolean isMethod(String method) {

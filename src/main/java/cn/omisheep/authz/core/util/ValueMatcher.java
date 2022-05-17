@@ -45,8 +45,8 @@ public class ValueMatcher {
                 if (split.length > 2) {
                     return false;
                 } else if (split.length == 2) {
-                    Object value = parse(rawValue, valueType);
-                    Comparable left = (Comparable) parse(split[0], valueType);
+                    Object     value = parse(rawValue, valueType);
+                    Comparable left  = (Comparable) parse(split[0], valueType);
                     Comparable right = (Comparable) parse(split[1], valueType);
                     if (left.compareTo(value) <= 0 && right.compareTo(value) >= 0) {
                         return true;

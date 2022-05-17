@@ -46,9 +46,9 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
                                  HttpServletResponse response,
                                  FilterChain filterChain) throws ServletException, IOException {
         HttpServletRequest request = new BufferedServletRequestWrapper(rrequest);
-        String ip = getIp(request);
-        String uri = request.getRequestURI();
-        String method = request.getMethod();
+        String             ip      = getIp(request);
+        String             uri     = request.getRequestURI();
+        String             method  = request.getMethod();
 
         String api = execLimit(ip, uri, method);
 
@@ -63,7 +63,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
     }
 
     private String execLimit(String ip, String uri, String method) throws IOException {
-        HashSet<RequestMeta> ipBlacklist = httpd.getIpBlacklist();
+        HashSet<RequestMeta>        ipBlacklist            = httpd.getIpBlacklist();
         CountingBloomFilter<String> ipBlacklistBloomFilter = httpd.getIpBlacklistBloomFilter();
 
         long now = new Date().getTime();
@@ -175,13 +175,13 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
         return ip.equals("0:0:0:0:0:0:0:1") ? "127.0.0.1" : ip;
     }
 
-    private static final String UNKNOWN = "unknown";
-    private static final String X_FORWARDED_FOR = "x-forwarded-for";
-    private static final String PROXY_CLIENT_IP = "Proxy-Client-IP";
-    private static final String WL_PROXY_CLIENT_IP = "WL-Proxy-Client-IP";
-    private static final String HTTP_CLIENT_IP = "HTTP_CLIENT_IP";
+    private static final String UNKNOWN              = "unknown";
+    private static final String X_FORWARDED_FOR      = "x-forwarded-for";
+    private static final String PROXY_CLIENT_IP      = "Proxy-Client-IP";
+    private static final String WL_PROXY_CLIENT_IP   = "WL-Proxy-Client-IP";
+    private static final String HTTP_CLIENT_IP       = "HTTP_CLIENT_IP";
     private static final String HTTP_X_FORWARDED_FOR = "HTTP_X_FORWARDED_FOR";
-    private static final String X_REAL_IP = "X-Real-IP";
+    private static final String X_REAL_IP            = "X-Real-IP";
 
 }
 

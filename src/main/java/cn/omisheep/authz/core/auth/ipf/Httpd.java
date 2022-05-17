@@ -56,10 +56,10 @@ public class Httpd {
                     0.001).countingBits(8).buildCountingBloomFilter();
 
     public void receive(RequestMessage requestMessage) {
-        String api = requestMessage.getApi();
+        String api    = requestMessage.getApi();
         String method = requestMessage.getMethod();
-        String ip = requestMessage.getIp();
-        long now = requestMessage.getNow();
+        String ip     = requestMessage.getIp();
+        long   now    = requestMessage.getNow();
         try {
             RequestPool requestPool = requestPools.get(method).get(api);
             RequestMeta requestMeta = requestPool.get(ip);
@@ -79,7 +79,7 @@ public class Httpd {
         if (requestPools != null) return requestPools;
 
         List<LimitMeta.AssociatedPattern> associatedPatterns = limitMeta.getAssociatedPatterns();
-        List<Httpd.RequestPool> oIpPools = new ArrayList<>();
+        List<Httpd.RequestPool>           oIpPools           = new ArrayList<>();
         if (associatedPatterns != null) {
             associatedPatterns.forEach(associatedPattern ->
                     associatedPattern.getMethods().forEach(meth -> {

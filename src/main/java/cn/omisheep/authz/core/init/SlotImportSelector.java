@@ -25,7 +25,7 @@ public class SlotImportSelector implements ImportSelector {
     @Override
     public String[] selectImports(AnnotationMetadata importingClassMetadata) {
         Map<String, Object> annotationAttributes = importingClassMetadata.getAnnotationAttributes(SlotScan.class.getName());
-        String[] basePackages = new String[0];
+        String[]            basePackages         = new String[0];
         if (annotationAttributes != null) basePackages = (String[]) annotationAttributes.get("basePackages");
         ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
         scanner.addIncludeFilter(new AssignableTypeFilter(Slot.class));
