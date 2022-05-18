@@ -256,7 +256,7 @@ public class AuthzAutoConfiguration {
     // 后台监控
     @Bean
     public ServletRegistrationBean StatViewServlet() {
-        ServletRegistrationBean<SupportServlet> bean = new ServletRegistrationBean<>(new SupportServlet(), "/authz-api/*");
+        ServletRegistrationBean<SupportServlet> bean = new ServletRegistrationBean<>(new SupportServlet("support/http/resources"), "/authz-dashboard/*");
 
         HashMap<String, String> initParameters = new HashMap<>();
 

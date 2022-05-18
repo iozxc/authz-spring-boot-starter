@@ -7,6 +7,8 @@ import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.util.AUtils;
+import cn.omisheep.web.entity.Result;
+import cn.omisheep.web.entity.ResultCode;
 import org.springframework.lang.NonNull;
 
 /**
@@ -38,6 +40,13 @@ public class Authz {
         } else {
             return permissionDict.modify(authzModifier);
         }
+    }
+
+    public static Result operate(@NonNull AuthzModifier authzModifier) {
+        Object modify = modify(authzModifier);
+        if (modify instanceof Result) return (Result) modify;
+        if (modify instanceof ResultCode) return ((ResultCode) modify).data();
+        return Result.SUCCESS.data(modify);
     }
 
 }

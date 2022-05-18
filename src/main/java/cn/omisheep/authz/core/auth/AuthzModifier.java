@@ -158,6 +158,11 @@ public class AuthzModifier {
         return this;
     }
 
+    public AuthzModifier setParamName(String paramName) {
+        this.value = paramName;
+        return this;
+    }
+
     public PermRolesMeta build() {
         PermRolesMeta permRolesMeta = new PermRolesMeta();
         try {

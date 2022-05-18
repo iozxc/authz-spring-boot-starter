@@ -342,7 +342,7 @@ public class AuHelper {
      *     "api": "/test/role-ada"
      *     "role": {
      *         "require": ["admin","zxc"],
-     *         "exclude": ["small-black,dog", cat","apple"]
+     *         "exclude": ["small-black,dog", "cat","apple"]
      *     },
      *     "permission": {
      *         ...
@@ -396,7 +396,7 @@ public class AuHelper {
      *     "method": "get",
      *     "api": "/test/role-ada",
      *     "value": "id",
-     *     "role: {
+     *     "role": {
      *         "require":["user"]
      *     },
      *     "range": ["1-100"]

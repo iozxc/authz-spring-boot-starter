@@ -1,0 +1,350 @@
+* {
+    padding: 0;
+    margin: 0;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+    outline: none;
+}
+
+::-webkit-scrollbar {
+    /*width: .55%;*/
+    width: 4px;
+    height: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #405778;
+    /*background-color: #590223;*/
+    -webkit-border-radius: 0;
+    border-radius: 0;
+}
+
+::-webkit-scrollbar-track {
+    background-color: #fff;
+}
+
+
+body {
+    /*display: -webkit-box;*/
+    /*display: -webkit-flex;*/
+    /*display: -ms-flexbox;*/
+    /*display: flex;*/
+    /*-webkit-box-orient: vertical;*/
+    /*-webkit-box-direction: normal;*/
+    /*-webkit-flex-direction: column;*/
+    /*-ms-flex-direction: column;*/
+    /*flex-direction: column;*/
+    background-color: rgba(0,0,0,0);
+}
+
+html {
+    background: url(http://cdn.magdeleine.co/wp-content/uploads/2014/05/3jPYgeVCTWCMqjtb7Dqi_IMG_8251-1400x933.jpg) no-repeat center center fixed;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+    overflow: hidden;
+}
+
+.ps2 {
+    padding: 0 2px !important;
+}
+
+.df_c {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+    -ms-flex-direction: column;
+    flex-direction: column;
+}
+
+.sidebar {
+    -webkit-box-flex: 1;
+    -webkit-flex-grow: 1;
+    -ms-flex-positive: 1;
+    flex-grow: 1;
+    text-align: center;
+    padding: 10px;
+    -webkit-border-radius: .2rem;
+    border-radius: .2rem;
+    height: 90vh;
+}
+
+.sidebar .step_num {
+    text-align: left;
+    display: block;
+    font-size: 10px;
+}
+
+.sidebar .json_tree {
+    max-height: 200px;
+    overflow: auto;
+}
+
+.create {
+    -webkit-border-radius: .2rem;
+    border-radius: .2rem;
+}
+
+.sidebar button {
+    outline: none !important;
+}
+
+.sidebar button:focus {
+    -webkit-box-shadow: none !important;
+    box-shadow: none !important;
+}
+
+.sidebar button:hover {
+    border-color: transparent !important;
+}
+
+.sidebar button:active {
+    border-color: #343a40 !important;
+}
+
+.sidebar button[aria-expanded="true"], .sidebar button[data-expanded="true"] {
+    background-color: #343a40;
+    color: #fff;
+    position: relative;
+}
+
+.sidebar button[aria-expanded="true"]:after, .sidebar button[data-expanded="true"]:after {
+    position: absolute;
+    right: 8px;
+    top: 4px;
+    content: '\f0d8';
+    display: block;
+    font-size: 14px;
+    font-family: Font Awesome\ 5 Free, serif;
+    font-weight: 900;
+}
+
+.sidebar button[aria-expanded="false"], .sidebar button[data-expanded="false"] {
+    position: relative;
+}
+
+.sidebar button[aria-expanded="false"]:after, .sidebar button[data-expanded="false"]:after {
+    position: absolute;
+    right: 8px;
+    top: 4px;
+    content: '\f0d7';
+    display: block;
+    font-size: 14px;
+    font-family: Font Awesome\ 5 Free, serif;
+    font-weight: 900;
+}
+
+.sidebar {
+    -webkit-box-orient: vertical !important;
+    -webkit-box-direction: normal !important;
+    -webkit-flex-direction: column !important;
+    -ms-flex-direction: column !important;
+    flex-direction: column !important;
+    justify-content: stretch;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+}
+
+.sidebar .json_tree .json_tree_view_wrap {
+    text-align: left;
+}
+
+.sidebar .json_editor {
+    -webkit-box-flex: 1;
+    -webkit-flex-grow: 1;
+    -ms-flex-positive: 1;
+    flex-grow: 1;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+    -ms-flex-direction: column;
+    flex-direction: column;
+}
+
+.sidebar .json_editor .btn[aria-expanded="true"] {
+    -webkit-border-radius: .2rem .2rem 0 0;
+    border-radius: .2rem .2rem 0 0;
+}
+
+.sidebar .json_editor .btn.collapsed {
+    -webkit-border-radius: .2rem;
+    border-radius: .2rem;
+    -webkit-transition: -webkit-border-radius 0s ease .5s;
+    transition: -webkit-border-radius 0s ease .5s;
+    transition: border-radius 0s ease .5s, -webkit-border-radius 0s ease .5s;
+}
+
+.sidebar .json_editor .json_editor_view_wrap {
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+    -ms-flex-direction: column;
+    flex-direction: column;
+}
+
+.sidebar .json_editor .json_editor_view_wrap.show {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-flex: 1;
+    -webkit-flex-grow: 1;
+    -ms-flex-positive: 1;
+    flex-grow: 1;
+}
+
+.sidebar .json_editor .json_editor_view_wrap.collapsing {
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    overflow: hidden;
+    -webkit-box-flex: 1;
+    -webkit-flex-grow: 1;
+    -ms-flex-positive: 1;
+    flex-grow: 1;
+}
+
+.sidebar .json_editor .json_editor_view_wrap .json_editor_view {
+    width: 100%;
+    -webkit-box-flex: 1;
+    -webkit-flex-grow: 1;
+    -ms-flex-positive: 1;
+    flex-grow: 1;
+    text-align: left;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+    -ms-flex-direction: column;
+    flex-direction: column;
+}
+
+.sidebar .json_editor .json_editor_view_wrap .json_editor_view .jsoneditor-mode-tree {
+    -webkit-box-flex: 1;
+    -webkit-flex-grow: 1;
+    -ms-flex-positive: 1;
+    flex-grow: 1;
+    overflow: hidden;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+    -ms-flex-direction: column;
+    flex-direction: column;
+}
+
+.sidebar .json_editor .json_editor_view_wrap .json_editor_view .jsoneditor-mode-tree .jsoneditor-outer {
+    -webkit-box-flex: 1;
+    -webkit-flex-grow: 1;
+    -ms-flex-positive: 1;
+    flex-grow: 1;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    height: 400px;
+}
+
+.sidebar .json_editor .json_editor_view_wrap .json_editor_view .jsoneditor-mode-tree .jsoneditor-outer .jsoneditor-tree {
+    -webkit-box-flex: 1;
+    -webkit-flex-grow: 1;
+    -ms-flex-positive: 1;
+    flex-grow: 1;
+}
+
+.sidebar .json_editor .json_editor_view_wrap .action_block button {
+    margin: 5px 0;
+}
+
+#send_modifier {
+    margin: 5px 0;
+}
+
+div.jsoneditor {
+    border: none;
+}
+
+div.jsoneditor input[type="checkbox"] {
+    margin-top: 4px;
+}
+
+div.jsoneditor-menu {
+    background-color: #343a40;
+    border-bottom: 1px solid #343a40;
+}
+
+div.jsoneditor table {
+    line-height: 14px;
+}
+
+div .jsoneditor-tree button:focus {
+    background-color: transparent;
+}
+
+div.jsoneditor td, div.jsoneditor td.jsoneditor-tree {
+    vertical-align: middle;
+}
+
+div.jsoneditor td.jsoneditor-separator {
+    vertical-align: middle;
+}
+
+
+section {
+    /*margin-top: 20px;*/
+    margin-top: 5vh;
+}
+
+#response_wrap{
+    text-align: left;
+    overflow: auto;
+    word-break: break-all;
+    line-break: anywhere;
+}
+
+.action_block,.step_num {
+    user-select: none;
+}
+
+.jsontree_tree {
+    margin-left: 20px !important;
+    font-family: 'PT Mono', monospace;
+    font-size: 12px !important;
+}
+.bg-light {
+    background-color: rgba(248,249,250,0.95) !important;
+}
+.row{
+    margin-right: -30px;
+    margin-left: -30px;
+}
+
+
+.jsontree_child-nodes {
+    display: none;
+    margin-left: 25px !important;
+    line-height: 1.7 !important;
+}

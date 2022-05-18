@@ -63,17 +63,9 @@ public class PermRolesMeta {
                 || paramPermissionsMetadata.values().stream().noneMatch(Objects::nonNull));
     }
 
-    public void overrideApi(PermRolesMeta permRolesMeta) {
-        this.setRequireRoles(permRolesMeta.getRequireRoles());
-        this.setExcludeRoles(permRolesMeta.getExcludeRoles());
-        this.setRequirePermissions(permRolesMeta.getRequirePermissions());
-        this.setExcludePermissions(permRolesMeta.getExcludePermissions());
-    }
-
-    public PermRolesMeta removeApi() {
+    public void removeApi() {
         role        = null;
         permissions = null;
-        return this;
     }
 
     public PermRolesMeta() {
@@ -151,12 +143,11 @@ public class PermRolesMeta {
                 excludePermissions.toArray(new String[]{}));
     }
 
-    public PermRolesMeta merge(PermRolesMeta other) {
+    public void merge(PermRolesMeta other) {
         setExcludePermissions(other.getExcludePermissions());
         setRequirePermissions(other.getRequirePermissions());
         setRequireRoles(other.getRequireRoles());
         setExcludeRoles(other.getExcludeRoles());
-        return this;
     }
 
 

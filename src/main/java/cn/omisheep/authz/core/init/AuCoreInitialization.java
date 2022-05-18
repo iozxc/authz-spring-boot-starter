@@ -248,10 +248,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
                                 PermRolesMeta meta = authzMetadata.computeIfAbsent(method.toString(), r -> new HashMap<>())
                                         .computeIfAbsent(contextPath + patternValue, r -> new PermRolesMeta());
                                 meta.put(type, paramName,
-                                        new ParamMetadata()
-                                                .setParamType(paramType)
-                                                .setRolesMetaList(rolesMetaList)
-                                                .setPermissionsMetaList(permsMetaList)
+                                        new ParamMetadata(paramType,rolesMetaList,permsMetaList)
                                 );
                             }
                         }

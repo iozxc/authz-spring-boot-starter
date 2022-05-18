@@ -4,6 +4,7 @@ import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.init.AuInit;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
+import cn.omisheep.web.entity.Result;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.base.Objects;
 import com.sun.javafx.collections.ObservableMapWrapper;
@@ -139,6 +140,9 @@ public class PermissionDict {
 
     public Object modify(AuthzModifier authzModifier) {
         try {
+            if (authzModifier.getTarget() == null) {
+                return modifyParam(authzModifier);
+            }
             switch (authzModifier.getTarget()) {
                 case API:
                     return modifyAPI(authzModifier);
@@ -222,31 +226,47 @@ public class PermissionDict {
 
     private final ReentrantLock lock = new ReentrantLock();
 
-    public PermRolesMeta modifyAPI(AuthzModifier authzModifier) {
+    public Object modifyAPI(AuthzModifier authzModifier) {
         lock.lock();
         try {
-            Map<String, PermRolesMeta> target = authzMetadata.get(authzModifier.getMethod());
-            PermRolesMeta              meta   = target.get(authzModifier.getApi());
             switch (authzModifier.getOperate()) {
-                case ADD:
-                    if (meta != null) meta.overrideApi(authzModifier.build());
-                    else target.put(authzModifier.getApi(), authzModifier.build());
-                    return target.get(authzModifier.getApi());
+                case ADD: {
+                    Map<String, PermRolesMeta> target = authzMetadata.get(authzModifier.getMethod());
+                    target.put(authzModifier.getApi(), authzModifier.build());
+                    return Result.SUCCESS;
+                }
                 case MODIFY:
-                case UPDATE:
-                    return meta.merge(authzModifier.build());
+                case UPDATE: {
+                    authzMetadata.get(authzModifier.getMethod())
+                            .get(authzModifier.getApi())
+                            .merge(authzModifier.build());
+                    return Result.SUCCESS;
+                }
                 case DELETE:
-                case DEL:
-                    if (meta != null) return meta.removeApi();
-                    else return null;
+                case DEL: {
+                    authzMetadata.get(authzModifier.getMethod())
+                            .get(authzModifier.getApi()).removeApi();
+                    return Result.SUCCESS;
+                }
                 case GET:
                 case READ:
-                    return meta;
+                    if (authzModifier.getApi() == null && authzModifier.getMethod() == null) return authzMetadata;
+                    if (authzModifier.getApi() == null) return authzMetadata.get(authzModifier.getMethod());
+                    if (authzModifier.getMethod() == null) {
+                        HashMap<String, List<PermRolesMeta>> mp = new HashMap<>();
+                        authzMetadata.forEach((k, v) -> v.entrySet().stream().map(e -> {
+                            if (e.getKey().equals(authzModifier.getApi())) return e.getValue();
+                            return null;
+                        }).filter(java.util.Objects::nonNull).forEach(s -> mp.computeIfAbsent(k, r -> new ArrayList<>()).add(s)));
+                        return mp;
+                    }
+                    Map<String, PermRolesMeta> target = authzMetadata.get(authzModifier.getMethod());
+                    return target.get(authzModifier.getApi());
                 default:
-                    return null;
+                    return Result.FAIL;
             }
         } catch (Exception e) {
-            return null;
+            return Result.FAIL;
         } finally {
             lock.unlock();
         }
@@ -259,13 +279,26 @@ public class PermissionDict {
             PermRolesMeta        meta   = authzMetadata.get(authzModifier.getMethod()).get(authzModifier.getApi());
             AuthzModifier.Target target = authzModifier.getTarget();
 
+            if (target == null &&
+                    (authzModifier.getOperate() == AuthzModifier.Operate.GET || authzModifier.getOperate() == AuthzModifier.Operate.READ)) {
+                if (authzModifier.getTarget() == null && authzModifier.getValue() == null)
+                    return meta.getParamPermissionsMetadata();
+                HashMap<Object, Object>    map = new HashMap<>();
+                Map<String, ParamMetadata> m1  = meta.getParamPermissionsMetadata().get(ParamMetadata.ParamType.PATH_VARIABLE);
+                Map<String, ParamMetadata> m2  = meta.getParamPermissionsMetadata().get(ParamMetadata.ParamType.REQUEST_PARAM);
+                if (m1 != null && m1.containsKey(authzModifier.getValue())) map.put("PATH_VARIABLE", m1.get(authzModifier.getValue()));
+                if (m2 != null && m2.containsKey(authzModifier.getValue())) map.put("REQUEST_PARAM", m2.get(authzModifier.getValue()));
+                return map;
+            }
+
             Object[] objects = getParamMetaList(meta, authzModifier);
+
 
             ParamMetadata            paramMetadata = (ParamMetadata) objects[0];
             List<PermRolesMeta.Meta> metaList      = (List<PermRolesMeta.Meta>) objects[1]; // 可能需要操作的list
 
             if (metaList == null) {
-                return "api not found";
+                return Result.FAIL;
             }
 
             switch (authzModifier.getOperate()) {
@@ -329,12 +362,12 @@ public class PermissionDict {
                         return metaList.get(authzModifier.getIndex());
                     }
                 case NON:
-                    return null;
+                    return Result.SUCCESS;
             }
 
             return paramMetadata;
         } catch (Exception e) {
-            return null;
+            return Result.FAIL;
         } finally {
             lock.unlock();
         }
@@ -476,8 +509,8 @@ public class PermissionDict {
         try {
             lock.lock();
             String className = authzModifier.getClassName();
-            if (className == null) return null;
-            if (authzResourcesNameAndTemplate.get(className) == null) return null;
+            if (className == null) return Result.FAIL;
+            if (authzResourcesNameAndTemplate.get(className) == null) return Result.FAIL;
             if (authzModifier.getTarget() == AuthzModifier.Target.DATA_ROW) {
                 switch (authzModifier.getOperate()) {
                     case ADD:
@@ -496,8 +529,8 @@ public class PermissionDict {
                         break;
                     case MODIFY:
                     case UPDATE:
-                        if (authzModifier.getIndex() == null) return null;
-                        if (dataPermMetadata.get(className) == null) return null;
+                        if (authzModifier.getIndex() == null) return Result.FAIL;
+                        if (dataPermMetadata.get(className) == null) return Result.FAIL;
                         DataPermMeta old_data_mata = dataPermMetadata.get(className).get(authzModifier.getIndex());
                         DataPermMeta new_data_mata = null;
 
@@ -535,14 +568,14 @@ public class PermissionDict {
                         if (authzModifier.getIndex() == null) return dataPermMetadata.get(className);
                         else return dataPermMetadata.get(className).get(authzModifier.getIndex());
                     default:
-                        return null;
+                        return Result.FAIL;
                 }
                 return dataPermMetadata.get(className);
             } else {
-                return null;
+                return Result.FAIL;
             }
         } catch (Exception e) {
-            return null;
+            return Result.FAIL;
         } finally {
             lock.unlock();
         }

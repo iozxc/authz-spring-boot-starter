@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Authz Dashboard</title>
+    <link rel="icon" href="img/favicon.png" type="image/png">
+    <link rel="stylesheet" href="css/login.css">
+</head>
+<body>
+<div id="login-button">
+    <img src="https://dqcgrsy5v35b9.cloudfront.net/cruiseplanner/assets/img/icons/login-w-icon.png" alt="">
+</div>
+<div id="container">
+    <h1>Log In</h1>
+    <span class="close-btn">
+          <img src="https://cdn4.iconfinder.com/data/icons/miu/22/circle_close_delete_-128.png" alt=""/>
+        </span>
+
+    <form id="loginForm" method="post" autocomplete="off">
+        <label for="username"></label><input id="username" type="text" name="username" placeholder="Username">
+        <label for="password"></label><input id="password" type="password" name="password" placeholder="Password">
+    </form>
+    <button class="loginBtn">Log in</button>
+</div>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/gsap/1.16.1/TweenMax.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/axios/0.27.2/axios.min.js"></script>
+<script src="js/login.js"></script>
+</body>
+</html>

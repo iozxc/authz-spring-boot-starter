@@ -2,6 +2,7 @@ package cn.omisheep.authz.core.auth.ipf;
 
 import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.msg.RequestMessage;
+import cn.omisheep.web.entity.Result;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import orestes.bloomfilter.CountingBloomFilter;
@@ -137,14 +138,11 @@ public class Httpd {
                 case READ:
                 case GET:
                     return rateLimitMetadata.get(authzModifier.getMethod()).get(authzModifier.getApi());
-                case NON:
-                case EMPTY:
-                    return null;
                 default:
-                    return null;
+                    return Result.FAIL;
             }
         } catch (Exception e) {
-            return null;
+            return Result.FAIL;
         }
     }
 }
