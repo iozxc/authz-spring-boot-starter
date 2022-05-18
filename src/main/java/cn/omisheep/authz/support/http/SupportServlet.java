@@ -19,7 +19,6 @@ public class SupportServlet extends HttpServlet {
         initAuthEnv();
     }
 
-
     public void initAuthEnv() {
         System.out.println("initAuthEnv");
     }
@@ -34,10 +33,12 @@ public class SupportServlet extends HttpServlet {
         if (contextPath == null) { // root context
             contextPath = "";
         }
+
         String uri  = contextPath + servletPath;
         String path = requestURI.substring(contextPath.length() + servletPath.length());
         System.out.println(uri);
         System.out.println(path);
+
     }
 
 

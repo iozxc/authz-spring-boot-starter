@@ -6,7 +6,6 @@ import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.slot.Order;
 import cn.omisheep.authz.core.slot.Slot;
 import cn.omisheep.authz.core.util.LogUtils;
-import cn.omisheep.commons.util.TimeUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -51,7 +50,6 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
             return authzExceptionHandler.handle(request, response, httpException);
         }
         if (!(handler instanceof HandlerMethod)) return false;
-        long          nowTime       = TimeUtils.nowTime();
         HandlerMethod handlerMethod = (HandlerMethod) handler;
         try {
             boolean next = true;
@@ -64,8 +62,6 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
             e.printStackTrace();
             LogUtils.logError(e.getMessage(), e.getCause());
             return authzExceptionHandler.handle(request, response, new AuthzException(e.getCause(), ExceptionStatus.UNKNOWN));
-        } finally {
-            LogUtils.logDebug("preHandle {}", TimeUtils.diff(nowTime)); // todo: 减少耗时
         }
     }
 

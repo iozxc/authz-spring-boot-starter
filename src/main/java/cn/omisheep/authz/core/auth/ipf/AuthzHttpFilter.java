@@ -9,6 +9,7 @@ import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.authz.core.util.RedisUtils;
 import cn.omisheep.commons.util.Async;
 import cn.omisheep.web.utils.BufferedServletRequestWrapper;
+import cn.omisheep.web.utils.HttpUtils;
 import lombok.extern.slf4j.Slf4j;
 import orestes.bloomfilter.CountingBloomFilter;
 import org.springframework.boot.logging.LogLevel;
@@ -49,24 +50,25 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
         String             ip      = getIp(request);
         String             uri     = request.getRequestURI();
         String             method  = request.getMethod();
+        long               now     = new Date().getTime();
 
-        String api = execLimit(ip, uri, method);
+        HttpUtils.request.set(request);
+
+        String api = execLimit(now, ip, uri, method);
 
         HttpMeta httpMeta = new HttpMeta(
                 request,
                 ip, uri, api, method, new Date()).error(ExceptionUtils.clear(request));
         request.setAttribute(HTTP_META, httpMeta);
 
-        Async.run(() -> RedisUtils.publish(RequestMessage.CHANNEL, new RequestMessage()));
+        Async.run(() -> RedisUtils.publish(RequestMessage.CHANNEL, new RequestMessage(method, api, ip, now, null)));
 
         filterChain.doFilter(request, response);
     }
 
-    private String execLimit(String ip, String uri, String method) throws IOException {
+    private String execLimit(long now, String ip, String uri, String method) throws IOException {
         HashSet<RequestMeta>        ipBlacklist            = httpd.getIpBlacklist();
         CountingBloomFilter<String> ipBlacklistBloomFilter = httpd.getIpBlacklistBloomFilter();
-
-        long now = new Date().getTime();
 
         // 全局ip黑名单过滤
         if (ipBlacklistBloomFilter.contains(ip)) { // 使用布隆过滤器过滤。若存在，则去黑名单里搜索

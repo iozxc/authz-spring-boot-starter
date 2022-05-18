@@ -24,6 +24,17 @@ public class RequestMessage implements Message {
     private       long   now;
     private       String msg     = "hello";
 
+    public RequestMessage() {
+    }
+
+    public RequestMessage(String method, String api, String ip, long now, String msg) {
+        this.method = method;
+        this.api    = api;
+        this.ip     = ip;
+        this.now    = now;
+        this.msg    = msg;
+    }
+
     public static boolean ignore(RequestMessage message) {
         return message == null || Message.uuid.equals(message.getId()) || !message.context.equals(CHANNEL);
     }

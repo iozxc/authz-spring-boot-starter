@@ -65,7 +65,7 @@ public class Httpd {
             RequestMeta requestMeta = requestPool.get(ip);
             if (requestMeta == null) requestPool.put(ip, new RequestMeta(now, ip));
             else {
-                LimitMeta limitMeta = rateLimitMetadata.get(method).get(ip);
+                LimitMeta limitMeta = rateLimitMetadata.get(method).get(api);
                 if (!requestMeta.pushRequest(now, limitMeta)) {
                     forbid(now, requestMeta, limitMeta);
                 }

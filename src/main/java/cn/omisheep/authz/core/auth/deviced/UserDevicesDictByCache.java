@@ -153,16 +153,15 @@ public class UserDevicesDictByCache implements UserDevicesDict {
 
         AccessInfo  accessInfo  = new AccessInfo().setRefreshTokenId(tokenPair.getRefreshToken().getTokenId());
         RefreshInfo refreshInfo = new RefreshInfo().setDevice(device);
+        refreshInfo.setIp(httpMeta.getIp()).setLastRequestTime(httpMeta.getDate());
 
         long rfLiveTime = TimeUtils.parseTimeValueTotal(properties.getToken().getLiveTime(), properties.getToken().getRefreshTime(), "10s");
 
         Async.run(() -> {
-            cache.setSneaky(requestKeyByTokenId(userId, tokenPair.getRefreshToken().getTokenId()),
-                    RequestInfo.of(httpMeta),
-                    rfLiveTime, TimeUnit.MILLISECONDS);
             cache.del(acKey(userId, Constants.WILDCARD));
             cache.del(rfKey(userId, Constants.WILDCARD));
         });
+
 
         return Async.joinAndCheck(
                 Async.combine(
@@ -412,8 +411,13 @@ public class UserDevicesDictByCache implements UserDevicesDict {
             if (o == null) return;
             String rtid = ((AccessInfo) o).getRefreshTokenId();
             if (rtid != null) {
-                cache.setSneaky(requestKeyByTokenId(token.getUserId(), rtid),
-                        RequestInfo.of(currentHttpMeta), Cache.INHERIT);
+                Async.run(()->{
+                    String rfKey = rfKey(token.getUserId(), rtid);
+                    Device d = (Device) cache.get(rfKey);
+                    d.setLastRequestTime(currentHttpMeta.getDate());
+                    d.setIp(currentHttpMeta.getIp());
+                    cache.set(rfKey,d);
+                });
             }
         } catch (Exception ignored) {
         }

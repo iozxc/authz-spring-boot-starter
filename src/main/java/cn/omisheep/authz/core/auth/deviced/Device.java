@@ -10,13 +10,10 @@ import java.util.Map;
  */
 public interface Device extends Map<Object, Object>, java.io.Serializable {
 
-    String TYPE = "type";
-
-    String ID = "id";
-
+    String TYPE              = "type";
+    String ID                = "id";
     String LAST_REQUEST_TIME = "lrt";
-
-    String IP = "ip";
+    String IP                = "ip";
 
     String getType();
 
