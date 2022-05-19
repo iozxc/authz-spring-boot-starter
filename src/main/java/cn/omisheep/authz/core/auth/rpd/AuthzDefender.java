@@ -107,7 +107,7 @@ public class AuthzDefender {
     @SneakyThrows
     @SuppressWarnings("all")
     public ExceptionStatus verify(HttpMeta httpMeta) {
-        PermRolesMeta permRolesMeta = permissionDict.getAuthzMetadata().get(httpMeta.getMethod()).get(httpMeta.getApi());
+        PermRolesMeta permRolesMeta = permissionDict.getRolePermission().get(httpMeta.getMethod()).get(httpMeta.getApi());
         Token         accessToken   = httpMeta.getToken();
 
         Set<String> roles = null;

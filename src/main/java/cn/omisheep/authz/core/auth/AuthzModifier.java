@@ -33,6 +33,7 @@ public class AuthzModifier {
     private List<String> resources;
 
     private String                    className;
+    private String                    fieldName;
     private String                    condition;
     private Rule                      rule;
     private Map<String, List<String>> argsMap;
@@ -41,6 +42,7 @@ public class AuthzModifier {
     private Permission permission;
 
     private RateLimitInfo rateLimit;
+
 
     @Data
     public static class Role {
@@ -82,6 +84,8 @@ public class AuthzModifier {
         REQUEST_PARAM_PERMISSION(5, "permission"), PARAM_PERMISSION(5, "permission"),
         DATA_ROW(6, "role", "permission"),
         DATA_COL(7, "role", "permission"),
+        PATH(9, "role", "permission"),
+        PARAM(10, "role", "permission"),
         RATE(8),
         NON(0);
 

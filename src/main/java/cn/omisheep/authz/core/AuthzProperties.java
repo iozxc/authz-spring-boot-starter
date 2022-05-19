@@ -21,7 +21,11 @@ public class AuthzProperties {
 
     private MybatisConfig mybatis = new MybatisConfig();
 
-    private RSAConfig rsaConfig = new RSAConfig();
+    private RSAConfig rsa = new RSAConfig();
+
+    private IpRangeConfig globalIpRange = new IpRangeConfig();
+
+    private DashboardConfig dashboard = new DashboardConfig();
 
     private boolean dataFilter = true;
 
@@ -40,6 +44,15 @@ public class AuthzProperties {
      * authz的日志等级
      */
     private LogLevel log = LogLevel.INFO;
+
+    private String[] ignoreSuffix = new String[]{".css", ".js", ".html", ".png", ".jpg", ".gif", ".svg"};
+
+    @Data
+    public static class IpRangeConfig {
+        private String  allow         = "";
+        private String  deny          = "";
+        private boolean supportNative = true;// 0:0:0:0:0:0:0:1  127.0.0.1
+    }
 
     @Data
     public static class CacheConfig {
@@ -170,5 +183,18 @@ public class AuthzProperties {
                 return version;
             }
         }
+    }
+
+    @Data
+    public static class DashboardConfig {
+        private boolean enabled = false;
+
+        private String username;
+        private String password;
+        private String allow;
+        private String deny;
+        private String remoteAddress;
+
+        private String mappings = "/authz-dashboard/*";
     }
 }

@@ -1,12 +1,10 @@
 package cn.omisheep.authz.core.init;
 
-import cn.omisheep.authz.annotation.BatchAuthority;
-import cn.omisheep.authz.annotation.Perms;
-import cn.omisheep.authz.annotation.RateLimit;
-import cn.omisheep.authz.annotation.Roles;
+import cn.omisheep.authz.annotation.*;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.Constants;
 import cn.omisheep.authz.core.Pelcron;
+import cn.omisheep.authz.core.VersionInfo;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.DeviceConfig;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
@@ -23,12 +21,12 @@ import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.authz.core.util.RedisUtils;
 import cn.omisheep.authz.core.util.ValueMatcher;
+import cn.omisheep.authz.support.util.IPRangeMeta;
 import cn.omisheep.commons.util.Async;
 import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.commons.util.TaskBuilder;
 import lombok.SneakyThrows;
 import org.springframework.aop.support.AopUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.MethodParameter;
@@ -52,9 +50,6 @@ import java.util.stream.Collectors;
  */
 @SuppressWarnings("all")
 public class AuCoreInitialization implements ApplicationContextAware {
-
-    @Value("${server.servlet.context-path:}")
-    private String contextPath;
 
     private final AuthzProperties properties;
 
@@ -112,13 +107,13 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
         // init Jobs
         AuKey.setTime(properties.getUserBufferRefreshWithPeriod());
-        if (properties.getRsaConfig().isAuto() && properties.getRsaConfig().getCustomPrivateKey() != null && properties.getRsaConfig().getCustomPublicKey() != null) {
-            ScheduledFuture<?> schedule = TaskBuilder.schedule(AuKey::refreshKeyGroup, properties.getRsaConfig().getRsaKeyRefreshWithPeriod());
+        if (properties.getRsa().isAuto() && properties.getRsa().getCustomPrivateKey() != null && properties.getRsa().getCustomPublicKey() != null) {
+            ScheduledFuture<?> schedule = TaskBuilder.schedule(AuKey::refreshKeyGroup, properties.getRsa().getRsaKeyRefreshWithPeriod());
             AuKey.setAuto(true);
             AuKey.setScheduledFuture(schedule);
         } else {
             AuKey.setAuto(false);
-            AuthzProperties.RSAConfig rsaConfig = properties.getRsaConfig();
+            AuthzProperties.RSAConfig rsaConfig = properties.getRsa();
             AuKey.setAuKeyPair(rsaConfig.getCustomPublicKey(), rsaConfig.getCustomPrivateKey());
         }
 
@@ -128,14 +123,19 @@ public class AuCoreInitialization implements ApplicationContextAware {
         TaskBuilder.schedule(Pelcron::GC, properties.getGcPeriod());
 
         AuInit.log.info("Started Authz  Message id: {}", Message.uuid);
+
+        VersionInfo.born();
     }
 
     private void initPermissionDict(ApplicationContext applicationContext, Map<RequestMappingInfo, HandlerMethod> mapRet) {
         PermissionDict.setPermSeparator(Constants.COMMA);
         Set<String>                                 toBeLoadedRoles = new HashSet<>();
         HashMap<String, Map<String, PermRolesMeta>> authzMetadata   = new HashMap<>();
+        HashMap<String, Map<String, IPRangeMeta>>   ipRangeMedata   = new HashMap<>();
         Map<String, PermRolesMeta>                  pMap            = new HashMap<>();
         Map<String, PermRolesMeta>                  rMap            = new HashMap<>();
+        Map<String, IPRangeMeta>                    iMap            = new HashMap<>();
+
         applicationContext.getBeansWithAnnotation(Perms.class).forEach((key, value) -> {
             pMap.put(value.getClass().getName(),
                     generatePermRolesMeta(AnnotationUtils.getAnnotation(value.getClass(), Perms.class), null));
@@ -146,11 +146,17 @@ public class AuCoreInitialization implements ApplicationContextAware {
                     generatePermRolesMeta(null, AnnotationUtils.getAnnotation(value.getClass(), Roles.class)));
         });
 
+        applicationContext.getBeansWithAnnotation(IPRangeLimit.class).forEach((key, value) -> {
+            IPRangeLimit ipRangeLimit = AnnotationUtils.getAnnotation(value.getClass(), IPRangeLimit.class);
+            iMap.put(value.getClass().getName(), new IPRangeMeta().setAllow(ipRangeLimit.allow()).setDeny(ipRangeLimit.deny()));
+        });
+
         mapRet.forEach((key, value) -> {
+            IPRangeMeta   iFc           = iMap.get(value.getBeanType().getName());
             PermRolesMeta pFc           = pMap.get(value.getBeanType().getName());
             PermRolesMeta rFc           = rMap.get(value.getBeanType().getName());
             PermRolesMeta permRolesMeta = generatePermRolesMeta(value.getMethodAnnotation(Perms.class), value.getMethodAnnotation(Roles.class));
-
+            IPRangeMeta   ipRangeMeta   = new IPRangeMeta();
             if (rFc != null) {
                 if (permRolesMeta.getRequireRoles() != null) {
                     permRolesMeta.getRequireRoles().addAll(rFc.getRequireRoles());
@@ -183,16 +189,36 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
                 key.getMethodsCondition().getMethods().forEach(method -> {
                     getPatterns(key).forEach(patternValue ->
-                            authzMetadata.computeIfAbsent(method.toString(), r -> new HashMap<>()).put(contextPath + patternValue, permRolesMeta)
+                            authzMetadata.computeIfAbsent(method.toString(), r -> new HashMap<>()).put(patternValue, permRolesMeta)
                     );
                 });
             }
+
+            if (iFc != null) {
+                ipRangeMeta.setAllow(iFc.getAllow());
+                ipRangeMeta.setDeny(iFc.getDeny());
+            }
+
+            IPRangeLimit ipRangeLimit = value.getMethodAnnotation(IPRangeLimit.class);
+            if (ipRangeLimit != null) {
+                ipRangeMeta.setAllow(ipRangeLimit.allow()).setDeny(ipRangeLimit.deny());
+                ipRangeMeta.getAllow().addAll(iFc.getAllow());
+                ipRangeMeta.getDeny().addAll(iFc.getDeny());
+            }
+            if (ipRangeMeta.getDeny() != null && !ipRangeMeta.getDeny().isEmpty() || ipRangeMeta.getAllow() != null && !ipRangeMeta.getAllow().isEmpty()) {
+                key.getMethodsCondition().getMethods().forEach(method -> {
+                    getPatterns(key).forEach(patternValue ->
+                            ipRangeMedata.computeIfAbsent(method.toString(), r -> new HashMap<>()).put(patternValue, ipRangeMeta)
+                    );
+                });
+            }
+
 
             // ------------- parameters init --------------- //
             key.getMethodsCondition().getMethods().forEach(method -> {
                 getPatterns(key).forEach(patternValue -> {
                     Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>> methodRawMap       = permissionDict.getRawMap().computeIfAbsent(method.toString(), r -> new HashMap<>());
-                    Map<ParamMetadata.ParamType, Map<String, Class<?>>>              rawParamTypeMapMap = methodRawMap.computeIfAbsent(contextPath + patternValue, r -> new HashMap<>());
+                    Map<ParamMetadata.ParamType, Map<String, Class<?>>>              rawParamTypeMapMap = methodRawMap.computeIfAbsent(patternValue, r -> new HashMap<>());
                     for (MethodParameter param : value.getMethodParameters()) {
                         Class<?> paramType = param.getParameter().getType();
                         if (ValueMatcher.checkType(paramType).isOther()) {
@@ -246,9 +272,9 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
                             if (type != null) {
                                 PermRolesMeta meta = authzMetadata.computeIfAbsent(method.toString(), r -> new HashMap<>())
-                                        .computeIfAbsent(contextPath + patternValue, r -> new PermRolesMeta());
+                                        .computeIfAbsent(patternValue, r -> new PermRolesMeta());
                                 meta.put(type, paramName,
-                                        new ParamMetadata(paramType,rolesMetaList,permsMetaList)
+                                        new ParamMetadata(paramType, rolesMetaList, permsMetaList)
                                 );
                             }
                         }
@@ -261,7 +287,10 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
         try {
             permissionDict.initAuthzMetadata(authzMetadata);
-
+            permissionDict.initIPRangeMeta(ipRangeMedata);
+            permissionDict.setGlobalAllow(IPRangeMeta.parse(properties.getGlobalIpRange().getAllow()));
+            permissionDict.setGlobalDeny(IPRangeMeta.parse(properties.getGlobalIpRange().getDeny()));
+            permissionDict.setSupportNative(properties.getGlobalIpRange().isSupportNative());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -371,7 +400,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
                 LimitMeta limitMeta = new LimitMeta(rateLimit.window(), rateLimit.maxRequests(), rateLimit.punishmentTime(), rateLimit.minInterval(), rateLimit.associatedPatterns(), rateLimit.bannedType());
                 methods.forEach(
                         method -> getPatterns(key).forEach(
-                                patternValue -> httpdLimitedMetaMap.computeIfAbsent(method.toString(), r -> new HashMap<>()).put(contextPath + patternValue, limitMeta))
+                                patternValue -> httpdLimitedMetaMap.computeIfAbsent(method.toString(), r -> new HashMap<>()).put(patternValue, limitMeta))
                 );
             } else {
                 methods.forEach(
@@ -382,7 +411,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
                                         LimitMeta limitMeta = cMap.get(value.getBeanType().getName());
                                         if (limitMeta != null)
                                             httpdLimitedMetaMap
-                                                    .computeIfAbsent(method.toString(), r -> new HashMap<>()).put(contextPath + patternValue, limitMeta);
+                                                    .computeIfAbsent(method.toString(), r -> new HashMap<>()).put(patternValue, limitMeta);
                                     });
                         });
             }
@@ -393,11 +422,12 @@ public class AuCoreInitialization implements ApplicationContextAware {
                     method -> {
                         getPatterns(key)
                                 .forEach(
-                                        patternValue -> requestPool.put(contextPath + patternValue, new Httpd.RequestPool()));
+                                        patternValue -> requestPool.put(patternValue, new Httpd.RequestPool()));
                         httpd.getRequestPools().computeIfAbsent(method.toString(), r -> new ConcurrentHashMap<>()).putAll(requestPool);
                     });
         });
 
+        httpd.setIgnoreSuffix(properties.getIgnoreSuffix());
     }
 
     private void initUserDevicesDict() {

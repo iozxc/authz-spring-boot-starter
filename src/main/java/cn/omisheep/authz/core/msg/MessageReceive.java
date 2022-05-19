@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core.msg;
 
 import cn.omisheep.authz.AuthzAutoConfiguration;
+import cn.omisheep.authz.core.VersionInfo;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.util.LogUtils;
@@ -36,6 +37,12 @@ public class MessageReceive {
             if (!RequestMessage.ignore(message)) {
                 LogUtils.logDebug("RequestMessage time: {} message: {}", TimeUtils.nowTime(), message);
                 httpd.receive(message);
+            }
+        } else if (oo instanceof VersionMessage) {
+            VersionMessage message = (VersionMessage) oo;
+            if (!VersionMessage.ignore(message)) {
+                LogUtils.logDebug("VersionMessage time: {} message: {}", TimeUtils.nowTime(), message);
+                VersionInfo.receive(message);
             }
         }
     }

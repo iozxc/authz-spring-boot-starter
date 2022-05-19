@@ -28,14 +28,14 @@ public class CheckerSlot implements Slot {
 
     @Override
     public boolean chain(HttpMeta httpMeta, HandlerMethod handler) {
-        if (httpMeta == null || httpMeta.isMethod(OPTIONS)) return false;
+        if (httpMeta == null || httpMeta.isMethod(OPTIONS) || httpMeta.isIgnore()) return false;
         AuthzException exception = ExceptionUtils.get(httpMeta.getRequest());
         if (exception != null) return false;
         return requireProtect(httpMeta.getMethod(), httpMeta.getApi());
     }
 
     private boolean requireProtect(String method, String api) {
-        Map<String, PermRolesMeta> map = permissionDict.getAuthzMetadata().get(method);
+        Map<String, PermRolesMeta> map = permissionDict.getRolePermission().get(method);
         if (map == null) return false;
         return map.get(api) != null;
     }

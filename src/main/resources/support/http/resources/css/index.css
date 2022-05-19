@@ -34,11 +34,11 @@ body {
     /*-webkit-flex-direction: column;*/
     /*-ms-flex-direction: column;*/
     /*flex-direction: column;*/
-    background-color: rgba(0,0,0,0);
+    background-color: rgba(0, 0, 0, 0);
 }
 
 html {
-    background: url(http://cdn.magdeleine.co/wp-content/uploads/2014/05/3jPYgeVCTWCMqjtb7Dqi_IMG_8251-1400x933.jpg) no-repeat center center fixed;
+    background: url('../img/bg.jpg') no-repeat center center fixed;
     -webkit-background-size: cover;
     -moz-background-size: cover;
     -o-background-size: cover;
@@ -81,7 +81,7 @@ html {
 }
 
 .sidebar .json_tree {
-    max-height: 200px;
+    max-height: 300px;
     overflow: auto;
 }
 
@@ -318,14 +318,14 @@ section {
     margin-top: 5vh;
 }
 
-#response_wrap{
+#response_wrap {
     text-align: left;
     overflow: auto;
     word-break: break-all;
     line-break: anywhere;
 }
 
-.action_block,.step_num {
+.action_block, .step_num {
     user-select: none;
 }
 
@@ -334,10 +334,12 @@ section {
     font-family: 'PT Mono', monospace;
     font-size: 12px !important;
 }
+
 .bg-light {
-    background-color: rgba(248,249,250,0.95) !important;
+    background-color: rgba(248, 249, 250, 0.95) !important;
 }
-.row{
+
+.row {
     margin-right: -30px;
     margin-left: -30px;
 }
@@ -347,4 +349,28 @@ section {
     display: none;
     margin-left: 25px !important;
     line-height: 1.7 !important;
+}
+
+#status {
+    display: none;
+}
+
+#status::before {
+    content: "";
+    display: inline-block;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    margin-top: -0.2rem;
+    vertical-align: middle;
+    background: currentColor;
+}
+
+.fail {
+    color: rgb(210, 44, 50);
+}
+
+.success {
+    color: rgb(46, 179, 90);
 }

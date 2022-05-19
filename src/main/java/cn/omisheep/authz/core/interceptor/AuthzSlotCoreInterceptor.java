@@ -43,7 +43,7 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        HttpMeta       httpMeta      = (HttpMeta) request.getAttribute(HTTP_META);
+        HttpMeta httpMeta = (HttpMeta) request.getAttribute(HTTP_META);
         AuthzException httpException = httpMeta.getAuthzException();
         if (httpException != null) {
             LogUtils.exportLogsFromRequest(request);

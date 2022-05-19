@@ -2,10 +2,13 @@ package cn.omisheep.authz.support.http;
 
 import cn.omisheep.authz.core.Authz;
 import cn.omisheep.authz.core.Constants;
+import cn.omisheep.authz.core.VersionInfo;
 import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
+import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.support.util.IPAddress;
 import cn.omisheep.authz.support.util.IPRange;
+import cn.omisheep.authz.support.util.IPRangeMeta;
 import cn.omisheep.authz.support.util.Utils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -38,22 +41,32 @@ public class SupportServlet extends HttpServlet {
     public static final String PARAM_NAME_DENY     = "deny";
     public static final String PARAM_REMOTE_ADDR   = "remoteAddress";
 
-    protected String username = "zxc";
-    protected String password = "zxc";
+    protected String username = null;
+    protected String password = null;
 
     protected List<IPRange> allowList = new ArrayList<>();
     protected List<IPRange> denyList  = new ArrayList<>();
 
     protected final String resourcePath;
 
+    protected String mappings;
     protected String remoteAddressHeader = null;
+    protected String baseMapping         = "";
 
-    public SupportServlet(String resourcePath) {
+    public SupportServlet(String resourcePath, String mappings) {
         this.resourcePath = resourcePath;
+        this.mappings     = mappings;
     }
 
     public void init() throws ServletException {
         initAuthEnv();
+
+        String val = mappings.substring(0, mappings.indexOf("/*"));
+        if (!mappings.startsWith("/")) {
+            baseMapping = val;
+        } else {
+            baseMapping = val.substring(1);
+        }
     }
 
     private void initAuthEnv() {
@@ -73,40 +86,14 @@ public class SupportServlet extends HttpServlet {
         }
 
         try {
-            String param = getInitParameter(PARAM_NAME_ALLOW);
-            if (param != null && param.trim().length() != 0) {
-                param = param.trim();
-                String[] items = param.split(",");
-
-                for (String item : items) {
-                    if (item == null || item.length() == 0) {
-                        continue;
-                    }
-
-                    IPRange ipRange = new IPRange(item);
-                    allowList.add(ipRange);
-                }
-            }
+            allowList.addAll(IPRangeMeta.parse(getInitParameter(PARAM_NAME_ALLOW)));
         } catch (Exception e) {
             String msg = "initParameter config error, allow : " + getInitParameter(PARAM_NAME_ALLOW);
             log.error(msg, e);
         }
 
         try {
-            String param = getInitParameter(PARAM_NAME_DENY);
-            if (param != null && param.trim().length() != 0) {
-                param = param.trim();
-                String[] items = param.split(",");
-
-                for (String item : items) {
-                    if (item == null || item.length() == 0) {
-                        continue;
-                    }
-
-                    IPRange ipRange = new IPRange(item);
-                    denyList.add(ipRange);
-                }
-            }
+            denyList.addAll(IPRangeMeta.parse(getInitParameter(PARAM_NAME_DENY)));
         } catch (Exception e) {
             String msg = "initParameter config error, deny : " + getInitParameter(PARAM_NAME_DENY);
             log.error(msg, e);
@@ -172,10 +159,10 @@ public class SupportServlet extends HttpServlet {
                 return;
             }
             if (contextPath.equals("") || contextPath.equals("/")) {
-                response.sendRedirect("/authz-dashboard/login.html");
+                response.sendRedirect("/" + baseMapping + "/login.html");
             } else {
                 if ("".equals(path)) {
-                    response.sendRedirect("authz-dashboard/login.html");
+                    response.sendRedirect(baseMapping + "/login.html");
                 } else {
                     response.sendRedirect("login.html");
                 }
@@ -185,9 +172,9 @@ public class SupportServlet extends HttpServlet {
 
         if ("".equals(path)) {
             if (contextPath.equals("") || contextPath.equals("/")) {
-                response.sendRedirect("/authz-dashboard/index.html");
+                response.sendRedirect("/" + baseMapping + "/index.html");
             } else {
-                response.sendRedirect("authz-dashboard/index.html");
+                response.sendRedirect(baseMapping + "/index.html");
             }
             return;
         }
@@ -223,15 +210,19 @@ public class SupportServlet extends HttpServlet {
     protected void interpretation(String api, HttpServletRequest request, HttpServletResponse response) throws IOException {
         HttpMeta httpMeta = (HttpMeta) request.getAttribute(Constants.HTTP_META);
         response.setContentType("application/json;charset=utf-8");
+
         if ("/modify".equals(api)) {
             AuthzModifier authzModifier = JSON.parseObject(httpMeta.getBody(), AuthzModifier.class);
-            Object res = Authz.operate(authzModifier);
+            Object        res           = Authz.operate(authzModifier);
             if (res != null) {
                 response.getWriter().println(JSON.toJSONString(res));
                 return;
             }
             response.getWriter().println("");
+        } else if ("/info".equals(api)) {
+            response.getWriter().println(JSON.toJSONString(VersionInfo.getVersion()));
         }
+
     }
 
     protected void returnResourceFile(String fileName, String uri, HttpServletResponse response)
@@ -244,7 +235,7 @@ public class SupportServlet extends HttpServlet {
         }
 
 
-        if (fileName.endsWith(".jpg") || fileName.endsWith(".png")) {
+        if (AUtils.isIgnoreSuffix(fileName, ".jpg", ".png", ".gif")) {
             byte[] bytes = Utils.readByteArrayFromResource(filePath);
             if (bytes != null) {
                 response.getOutputStream().write(bytes);
@@ -261,6 +252,8 @@ public class SupportServlet extends HttpServlet {
             response.setContentType("text/css;charset=utf-8");
         } else if (fileName.endsWith(".js")) {
             response.setContentType("text/javascript;charset=utf-8");
+        } else if (fileName.endsWith(".svg")) {
+            response.setContentType("image/svg+xml");
         }
         response.getWriter().write(text);
     }

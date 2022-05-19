@@ -65,7 +65,7 @@ public class DataSecurityInterceptorForMybatis implements Interceptor {
                 StatementHandler   rsh              = (StatementHandler) target;
                 BoundSql           boundSql         = rsh.getBoundSql();
                 Class<?>           type             = resultMap.getType();
-                List<DataPermMeta> dataPermMetaList = permissionDict.getDataPermMetadata().get(type.getTypeName());
+                List<DataPermMeta> dataPermMetaList = permissionDict.getDataPermission().get(type.getTypeName());
                 String             change           = dataFinderSecurityInterceptor.sqlChange(AUtils.getCurrentHttpMeta(), permLibrary, dataPermMetaList, type, boundSql.getSql());
                 ReflectUtils.setFieldValue(boundSql, "sql", change);
             } catch (Exception e) {
@@ -77,7 +77,7 @@ public class DataSecurityInterceptorForMybatis implements Interceptor {
         Object   obj  = invocation.proceed();
         Class<?> type = resultMapThreadLocal.get().getType();
         if (obj instanceof Collection || obj.getClass().equals(type)) {
-            Map<String, FieldData> fieldDataMap = permissionDict.getFieldMetadata().get(type.getTypeName());
+            Map<String, FieldData> fieldDataMap = permissionDict.getFieldsData().get(type.getTypeName());
             obj = dataFinderSecurityInterceptor.dataTrim(AUtils.getCurrentHttpMeta(), permLibrary, fieldDataMap, type, obj);
         }
 

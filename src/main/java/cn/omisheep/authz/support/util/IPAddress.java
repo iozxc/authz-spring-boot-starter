@@ -9,11 +9,13 @@ import java.util.NoSuchElementException;
 public class IPAddress implements Cloneable {
 
     /** IP address */
-    protected int ipAddress = 0;
+    protected int    ipAddress = 0;
+    protected String ipAddressStr;
 
     public IPAddress(String ipAddressStr) {
         try {
-            ipAddress = parseIPAddress(ipAddressStr);
+            this.ipAddressStr = ipAddressStr;
+            ipAddress         = parseIPAddress(ipAddressStr);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -26,12 +28,12 @@ public class IPAddress implements Cloneable {
     // -------------------------------------------------------------------------
 
     /**
-     * Return the integer representation of the IP address.
+     * Return the String representation of the IP address.
      *
      * @return The IP address.
      */
-    public final int getIPAddress() {
-        return ipAddress;
+    public final String getIpAddress() {
+        return ipAddressStr;
     }
 
     // -------------------------------------------------------------------------

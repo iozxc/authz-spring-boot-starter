@@ -1,5 +1,7 @@
 package cn.omisheep.authz.support.util;
 
+import com.google.common.base.Objects;
+
 /**
  * This class represents an IP Range, which are represented by an IP address and and a subnet mask. The standards
  * describing modern routing protocols often refer to the extended-network-prefix-length rather than the subnet mask.
@@ -130,7 +132,7 @@ public class IPRange {
     private int computeNetworkPrefixFromMask(IPAddress mask) {
 
         int result = 0;
-        int tmp    = mask.getIPAddress();
+        int tmp    = mask.ipAddress;
 
         while ((tmp & 0x00000001) == 0x00000001) {
             result++;
@@ -202,10 +204,22 @@ public class IPRange {
             return this.ipAddress.equals(address);
         }
 
-        int result1 = address.getIPAddress() & ipSubnetMask.getIPAddress();
-        int result2 = ipAddress.getIPAddress() & ipSubnetMask.getIPAddress();
+        int result1 = address.ipAddress & ipSubnetMask.ipAddress;
+        int result2 = ipAddress.ipAddress & ipSubnetMask.ipAddress;
 
         return result1 == result2;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof IPRange)) return false;
+        IPRange ipRange = (IPRange) o;
+        return getExtendedNetworkPrefix() == ipRange.getExtendedNetworkPrefix() && Objects.equal(ipAddress, ipRange.ipAddress) && Objects.equal(ipSubnetMask, ipRange.ipSubnetMask);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(ipAddress, ipSubnetMask, getExtendedNetworkPrefix());
+    }
 }

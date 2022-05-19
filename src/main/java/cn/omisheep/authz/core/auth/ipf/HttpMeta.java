@@ -31,6 +31,7 @@ public class HttpMeta {
     private final String             ip;
     private final String             uri;
     private final String             api;
+    private       String             servletPath;
     private final String             method;
     private final String             userAgent;
     private final String             refer;
@@ -43,6 +44,7 @@ public class HttpMeta {
     private       AuthzException     authzException;
     private       Set<String>        roles;
     private       Set<String>        permissions;
+    private       boolean            ignore = false;
 
     public HttpMeta setRoles(Set<String> roles) {
         if (roles == null) return this;

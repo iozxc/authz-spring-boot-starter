@@ -23,9 +23,11 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static cn.omisheep.authz.core.Constants.HTTP_META;
 import static cn.omisheep.authz.core.auth.ipf.Httpd.antPathMatcher;
+import static cn.omisheep.authz.core.util.AUtils.isIgnoreSuffix;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -36,10 +38,19 @@ import static cn.omisheep.authz.core.auth.ipf.Httpd.antPathMatcher;
 @SuppressWarnings("all")
 public class AuthzHttpFilter extends OncePerRequestFilter {
 
-    private final Httpd httpd;
+    private final Httpd   httpd;
+    private final boolean isDashboard;
+    private final String  mappings;
 
-    public AuthzHttpFilter(Httpd httpd) {
-        this.httpd = httpd;
+    public AuthzHttpFilter(Httpd httpd, boolean isDashboard, String mappings) {
+        this.httpd       = httpd;
+        this.isDashboard = isDashboard;
+        String val = mappings.substring(0, mappings.indexOf("/*"));
+        if (!mappings.startsWith("/")) {
+            this.mappings = "/" + val;
+        } else {
+            this.mappings = val;
+        }
     }
 
     @Override
@@ -47,26 +58,47 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
                                  HttpServletResponse response,
                                  FilterChain filterChain) throws ServletException, IOException {
         HttpServletRequest request = new BufferedServletRequestWrapper(rrequest);
-        String             ip      = getIp(request);
-        String             uri     = request.getRequestURI();
-        String             method  = request.getMethod();
-        long               now     = new Date().getTime();
+
+        String ip          = getIp(request);
+        String uri         = request.getRequestURI();
+        String method      = request.getMethod();
+        long   now         = new Date().getTime();
+        String servletPath = request.getServletPath();
 
         HttpUtils.request.set(request);
 
-        String api = execLimit(now, ip, uri, method);
+        if (isIgnoreSuffix(uri, httpd.getIgnoreSuffix()) || (isDashboard && uri.startsWith(mappings))) {
+            HttpMeta httpMeta = new HttpMeta(
+                    request,
+                    ip, uri, servletPath, method, new Date()).error(ExceptionUtils.pop(request));
+            httpMeta.setIgnore(true);
+            request.setAttribute(HTTP_META, httpMeta);
+            httpMeta.setServletPath(servletPath);
+            filterChain.doFilter(request, response);
+            return;
+        }
 
+        String api = null;
+        try {
+            api = execLimit(now, ip, servletPath, method);
+        } catch (Exception e) {
+            // skip
+            ExceptionUtils.error(ExceptionStatus.UNKNOWN);
+        }
+
+        if (api == null) api = servletPath;
         HttpMeta httpMeta = new HttpMeta(
                 request,
-                ip, uri, api, method, new Date()).error(ExceptionUtils.clear(request));
-        request.setAttribute(HTTP_META, httpMeta);
+                ip, uri, api, method, new Date()).error(ExceptionUtils.pop(request));
 
-        Async.run(() -> RedisUtils.publish(RequestMessage.CHANNEL, new RequestMessage(method, api, ip, now, null)));
+        httpMeta.setServletPath(servletPath);
+        request.setAttribute(HTTP_META, httpMeta);
+        Async.run(() -> RedisUtils.publish(RequestMessage.CHANNEL, new RequestMessage(method, httpMeta.getApi(), ip, now, null)));
 
         filterChain.doFilter(request, response);
     }
 
-    private String execLimit(long now, String ip, String uri, String method) throws IOException {
+    private String execLimit(long now, String ip, String servletPath, String method) throws IOException {
         HashSet<RequestMeta>        ipBlacklist            = httpd.getIpBlacklist();
         CountingBloomFilter<String> ipBlacklistBloomFilter = httpd.getIpBlacklistBloomFilter();
 
@@ -76,7 +108,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
                     .filter(_ipMeta -> _ipMeta.getIp().equals(ip)).findFirst().orElse(null);
             if (orElse != null && orElse.isBan()) { // 若存在且确实是被禁止了。则
                 if (!orElse.enableRelive(now)) {
-                    LogUtils.pushLogToRequest("「请求频繁ip封锁(拒绝)」 \t距上次访问: [{}] , method: [{}] , ip : [{}] , uri: [{}]  ", orElse.sinceLastTime(), method, ip, uri);
+                    LogUtils.pushLogToRequest("「请求频繁ip封锁(拒绝)」 \t距上次访问: [{}] , method: [{}] , ip : [{}] , servletPath: [{}]  ", orElse.sinceLastTime(), method, ip, servletPath);
                     ExceptionUtils.error(ExceptionStatus.REQUEST_REPEAT);
                     return null;
                 } else {
@@ -89,43 +121,50 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
         }
 
         // 局部api黑名单过滤
-        for (Map.Entry<String, Httpd.RequestPool> entry : httpd.getRequestPools().get(method).entrySet()) {
-            if (antPathMatcher.match(entry.getKey(), uri)) {
+        ConcurrentHashMap<String, Httpd.RequestPool> map = httpd.getRequestPools().get(method);
+        if (map == null) {
+            LogUtils.pushLogToRequest("「普通访问(uri不存在)」 \tmethod: [{}] , ip : [{}] , servletPath: [{}]   ", method, ip, servletPath);
+            ExceptionUtils.error(ExceptionStatus.MISMATCHED_URL);
+            return null;
+        }
+
+        for (Map.Entry<String, Httpd.RequestPool> entry : map.entrySet()) {
+            if (antPathMatcher.match(entry.getKey(), servletPath)) {
                 LimitMeta limitMeta = null;
 
                 try {
                     limitMeta = httpd.getRateLimitMetadata().get(method).get(entry.getKey());
                 } catch (NullPointerException e) {
-                    LogUtils.pushLogToRequest("「普通访问」 \tmethod: [{}] , ip : [{}] , uri: [{}]   ", method, ip, uri);
+                    LogUtils.pushLogToRequest("「普通访问」 \tmethod: [{}] , ip : [{}] , servletPath: [{}]   ", method, ip, servletPath);
                     return entry.getKey();
                 }
 
                 if (limitMeta == null) {
-                    LogUtils.pushLogToRequest("「普通访问」 \tmethod: [{}] , ip : [{}] , uri: [{}]   ", method, ip, uri);
+                    LogUtils.pushLogToRequest("「普通访问」 \tmethod: [{}] , ip : [{}] , servletPath: [{}]   ", method, ip, servletPath);
                     return entry.getKey();
                 }
 
                 RequestMeta ipMeta = entry.getValue().get(ip);
                 if (ipMeta == null) {
                     entry.getValue().put(ip, new RequestMeta(now, ip));
-                    LogUtils.pushLogToRequest("「普通访问(首次)」 \tmethod: [{}] , ip : [{}] , uri: [{}]  ", method, ip, uri);
+                    LogUtils.pushLogToRequest("「普通访问(首次)」 \tmethod: [{}] , ip : [{}] , servletPath: [{}]  ", method, ip, servletPath);
                 } else {
                     if (ipMeta.isBan()) {
                         if (!ipMeta.enableRelive(now)) {
-                            LogUtils.pushLogToRequest(LogLevel.WARN, "「请求频繁(拒绝)」 \t距上次访问: [{}] , method: [{}] , ip : [{}] , uri: [{}]  ", ipMeta.sinceLastTime(), method, ip, uri);
+                            LogUtils.pushLogToRequest(LogLevel.WARN, "「请求频繁(拒绝)」 \t距上次访问: [{}] , method: [{}] , ip : [{}] , servletPath: [{}]  ", ipMeta.sinceLastTime(), method, ip, servletPath);
                             ExceptionUtils.error(ExceptionStatus.REQUEST_REPEAT);
                             ipMeta.setLastRequestTime(now);
                             return null;
                         } else {
-                            LogUtils.pushLogToRequest("「解除封禁(解封)」  \tmethod: [{}] , ip : [{}] , uri: [{}]  ", method, ip, uri);
+                            LogUtils.pushLogToRequest("「解除封禁(解封)」  \tmethod: [{}] , ip : [{}] , servletPath: [{}]  ", method, ip, servletPath);
                             httpd.relive(ipMeta, limitMeta);
                         }
                     }
                     if (ipMeta.request(now, limitMeta.getMaxRequests(), limitMeta.getWindow(), limitMeta.getMinInterval())) {
-                        LogUtils.pushLogToRequest("「普通访问(正常)」\t距上次访问: [{}] , method: [{}] , ip : [{}] , uri: [{}]  ", ipMeta.sinceLastTime(), method, ip, uri);
+                        LogUtils.pushLogToRequest("「普通访问(正常)」\t距上次访问: [{}] , method: [{}] , ip : [{}] , servletPath: [{}]  ", ipMeta.sinceLastTime(), method, ip, servletPath);
                     } else {
                         httpd.forbid(now, ipMeta, limitMeta);
-                        LogUtils.pushLogToRequest(LogLevel.WARN, "「请求频繁(封禁)」 \t距上次访问: [{}] , method: [{}] , ip : [{}] , uri: [{}]  ", ipMeta.sinceLastTime(), method, ip, uri);
+                        LogUtils.pushLogToRequest(LogLevel.WARN, "「请求频繁(封禁)」 \t距上次访问: [{}] , method: [{}] , ip : [{}] , servletPath: [{}]  ", ipMeta.sinceLastTime(), method, ip, servletPath);
                         ExceptionUtils.error(ExceptionStatus.REQUEST_REPEAT);
                         if (BannedType.IP.equals(limitMeta.getBannedType())) {
                             ipBlacklist.add(ipMeta); // 若是封锁ip，则添加到ipBlacklist中，在第一层ip过滤时则会将其拦下
@@ -139,7 +178,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
             }
         }
 
-        LogUtils.pushLogToRequest("「普通访问(uri不存在)」 \tmethod: [{}] , ip : [{}] , uri: [{}]   ", method, ip, uri);
+        LogUtils.pushLogToRequest("「普通访问(uri不存在)」 \tmethod: [{}] , ip : [{}] , servletPath: [{}]   ", method, ip, servletPath);
         ExceptionUtils.error(ExceptionStatus.MISMATCHED_URL);
         return null;
     }

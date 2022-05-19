@@ -40,7 +40,7 @@ public class ExceptionUtils {
         }
     }
 
-    public static AuthzException clear(HttpServletRequest request) {
+    public static AuthzException pop(HttpServletRequest request) {
         AuthzException authzException = get(request);
         request.removeAttribute(AUTHZ_EXCEPTION);
         return authzException;

@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core.msg;
 
+import cn.omisheep.authz.core.VersionInfo;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -14,10 +15,11 @@ import java.util.function.Consumer;
 @Accessors(chain = true)
 public class RequestMessage implements Message {
 
-    public static String APP_NAME;
+
     public static String CHANNEL;
     private       String id      = Message.uuid;
     private       String context = CHANNEL;
+
     private       String method;
     private       String api;
     private       String ip;
@@ -40,7 +42,7 @@ public class RequestMessage implements Message {
     }
 
     public static Consumer<String> c = (s) -> {
-        APP_NAME = s;
-        CHANNEL  = "AU_CONTEXT_CLOUD_APP_ID:" + s;
+        VersionInfo.APP_NAME = s;
+        CHANNEL              = "AU_CONTEXT_CLOUD_APP_ID:" + s;
     };
 }

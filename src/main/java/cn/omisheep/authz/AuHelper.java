@@ -367,7 +367,7 @@ public class AuHelper {
      *     "api": "/test/role-ada",
      *     "role": {
      *         "require": ["admin","zxc"],
-     *         "exclude": ["small-black,dog", cat","apple"]
+     *         "exclude": ["small-black,dog", "cat","apple"]
      *     },
      *     "permission": {
      *         ...
@@ -451,7 +451,7 @@ public class AuHelper {
      * 3、删除第2个,index从0开始
      * {
      *     "operate": "del",
-     *     "target": "path_variable_role",
+     *     "target": "path",
      *     "method": "get",
      *     "api": "/test/role-ada/{name}",
      *     "value": "name",
@@ -460,7 +460,7 @@ public class AuHelper {
      * 3、修改第2个,index从0开始
      * 让'小学生'可以查看坏苹果
      * {
-     *     "operate": "del",
+     *     "operate": "modify",
      *     "target": "path_variable_role",
      *     "method": "get",
      *     "api": "/test/role-ada/{name}",

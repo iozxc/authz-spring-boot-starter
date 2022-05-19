@@ -15,10 +15,11 @@ import org.springframework.web.method.HandlerMethod;
  * <p>
  * (1) CookieAndRequestSlot(0)
  * (2) CheckerSlot(1)
- * (3) DeviceSlot(10)
- * (4) APIPermSlot(30)
- * (5) ParameterPermSlot(40)
- * (6) LogSlot(Int:max)
+ * (3) IPRangeSlot(3)
+ * (4) DeviceSlot(10)
+ * (5) APIPermSlot(30)
+ * (6) ParameterPermSlot(40)
+ * (7) LogSlot(Int:max)
  *
  * @author zhouxinchen[1269670415@qq.com]
  * @version 1.0.0

@@ -2,6 +2,7 @@ package cn.omisheep.authz;
 
 
 import cn.omisheep.authz.core.AuthzProperties;
+import cn.omisheep.authz.core.VersionInfo;
 import cn.omisheep.authz.core.auth.DefaultPermLibrary;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
@@ -22,6 +23,7 @@ import cn.omisheep.authz.core.interceptor.mybatis.DataSecurityInterceptorForMyba
 import cn.omisheep.authz.core.msg.CacheMessage;
 import cn.omisheep.authz.core.msg.MessageReceive;
 import cn.omisheep.authz.core.msg.RequestMessage;
+import cn.omisheep.authz.core.msg.VersionMessage;
 import cn.omisheep.authz.support.http.SupportServlet;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
@@ -53,6 +55,8 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 
 
@@ -67,6 +71,35 @@ import java.util.HashMap;
 @Import({AuInit.class})
 @SuppressWarnings("rawtypes")
 public class AuthzAutoConfiguration {
+
+
+    @Autowired
+    private void init(ConfigurableEnvironment environment) {
+        String name = environment.getProperty("spring.application.name");
+        RequestMessage.c.accept(StringUtils.hasText(name) ? name : "application");
+        VersionMessage.CHANNEL = "AU_MODIFY_ID:" + VersionInfo.APP_NAME;
+
+        // 获取app的 访问地址
+        //environment.getProperty("server.servlet.context-path") 应用的上下文路径，也可以称为项目路径
+        String host;
+        try {
+            host = InetAddress.getLocalHost().getHostAddress();
+        } catch (UnknownHostException e) {
+            // skip
+            host = "localhost";
+        }
+        String port = environment.getProperty("server.port");
+        String path = environment.getProperty("server.servlet.context-path");
+        if (!StringUtils.hasText(path)) {
+            path = "";
+        }
+        String prefix = cn.omisheep.commons.util.StringUtils.format("http://{}:{}{}", host, port, path);
+
+        VersionInfo.host   = host;
+        VersionInfo.port   = port;
+        VersionInfo.path   = path;
+        VersionInfo.prefix = prefix;
+    }
 
     @Configuration
     @EnableConfigurationProperties(RedisProperties.class)
@@ -132,10 +165,10 @@ public class AuthzAutoConfiguration {
             return new MessageListenerAdapter(receiver);
         }
 
-        @Autowired
-        private void getApplicationId(ConfigurableEnvironment environment) {
-            String name = environment.getProperty("spring.application.name");
-            RequestMessage.c.accept(StringUtils.hasText(name) ? name : "application");
+        @Bean("authzVersionMessageListenerAdapter")
+        @ConditionalOnBean(value = MessageReceive.class, name = "authzCacheMessageReceive")
+        public MessageListenerAdapter authzVersionMessageListenerAdapter(@Qualifier("authzCacheMessageReceive") MessageReceive receiver) {
+            return new MessageListenerAdapter(receiver);
         }
 
         @Bean("auCacheRedisMessageListenerContainer")
@@ -143,7 +176,8 @@ public class AuthzAutoConfiguration {
         public RedisMessageListenerContainer container(@Qualifier("authzRedisTemplate") RedisTemplate redisTemplate,
                                                        RedisConnectionFactory connectionFactory,
                                                        @Qualifier("authzCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter1,
-                                                       @Qualifier("authzRequestCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter2
+                                                       @Qualifier("authzRequestCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter2,
+                                                       @Qualifier("authzVersionMessageListenerAdapter") MessageListenerAdapter listenerAdapter3
         ) {
             try {
                 redisTemplate.execute((RedisCallback<Object>) RedisConnectionCommands::ping);
@@ -153,7 +187,8 @@ public class AuthzAutoConfiguration {
             RedisMessageListenerContainer container = new RedisMessageListenerContainer();
             container.setConnectionFactory(connectionFactory);
             container.addMessageListener(listenerAdapter1, new PatternTopic(CacheMessage.CHANNEL));
-            container.addMessageListener(listenerAdapter2, new PatternTopic(RequestMessage.CHANNEL)); //  (+) request 同步
+            container.addMessageListener(listenerAdapter2, new PatternTopic(RequestMessage.CHANNEL)); //  request 同步
+            container.addMessageListener(listenerAdapter3, new PatternTopic(VersionMessage.CHANNEL)); //  version 同步
             container.setTopicSerializer(jackson2JsonRedisSerializer);
             return container;
         }
@@ -219,9 +254,9 @@ public class AuthzAutoConfiguration {
     }
 
     @Bean("AuthzHttpFilter")
-    public FilterRegistrationBean<AuthzHttpFilter> filterRegistrationBean(Httpd httpd) {
+    public FilterRegistrationBean<AuthzHttpFilter> filterRegistrationBean(Httpd httpd, AuthzProperties properties) {
         FilterRegistrationBean<AuthzHttpFilter> registration = new FilterRegistrationBean<>();
-        registration.setFilter(new AuthzHttpFilter(httpd));
+        registration.setFilter(new AuthzHttpFilter(httpd, properties.getDashboard().isEnabled(), properties.getDashboard().getMappings()));
         registration.addUrlPatterns("/*");
         registration.setName("authzFilter");
         registration.setOrder(1);
@@ -249,24 +284,34 @@ public class AuthzAutoConfiguration {
         public DataFinderSecurityInterceptor dataFinderSecurityInterceptor() {
             return new DefaultDataSecurityInterceptor();
         }
-
     }
 
 
-    // 后台监控
+    // dashboard
     @Bean
-    public ServletRegistrationBean StatViewServlet() {
-        ServletRegistrationBean<SupportServlet> bean = new ServletRegistrationBean<>(new SupportServlet("support/http/resources"), "/authz-dashboard/*");
+    @ConditionalOnProperty(name = "authz.dashboard.enabled", havingValue = "true")
+    public ServletRegistrationBean DashboardServlet(AuthzProperties properties) {
+        AuthzProperties.DashboardConfig dashboard = properties.getDashboard();
+        ServletRegistrationBean<SupportServlet> bean =
+                new ServletRegistrationBean<>(
+                        new SupportServlet("support/http/resources", dashboard.getMappings()
+                        ),
+                        dashboard.getMappings()
+                );
 
         HashMap<String, String> initParameters = new HashMap<>();
 
-        initParameters.put("loginUsername", "admin");
-        initParameters.put("loginPassword", "123456");
-        initParameters.put("allow", "");
+        initParameters.put("username", dashboard.getUsername());
+        initParameters.put("password", dashboard.getPassword());
+        initParameters.put("allow", dashboard.getAllow());
+        initParameters.put("deny", dashboard.getDeny());
+        initParameters.put("remoteAddress", dashboard.getRemoteAddress());
+        initParameters.entrySet().removeIf(e -> e.getValue() == null);
 
         // 后台需要有人登录
         bean.setInitParameters(initParameters);
         return bean;
     }
+
 
 }

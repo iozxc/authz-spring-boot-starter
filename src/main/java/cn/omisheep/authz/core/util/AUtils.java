@@ -66,5 +66,12 @@ public class AUtils implements ApplicationContextAware {
         return currentHttpMeta;
     }
 
+    public static boolean isIgnoreSuffix(String uri, String... suffix) {
+        for (String s : suffix) {
+            if (uri.endsWith(s)) return true;
+        }
+        return false;
+    }
+
 
 }

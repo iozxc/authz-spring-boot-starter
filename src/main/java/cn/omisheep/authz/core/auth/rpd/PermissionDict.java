@@ -4,12 +4,15 @@ import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.init.AuInit;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
+import cn.omisheep.authz.support.util.IPRange;
+import cn.omisheep.authz.support.util.IPRangeMeta;
 import cn.omisheep.web.entity.Result;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.base.Objects;
 import com.sun.javafx.collections.ObservableMapWrapper;
 import com.sun.javafx.collections.UnmodifiableObservableMap;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
@@ -35,6 +38,15 @@ public class PermissionDict {
         return SELF;
     }
 
+    @Setter
+    private static HashSet<IPRange> globalAllow;
+
+    @Setter
+    private static HashSet<IPRange> globalDeny;
+
+    @Setter
+    private static boolean supportNative;
+
     private static Map<String, Map<String, PermRolesMeta>> authzMetadata; // api权限和api的参数权限
 
     private static Map<String, ArgsMeta> argsMetadata; // args
@@ -42,6 +54,8 @@ public class PermissionDict {
     private static Map<String, List<DataPermMeta>> dataPermMetadata; // 数据行权限
 
     private static Map<String, Map<String, FieldData>> fieldMetadata; // 数据列权限
+
+    private static Map<String, Map<String, IPRangeMeta>> ipRangeMeta;
 
     private static final Map<String, Map<String, String>> authzResourcesNameAndTemplate = new HashMap<>();
 
@@ -59,30 +73,43 @@ public class PermissionDict {
     private static       Map<String, ArgsMeta>                                                         m5;
     private static final Map<String, Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>>> m6 =
             new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(rawMap));
+    private static       Map<String, Map<String, IPRangeMeta>>                                         m7;
 
-    public Map<String, Map<String, PermRolesMeta>> getAuthzMetadata() {
+    public boolean isSupportNative() {
+        return PermissionDict.supportNative;
+    }
+
+    public Map<String, Map<String, PermRolesMeta>> getRolePermission() {
         return m1;
     }
 
-    public Map<String, Map<String, String>> getAuthzResourcesNameAndTemplate() {
+    public Map<String, Map<String, String>> getResourcesNameAndTemplate() {
         return m2;
     }
 
-    public Map<String, List<DataPermMeta>> getDataPermMetadata() {
+    public Map<String, List<DataPermMeta>> getDataPermission() {
         return m3;
     }
 
-    public Map<String, Map<String, FieldData>> getFieldMetadata() {
+    public Map<String, Map<String, FieldData>> getFieldsData() {
         return m4;
     }
 
-    public Map<String, ArgsMeta> getArgsMetadata() {
+    public Map<String, ArgsMeta> getArgs() {
         return m5;
     }
 
     public Map<String, Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>>> getRawParamMap() {
         return m6;
     }
+
+    public Map<String, Map<String, IPRangeMeta>> getIPRange() {
+        return m7;
+    }
+
+    public HashSet<IPRange> getGlobalAllow() {return globalAllow;}
+
+    public HashSet<IPRange> getGlobalDeny()  {return globalDeny;}
 
     @Getter
     public static class ArgsMeta {
@@ -146,6 +173,8 @@ public class PermissionDict {
             switch (authzModifier.getTarget()) {
                 case API:
                     return modifyAPI(authzModifier);
+                case PATH:
+                case PARAM:
                 case PATH_VARIABLE_PERMISSION:
                 case PATH_VAR_PERMISSION:
                 case PATH_VARIABLE_ROLE:
@@ -325,7 +354,7 @@ public class PermissionDict {
                 case DELETE:
                     if (authzModifier.getIndex() != null) metaList.remove(metaList.get(authzModifier.getIndex()));
                     else {
-                        if (target.i == 2 || target.i == 3) {
+                        if (target == AuthzModifier.Target.PATH) {
                             meta.getParamPermissionsMetadata().get(ParamMetadata.ParamType.PATH_VARIABLE).remove(authzModifier.getValue());
                         } else {
                             meta.getParamPermissionsMetadata().get(ParamMetadata.ParamType.REQUEST_PARAM).remove(authzModifier.getValue());
@@ -509,7 +538,14 @@ public class PermissionDict {
         try {
             lock.lock();
             String className = authzModifier.getClassName();
-            if (className == null) return Result.FAIL;
+            if (className == null) {
+                if (authzModifier.getTarget() == AuthzModifier.Target.DATA_COL) {
+                    return fieldMetadata;
+                } else if (authzModifier.getTarget() == AuthzModifier.Target.DATA_ROW) {
+                    return dataPermMetadata;
+                }
+                return Result.FAIL;
+            }
             if (authzResourcesNameAndTemplate.get(className) == null) return Result.FAIL;
             if (authzModifier.getTarget() == AuthzModifier.Target.DATA_ROW) {
                 switch (authzModifier.getOperate()) {
@@ -558,13 +594,13 @@ public class PermissionDict {
                     case DEL:
                     case DELETE:
                         Integer index = authzModifier.getIndex();
-                        if (dataPermMetadata.get(className) == null) return dataPermMetadata.get(className);
+                        if (dataPermMetadata.get(className) == null) return Result.FAIL;
                         if (index == null) dataPermMetadata.get(className).clear();
                         else dataPermMetadata.get(className).remove(index.intValue());
                         break;
                     case GET:
                     case READ:
-                        if (dataPermMetadata.get(className) == null) return dataPermMetadata.get(className);
+                        if (dataPermMetadata.get(className) == null) return dataPermMetadata;
                         if (authzModifier.getIndex() == null) return dataPermMetadata.get(className);
                         else return dataPermMetadata.get(className).get(authzModifier.getIndex());
                     default:
@@ -572,8 +608,41 @@ public class PermissionDict {
                 }
                 return dataPermMetadata.get(className);
             } else {
-                return Result.FAIL;
+                switch (authzModifier.getOperate()) {
+                    case ADD: {
+                        if (authzModifier.getFieldName() == null) return Result.FAIL;
+                        PermRolesMeta build     = authzModifier.build();
+                        FieldData     fieldData = new FieldData(className, build.role, build.permissions);
+                        fieldMetadata.computeIfAbsent(className, r -> new HashMap<>()).put(authzModifier.getFieldName(), fieldData);
+                    }
+
+                    case UPDATE:
+                    case MODIFY: {
+                        if (authzModifier.getFieldName() == null) return Result.FAIL;
+                        PermRolesMeta build     = authzModifier.build();
+                        FieldData     fieldData = new FieldData(className, build.role, build.permissions);
+                        FieldData     fd        = fieldMetadata.computeIfAbsent(className, r -> new HashMap<>()).computeIfAbsent(authzModifier.getFieldName(), r -> new FieldData(className, null, null));
+                        if (fieldData.getPermissions() != null) fd.setPermissions(fieldData.getPermissions());
+                        if (fieldData.getRoles() != null) fd.setRoles(fieldData.getRoles());
+                    }
+
+                    case READ:
+                    case GET: {
+                        return fieldMetadata.get(authzModifier.getFieldName());
+                    }
+
+                    case DELETE:
+                    case DEL: {
+                        if (authzModifier.getFieldName() == null) {
+                            fieldMetadata.remove(className);
+                        } else {
+                            fieldMetadata.get(className).remove(authzModifier.getFieldName());
+                        }
+                        return Result.SUCCESS;
+                    }
+                }
             }
+            return Result.FAIL;
         } catch (Exception e) {
             return Result.FAIL;
         } finally {
@@ -640,6 +709,15 @@ public class PermissionDict {
         }
         PermissionDict.argsMetadata = argsMetadata;
         m5                          = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(argsMetadata));
+    }
+
+    public static void initIPRangeMeta(Map<String, Map<String, IPRangeMeta>> ipRangeMeta) {
+        if (PermissionDict.ipRangeMeta != null) {
+            AuInit.log.error("ipRangeMeta 已经初始化");
+            return;
+        }
+        PermissionDict.ipRangeMeta = ipRangeMeta;
+        m7                         = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(ipRangeMeta));
     }
 
     public static void setPermSeparator(String permSeparator) {

@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <title>Authz Dashboard</title>
     <link rel="icon" href="img/favicon.png" type="image/png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap.css">
-    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jstree/3.3.5/themes/default/style.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/5.14.1/jsoneditor.css">
+    <link rel="stylesheet" href="css/bootstrap.css">
+    <link rel="stylesheet" href="css/jstree.css">
+    <link rel="stylesheet" href="css/jsoneditor.css">
     <link rel="stylesheet" href="css/index.css">
-    <link rel="stylesheet" href="https://rawgit.com/summerstyle/jsonTreeViewer/master/libs/jsonTree/jsonTree.css"/>
+    <link rel="stylesheet" href="css/jsonTree.css"/>
 </head>
 <body>
 <section id="main">
@@ -22,25 +22,22 @@
                                 id="json_tree_but_1" data-expanded="false">操作模版
                         </button>
                         <div class="json_tree_view_wrap">
-                            <div class="json_tree_view" id="json_tree_view_1"></div>
+                            <div class="json_tree_view" id="json_tree_view"></div>
                         </div>
                     </div>
                     <div class="json_editor">
                         <button class="btn btn-outline-dark btn-sm btn-block" type="button" data-toggle="collapse"
                                 data-target="#json_editor_view_1" aria-expanded="true"
-                                aria-controls="json_editor_view_1">对象代码
+                                id="info"
+                                aria-controls="json_editor_view_1">提交对象
                         </button>
                         <div class="json_editor_view_wrap collapse show" id="json_editor_view_1">
                             <div class="json_editor_view json_editor_view_1"></div>
                             <div class="action_block">
-                                <button type="button" title="将对象从编辑器导出到控制台" id="show_obj_in_console"
-                                        class="btn btn-outline-info btn-sm "><i class="fas fa-code"></i> <i
-                                        class="fas fa-sitemap"></i> <i class="fas fa-terminal"></i></button>
-                                <button type="button" title="清除控制台" id="clear_console"
-                                        class="btn btn-outline-danger btn-sm "><i class="fas fa-trash-alt"></i> <i
-                                        class="fas fa-terminal"></i></button>
-                                <button type="button" title="发送" id="send_modifier" class="btn btn-outline-info btn-sm "><i
-                                        class="fas fa-code"></i> <i class="fas fa-sitemap"></i> <i class="fas fa-terminal"></i>
+                                <button type="button" title="发送" id="send_modifier"
+                                        class="btn btn-outline-info btn-sm ">
+                                    <!--                                    <i class="fas fa-code"></i>-->
+                                    <i class="fas fa-terminal"></i> 提交
                                 </button>
                             </div>
 
@@ -51,6 +48,8 @@
             <div class="col-md-6 ps2 df_c">
                 <div class="sidebar step_1 bg-light">
                     <span class="step_num">Response JSON</span>
+                    <span class="step_num" id="status">
+                    </span>
                     <div id="response_wrap" class="response_wrap">
                     </div>
                 </div>
@@ -60,14 +59,12 @@
 
     </div>
 </section>
-<script defer src="https://use.fontawesome.com/releases/v5.0.10/js/all.js"
-        integrity="sha384-slN8GvtUJGnv6ca26v8EzVaR9DC58QEwsIk9q1QXdCU8Yu8ck/tL/5szYlBbqmS+"
-        crossorigin="anonymous"></script>
-<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.js"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/jstree/3.3.5/jstree.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/5.14.1/jsoneditor-minimalist.js"></script>
-<script src="https://cdn.bootcdn.net/ajax/libs/axios/0.27.2/axios.min.js"></script>
-<script src="https://rawgit.com/summerstyle/jsonTreeViewer/master/libs/jsonTree/jsonTree.js"></script>
+<script src="js/fontawesome-all.js"></script>
+<script src="js/jquery.js"></script>
+<script src="js/jstree.min.js"></script>
+<script src="js/jsoneditor-minimalist.js"></script>
+<script src="js/axios.js"></script>
+<script src="js/jsonTree.js"></script>
 
 <script src="js/index.js"></script>
 

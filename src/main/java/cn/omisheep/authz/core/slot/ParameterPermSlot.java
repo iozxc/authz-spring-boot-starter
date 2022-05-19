@@ -39,7 +39,7 @@ public class ParameterPermSlot implements Slot {
 
     @Override
     public boolean chain(HttpMeta httpMeta, HandlerMethod handler) throws Exception {
-        PermRolesMeta permRolesMeta = permissionDict.getAuthzMetadata().get(httpMeta.getMethod()).get(httpMeta.getApi());
+        PermRolesMeta permRolesMeta = permissionDict.getRolePermission().get(httpMeta.getMethod()).get(httpMeta.getApi());
         Set<String>   roles         = null;
         Set<String>   permissions   = null;
 

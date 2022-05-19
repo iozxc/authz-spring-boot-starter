@@ -8,8 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
 import org.springframework.boot.logging.LogLevel;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
@@ -56,7 +54,7 @@ public class LogUtils {
 
     @SuppressWarnings("unchecked")
     public static void pushLogToRequest(LogLevel logLevel, String formatMsg, Object... args) {
-        HttpServletRequest request = ((ServletRequestAttributes) (RequestContextHolder.currentRequestAttributes())).getRequest();
+        HttpServletRequest request = HttpUtils.getCurrentRequest();
         ArrayList<LogMeta> au_logs = (ArrayList<LogMeta>) request.getAttribute(AU_LOGS);
         if (au_logs == null) {
             au_logs = new ArrayList<>();

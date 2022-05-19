@@ -5,6 +5,7 @@ import cn.omisheep.authz.core.msg.RequestMessage;
 import cn.omisheep.web.entity.Result;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
+import lombok.Setter;
 import orestes.bloomfilter.CountingBloomFilter;
 import orestes.bloomfilter.FilterBuilder;
 import org.springframework.util.AntPathMatcher;
@@ -21,6 +22,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Httpd {
 
     public static final AntPathMatcher antPathMatcher = new AntPathMatcher("/");
+
+    @Getter
+    @Setter
+    private String[] ignoreSuffix;
 
     /**
      * 用于保存请求限制的信息

@@ -34,7 +34,7 @@ public class APIPermSlot implements Slot {
 
     @Override
     public boolean chain(HttpMeta httpMeta, HandlerMethod handler) {
-        PermRolesMeta permRolesMeta = permissionDict.getAuthzMetadata().get(httpMeta.getMethod()).get(httpMeta.getApi());
+        PermRolesMeta permRolesMeta = permissionDict.getRolePermission().get(httpMeta.getMethod()).get(httpMeta.getApi());
         if (permRolesMeta.non()) return true;
 
         Token accessToken = httpMeta.getToken();
