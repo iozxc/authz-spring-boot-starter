@@ -58,8 +58,8 @@ public class Token {
     private final Type type;
 
     public enum Type {
-        access,
-        refresh
+        ACCESS,
+        REFRESH
     }
 
     public Token(String tokenVal, Object userId, String tokenId, Date issueTime, Date expiredTime, String deviceType, String deviceId, Type type) {

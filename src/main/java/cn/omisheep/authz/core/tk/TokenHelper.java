@@ -84,8 +84,8 @@ public class TokenHelper {
         Date toRefreshExpiredTime = // refreshToken失效时间
                 Date.from(LocalDateTime.now().plus(refreshTime, ChronoUnit.MILLIS).atZone(ZoneId.systemDefault()).toInstant());
 
-        Token refreshToken = createToken(userId, deviceType, deviceId, Token.Type.refresh, fromNow, toRefreshExpiredTime);
-        Token accessToken  = createToken(userId, deviceType, deviceId, Token.Type.access, fromNow, toAccessExpiredTime);
+        Token refreshToken = createToken(userId, deviceType, deviceId, Token.Type.REFRESH, fromNow, toRefreshExpiredTime);
+        Token accessToken  = createToken(userId, deviceType, deviceId, Token.Type.ACCESS, fromNow, toAccessExpiredTime);
         return new TokenPair(accessToken, refreshToken);
     }
 
@@ -132,11 +132,11 @@ public class TokenHelper {
      * @return TokenPair
      */
     public static TokenPair refreshToken(Token refreshToken) {
-        if (refreshToken == null || !refreshToken.getType().equals(Token.Type.refresh)) {
+        if (refreshToken == null || !refreshToken.getType().equals(Token.Type.REFRESH)) {
             return null;
         }
         Token accessToken = createToken(refreshToken.getUserId(),
-                refreshToken.getDeviceType(), refreshToken.getDeviceId(), Token.Type.access,
+                refreshToken.getDeviceType(), refreshToken.getDeviceId(), Token.Type.ACCESS,
                 TimeUtils.now(),
                 Date.from(LocalDateTime.now().plus(liveTime, ChronoUnit.MILLIS).atZone(ZoneId.systemDefault()).toInstant())
         );
