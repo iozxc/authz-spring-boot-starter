@@ -158,27 +158,37 @@ public class AuCoreInitialization implements ApplicationContextAware {
             PermRolesMeta permRolesMeta = generatePermRolesMeta(value.getMethodAnnotation(Perms.class), value.getMethodAnnotation(Roles.class));
             IPRangeMeta   ipRangeMeta   = new IPRangeMeta();
             if (rFc != null) {
-                if (permRolesMeta.getRequireRoles() != null) {
-                    permRolesMeta.getRequireRoles().addAll(rFc.getRequireRoles());
-                } else {
-                    permRolesMeta.setExcludeRoles(rFc.getRequireRoles());
+                if (permRolesMeta == null) permRolesMeta = new PermRolesMeta();
+                if (rFc.getRequireRoles() != null) {
+                    if (permRolesMeta.getRequireRoles() != null) {
+                        permRolesMeta.getRequireRoles().addAll(rFc.getRequireRoles());
+                    } else {
+                        permRolesMeta.setRequireRoles(rFc.getRequireRoles());
+                    }
                 }
-                if (permRolesMeta.getExcludeRoles() != null) {
-                    permRolesMeta.getExcludeRoles().addAll(rFc.getExcludeRoles());
-                } else {
-                    permRolesMeta.setExcludeRoles(rFc.getExcludeRoles());
+                if (rFc.getExcludeRoles() != null) {
+                    if (permRolesMeta.getExcludeRoles() != null) {
+                        permRolesMeta.getExcludeRoles().addAll(rFc.getExcludeRoles());
+                    } else {
+                        permRolesMeta.setExcludeRoles(rFc.getExcludeRoles());
+                    }
                 }
             }
             if (pFc != null) {
-                if (permRolesMeta.getRequirePermissions() != null) {
-                    permRolesMeta.getRequirePermissions().addAll(pFc.getRequirePermissions());
-                } else {
-                    permRolesMeta.setRequirePermissions(rFc.getRequirePermissions());
+                if (permRolesMeta == null) permRolesMeta = new PermRolesMeta();
+                if (pFc.getRequirePermissions() != null) {
+                    if (permRolesMeta.getRequirePermissions() != null) {
+                        permRolesMeta.getRequirePermissions().addAll(pFc.getRequirePermissions());
+                    } else {
+                        permRolesMeta.setRequirePermissions(rFc.getRequirePermissions());
+                    }
                 }
-                if (permRolesMeta.getExcludePermissions() != null) {
-                    permRolesMeta.getExcludePermissions().addAll(pFc.getExcludePermissions());
-                } else {
-                    permRolesMeta.setExcludePermissions(rFc.getExcludePermissions());
+                if (pFc.getExcludePermissions() != null) {
+                    if (permRolesMeta.getExcludePermissions() != null) {
+                        permRolesMeta.getExcludePermissions().addAll(pFc.getExcludePermissions());
+                    } else {
+                        permRolesMeta.setExcludePermissions(rFc.getExcludePermissions());
+                    }
                 }
             }
             if (permRolesMeta != null) {
@@ -187,9 +197,10 @@ public class AuCoreInitialization implements ApplicationContextAware {
                 if (requireRoles != null) requireRoles.forEach(toBeLoadedRoles::addAll);
                 if (excludeRoles != null) excludeRoles.forEach(toBeLoadedRoles::addAll);
 
+                PermRolesMeta finalPermRolesMeta = permRolesMeta;
                 key.getMethodsCondition().getMethods().forEach(method -> {
                     getPatterns(key).forEach(patternValue ->
-                            authzMetadata.computeIfAbsent(method.toString(), r -> new HashMap<>()).put(patternValue, permRolesMeta)
+                            authzMetadata.computeIfAbsent(method.toString(), r -> new HashMap<>()).put(patternValue, finalPermRolesMeta)
                     );
                 });
             }

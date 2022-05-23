@@ -1,5 +1,11 @@
 # 更新日记【Authz】
 
+## Version 1.0.1 - 2022.5.24
+
+### Fixed
+
+- 修复了在Controller上添加@Roles、@Permissions标签时，如果方法上没有注解的话报空指针异常的问题
+
 ## Version 1.0.0 - 2022.5.16
 
 ### desc
