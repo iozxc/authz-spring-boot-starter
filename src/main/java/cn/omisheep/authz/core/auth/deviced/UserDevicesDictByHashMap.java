@@ -52,9 +52,9 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
             });
         }
 
-        if (accessInfoHeap == null || accessInfoHeap.isEmpty()) { // 没有accessToken
-            if (refreshInfoHeap == null || !hasTargetDeviceInfo) return 2; // refreshToken不存在，或者不存在对应的设备，则返回需要登录
-            return ACCESS_TOKEN_OVERDUE; // refreshToken存在 对应type和id设备的refreshToken存在，返回accessToken过期 虽然此时不一定是这次登录的
+        if (accessInfoHeap == null || accessInfoHeap.isEmpty()) {
+            if (refreshInfoHeap == null || !hasTargetDeviceInfo) return 2;
+            return ACCESS_TOKEN_OVERDUE;
         }
 
         // 2） 验证device 若不存在，但是userId存在，也是重新登录 如果不允许多设备登录 那么此时也是 账号在别处登录
@@ -69,10 +69,10 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
                     return false;
                 }).findFirst().orElse(null);
         if (d == null) { // 如果没有这个设备
-            if (!isSupportMultiDevice) { // 如果不允许多设备登录，说明现在存在其他设备。
+            if (!isSupportMultiDevice) {
                 return LOGIN_EXCEPTION;
             } else {
-                if (!hasTargetDeviceInfo) return REQUIRE_LOGIN; // 如果允许多设备登录 则说明不存在该设备 返回重新登录
+                if (!hasTargetDeviceInfo) return REQUIRE_LOGIN;
                 return ACCESS_TOKEN_OVERDUE;
             }
         }
