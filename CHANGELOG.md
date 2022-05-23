@@ -2,6 +2,9 @@
 
 ## Version 1.0.1 - 2022.5.24
 
+### Modify
+- 修改了Token内部类Type的枚举类型名字
+
 ### Fixed
 
 - 修复了在Controller上添加@Roles、@Permissions标签时，如果方法上没有注解的话报空指针异常的问题
