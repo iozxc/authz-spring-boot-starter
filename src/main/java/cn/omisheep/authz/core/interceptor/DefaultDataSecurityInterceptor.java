@@ -49,17 +49,24 @@ public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterce
 
         if (!iterator.hasNext()) return sql;
 
+
+
+
+        Select      select     = (Select) CCJSqlParserUtil.parse(sql);
+        PlainSelect selectBody = (PlainSelect) select.getSelectBody();
+        Expression  where      = selectBody.getWhere();
+
         StringBuilder sb = new StringBuilder();
         sb.append("( ");
         while (iterator.hasNext()) {
             sb.append(iterator.next());
             if (iterator.hasNext()) sb.append(" OR ");
-            else sb.append(" ) AND ");
+            else {
+                if (where!=null) sb.append(" ) AND ").append(where);
+                else sb.append(") ");
+            }
         };
 
-        Select      select     = (Select) CCJSqlParserUtil.parse(sql);
-        PlainSelect selectBody = (PlainSelect) select.getSelectBody();
-        sb.append(selectBody.getWhere());
         Expression securityWhere = CCJSqlParserUtil.parseCondExpression(sb.toString());
 
         return selectBody.withWhere(securityWhere).toString();
