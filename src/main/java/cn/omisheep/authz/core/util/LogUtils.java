@@ -16,7 +16,6 @@ import java.util.ArrayList;
  * 日志工具类
  *
  * @author zhouxinchen[1269670415@qq.com]
- * @version 1.0.0
  * @since 1.0.0
  */
 @Slf4j(topic = "authz.global.log")

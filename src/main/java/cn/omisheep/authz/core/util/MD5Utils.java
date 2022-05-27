@@ -9,8 +9,7 @@ import java.io.IOException;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
- * @version 1.0.0
- * @since 1.0.0
+ * @since 1.0.3
  */
 public class MD5Utils {
 
@@ -20,7 +19,7 @@ public class MD5Utils {
             return DigestUtils.md5Hex(bufferedInputStream);
         } catch (IOException e) {
             try {
-                boolean b     = CompressDirUtil.compressFileToZip(path);
+                boolean b = CompressDirUtil.compressFileToZip(path);
                 if (!b) return "";
                 else {
                     String zip = path + ".zip";

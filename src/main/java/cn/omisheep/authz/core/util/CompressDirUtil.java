@@ -8,6 +8,10 @@ import java.io.FileOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+/**
+ * @author zhouxinchen[1269670415@qq.com]
+ * @since 1.0.3
+ */
 public class CompressDirUtil {
 
     public static boolean compressFileToZip(String compresspath) {

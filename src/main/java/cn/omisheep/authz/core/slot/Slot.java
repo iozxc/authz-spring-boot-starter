@@ -22,7 +22,6 @@ import org.springframework.web.method.HandlerMethod;
  * (7) LogSlot(Int:max)
  *
  * @author zhouxinchen[1269670415@qq.com]
- * @version 1.0.0
  * @since 1.0.0
  */
 public interface Slot {

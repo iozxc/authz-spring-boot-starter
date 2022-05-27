@@ -16,7 +16,6 @@ import java.lang.reflect.Constructor;
  * 请求参数的拦截器。用于rsa解密
  *
  * @author zhouxinchen[1269670415@qq.com]
- * @version 1.0.0
  * @since 1.0.0
  */
 @Slf4j

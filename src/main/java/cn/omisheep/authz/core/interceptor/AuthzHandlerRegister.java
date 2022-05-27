@@ -20,7 +20,6 @@ import java.util.Map;
  * 拦截器注册
  *
  * @author zhouxinchen[1269670415@qq.com]
- * @version 1.0.0
  * @since 1.0.0
  */
 @Slf4j

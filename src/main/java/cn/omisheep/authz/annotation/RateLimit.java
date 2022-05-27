@@ -18,7 +18,6 @@ import java.util.Arrays;
  * 【注：网关上的配置一样生效】
  *
  * @author zhouxinchen[1269670415@qq.com]
- * @version 1.0.0
  * @since 1.0.0
  */
 @Target({ElementType.TYPE, ElementType.METHOD})

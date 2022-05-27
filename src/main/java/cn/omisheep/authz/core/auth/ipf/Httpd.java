@@ -18,7 +18,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
- * @version 1.0.0
  * @since 1.0.0
  */
 public class Httpd implements AuthzModifiable {

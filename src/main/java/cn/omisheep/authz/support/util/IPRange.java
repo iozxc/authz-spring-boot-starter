@@ -11,8 +11,8 @@ import com.google.common.base.Objects;
  * dotted-decimal format.
  *
  * @author Marcel Dullaart
- * @version 1.0
  * @see IPAddress
+ * @since 1.0
  */
 public class IPRange {
 

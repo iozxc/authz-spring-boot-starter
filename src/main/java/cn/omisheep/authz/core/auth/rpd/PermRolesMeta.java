@@ -11,7 +11,6 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
- * @version 1.0.0
  * @since 1.0.0
  */
 @JsonInclude(NON_NULL)
@@ -42,7 +41,7 @@ public class PermRolesMeta {
         }
     }
 
-    public Map<ParamMetadata.ParamType, Map<String, ParamMetadata>>     getParamPermissionsMetadata() {
+    public Map<ParamMetadata.ParamType, Map<String, ParamMetadata>> getParamPermissionsMetadata() {
         return paramPermissionsMetadata;
     }
 
