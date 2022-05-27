@@ -57,13 +57,13 @@ public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterce
         Expression  where      = selectBody.getWhere();
 
         StringBuilder sb = new StringBuilder();
-        sb.append("( ");
+        sb.append(" ( ");
         while (iterator.hasNext()) {
             sb.append(iterator.next());
             if (iterator.hasNext()) sb.append(" OR ");
             else {
                 if (where!=null) sb.append(" ) AND ").append(where);
-                else sb.append(") ");
+                else sb.append(" ) ");
             }
         };
 
