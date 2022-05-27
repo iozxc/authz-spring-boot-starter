@@ -47,9 +47,20 @@ public class VersionMessage implements Message {
         this.md5               = md5;
     }
 
+    // 忽略条件
     public static boolean ignore(VersionMessage message) {
-        return message == null || Message.uuid.equals(message.getId()) || !message.context.equals(CHANNEL) ||
-                !Objects.equals(message.md5, VersionInfo.md5);
+        return message == null // 消息为空
+                || Message.uuid.equals(message.getId()) // 自己的消息
+                || !message.context.equals(CHANNEL) // 不在一个频道
+                || failureMd5Check(message); // md5检查失败
+    }
+
+    private static boolean failureMd5Check(VersionMessage message) {
+        if (VersionInfo.isMd5check()) {
+            return !Objects.equals(message.md5, VersionInfo.getMd5());
+        } else {
+            return false;
+        }
     }
 
 }

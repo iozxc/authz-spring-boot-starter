@@ -45,6 +45,8 @@ public class AuthzProperties {
      */
     private LogLevel log = LogLevel.INFO;
 
+    private boolean md5check = false;
+
     /**
      * 过滤后缀名
      */
@@ -62,7 +64,7 @@ public class AuthzProperties {
          * 拒绝访问网断
          * xx.xx.xx.xx/xx , xx.xx.xx.xx/xx
          */
-        private String  deny          = "";
+        private String deny = "";
 
         /**
          * 0:0:0:0:0:0:0:1  127.0.0.1是否支持

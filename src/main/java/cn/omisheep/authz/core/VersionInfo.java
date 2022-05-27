@@ -2,6 +2,7 @@ package cn.omisheep.authz.core;
 
 import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.msg.VersionMessage;
+import cn.omisheep.authz.core.util.MD5Utils;
 import cn.omisheep.authz.core.util.RedisUtils;
 import cn.omisheep.commons.util.Async;
 import cn.omisheep.commons.util.TaskBuilder;
@@ -22,14 +23,42 @@ public class VersionInfo {
     public static final ArrayList<AuthzModifier> changeLog = new ArrayList<>();
     public static final ArrayList<AuthzModifier> cache     = new ArrayList<>();
 
-    public static final String  md5     = ""; // jar包计算
-    public static       String  APP_NAME;
-    private static      boolean loading = false;
+
+    private static String  md5;
+    private static boolean md5check    = false;
+    private static String  projectPath = null;
+
+    public static String getProjectPath() {
+        return projectPath;
+    }
+
+    public static void setProjectPath(String projectPath) {
+        if (VersionInfo.projectPath == null) VersionInfo.projectPath = projectPath;
+    }
+
+    public static boolean isMd5check() {
+        return md5check;
+    }
+
+    public static void setMd5check(boolean md5check) {
+        VersionInfo.md5check = md5check;
+    }
+
+    public static  String  APP_NAME;
+    private static boolean loading = false;
 
     public static String host;
     public static String port;
     public static String path;
     public static String prefix;
+
+    public static String getMd5() {
+        return md5;
+    }
+
+    public static void compute() {
+        md5 = MD5Utils.compute(projectPath);
+    }
 
     public static HashMap<String, String> getVersion() {
         HashMap<String, String> v = new HashMap<>();

@@ -21,7 +21,7 @@ import java.util.Map;
 @SuppressWarnings("all")
 public class AUtils implements ApplicationContextAware {
 
-    private static ApplicationContext ctx;
+    public static ApplicationContext ctx;
 
     public static <T> T getBean(Class<T> clz) {
         return ctx.getBean(clz);

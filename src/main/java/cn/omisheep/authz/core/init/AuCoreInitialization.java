@@ -27,6 +27,8 @@ import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.commons.util.TaskBuilder;
 import lombok.SneakyThrows;
 import org.springframework.aop.support.AopUtils;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.system.ApplicationHome;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.MethodParameter;
@@ -81,19 +83,23 @@ public class AuCoreInitialization implements ApplicationContextAware {
     }
 
     @Override
-    @SneakyThrows
     public void setApplicationContext(ApplicationContext applicationContext) {
-        this.ctx = applicationContext;
+        ctx = applicationContext;
+        init();
+    }
+
+    @SneakyThrows
+    public void init() {
         AbstractHandlerMethodMapping<RequestMappingInfo> methodMapping =
-                (AbstractHandlerMethodMapping<RequestMappingInfo>) applicationContext.getBean("requestMappingHandlerMapping");
+                (AbstractHandlerMethodMapping<RequestMappingInfo>) ctx.getBean("requestMappingHandlerMapping");
         Map<RequestMappingInfo, HandlerMethod> mapRet = methodMapping.getHandlerMethods();
 
         // init PermissionDict
-        initPermissionDict(applicationContext, mapRet);
+        initPermissionDict(ctx, mapRet);
         LogUtils.logDebug("⬇ PermissionDict init success ⬇\n{}\n", Utils.beautifulJson(permissionDict));
 
         // init Httpd
-        initHttpd(applicationContext, mapRet);
+        initHttpd(ctx, mapRet);
         LogUtils.logDebug("⬇ Httpd init success ⬇\n{}\n", Utils.beautifulJson(httpd));
 
         // init UserDevicesDict
@@ -119,10 +125,29 @@ public class AuCoreInitialization implements ApplicationContextAware {
         }
         TaskBuilder.schedule(Pelcron::GC, properties.getGcPeriod());
 
-        AuInit.log.info("Started Authz  Message id: {}", Message.uuid);
+        AuInit.log.info("Started Authz Message id: {}", Message.uuid);
 
+        initVersionInfo();
+        AuInit.log.info("project md5 => {}", VersionInfo.getMd5());
+    }
+
+    private void initVersionInfo() {
+        VersionInfo.setProjectPath(getJarPath());
+        VersionInfo.setMd5check(properties.isMd5check());
+        VersionInfo.compute();
         VersionInfo.born();
     }
+
+    @SneakyThrows
+    private String getJarPath() {
+        Object o = ctx.getBeansWithAnnotation(SpringBootApplication.class).values().stream().findAny().orElse(null);
+        if (o != null) {
+            ApplicationHome home = new ApplicationHome(o.getClass());
+            return home.getSource().getAbsolutePath();
+        }
+        return null;
+    }
+
 
     private void initPermissionDict(ApplicationContext applicationContext, Map<RequestMappingInfo, HandlerMethod> mapRet) {
         PermissionDict.setPermSeparator(Constants.COMMA);
