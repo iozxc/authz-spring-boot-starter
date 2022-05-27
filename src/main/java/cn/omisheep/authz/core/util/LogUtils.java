@@ -20,7 +20,7 @@ import java.util.ArrayList;
  * @since 1.0.0
  */
 @Slf4j(topic = "authz.global.log")
-public class LogUtils {
+public abstract class LogUtils {
 
     @Setter
     private static       LogLevel logLevel;

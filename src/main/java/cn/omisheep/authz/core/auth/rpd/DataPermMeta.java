@@ -25,31 +25,21 @@ public class DataPermMeta {
     private Map<String, List<String>> argsMap;
 
     public static DataPermMeta of(String condition) {
-        DataPermMeta dataPermMeta = new DataPermMeta();
-        dataPermMeta.setRule(RuleParser.parseStringToRule(condition));
-        dataPermMeta.setCondition(condition);
-        return dataPermMeta;
+        return new DataPermMeta().setRule(RuleParser.parseStringToRule(condition)).setCondition(condition);
     }
 
     public static DataPermMeta of(Rule rule) {
-        DataPermMeta dataPermMeta = new DataPermMeta();
-        dataPermMeta.setCondition(RuleParser.parseRuleToString(rule));
-        dataPermMeta.setRule(rule);
-        return dataPermMeta;
+        return new DataPermMeta().setCondition(RuleParser.parseRuleToString(rule)).setRule(rule);
     }
 
     public DataPermMeta addArg(String source, List<String> args) {
-        if (argsMap == null) {
-            argsMap = new HashMap<>();
-        }
+        if (argsMap == null) argsMap = new HashMap<>();
         argsMap.put(source, args);
         return this;
     }
 
     public void addArg(String source, String... args) {
-        if (argsMap == null) {
-            argsMap = new HashMap<>();
-        }
+        if (argsMap == null) argsMap = new HashMap<>();
         if (args != null) argsMap.put(source, Arrays.stream(args).collect(Collectors.toList()));
     }
 

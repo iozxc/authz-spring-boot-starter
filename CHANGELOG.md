@@ -1,8 +1,21 @@
 # 更新日记【Authz】
 
+## Version 1.0.2 - 2022.5.27
+
+### Added
+
+- 添加了新的注解 `@Certificated`
+    - 用于一些只需要验证是否登录并不需要验证身份和权限的接口上。若作用于controller上则此内部的api都需要登录
+
+### Fixed
+
+- 删除L2Cache对Keys的缓存
+- 修复了对1.0.1版本中type类名字修改之后之前版本json转换错误的问题
+
 ## Version 1.0.1 - 2022.5.24
 
 ### Modify
+
 - 修改了Token内部类Type的枚举类型名字
 
 ### Fixed

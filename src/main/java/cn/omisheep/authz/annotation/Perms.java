@@ -12,14 +12,16 @@ import java.lang.annotation.*;
 @Target({ElementType.TYPE, ElementType.METHOD, ElementType.PARAMETER, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
+@Auth(scope = AuthScope.ROLE)
 public @interface Perms {
 
-    @AliasFor("require")
+    @AliasFor(value = "require", annotation = Auth.class)
     String[] value() default {};
 
-    @AliasFor("value")
+    @AliasFor(value = "value", annotation = Auth.class)
     String[] require() default {};
 
+    @AliasFor(annotation = Auth.class)
     String[] exclude() default {};
 
     /**
@@ -29,6 +31,7 @@ public @interface Perms {
      *
      * @return scope of access
      */
+    @AliasFor(annotation = Auth.class)
     String[] paramRange() default {};
 
     /**
@@ -38,9 +41,12 @@ public @interface Perms {
      *
      * @return required protect resources
      */
+    @AliasFor(annotation = Auth.class)
     String[] paramResources() default {};
 
+    @AliasFor(annotation = Auth.class)
     String condition() default "";
 
+    @AliasFor(annotation = Auth.class)
     Arg[] args() default {};
 }

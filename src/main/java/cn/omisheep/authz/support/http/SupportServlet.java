@@ -5,11 +5,11 @@ import cn.omisheep.authz.core.Constants;
 import cn.omisheep.authz.core.VersionInfo;
 import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.authz.core.util.AUtils;
+import cn.omisheep.authz.core.util.Utils;
 import cn.omisheep.authz.support.util.IPAddress;
 import cn.omisheep.authz.support.util.IPRange;
 import cn.omisheep.authz.support.util.IPRangeMeta;
-import cn.omisheep.authz.support.util.Utils;
+import cn.omisheep.authz.support.util.SupportUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
@@ -213,12 +213,7 @@ public class SupportServlet extends HttpServlet {
 
         if ("/modify".equals(api)) {
             AuthzModifier authzModifier = JSON.parseObject(httpMeta.getBody(), AuthzModifier.class);
-            Object        res           = Authz.operate(authzModifier);
-            if (res != null) {
-                response.getWriter().println(JSON.toJSONString(res));
-                return;
-            }
-            response.getWriter().println("");
+            response.getWriter().println(JSON.toJSONString(Authz.operate(authzModifier)));
         } else if ("/info".equals(api)) {
             response.getWriter().println(JSON.toJSONString(VersionInfo.getVersion()));
         }
@@ -235,15 +230,15 @@ public class SupportServlet extends HttpServlet {
         }
 
 
-        if (AUtils.isIgnoreSuffix(fileName, ".jpg", ".png", ".gif")) {
-            byte[] bytes = Utils.readByteArrayFromResource(filePath);
+        if (Utils.isIgnoreSuffix(fileName, ".jpg", ".png", ".gif")) {
+            byte[] bytes = SupportUtils.readByteArrayFromResource(filePath);
             if (bytes != null) {
                 response.getOutputStream().write(bytes);
             }
             return;
         }
 
-        String text = Utils.readFromResource(filePath);
+        String text = SupportUtils.readFromResource(filePath);
         if (text == null) {
             response.sendRedirect(uri + "/index.html");
             return;

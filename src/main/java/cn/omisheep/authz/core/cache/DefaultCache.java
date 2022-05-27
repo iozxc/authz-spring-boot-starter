@@ -6,6 +6,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Scheduler;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -48,28 +49,27 @@ public class DefaultCache implements cn.omisheep.authz.core.cache.Cache {
 
     @Override
     @NonNull
-    public Set<String> keys(String pattern) {
-        if (pattern == null || pattern.equals(EMPTY)) return new HashSet<>();
+    public Set<String> keys(@NonNull String pattern) {
+        if (pattern.equals(EMPTY)) return new HashSet<>();
         if (pattern.equals(ALL)) return cache.asMap().keySet();
         return cache.asMap().keySet().stream().filter(key -> Utils.stringMatch(pattern, key, true)).collect(Collectors.toSet());
     }
 
     @Override
-    public boolean notKey(String key) {
+    public boolean notKey(@NonNull String key) {
         return cache.getIfPresent(key) == null;
     }
 
     @Override
-    public long ttl(String key) {
+    public long ttl(@NonNull String key) {
         CacheItem<?> item = cache.getIfPresent(key);
         if (item == null) return -2;
         return item.ttl();
     }
 
     @Override
-    public <E> E set(String key, E element, long ttl) {
+    public <E> void set(@NonNull String key, @Nullable E element, long ttl) {
         cache.put(key, new CacheItem<>(ttl, element));
-        return element;
     }
 
     @Override
@@ -84,7 +84,7 @@ public class DefaultCache implements cn.omisheep.authz.core.cache.Cache {
     }
 
     @Override
-    public @NonNull <T> Map<String, T> get(Set<String> keys, Class<T> requiredType) {
+    public @NonNull <T> Map<String, T> get(@NonNull Set<String> keys, @NonNull Class<T> requiredType) {
         Map<String, CacheItem> items = cache.getAllPresent(keys);
         HashMap<String, T>     map   = new HashMap<>();
         for (Map.Entry<String, CacheItem> entry : items.entrySet()) {
@@ -94,12 +94,12 @@ public class DefaultCache implements cn.omisheep.authz.core.cache.Cache {
     }
 
     @Override
-    public void del(String key) {
+    public void del(@NonNull String key) {
         cache.invalidate(key);
     }
 
     @Override
-    public void del(Set<String> keys) {
+    public void del(@NonNull Set<String> keys) {
         cache.invalidateAll(keys);
     }
 

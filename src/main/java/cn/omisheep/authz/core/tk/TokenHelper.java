@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletResponse;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -155,6 +156,20 @@ public class TokenHelper {
         cookie.setHttpOnly(true);
         cookie.setMaxAge(expire);
         return cookie;
+    }
+
+    /**
+     * 清空cookie
+     *
+     * @param response response
+     */
+    public static void clearCookie(HttpServletResponse response) {
+        if (response == null) return;
+        Cookie cookie = new Cookie(cookieName, "");
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        cookie.setMaxAge(1);
+        response.addCookie(cookie);
     }
 
     /**

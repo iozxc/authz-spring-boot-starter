@@ -2,17 +2,15 @@ package cn.omisheep.authz.core.util;
 
 import cn.omisheep.authz.core.Constants;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
+import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.web.utils.HttpUtils;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.lang.Nullable;
 
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -24,25 +22,6 @@ import java.util.regex.Pattern;
 public class AUtils implements ApplicationContextAware {
 
     private static ApplicationContext ctx;
-
-    private static final Pattern JSON_RSA_PATTERN = Pattern.compile("\\{.*\".*\".*:.*\"(.*)\".*}");
-
-    public static String parse_RSA_JSON(String json) {
-        Matcher matcher = JSON_RSA_PATTERN.matcher(json);
-        if (matcher.find()) {
-            return matcher.group(1);
-        }
-        return "";
-    }
-
-    public static String beautifulJson(Object o) {
-        try {
-            return new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(o);
-        } catch (JsonProcessingException e) {
-            log.error("JsonProcessingException => {}", e.getMessage());
-            return "";
-        }
-    }
 
     public static <T> T getBean(Class<T> clz) {
         return ctx.getBean(clz);
@@ -61,17 +40,23 @@ public class AUtils implements ApplicationContextAware {
         ctx = applicationContext;
     }
 
+    @Nullable
     public static HttpMeta getCurrentHttpMeta() {
-        HttpMeta currentHttpMeta = (HttpMeta) HttpUtils.getCurrentRequest().getAttribute(Constants.HTTP_META);
-        return currentHttpMeta;
-    }
-
-    public static boolean isIgnoreSuffix(String uri, String... suffix) {
-        for (String s : suffix) {
-            if (uri.endsWith(s)) return true;
+        try {
+            HttpMeta currentHttpMeta = (HttpMeta) HttpUtils.getCurrentRequest().getAttribute(Constants.HTTP_META);
+            return currentHttpMeta;
+        } catch (Exception e) {
+            return null;
         }
-        return false;
     }
 
+    @Nullable
+    public static Token getCurrentToken() {
+        try {
+            return getCurrentHttpMeta().getToken();
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
 }

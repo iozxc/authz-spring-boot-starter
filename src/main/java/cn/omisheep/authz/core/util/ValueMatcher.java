@@ -12,7 +12,7 @@ import static cn.omisheep.authz.core.Constants.WILDCARD;
  * @version 1.0.0
  * @since 1.0.0
  */
-public class ValueMatcher {
+public abstract class ValueMatcher {
 
     public enum ValueType {
         RANGE, // int long double float short chart

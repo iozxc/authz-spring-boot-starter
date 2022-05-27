@@ -45,12 +45,28 @@ public class AuthzProperties {
      */
     private LogLevel log = LogLevel.INFO;
 
+    /**
+     * 过滤后缀名
+     */
     private String[] ignoreSuffix = new String[]{".css", ".js", ".html", ".png", ".jpg", ".gif", ".svg"};
 
     @Data
     public static class IpRangeConfig {
-        private String  allow         = "";
+        /**
+         * 若配置，则必须在这些范围内
+         * xx.xx.xx.xx/xx , xx.xx.xx.xx/xx
+         */
+        private String allow = "";
+
+        /**
+         * 拒绝访问网断
+         * xx.xx.xx.xx/xx , xx.xx.xx.xx/xx
+         */
         private String  deny          = "";
+
+        /**
+         * 0:0:0:0:0:0:0:1  127.0.0.1是否支持
+         */
         private boolean supportNative = true;// 0:0:0:0:0:0:0:1  127.0.0.1
     }
 

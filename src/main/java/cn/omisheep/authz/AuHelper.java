@@ -4,6 +4,7 @@ package cn.omisheep.authz;
 import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.auth.deviced.Device;
 import cn.omisheep.authz.core.auth.ipf.RequestMeta;
+import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
 import cn.omisheep.authz.core.tk.AuKey;
 import cn.omisheep.authz.core.tk.TokenPair;
 import cn.omisheep.commons.util.TimeUtils;
@@ -42,23 +43,22 @@ public class AuHelper {
      */
     @Nullable
     public static TokenPair login(@NonNull Object userId, @NonNull String deviceType, @Nullable String deviceId) {
-        return auDefender.grant(userId, deviceType, deviceId);
+        return AuthzDefender.grant(userId, deviceType, deviceId);
     }
 
     /**
      * 注销当前用户当前设备
      */
     public static void logout() {
-        userDevicesDict.removeCurrentDeviceFromCurrentUser();
+        AuthzDefender.logout();
     }
 
     /**
      * 注销当前用户所有设备
      */
     public static void logoutAll() {
-        userDevicesDict.removeAllDeviceFromCurrentUser();
+        AuthzDefender.logoutAll();
     }
-
 
     /**
      * 注销当前用户所指定的类型的所有设备
@@ -66,7 +66,7 @@ public class AuHelper {
      * @param deviceType 指定设备类型
      */
     public static void logout(@NonNull String deviceType) {
-        userDevicesDict.removeDeviceFromCurrentUserByDeviceType(deviceType);
+        AuthzDefender.logout(deviceType);
     }
 
     /**
@@ -76,7 +76,7 @@ public class AuHelper {
      * @param deviceId   指定设备id
      */
     public static void logout(@NonNull String deviceType, @Nullable String deviceId) {
-        userDevicesDict.removeDeviceFromCurrentUserByDeviceTypeAndDeviceId(deviceType, deviceId);
+        AuthzDefender.logout(deviceType, deviceId);
     }
 
     /**
@@ -85,7 +85,7 @@ public class AuHelper {
      * @param userId 用户id
      */
     public static void logoutAll(@NonNull Object userId) {
-        userDevicesDict.removeAllDeviceByUserId(userId);
+        AuthzDefender.logoutAll(userId);
     }
 
     /**
@@ -95,7 +95,7 @@ public class AuHelper {
      * @param deviceType 指定设备类型
      */
     public static void logout(@NonNull Object userId, @NonNull String deviceType) {
-        userDevicesDict.removeDeviceByUserIdAndDeviceType(userId, deviceType);
+        AuthzDefender.logout(userId, deviceType);
     }
 
     /**
@@ -106,7 +106,7 @@ public class AuHelper {
      * @param deviceId   指定设备id
      */
     public static void logout(@NonNull Object userId, @NonNull String deviceType, @Nullable String deviceId) {
-        userDevicesDict.removeDeviceByUserIdAndDeviceTypeAndDeviceId(userId, deviceType, deviceId);
+        AuthzDefender.logout(userId, deviceType, deviceId);
     }
 
     /**
@@ -121,7 +121,7 @@ public class AuHelper {
      */
     @Nullable
     public static TokenPair refreshToken(@NonNull String refreshToken) {
-        return auDefender.refreshToken(refreshToken);
+        return AuthzDefender.refreshToken(refreshToken);
     }
 
     /**
@@ -192,7 +192,7 @@ public class AuHelper {
     // ************************************     【在线/活跃】      ************************************ //
 
     /**
-     * 判断某个用户是否有设备【在线/活跃】（默认60秒内），
+     * 判断某个用户是否有设备【在线/活跃】（默认60秒内）
      *
      * @param userId 用户id
      * @return 用户是否在线
@@ -308,10 +308,9 @@ public class AuHelper {
 
     // *************************************     api权限、数据权限、rate-limit 动态修改      ************************************* //
 
-    // 4、rate速率配置
-
     /**
      * 动态修改api权限和api的参数权限
+     * 更多操作看Dashboard
      * 可使用{@link org.springframework.web.bind.annotation.RequestBody}获得，或者{@code new AuthzModifier();}
      * <p>
      * <p>
@@ -527,6 +526,21 @@ public class AuHelper {
      */
     public static void reloadCache() {
         cache.reload();
+    }
+
+    /**
+     * 重新加载所有缓存
+     */
+    public static void reloadCache(String... keys) {
+        cache.reload(keys);
+    }
+
+    /**
+     * 重新加载指定的缓存
+     */
+    @SafeVarargs
+    public static void reloadCache(Collection<String>... keys) {
+        cache.reload(keys);
     }
 
     private AuHelper() {

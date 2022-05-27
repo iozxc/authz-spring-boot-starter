@@ -22,7 +22,7 @@ import java.util.stream.Stream;
  * @version 1.0.0
  * @since 1.0.0
  */
-public class ArgsParser {
+public abstract class ArgsParser {
 
     public static String parse(DataPermMeta dataPermMeta) {
         StringBuilder stringBuilder = new StringBuilder();

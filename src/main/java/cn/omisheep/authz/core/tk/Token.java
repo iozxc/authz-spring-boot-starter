@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core.tk;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Getter;
 import lombok.ToString;
@@ -58,8 +59,13 @@ public class Token {
     private final Type type;
 
     public enum Type {
-        ACCESS,
-        REFRESH
+        ACCESS, REFRESH;
+
+        @JsonCreator
+        public static Type fromValue(String text) {
+            for (Type type : Type.values()) if (type.name().equalsIgnoreCase(text)) return type;
+            return null;
+        }
     }
 
     public Token(String tokenVal, Object userId, String tokenId, Date issueTime, Date expiredTime, String deviceType, String deviceId, Type type) {

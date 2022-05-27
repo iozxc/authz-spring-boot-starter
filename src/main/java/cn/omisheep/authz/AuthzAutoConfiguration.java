@@ -10,7 +10,6 @@ import cn.omisheep.authz.core.auth.deviced.UserDevicesDictByCache;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDictByHashMap;
 import cn.omisheep.authz.core.auth.ipf.AuthzHttpFilter;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
-import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.cache.DefaultCache;
@@ -24,6 +23,7 @@ import cn.omisheep.authz.core.msg.CacheMessage;
 import cn.omisheep.authz.core.msg.MessageReceive;
 import cn.omisheep.authz.core.msg.RequestMessage;
 import cn.omisheep.authz.core.msg.VersionMessage;
+import cn.omisheep.authz.core.util.Utils;
 import cn.omisheep.authz.support.http.SupportServlet;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
@@ -85,7 +85,6 @@ public class AuthzAutoConfiguration {
         try {
             host = InetAddress.getLocalHost().getHostAddress();
         } catch (UnknownHostException e) {
-            // skip
             host = "localhost";
         }
         String port = environment.getProperty("server.port");
@@ -93,7 +92,7 @@ public class AuthzAutoConfiguration {
         if (!StringUtils.hasText(path)) {
             path = "";
         }
-        String prefix = cn.omisheep.commons.util.StringUtils.format("http://{}:{}{}", host, port, path);
+        String prefix = Utils.format("http://{}:{}{}", host, port, path);
 
         VersionInfo.host   = host;
         VersionInfo.port   = port;
@@ -238,11 +237,6 @@ public class AuthzAutoConfiguration {
     }
 
     @Bean
-    public AuthzDefender auDefender(UserDevicesDict userDevicesDict, PermissionDict permissionDict, PermLibrary permLibrary) {
-        return new AuthzDefender(userDevicesDict, permissionDict, permLibrary);
-    }
-
-    @Bean
     @ConditionalOnMissingBean
     public AuthzExceptionHandler authzExceptionHandler() {
         return new DefaultAuthzExceptionHandler();
@@ -264,8 +258,8 @@ public class AuthzAutoConfiguration {
     }
 
     @Bean
-    public AuCoreInitialization auCoreInitialization(AuthzProperties properties, Httpd httpd, UserDevicesDict userDevicesDict, PermissionDict permissionDict, PermLibrary permLibrary, AuthzDefender authzDefender, Cache cache) {
-        return new AuCoreInitialization(properties, httpd, userDevicesDict, permissionDict, permLibrary, authzDefender, cache);
+    public AuCoreInitialization auCoreInitialization(AuthzProperties properties, Httpd httpd, UserDevicesDict userDevicesDict, PermissionDict permissionDict, PermLibrary permLibrary, Cache cache) {
+        return new AuCoreInitialization(properties, httpd, userDevicesDict, permissionDict, permLibrary, cache);
     }
 
     @Configuration

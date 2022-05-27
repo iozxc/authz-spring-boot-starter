@@ -8,6 +8,7 @@ import cn.omisheep.authz.core.util.ExceptionUtils;
 import org.springframework.web.method.HandlerMethod;
 
 import java.util.Map;
+import java.util.Set;
 
 import static cn.omisheep.authz.core.Constants.OPTIONS;
 
@@ -31,13 +32,21 @@ public class CheckerSlot implements Slot {
         if (httpMeta == null || httpMeta.isMethod(OPTIONS) || httpMeta.isIgnore()) return false;
         AuthzException exception = ExceptionUtils.get(httpMeta.getRequest());
         if (exception != null) return false;
-        return requireProtect(httpMeta.getMethod(), httpMeta.getApi());
+        httpMeta.setRequireProtect(requireProtect(httpMeta));
+        httpMeta.setRequireLogin(requireLogin(httpMeta));
+        return httpMeta.isRequireProtect() || httpMeta.isRequireLogin();
     }
 
-    private boolean requireProtect(String method, String api) {
-        Map<String, PermRolesMeta> map = permissionDict.getRolePermission().get(method);
+    private boolean requireProtect(HttpMeta httpMeta) {
+        Map<String, PermRolesMeta> map = permissionDict.getRolePermission().get(httpMeta.getMethod());
         if (map == null) return false;
-        return map.get(api) != null;
+        return map.get(httpMeta.getApi()) != null;
+    }
+
+    private boolean requireLogin(HttpMeta httpMeta) {
+        Set<String> list = permissionDict.getCertificatedMetadata().get(httpMeta.getMethod());
+        if (list == null) return httpMeta.isRequireProtect();
+        return list.contains(httpMeta.getApi()) || httpMeta.isRequireProtect();
     }
 
 }

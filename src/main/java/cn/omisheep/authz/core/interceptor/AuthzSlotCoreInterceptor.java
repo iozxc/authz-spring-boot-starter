@@ -5,6 +5,7 @@ import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.slot.Order;
 import cn.omisheep.authz.core.slot.Slot;
+import cn.omisheep.authz.core.tk.TokenHelper;
 import cn.omisheep.authz.core.util.LogUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.web.method.HandlerMethod;
@@ -43,11 +44,11 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        HttpMeta httpMeta = (HttpMeta) request.getAttribute(HTTP_META);
+        HttpMeta       httpMeta      = (HttpMeta) request.getAttribute(HTTP_META);
         AuthzException httpException = httpMeta.getAuthzException();
         if (httpException != null) {
             LogUtils.exportLogsFromRequest(request);
-            return authzExceptionHandler.handle(request, response, httpException);
+            return authzExceptionHandler.handle(request, response, httpMeta, httpException.getExceptionStatus());
         }
         if (!(handler instanceof HandlerMethod)) return false;
         HandlerMethod handlerMethod = (HandlerMethod) handler;
@@ -56,12 +57,13 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
             for (Slot slot : slots) if (next || slot.must()) next = slot.chain(httpMeta, handlerMethod);
             AuthzException exception = httpMeta.getAuthzException();
             if (exception != null) {
-                return authzExceptionHandler.handle(request, response, exception);
+                if (exception.getExceptionStatus().isClearToken()) TokenHelper.clearCookie(response);
+                return authzExceptionHandler.handle(request, response, httpMeta, exception.getExceptionStatus());
             } else return true;
         } catch (Exception e) {
             e.printStackTrace();
             LogUtils.logError(e.getMessage(), e.getCause());
-            return authzExceptionHandler.handle(request, response, new AuthzException(e.getCause(), ExceptionStatus.UNKNOWN));
+            return authzExceptionHandler.handle(request, response, httpMeta, ExceptionStatus.UNKNOWN);
         }
     }
 

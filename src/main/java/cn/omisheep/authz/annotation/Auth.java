@@ -2,26 +2,28 @@ package cn.omisheep.authz.annotation;
 
 import org.springframework.core.annotation.AliasFor;
 
-import java.lang.annotation.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
  * @version 1.0.0
  * @since 1.0.0
  */
-@Target({ElementType.TYPE, ElementType.METHOD, ElementType.PARAMETER, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Auth(scope = AuthScope.ROLE)
-public @interface Roles {
+@Certificated
+public @interface Auth {
 
-    @AliasFor(value = "require", annotation = Auth.class)
+    AuthScope scope();
+
+    @AliasFor("require")
     String[] value() default {};
 
-    @AliasFor(value = "value", annotation = Auth.class)
+    @AliasFor("value")
     String[] require() default {};
 
-    @AliasFor(annotation = Auth.class)
     String[] exclude() default {};
 
     /**
@@ -31,7 +33,6 @@ public @interface Roles {
      *
      * @return scope of access
      */
-    @AliasFor(annotation = Auth.class)
     String[] paramRange() default {};
 
     /**
@@ -41,13 +42,10 @@ public @interface Roles {
      *
      * @return required protect resources
      */
-    @AliasFor(annotation = Auth.class)
     String[] paramResources() default {};
 
-    @AliasFor(annotation = Auth.class)
     String condition() default "";
 
-    @AliasFor(annotation = Auth.class)
     Arg[] args() default {};
 
 }

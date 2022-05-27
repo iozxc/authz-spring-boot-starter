@@ -39,9 +39,11 @@ public class ParameterPermSlot implements Slot {
 
     @Override
     public boolean chain(HttpMeta httpMeta, HandlerMethod handler) throws Exception {
+        if (!httpMeta.isRequireProtect()) return true;
         PermRolesMeta permRolesMeta = permissionDict.getRolePermission().get(httpMeta.getMethod()).get(httpMeta.getApi());
-        Set<String>   roles         = null;
-        Set<String>   permissions   = null;
+        if (permRolesMeta.getParamPermissionsMetadata() == null) return true;
+        Set<String> roles       = null;
+        Set<String> permissions = null;
 
         for (MethodParameter parameter : handler.getMethodParameters()) {
             RequestParam requestParam = AnnotationUtils.getAnnotation(parameter.getParameter(), RequestParam.class);

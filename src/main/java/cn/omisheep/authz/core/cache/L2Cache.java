@@ -18,7 +18,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import static cn.omisheep.commons.util.Utils.castValue;
@@ -36,12 +35,9 @@ public class L2Cache implements Cache {
     private final LoadingCache<String, CacheItem> cache;
 
     public L2Cache(AuthzProperties properties) {
-        Caffeine<String, CacheItem> caffeine = Caffeine.newBuilder()
-                .scheduler(Scheduler.systemScheduler())
-                .expireAfter(new CacheExpiry(TimeUtils.parseTimeValue(properties.getCache().getExpireAfterReadOrUpdateTime()), TimeUnit.MILLISECONDS));
-        Long cacheMaximumSize = properties.getCache().getCacheMaximumSize();
-        if (cacheMaximumSize != null)
-            caffeine.maximumSize(cacheMaximumSize);
+        Caffeine<String, CacheItem> caffeine         = Caffeine.newBuilder().scheduler(Scheduler.systemScheduler()).expireAfter(new CacheExpiry(TimeUtils.parseTimeValue(properties.getCache().getExpireAfterReadOrUpdateTime()), TimeUnit.MILLISECONDS));
+        Long                        cacheMaximumSize = properties.getCache().getCacheMaximumSize();
+        if (cacheMaximumSize != null) caffeine.maximumSize(cacheMaximumSize);
         cache = caffeine.build(new CacheLoader<String, CacheItem>() {
             @Override
             public @Nullable CacheItem load(@NonNull String key) {
@@ -88,75 +84,47 @@ public class L2Cache implements Cache {
 
     @Override
     @NonNull
-    public Set<String> keys(String pattern) {
-        CacheItem cacheItem = cache.asMap().get(pattern);
-        if (cacheItem != null) return (Set<String>) cacheItem.value;
-        Set<String> scan = RedisUtils.scan(pattern);
-        RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.write(pattern, scan));
-        if (!scan.isEmpty()) cache.put(pattern, new CacheItem(scan));
-        return scan;
+    public Set<String> keys(@NonNull String pattern) {
+        return RedisUtils.scan(pattern);
     }
 
     @Override
     @NonNull
     public Set<String> keysAndLoad(String pattern) {
         Set<String> keys = keys(pattern);
-        cache.getAll(keys);
+        Async.run(() -> cache.getAll(keys));
         return keys;
     }
 
     @Override
-    public boolean notKey(String key) {
-        return key == null || cache.get(key) == null;
+    public boolean notKey(@NonNull String key) {
+        return cache.get(key) == null;
     }
 
     @Override
-    public long ttl(String key) {
+    public long ttl(@NonNull String key) {
         return RedisUtils.ttl(key);
-    }
-
-    @Override
-    public @Nullable Object get(String key) {
-        CacheItem item = cache.get(key);
-        return item != null ? item.value : null;
-    }
-
-    @Override
-    public @NonNull Map<String, Object> get(Set<String> keys) {
-        return new HashMap<>(cache.getAll(keys));
-    }
-
-    @Override
-    public @NonNull <T> Map<String, T> get(Set<String> keys, Class<T> requiredType) {
-        Map<String, CacheItem> items = cache.getAll(keys);
-        HashMap<String, T>     map   = new HashMap<>();
-        for (Map.Entry<String, CacheItem> entry : items.entrySet()) {
-            map.put(entry.getKey(), castValue(entry.getValue(), requiredType));
-        }
-        return map;
     }
 
     /**
      * @param key     键
      * @param element 值
      * @param ttl     秒
-     * @return 所添加的值
      */
     @Override
-    public <E> E set(String key, E element, long ttl) {
-        E e = setSneaky(key, element, ttl);
+    public <E> void set(@NonNull String key, @Nullable E element, long ttl) {
+        setSneaky(key, element, ttl);
         RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.write(key));
-        return e;
     }
 
     @Override
-    public <E> void setSneaky(String key, E element, long number, TimeUnit unit) {
+    public <E> void setSneaky(@NonNull String key, @Nullable E element, long number, @NonNull TimeUnit unit) {
         setSneaky(key, element, unit.toSeconds(number));
     }
 
     @Override
-    public <E> E setSneaky(String key, E element, long ttl) {
-        if (ttl == 0) return element;
+    public <E> void setSneaky(@NonNull String key, @Nullable E element, long ttl) {
+        if (ttl == 0) return;
         try {
             if (ttl == Cache.INHERIT) {
                 RedisUtils.Obj.update(key, element);
@@ -172,11 +140,37 @@ public class L2Cache implements Cache {
         } finally {
             cache.put(key, new CacheItem(ttl, element));
         }
-        return element;
     }
 
     @Override
-    public void del(String key) {
+    public @Nullable Object get(String key) {
+        CacheItem item = cache.get(key);
+        return item != null ? item.value : null;
+    }
+
+    @Override
+    public @NonNull Map<String, Object> get(Set<String> keys) {
+        HashMap<String, Object> map = new HashMap<>();
+        cache.getAll(keys).forEach((k, v) -> map.put(k, v.value));
+        return map;
+    }
+
+    @Override
+    public @NonNull <T> Map<String, T> get(@NonNull Set<String> keys, @NonNull Class<T> requiredType) {
+        HashMap<String, T>     map   = new HashMap<>();
+        Map<String, CacheItem> items = cache.getAll(keys);
+        items.forEach((k, v) -> {
+            if (v.value == null) {
+                map.put(k, null);
+            } else {
+                map.put(k, castValue(v.value, requiredType));
+            }
+        });
+        return map;
+    }
+
+    @Override
+    public void del(@NonNull String key) {
         cache.invalidate(key);
         Async.run(() -> {
             RedisUtils.Obj.del(key);
@@ -185,7 +179,7 @@ public class L2Cache implements Cache {
     }
 
     @Override
-    public void del(Set<String> keys) {
+    public void del(@NonNull Set<String> keys) {
         cache.invalidateAll(keys);
         Async.run(() -> {
             RedisUtils.Obj.del(keys);
@@ -194,7 +188,7 @@ public class L2Cache implements Cache {
     }
 
     @Override
-    public void receive(CacheMessage message) {
+    public void receive(@NonNull CacheMessage message) {
         if (CacheMessage.Type.WRITE.equals(message.getType())) {
             setSync(message);
         } else {
@@ -224,16 +218,24 @@ public class L2Cache implements Cache {
 
     @Override
     public void reload() {
-        ConcurrentMap<String, CacheItem> map = cache.asMap();
-        for (Map.Entry<String, CacheItem> next : map.entrySet()) {
-            String            key  = next.getKey();
-            CacheItem<Object> item = new CacheItem<>(RedisUtils.ttl(next.getKey()), RedisUtils.Obj.get(next.getKey()));
-            map.remove(key);
-            map.put(key, item);
+        reload(cache.asMap().keySet().toArray(new String[0]));
+    }
+
+    @Override
+    public void reload(@NonNull String... keys) {
+        for (String key : keys) {
+            long   ttl = RedisUtils.ttl(key);
+            Object o   = RedisUtils.Obj.get(key);
+            if (ttl == -2) {
+                del(key);
+            } else if (ttl > -2) {
+                set(key, o, ttl);
+            }
         }
     }
 
     @Override
+    @NonNull
     public Map<String, CacheItem> asMap() {
         return new UnmodifiableObservableMap<String, CacheItem>(new ObservableMapWrapper(cache.asMap()));
     }

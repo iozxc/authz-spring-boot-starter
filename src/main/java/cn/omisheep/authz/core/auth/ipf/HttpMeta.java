@@ -3,6 +3,7 @@ package cn.omisheep.authz.core.auth.ipf;
 import cn.omisheep.authz.core.AuthzException;
 import cn.omisheep.authz.core.Constants;
 import cn.omisheep.authz.core.ExceptionStatus;
+import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.web.utils.HttpUtils;
@@ -44,6 +45,9 @@ public class HttpMeta {
     private       AuthzException     authzException;
     private       Set<String>        roles;
     private       Set<String>        permissions;
+    private       boolean            requireProtect;
+    private       boolean            requireLogin;
+    private       PermRolesMeta      permRolesMeta;
     private       boolean            ignore = false;
 
     public HttpMeta setRoles(Set<String> roles) {

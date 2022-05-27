@@ -17,9 +17,9 @@ import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.msg.Message;
 import cn.omisheep.authz.core.tk.AuKey;
-import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.authz.core.util.RedisUtils;
+import cn.omisheep.authz.core.util.Utils;
 import cn.omisheep.authz.core.util.ValueMatcher;
 import cn.omisheep.authz.support.util.IPRangeMeta;
 import cn.omisheep.commons.util.Async;
@@ -30,6 +30,7 @@ import org.springframework.aop.support.AopUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.MethodParameter;
+import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -59,8 +60,6 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
     private final PermissionDict permissionDict;
 
-    private final AuthzDefender authzDefender;
-
     private final PermLibrary permLibrary;
 
     private final Cache cache;
@@ -72,7 +71,6 @@ public class AuCoreInitialization implements ApplicationContextAware {
                                 UserDevicesDict userDevicesDict,
                                 PermissionDict permissionDict,
                                 PermLibrary permLibrary,
-                                AuthzDefender authzDefender,
                                 Cache cache) {
         this.properties      = properties;
         this.httpd           = httpd;
@@ -80,7 +78,6 @@ public class AuCoreInitialization implements ApplicationContextAware {
         this.permissionDict  = permissionDict;
         this.cache           = cache;
         this.permLibrary     = permLibrary;
-        this.authzDefender   = authzDefender;
     }
 
     @Override
@@ -93,17 +90,17 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
         // init PermissionDict
         initPermissionDict(applicationContext, mapRet);
-        LogUtils.logDebug("⬇ PermissionDict init success ⬇\n{}\n", AUtils.beautifulJson(permissionDict));
+        LogUtils.logDebug("⬇ PermissionDict init success ⬇\n{}\n", Utils.beautifulJson(permissionDict));
 
         // init Httpd
         initHttpd(applicationContext, mapRet);
-        LogUtils.logDebug("⬇ Httpd init success ⬇\n{}\n", AUtils.beautifulJson(httpd));
+        LogUtils.logDebug("⬇ Httpd init success ⬇\n{}\n", Utils.beautifulJson(httpd));
 
         // init UserDevicesDict
         initUserDevicesDict();
         LogUtils.logDebug("UserDevicesDict init success");
 
-        AuthzDefender.init(authzDefender);
+        AuthzDefender.init(userDevicesDict);
 
         // init Jobs
         AuKey.setTime(properties.getUserBufferRefreshWithPeriod());
@@ -129,21 +126,28 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
     private void initPermissionDict(ApplicationContext applicationContext, Map<RequestMappingInfo, HandlerMethod> mapRet) {
         PermissionDict.setPermSeparator(Constants.COMMA);
-        Set<String>                                 toBeLoadedRoles = new HashSet<>();
-        HashMap<String, Map<String, PermRolesMeta>> authzMetadata   = new HashMap<>();
-        HashMap<String, Map<String, IPRangeMeta>>   ipRangeMedata   = new HashMap<>();
-        Map<String, PermRolesMeta>                  pMap            = new HashMap<>();
-        Map<String, PermRolesMeta>                  rMap            = new HashMap<>();
-        Map<String, IPRangeMeta>                    iMap            = new HashMap<>();
+        Set<String>                                 toBeLoadedRoles      = new HashSet<>();
+        HashMap<String, Map<String, PermRolesMeta>> authzMetadata        = new HashMap<>();
+        HashMap<String, Map<String, IPRangeMeta>>   ipRangeMedata        = new HashMap<>();
+        Map<String, Set<String>>                    certificatedMetadata = new HashMap<>();
+        Map<String, PermRolesMeta>                  pMap                 = new HashMap<>();
+        Map<String, PermRolesMeta>                  rMap                 = new HashMap<>();
+        Map<String, IPRangeMeta>                    iMap                 = new HashMap<>();
+        LinkedList<String>                          cList                = new LinkedList<>();
 
-        applicationContext.getBeansWithAnnotation(Perms.class).forEach((key, value) -> {
-            pMap.put(value.getClass().getName(),
-                    generatePermRolesMeta(AnnotationUtils.getAnnotation(value.getClass(), Perms.class), null));
+        applicationContext.getBeansWithAnnotation(Auth.class).forEach((key, value) -> {
+            Auth   auth = AnnotatedElementUtils.getMergedAnnotation(value.getClass(), Auth.class);
+            String name = value.getClass().getName();
+            if (AuthScope.ROLE.equals(auth.scope())) {
+                rMap.put(name, generatePermRolesMeta(null, auth));
+            } else {
+                pMap.put(name, generatePermRolesMeta(auth, null));
+            }
         });
 
-        applicationContext.getBeansWithAnnotation(Roles.class).forEach((key, value) -> {
-            rMap.put(value.getClass().getName(),
-                    generatePermRolesMeta(null, AnnotationUtils.getAnnotation(value.getClass(), Roles.class)));
+        applicationContext.getBeansWithAnnotation(Certificated.class).forEach((key, value) -> {
+            Certificated certificated = AnnotationUtils.getAnnotation(value.getClass(), Certificated.class);
+            if (certificated != null) cList.add(key);
         });
 
         applicationContext.getBeansWithAnnotation(IPRangeLimit.class).forEach((key, value) -> {
@@ -157,6 +161,14 @@ public class AuCoreInitialization implements ApplicationContextAware {
             PermRolesMeta rFc           = rMap.get(value.getBeanType().getName());
             PermRolesMeta permRolesMeta = generatePermRolesMeta(value.getMethodAnnotation(Perms.class), value.getMethodAnnotation(Roles.class));
             IPRangeMeta   ipRangeMeta   = new IPRangeMeta();
+
+            // 初始化Certifecated
+            Certificated certificated = AnnotatedElementUtils.getMergedAnnotation(value.getMethod(), Certificated.class);
+            if (cList.contains(key) || certificated != null) {
+                key.getMethodsCondition().getMethods().forEach(method -> certificatedMetadata.computeIfAbsent(method.name(), r -> new HashSet<>()).addAll(getPatterns(key)));
+            }
+
+            // 初始化API权限
             if (rFc != null) {
                 if (permRolesMeta == null) permRolesMeta = new PermRolesMeta();
                 if (rFc.getRequireRoles() != null) {
@@ -176,18 +188,20 @@ public class AuCoreInitialization implements ApplicationContextAware {
             }
             if (pFc != null) {
                 if (permRolesMeta == null) permRolesMeta = new PermRolesMeta();
-                if (pFc.getRequirePermissions() != null) {
+                Set<Set<String>> requirePermissions = pFc.getRequirePermissions();
+                if (requirePermissions != null) {
                     if (permRolesMeta.getRequirePermissions() != null) {
-                        permRolesMeta.getRequirePermissions().addAll(pFc.getRequirePermissions());
+                        permRolesMeta.getRequirePermissions().addAll(requirePermissions);
                     } else {
-                        permRolesMeta.setRequirePermissions(rFc.getRequirePermissions());
+                        permRolesMeta.setRequirePermissions(requirePermissions);
                     }
                 }
                 if (pFc.getExcludePermissions() != null) {
+                    Set<Set<String>> excludePermissions = pFc.getExcludePermissions();
                     if (permRolesMeta.getExcludePermissions() != null) {
-                        permRolesMeta.getExcludePermissions().addAll(pFc.getExcludePermissions());
+                        permRolesMeta.getExcludePermissions().addAll(excludePermissions);
                     } else {
-                        permRolesMeta.setExcludePermissions(rFc.getExcludePermissions());
+                        permRolesMeta.setExcludePermissions(excludePermissions);
                     }
                 }
             }
@@ -205,11 +219,11 @@ public class AuCoreInitialization implements ApplicationContextAware {
                 });
             }
 
+            // 初始化IPRange权限
             if (iFc != null) {
                 ipRangeMeta.setAllow(iFc.getAllow());
                 ipRangeMeta.setDeny(iFc.getDeny());
             }
-
             IPRangeLimit ipRangeLimit = value.getMethodAnnotation(IPRangeLimit.class);
             if (ipRangeLimit != null) {
                 ipRangeMeta.setAllow(ipRangeLimit.allow()).setDeny(ipRangeLimit.deny());
@@ -225,7 +239,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
             }
 
 
-            // ------------- parameters init --------------- //
+            // ------------- 初始化参数权限 --------------- //
             key.getMethodsCondition().getMethods().forEach(method -> {
                 getPatterns(key).forEach(patternValue -> {
                     Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>> methodRawMap       = permissionDict.getRawMap().computeIfAbsent(method.toString(), r -> new HashMap<>());
@@ -299,6 +313,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
         try {
             permissionDict.initAuthzMetadata(authzMetadata);
             permissionDict.initIPRangeMeta(ipRangeMedata);
+            permissionDict.initCertificatedMetadata(certificatedMetadata);
             permissionDict.setGlobalAllow(IPRangeMeta.parse(properties.getGlobalIpRange().getAllow()));
             permissionDict.setGlobalDeny(IPRangeMeta.parse(properties.getGlobalIpRange().getDeny()));
             permissionDict.setSupportNative(properties.getGlobalIpRange().isSupportNative());
@@ -365,6 +380,30 @@ public class AuCoreInitialization implements ApplicationContextAware {
             rolesMeta.setRange(CollectionUtils.ofSet(r.paramRange()));
         }
         return flag ? rolesMeta : null;
+    }
+
+    public static PermRolesMeta generatePermRolesMeta(Auth p, Auth r) {
+        PermRolesMeta prm  = new PermRolesMeta();
+        boolean       flag = false;
+        if (p != null) {
+            if (p.require() != null && p.require().length != 0) {
+                prm.setRequirePermissions(CollectionUtils.splitStrValsToSets(Constants.COMMA, p.require()));
+            }
+            if (p.exclude() != null && p.exclude().length != 0) {
+                prm.setExcludePermissions(CollectionUtils.splitStrValsToSets(Constants.COMMA, p.exclude()));
+            }
+            flag = true;
+        }
+        if (r != null) {
+            if (r.require() != null && r.require().length != 0) {
+                prm.setRequireRoles(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.require()));
+            }
+            if (r.exclude() != null && r.exclude().length != 0) {
+                prm.setExcludeRoles(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.exclude()));
+            }
+            flag = true;
+        }
+        return flag ? prm : null;
     }
 
     public static PermRolesMeta generatePermRolesMeta(Perms p, Roles r) {

@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core.auth.rpd;
 
+import cn.omisheep.authz.core.auth.AuthzModifiable;
 import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.init.AuInit;
 import cn.omisheep.authz.core.util.AUtils;
@@ -14,6 +15,8 @@ import com.sun.javafx.collections.UnmodifiableObservableMap;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -28,7 +31,7 @@ import java.util.stream.Collectors;
  * @since 1.0.0
  */
 @Slf4j
-public class PermissionDict {
+public class PermissionDict implements AuthzModifiable {
 
     private static final AtomicInteger version = new AtomicInteger(0);
 
@@ -48,6 +51,8 @@ public class PermissionDict {
     private static boolean supportNative;
 
     private static Map<String, Map<String, PermRolesMeta>> authzMetadata; // api权限和api的参数权限
+
+    private static Map<String, Set<String>> certificatedMetadata; // certificatedMetadata 哪些接口需要登录-若有role和perms，则同同理
 
     private static Map<String, ArgsMeta> argsMetadata; // args
 
@@ -74,6 +79,7 @@ public class PermissionDict {
     private static final Map<String, Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>>> m6 =
             new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(rawMap));
     private static       Map<String, Map<String, IPRangeMeta>>                                         m7;
+    private static       Map<String, Set<String>>                                                      m8;
 
     public boolean isSupportNative() {
         return PermissionDict.supportNative;
@@ -105,6 +111,10 @@ public class PermissionDict {
 
     public Map<String, Map<String, IPRangeMeta>> getIPRange() {
         return m7;
+    }
+
+    public Map<String, Set<String>> getCertificatedMetadata() {
+        return m8;
     }
 
     public HashSet<IPRange> getGlobalAllow() {return globalAllow;}
@@ -165,7 +175,8 @@ public class PermissionDict {
 
     // ----------------------------------------- func ----------------------------------------- //
 
-    public Object modify(AuthzModifier authzModifier) {
+    @Nullable
+    public Object modify(@NonNull AuthzModifier authzModifier) {
         try {
             if (authzModifier.getTarget() == null) {
                 return modifyParam(authzModifier);
@@ -261,7 +272,10 @@ public class PermissionDict {
             switch (authzModifier.getOperate()) {
                 case ADD: {
                     Map<String, PermRolesMeta> target = authzMetadata.get(authzModifier.getMethod());
-                    target.put(authzModifier.getApi(), authzModifier.build());
+                    PermRolesMeta              build  = authzModifier.build();
+                    target.put(authzModifier.getApi(), build);
+                    if (build.non()) certificatedMetadata.get(authzModifier.getMethod()).remove(authzModifier.getApi());
+                    else certificatedMetadata.get(authzModifier.getMethod()).add(authzModifier.getApi());
                     return Result.SUCCESS;
                 }
                 case MODIFY:
@@ -269,12 +283,18 @@ public class PermissionDict {
                     authzMetadata.get(authzModifier.getMethod())
                             .get(authzModifier.getApi())
                             .merge(authzModifier.build());
+                    if (authzMetadata.get(authzModifier.getMethod()).get(authzModifier.getApi()).non()) {
+                        certificatedMetadata.get(authzModifier.getMethod()).remove(authzModifier.getApi());
+                    } else {
+                        certificatedMetadata.get(authzModifier.getMethod()).add(authzModifier.getApi());
+                    }
                     return Result.SUCCESS;
                 }
                 case DELETE:
                 case DEL: {
                     authzMetadata.get(authzModifier.getMethod())
                             .get(authzModifier.getApi()).removeApi();
+                    certificatedMetadata.get(authzModifier.getMethod()).remove(authzModifier.getApi());
                     return Result.SUCCESS;
                 }
                 case GET:
@@ -718,6 +738,15 @@ public class PermissionDict {
         }
         PermissionDict.ipRangeMeta = ipRangeMeta;
         m7                         = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(ipRangeMeta));
+    }
+
+    public static void initCertificatedMetadata(Map<String, Set<String>> certificatedMetadata) {
+        if (PermissionDict.certificatedMetadata != null) {
+            AuInit.log.error("certificatedMetadata 已经初始化");
+            return;
+        }
+        PermissionDict.certificatedMetadata = certificatedMetadata;
+        m8                                  = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(certificatedMetadata));
     }
 
     public static void setPermSeparator(String permSeparator) {

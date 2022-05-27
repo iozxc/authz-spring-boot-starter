@@ -42,7 +42,7 @@ public class PermRolesMeta {
         }
     }
 
-    public Map<ParamMetadata.ParamType, Map<String, ParamMetadata>> getParamPermissionsMetadata() {
+    public Map<ParamMetadata.ParamType, Map<String, ParamMetadata>>     getParamPermissionsMetadata() {
         return paramPermissionsMetadata;
     }
 

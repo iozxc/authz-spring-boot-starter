@@ -5,8 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * @author zhouxinchen[1269670415@qq.com]
+ * @version 1.0.0
+ * @since 1.0.0
+ */
 @Slf4j
-public class Utils {
+public abstract class SupportUtils {
 
     public final static int DEFAULT_BUFFER_SIZE = 1024 * 4;
 
@@ -21,14 +26,14 @@ public class Utils {
         try {
             in = Thread.currentThread().getContextClassLoader().getResourceAsStream(resource);
             if (in == null) {
-                in = Utils.class.getResourceAsStream(resource);
+                in = SupportUtils.class.getResourceAsStream(resource);
             }
 
             if (in == null) {
                 return null;
             }
 
-            return Utils.read(in);
+            return SupportUtils.read(in);
         } finally {
             close(in);
         }
@@ -40,7 +45,7 @@ public class Utils {
             StringWriter writer = new StringWriter();
 
             char[] buffer = new char[DEFAULT_BUFFER_SIZE];
-            int n;
+            int    n;
             while (-1 != (n = reader.read(buffer))) {
                 writer.write(buffer, 0, n);
             }

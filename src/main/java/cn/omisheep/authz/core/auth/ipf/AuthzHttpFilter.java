@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static cn.omisheep.authz.core.Constants.HTTP_META;
 import static cn.omisheep.authz.core.auth.ipf.Httpd.antPathMatcher;
-import static cn.omisheep.authz.core.util.AUtils.isIgnoreSuffix;
+import static cn.omisheep.authz.core.util.Utils.isIgnoreSuffix;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]

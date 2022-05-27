@@ -11,7 +11,7 @@ import javax.servlet.http.HttpServletRequest;
  * @version 1.0.0
  * @since 1.0.0
  */
-public class ExceptionUtils {
+public abstract class ExceptionUtils {
     private static final String AUTHZ_EXCEPTION = "AUTHZ_EXCEPTION";
 
 

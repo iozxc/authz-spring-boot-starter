@@ -30,7 +30,7 @@ import static cn.omisheep.commons.util.Utils.castValue;
  */
 @SuppressWarnings({"unchecked", "rawtypes"})
 @Slf4j
-public class RedisUtils {
+public abstract class RedisUtils {
 
     // ================================ common ================================ //
 

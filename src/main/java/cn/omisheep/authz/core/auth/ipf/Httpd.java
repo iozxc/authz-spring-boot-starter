@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core.auth.ipf;
 
+import cn.omisheep.authz.core.auth.AuthzModifiable;
 import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.msg.RequestMessage;
 import cn.omisheep.web.entity.Result;
@@ -8,6 +9,8 @@ import lombok.Getter;
 import lombok.Setter;
 import orestes.bloomfilter.CountingBloomFilter;
 import orestes.bloomfilter.FilterBuilder;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.util.AntPathMatcher;
 
 import java.util.*;
@@ -18,8 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @version 1.0.0
  * @since 1.0.0
  */
-@Getter
-public class Httpd {
+public class Httpd implements AuthzModifiable {
 
     public static final AntPathMatcher antPathMatcher = new AntPathMatcher("/");
 
@@ -30,19 +32,13 @@ public class Httpd {
     /**
      * 用于保存请求限制的信息
      */
+    @Getter
     private final RequestPools requestPools = new RequestPools();
-
-    public static class RequestPools extends HashMap<String, ConcurrentHashMap<String, RequestPool>> {
-        private static final long serialVersionUID = -1838299980303412207L;
-    }
-
-    public static class RequestPool extends ConcurrentHashMap<String, RequestMeta> {
-        private static final long serialVersionUID = -284927742264879191L;
-    }
 
     /**
      * api限制访问次数信息map
      */
+    @Getter
     private final Map<String, Map<String, LimitMeta>> rateLimitMetadata = new HashMap<>();
 
     @JsonIgnore
@@ -51,15 +47,25 @@ public class Httpd {
     /**
      * 黑名单 $redis$
      */
+    @Getter
     private final HashSet<RequestMeta> ipBlacklist = new HashSet<>();
 
     /**
      * ip过滤器
      */
     @JsonIgnore
+    @Getter
     private final CountingBloomFilter<String> ipBlacklistBloomFilter =
             new FilterBuilder(1000,
                     0.001).countingBits(8).buildCountingBloomFilter();
+
+    public static class RequestPools extends HashMap<String, ConcurrentHashMap<String, RequestPool>> {
+        private static final long serialVersionUID = -1838299980303412207L;
+    }
+
+    public static class RequestPool extends ConcurrentHashMap<String, RequestMeta> {
+        private static final long serialVersionUID = -284927742264879191L;
+    }
 
     public void receive(RequestMessage requestMessage) {
         String api    = requestMessage.getApi();
@@ -81,15 +87,15 @@ public class Httpd {
     }
 
     public List<Httpd.RequestPool> associatedIpPools(LimitMeta limitMeta) {
-        List<Httpd.RequestPool> requestPools = getAssociatedIpPoolsCache().get(limitMeta);
-        if (requestPools != null) return requestPools;
+        List<Httpd.RequestPool> rps = associatedIpPoolsCache.get(limitMeta);
+        if (rps != null) return rps;
 
         List<LimitMeta.AssociatedPattern> associatedPatterns = limitMeta.getAssociatedPatterns();
         List<Httpd.RequestPool>           oIpPools           = new ArrayList<>();
         if (associatedPatterns != null) {
             associatedPatterns.forEach(associatedPattern ->
                     associatedPattern.getMethods().forEach(meth -> {
-                        ConcurrentHashMap<String, Httpd.RequestPool> map = getRequestPools()
+                        ConcurrentHashMap<String, Httpd.RequestPool> map = requestPools
                                 .get(meth);
                         if (map != null) {
                             map.keySet()
@@ -100,7 +106,7 @@ public class Httpd {
             );
         }
 
-        getAssociatedIpPoolsCache().put(limitMeta, oIpPools);
+        associatedIpPoolsCache.put(limitMeta, oIpPools);
         return oIpPools;
     }
 
@@ -122,7 +128,8 @@ public class Httpd {
         });
     }
 
-    public synchronized Object modify(AuthzModifier authzModifier) {
+    @Nullable
+    public synchronized Object modify(@NonNull AuthzModifier authzModifier) {
         try {
             switch (authzModifier.getOperate()) {
                 case ADD:

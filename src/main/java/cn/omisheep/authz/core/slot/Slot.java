@@ -35,5 +35,5 @@ public interface Slot {
         return false;
     }
 
-    boolean chain(HttpMeta httpMeta, HandlerMethod handler) throws Exception;
+    boolean chain(HttpMeta httpMeta, HandlerMethod handler) throws AuthzException, Exception;
 }
