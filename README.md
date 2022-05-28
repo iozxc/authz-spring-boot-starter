@@ -47,9 +47,7 @@ public Result test(@BatchAuthority({
                            @Roles(value = "zxc", paramRange = {"123-156", "177"}),
                            @Roles(value = "admin", paramRange = "146-200")
                    }) @PathVariable int x) {
-    System.out.println("id:" + ids);
-    System.out.println("x:" + x);
-    return new ResultMap(ResultCode.SUCCESS);
+        ...
 }
 
 // 对于参数operate
@@ -64,10 +62,8 @@ public Result test(@BatchAuthority(
                     @Perms(value = {"运维权限"}, paramResources = {"开机", "关机", "添加"}),
                     @Perms(value = {"技术人员权限"}, paramResources = "登录"),
             })
-        @RequestParam(required = false) String operate){
-        System.out.println("idO:" + idO);
-        System.out.println("operate:" + operate);
-        return new ResultMap(ResultCode.SUCCESS);
+        @RequestParam(required = true) String operate){
+        ....
 }
 ```
 
