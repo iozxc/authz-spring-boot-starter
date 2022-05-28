@@ -2,19 +2,48 @@
 
 ## 动态权限框架 - 简单介绍
 
-## 登录
+## 1. 导入&配置
+
+### 1.1 Maven
+
+```xml
+<dependency>
+  <groupId>cn.omisheep</groupId>
+  <artifactId>authz-spring-boot-starter</artifactId>
+  <version>LATEST</version>
+</dependency>
+```
+
+### 1.2 yml配置
+
+```yaml
+authz:
+  token:
+    key: 123456
+  cache:
+    enable-redis: true
+  log: error
+  mybatis:
+    version: v_3_4_0_up
+  dashboard:
+    enabled: true
+```
+
+
+
+## 2. 登录
 
 ```java
 AuHelper.login(1,"Chrome");
 ```
 
-## 退出
+## 3. 退出
 
 ```java
 AuHelper.logout();
 ```
 
-## 接口需要登录
+## 4. 接口需要登录
 
 ```java
 @GetMapping("/info")
@@ -24,7 +53,7 @@ public Result getInfo(){
 }
 ```
 
-## 接口需要权限
+## 5. 接口需要权限
 
 ```java
 @GetMapping("/role-admin")
@@ -34,7 +63,7 @@ public Result roleAdmin(){
 }
 ```
 
-## 参数需要权限
+## 6. 参数需要权限
 
 ```java
 // 对于参数x
@@ -105,7 +134,7 @@ public class HnieUser {
 
 ```
 
-## 【资源】
+## 7.【资源】
 > 在使用数据权限时会用到condition，里面会有变量，该变量可以动态控制。
 
 > 对于下列资源，分别可以如下使用 <br>
@@ -148,7 +177,7 @@ public class Testw {
 
 
 
-## 权限接口
+## 8. 权限接口
 
 > 可在这里调用你的数据库
 
@@ -173,5 +202,4 @@ public class UserPermLibrary implements PermLibrary<Integer> {
     }
 }
 ```
-
 

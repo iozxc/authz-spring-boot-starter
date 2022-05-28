@@ -164,10 +164,10 @@ public class TokenHelper {
      */
     public static void clearCookie(HttpServletResponse response) {
         if (response == null) return;
-        Cookie cookie = new Cookie(cookieName, "");
+        Cookie cookie = new Cookie(cookieName, null);
         cookie.setPath("/");
         cookie.setHttpOnly(true);
-        cookie.setMaxAge(1);
+        cookie.setMaxAge(0);
         response.addCookie(cookie);
     }
 

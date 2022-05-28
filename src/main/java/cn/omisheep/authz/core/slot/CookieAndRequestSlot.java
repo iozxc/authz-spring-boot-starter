@@ -10,6 +10,7 @@ import cn.omisheep.commons.util.Async;
 import cn.omisheep.web.utils.HttpUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import org.springframework.web.method.HandlerMethod;
 
 import javax.servlet.http.Cookie;
@@ -59,11 +60,18 @@ public class CookieAndRequestSlot implements Slot {
                 Async.run(userDevicesDict::request);
             } catch (Exception e) {
                 // 惰性删除策略，如果此用户存在，但是过期，则删除
-                httpMeta.setTokenException(HttpMeta.TokenException.valueOf(e.getClass().getSimpleName()));
-                if (!isEnableRedis && e instanceof ExpiredJwtException) {
-                    Claims claims = ((ExpiredJwtException) e).getClaims();
-                    userDevicesDict.removeDeviceByUserIdAndAccessTokenId(claims.get("userId"), claims.getId());
+                if (e instanceof JwtException) {
+                    try {
+                        httpMeta.setTokenException(HttpMeta.TokenException.valueOf(e.getClass().getSimpleName()));
+                        if (!isEnableRedis && e instanceof ExpiredJwtException) {
+                            Claims claims = ((ExpiredJwtException) e).getClaims();
+                            userDevicesDict.removeDeviceByUserIdAndAccessTokenId(claims.get("userId"), claims.getId());
+                        }
+                    } catch (Exception ee) {
+                        // skip
+                    }
                 }
+
             }
         }
 

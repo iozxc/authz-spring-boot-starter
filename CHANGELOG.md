@@ -1,14 +1,22 @@
 # 更新日记【Authz】
 
+## Version 1.0.5 - 2022.5.29
 
+### Fixed
+
+- 修复了一些bug
+- 对于数据权限的yml配置进行了修改
+
+```yaml
+authz:
+  orm: mybatis
+```
 
 ## Version 1.0.4 - 2022.5.28
 
 ### Fixed
 
 - 修复了一些bug
-
-
 
 ## Version 1.0.3 - 2022.5.28
 
@@ -19,8 +27,6 @@
 ### Fixed
 
 - 修复了在数据权限匹配时，如果为多角色，则condition为AND的错误。（应该为OR）
-
-
 
 ## Version 1.0.2 - 2022.5.27
 
@@ -34,8 +40,6 @@
 - 删除L2Cache对Keys的缓存
 - 修复了对1.0.1版本中type类名字修改之后之前版本json转换错误的问题
 
-
-
 ## Version 1.0.1 - 2022.5.24
 
 ### Modify
@@ -45,8 +49,6 @@
 ### Fixed
 
 - 修复了在Controller上添加@Roles、@Permissions标签时，如果方法上没有注解的话报空指针异常的问题
-
-
 
 ## Version 1.0.0 - 2022.5.16
 
@@ -79,8 +81,6 @@
 
 - 修复了SpringBoot2.6版本不兼容问题
 - 部分API的调整 避免了空指针的问题
-
-
 
 ## Version 1.0.0.BETA1 - 2022.5.5
 

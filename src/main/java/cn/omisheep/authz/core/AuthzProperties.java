@@ -18,15 +18,11 @@ public class AuthzProperties {
 
     private CacheConfig cache = new CacheConfig();
 
-    private MybatisConfig mybatis = new MybatisConfig();
-
     private RSAConfig rsa = new RSAConfig();
 
     private IpRangeConfig globalIpRange = new IpRangeConfig();
 
     private DashboardConfig dashboard = new DashboardConfig();
-
-    private boolean dataFilter = true;
 
     /**
      * 开启redis缓存时可以不用设置。用户缓存刷新频率，清除掉过期掉值 默认10秒一次，单位 s|m|h|d
@@ -45,6 +41,12 @@ public class AuthzProperties {
     private LogLevel log = LogLevel.INFO;
 
     private boolean md5check = false;
+
+    /**
+     * orm框架
+     * 1.0.5 仅支持mybatis
+     */
+    private ORM orm;
 
     /**
      * 过滤后缀名
@@ -181,25 +183,8 @@ public class AuthzProperties {
         private String customPrivateKey;
     }
 
-    @Data
-    public static class MybatisConfig {
-
-        private Version version = Version.V_3_4_0_up;
-
-        enum Version {
-            V_3_4_0_up("3.4.0+"),
-            V_3_4_0_low("3.4.0-");
-
-            Version(String version) {
-                this.version = version;
-            }
-
-            private final String version;
-
-            public String getVersion() {
-                return version;
-            }
-        }
+    public enum ORM {
+        MYBATIS, JPA
     }
 
     @Data

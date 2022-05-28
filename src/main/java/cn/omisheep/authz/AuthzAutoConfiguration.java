@@ -31,10 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.*;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -109,11 +106,7 @@ public class AuthzAutoConfiguration {
 
         static {
             jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer(Object.class);
-            jackson2JsonRedisSerializer
-                    .setObjectMapper(new ObjectMapper()
-                            .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY)
-                            .activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL)
-                    );
+            jackson2JsonRedisSerializer.setObjectMapper(new ObjectMapper().setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY).activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL));
         }
 
         @Bean(name = "redisHealthIndicator")
@@ -171,12 +164,7 @@ public class AuthzAutoConfiguration {
 
         @Bean("auCacheRedisMessageListenerContainer")
         @ConditionalOnBean(value = MessageReceive.class, name = "authzCacheMessageReceive")
-        public RedisMessageListenerContainer container(@Qualifier("authzRedisTemplate") RedisTemplate redisTemplate,
-                                                       RedisConnectionFactory connectionFactory,
-                                                       @Qualifier("authzCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter1,
-                                                       @Qualifier("authzRequestCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter2,
-                                                       @Qualifier("authzVersionMessageListenerAdapter") MessageListenerAdapter listenerAdapter3
-        ) {
+        public RedisMessageListenerContainer container(@Qualifier("authzRedisTemplate") RedisTemplate redisTemplate, RedisConnectionFactory connectionFactory, @Qualifier("authzCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter1, @Qualifier("authzRequestCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter2, @Qualifier("authzVersionMessageListenerAdapter") MessageListenerAdapter listenerAdapter3) {
             try {
                 redisTemplate.execute((RedisCallback<Object>) RedisConnectionCommands::ping);
             } catch (Exception e) {
@@ -262,13 +250,12 @@ public class AuthzAutoConfiguration {
     }
 
     @Configuration
-    @ConditionalOnProperty(name = "authz.data-filter", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnExpression("T(org.apache.commons.lang.StringUtils).isNotEmpty('${authz.orm}')")
     public static class DataFilterAutoConfiguration {
         @Bean
-        @ConditionalOnProperty(name = "authz.mybatis.version", havingValue = "v_3_4_0_up")
+        @ConditionalOnProperty(name = "authz.orm", havingValue = "MYBATIS")
         @ConditionalOnMissingBean
-        public DataSecurityInterceptorForMybatis dataSecurityInterceptorForMybatis(PermissionDict permissionDict, PermLibrary permLibrary,
-                                                                                   DataFinderSecurityInterceptor dataFinderSecurityInterceptor) {
+        public DataSecurityInterceptorForMybatis dataSecurityInterceptorForMybatis(PermissionDict permissionDict, PermLibrary permLibrary, DataFinderSecurityInterceptor dataFinderSecurityInterceptor) {
             return new DataSecurityInterceptorForMybatis(permissionDict, permLibrary, dataFinderSecurityInterceptor);
         }
 
@@ -285,12 +272,7 @@ public class AuthzAutoConfiguration {
     @ConditionalOnProperty(name = "authz.dashboard.enabled", havingValue = "true")
     public ServletRegistrationBean DashboardServlet(AuthzProperties properties) {
         AuthzProperties.DashboardConfig dashboard = properties.getDashboard();
-        ServletRegistrationBean<SupportServlet> bean =
-                new ServletRegistrationBean<>(
-                        new SupportServlet("support/http/resources", dashboard.getMappings()
-                        ),
-                        dashboard.getMappings()
-                );
+        ServletRegistrationBean<SupportServlet> bean = new ServletRegistrationBean<>(new SupportServlet("support/http/resources", dashboard.getMappings()), dashboard.getMappings());
 
         HashMap<String, String> initParameters = new HashMap<>();
 
