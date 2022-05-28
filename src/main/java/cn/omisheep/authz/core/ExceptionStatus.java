@@ -9,20 +9,20 @@ import static org.springframework.http.HttpStatus.*;
  * @since 1.0.0
  */
 public enum ExceptionStatus {
-    UNKNOWN(100, "unknown", false, INTERNAL_SERVER_ERROR),
+    UNKNOWN(-99999, "unknown", false, INTERNAL_SERVER_ERROR),
 
-    MISMATCHED_URL(200, "URL matching failed", false, NOT_FOUND),
+    MISMATCHED_URL(-100, "URL matching failed", false, NOT_FOUND),
 
-    ACCESS_TOKEN_OVERDUE(300, "AccessToken overdue", true, NETWORK_AUTHENTICATION_REQUIRED),
-    REQUIRE_LOGIN(301, "Require login", true, NETWORK_AUTHENTICATION_REQUIRED),
-    PERM_EXCEPTION(302, "Insufficient permissions", false, NETWORK_AUTHENTICATION_REQUIRED),
+    REQUIRE_LOGIN(-101, "Require login", true, NETWORK_AUTHENTICATION_REQUIRED),
+    ACCESS_TOKEN_OVERDUE(-102, "AccessToken overdue", true, NETWORK_AUTHENTICATION_REQUIRED),
+    PERM_EXCEPTION(-103, "Insufficient permissions", false, NETWORK_AUTHENTICATION_REQUIRED),
 
-    TOKEN_EXCEPTION(400, "Token exception", true, FORBIDDEN),
-    REQUEST_REPEAT(401, "Request repeat error", false, TOO_MANY_REQUESTS),
-    LOGIN_EXCEPTION(402, "You are offline, or you may have logged in elsewhere", true, FORBIDDEN),
+    TOKEN_EXCEPTION(-201, "Token exception", true, FORBIDDEN),
+    REQUEST_REPEAT(-202, "Request repeat error", false, TOO_MANY_REQUESTS),
+    LOGIN_EXCEPTION(-203, "You are offline, or you may have logged in elsewhere", true, FORBIDDEN),
 
-    CONTENT_TYPE_ERROR(500, "Content type not supported, must be json", false, INTERNAL_SERVER_ERROR),
-    PAGE_NOT_SUPPORT(501, "Page not support, check database type, only mysql and oracle", false, INTERNAL_SERVER_ERROR);
+    CONTENT_TYPE_ERROR(-301, "Content type not supported, must be json", false, INTERNAL_SERVER_ERROR),
+    PAGE_NOT_SUPPORT(-302, "Page not support, check database type, only mysql and oracle", false, INTERNAL_SERVER_ERROR);
 
     private final int        code;
     private final String     message;
