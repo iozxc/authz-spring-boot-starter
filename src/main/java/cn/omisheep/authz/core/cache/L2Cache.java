@@ -8,6 +8,7 @@ import cn.omisheep.authz.core.util.RedisUtils;
 import cn.omisheep.commons.util.Async;
 import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.commons.util.TimeUtils;
+import cn.omisheep.commons.util.Utils;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
@@ -18,7 +19,9 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static cn.omisheep.commons.util.Utils.castValue;
 
@@ -32,6 +35,8 @@ import static cn.omisheep.commons.util.Utils.castValue;
 public class L2Cache implements Cache {
 
     private final LoadingCache<String, CacheItem> cache;
+
+    private final ConcurrentSkipListSet<String> keyPatterns = new ConcurrentSkipListSet<>();
 
     public L2Cache(AuthzProperties properties) {
         Caffeine<String, CacheItem> caffeine         = Caffeine.newBuilder().scheduler(Scheduler.systemScheduler()).expireAfter(new CacheExpiry(TimeUtils.parseTimeValue(properties.getCache().getExpireAfterReadOrUpdateTime()), TimeUnit.MILLISECONDS));
@@ -84,7 +89,15 @@ public class L2Cache implements Cache {
     @Override
     @NonNull
     public Set<String> keys(@NonNull String pattern) {
-        return RedisUtils.scan(pattern);
+        CacheItem cacheItem = cache.asMap().get(pattern);
+        if (cacheItem != null) return (Set<String>) cacheItem.value;
+        Set<String> scan = RedisUtils.scan(pattern);
+        RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.write(pattern, scan));
+        if (!scan.isEmpty()) {
+            cache.put(pattern, new CacheItem(scan));
+            keyPatterns.add(pattern);
+        }
+        return scan;
     }
 
     @Override
@@ -112,6 +125,12 @@ public class L2Cache implements Cache {
      */
     @Override
     public <E> void set(@NonNull String key, @Nullable E element, long ttl) {
+        if (cache.asMap().get(key) == null) {
+            Async.run(() -> {
+                List<String> collect = keyPatterns.stream().filter(k -> Utils.stringMatch(k, key, false)).collect(Collectors.toList());
+                cache.invalidateAll(collect);
+            });
+        }
         setSneaky(key, element, ttl);
         RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.write(key));
     }
@@ -174,6 +193,8 @@ public class L2Cache implements Cache {
         Async.run(() -> {
             RedisUtils.Obj.del(key);
             RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.delete(key));
+            List<String> collect = keyPatterns.stream().filter(k -> Utils.stringMatch(k, key, false)).collect(Collectors.toList());
+            cache.invalidateAll(collect);
         });
     }
 
@@ -183,6 +204,8 @@ public class L2Cache implements Cache {
         Async.run(() -> {
             RedisUtils.Obj.del(keys);
             RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.delete(keys));
+            List<String> collect = keyPatterns.stream().filter(k -> keys.stream().anyMatch(key -> Utils.stringMatch(k, key, false))).collect(Collectors.toList());
+            cache.invalidateAll(collect);
         });
     }
 
@@ -201,7 +224,9 @@ public class L2Cache implements Cache {
         if (pattern != null) {
             cache.put(pattern, new CacheItem(keys));
         } else {
-            String key = CollectionUtils.resolveSingletonSet(keys);
+            String       key     = CollectionUtils.resolveSingletonSet(keys);
+            List<String> collect = keyPatterns.stream().filter(k -> Utils.stringMatch(k, key, false)).collect(Collectors.toList());
+            cache.invalidateAll(collect);
             Object o   = RedisUtils.Obj.get(key);
             long   ttl = RedisUtils.ttl(key);
             if (ttl != -2) {
@@ -212,6 +237,8 @@ public class L2Cache implements Cache {
 
     private void delSync(Set<String> keys) {
         if (keys == null || keys.isEmpty()) return;
+        List<String> collect = keyPatterns.stream().filter(k -> keys.stream().anyMatch(key -> Utils.stringMatch(k, key, false))).collect(Collectors.toList());
+        cache.invalidateAll(collect);
         cache.invalidateAll(keys);
     }
 

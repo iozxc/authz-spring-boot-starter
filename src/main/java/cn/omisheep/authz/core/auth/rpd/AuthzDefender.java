@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core.auth.rpd;
 
+import cn.omisheep.authz.core.NotLoginException;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.init.AuInit;
@@ -16,6 +17,10 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 import javax.servlet.http.HttpServletResponse;
+import java.util.List;
+import java.util.Set;
+
+import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.*;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -140,6 +145,39 @@ public class AuthzDefender {
     public static void logout(@NonNull Object userId, @NonNull String deviceType, @Nullable String deviceId) {
         userDevicesDict.removeDeviceByUserIdAndDeviceTypeAndDeviceId(userId, deviceType, deviceId);
         clearCookie(userId, deviceType, deviceId);
+    }
+
+    public static boolean isLogin() {
+        try {
+            HttpMeta currentHttpMeta = AUtils.getCurrentHttpMeta();
+            Token    accessToken     = currentHttpMeta.getToken();
+            switch (userDevicesDict.userStatus(accessToken.getUserId(), accessToken.getDeviceType(), accessToken.getDeviceId(), accessToken.getTokenId())) {
+                case ACCESS_TOKEN_OVERDUE:
+                case REQUIRE_LOGIN:
+                case LOGIN_EXCEPTION:
+                    return false;
+                case SUCCESS:
+                    return true;
+                default:
+                    return true;
+            }
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public static boolean hasRoles(@NonNull List<String> roles) throws NotLoginException {
+        HttpMeta    httpMeta = AUtils.getCurrentHttpMeta();
+        Set<String> r        = httpMeta.getRoles();
+        if (r == null) return false;
+        return r.containsAll(roles);
+    }
+
+    public static boolean hasPermissions(@NonNull List<String> permissions) throws NotLoginException {
+        HttpMeta    httpMeta = AUtils.getCurrentHttpMeta();
+        Set<String> p        = httpMeta.getPermissions();
+        if (p == null) return false;
+        return p.containsAll(permissions);
     }
 
     public static void logs(String status, HttpMeta httpMeta, PermRolesMeta meta) {

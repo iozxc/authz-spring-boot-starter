@@ -58,12 +58,14 @@ public class CookieAndRequestSlot implements Slot {
                 httpMeta.setToken(token);
                 // 每次访问将最后一次访问时间和ip存入缓存中
                 Async.run(userDevicesDict::request);
+                httpMeta.setHasToken(true);
             } catch (Exception e) {
                 // 惰性删除策略，如果此用户存在，但是过期，则删除
                 if (e instanceof JwtException) {
+                    httpMeta.setHasToken(false);
                     try {
                         httpMeta.setTokenException(HttpMeta.TokenException.valueOf(e.getClass().getSimpleName()));
-                        if (!isEnableRedis && e instanceof ExpiredJwtException) {
+                        if (e instanceof ExpiredJwtException) {
                             Claims claims = ((ExpiredJwtException) e).getClaims();
                             userDevicesDict.removeDeviceByUserIdAndAccessTokenId(claims.get("userId"), claims.getId());
                         }
@@ -73,9 +75,11 @@ public class CookieAndRequestSlot implements Slot {
                 }
 
             }
+        }else {
+            httpMeta.setHasToken(false);
         }
 
-        httpMeta.setHasToken(tokenValue != null);
+
         return true;
     }
 

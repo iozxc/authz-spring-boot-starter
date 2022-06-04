@@ -1,12 +1,15 @@
 package cn.omisheep.authz;
 
 
+import cn.omisheep.authz.core.NotLoginException;
 import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.auth.deviced.Device;
 import cn.omisheep.authz.core.auth.ipf.RequestMeta;
 import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
 import cn.omisheep.authz.core.tk.AuKey;
+import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.tk.TokenPair;
+import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.commons.util.TimeUtils;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -25,8 +28,17 @@ public class AuHelper {
     // **************************************     登录 & 用户设备      ************************************** //
 
     /**
+     * @param userId 用户id - 不为null
+     * @return 授权后的tokenPair(accessToken以及refreshToken)，返回空则登录失败
+     */
+    @Nullable
+    public static TokenPair login(@NonNull Object userId) {
+        return login(userId, "unknown", null);
+    }
+
+    /**
      * @param userId     用户id - 不为null
-     * @param deviceType 设备系统类型 - 不为null
+     * @param deviceType 设备系统类型 - 不为null 默认为unknown
      * @return 授权后的tokenPair(accessToken以及refreshToken)，返回空则登录失败
      */
     @Nullable
@@ -186,6 +198,40 @@ public class AuHelper {
         return userDevicesDict.listDevicesByUserId(userId).stream()
                 .filter(device -> device.getType().equals(deviceType))
                 .collect(Collectors.toList());
+    }
+
+    // **************************************     状态管理      ************************************** //
+
+    public static Token getToken() throws NotLoginException {
+        return AUtils.getCurrentToken();
+    }
+
+    public static String getDeviceType() throws NotLoginException {
+        return AUtils.getCurrentToken().getDeviceType();
+    }
+
+    public static String getDeviceId() {
+        return AUtils.getCurrentToken().getDeviceId();
+    }
+
+    public static boolean isLogin() {
+        return AuthzDefender.isLogin();
+    }
+
+    public static boolean hasRole(String role) throws NotLoginException {
+        return AuthzDefender.hasRoles(Collections.singletonList(role));
+    }
+
+    public static boolean hasRoles(List<String> roles) throws NotLoginException {
+        return AuthzDefender.hasRoles(roles);
+    }
+
+    public static boolean hasPermission(String permission) throws NotLoginException {
+        return AuthzDefender.hasPermissions(Collections.singletonList(permission));
+    }
+
+    public static boolean hasPermissions(List<String> permissions) throws NotLoginException {
+        return AuthzDefender.hasPermissions(permissions);
     }
 
     // ************************************     【在线/活跃】      ************************************ //

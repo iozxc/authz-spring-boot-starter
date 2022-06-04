@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core.util;
 
 import cn.omisheep.authz.core.Constants;
+import cn.omisheep.authz.core.NotLoginException;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.web.utils.HttpUtils;
@@ -8,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.lang.Nullable;
+import org.springframework.lang.NonNull;
 
 import java.util.Map;
 
@@ -39,22 +40,23 @@ public class AUtils implements ApplicationContextAware {
         ctx = applicationContext;
     }
 
-    @Nullable
-    public static HttpMeta getCurrentHttpMeta() {
+    @NonNull
+    public static HttpMeta getCurrentHttpMeta() throws NotLoginException {
         try {
             HttpMeta currentHttpMeta = (HttpMeta) HttpUtils.getCurrentRequest().getAttribute(Constants.HTTP_META);
+            if (currentHttpMeta == null) throw new NotLoginException();
             return currentHttpMeta;
         } catch (Exception e) {
-            return null;
+            throw new NotLoginException();
         }
     }
 
-    @Nullable
-    public static Token getCurrentToken() {
+    @NonNull
+    public static Token getCurrentToken() throws NotLoginException {
         try {
             return getCurrentHttpMeta().getToken();
         } catch (Exception e) {
-            return null;
+            throw new NotLoginException();
         }
     }
 
