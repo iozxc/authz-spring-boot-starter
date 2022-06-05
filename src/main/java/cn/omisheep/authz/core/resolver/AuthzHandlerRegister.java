@@ -1,7 +1,7 @@
-package cn.omisheep.authz.core.interceptor;
+package cn.omisheep.authz.core.resolver;
 
-import cn.omisheep.authz.core.resolver.AuHttpMetaResolver;
-import cn.omisheep.authz.core.resolver.AuTokenOrHttpMetaResolver;
+import cn.omisheep.authz.core.interceptor.AuthzExceptionHandler;
+import cn.omisheep.authz.core.interceptor.AuthzSlotCoreInterceptor;
 import cn.omisheep.authz.core.slot.Slot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;

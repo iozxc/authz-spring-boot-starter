@@ -43,7 +43,6 @@ import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -108,11 +107,9 @@ public class AuCoreInitialization implements ApplicationContextAware {
         AuthzDefender.init(userDevicesDict);
 
         // init Jobs
-        AuKey.setTime(properties.getUserBufferRefreshWithPeriod());
-        if (properties.getRsa().isAuto() && properties.getRsa().getCustomPrivateKey() != null && properties.getRsa().getCustomPublicKey() != null) {
-            ScheduledFuture<?> schedule = TaskBuilder.schedule(AuKey::refreshKeyGroup, properties.getRsa().getRsaKeyRefreshWithPeriod());
+        AuKey.setTime(properties.getRsa().getRsaKeyRefreshWithPeriod());
+        if (properties.getRsa().isAuto() && (properties.getRsa().getCustomPrivateKey() == null || properties.getRsa().getCustomPublicKey() == null)) {
             AuKey.setAuto(true);
-            AuKey.setScheduledFuture(schedule);
         } else {
             AuKey.setAuto(false);
             AuthzProperties.RSAConfig rsaConfig = properties.getRsa();

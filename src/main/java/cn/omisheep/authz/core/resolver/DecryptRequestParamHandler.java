@@ -1,4 +1,4 @@
-package cn.omisheep.authz.core.interceptor;
+package cn.omisheep.authz.core.resolver;
 
 import cn.omisheep.authz.annotation.Decrypt;
 import cn.omisheep.authz.core.tk.AuKey;
