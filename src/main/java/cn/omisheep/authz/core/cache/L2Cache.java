@@ -224,12 +224,14 @@ public class L2Cache implements Cache {
         if (pattern != null) {
             cache.put(pattern, new CacheItem(keys));
         } else {
-            String       key     = CollectionUtils.resolveSingletonSet(keys);
-            List<String> collect = keyPatterns.stream().filter(k -> Utils.stringMatch(k, key, false)).collect(Collectors.toList());
-            cache.invalidateAll(collect);
+            String key = CollectionUtils.resolveSingletonSet(keys);
             Object o   = RedisUtils.Obj.get(key);
             long   ttl = RedisUtils.ttl(key);
             if (ttl != -2) {
+                if (cache.asMap().get(key) == null) {
+                    List<String> collect = keyPatterns.stream().filter(k -> Utils.stringMatch(k, key, false)).collect(Collectors.toList());
+                    cache.invalidateAll(collect);
+                }
                 cache.put(key, new CacheItem(ttl, o));
             } else cache.invalidate(key);
         }

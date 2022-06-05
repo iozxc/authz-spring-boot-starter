@@ -14,7 +14,6 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Collection;
-import java.util.Date;
 import java.util.LinkedList;
 
 import static cn.omisheep.authz.core.Constants.HTTP_META;
@@ -54,13 +53,7 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
         HandlerMethod handlerMethod = (HandlerMethod) handler;
         try {
             boolean next = true;
-            Date    date = new Date();
-            for (Slot slot : slots) if (next || slot.must()) {
-                next = slot.chain(httpMeta, handlerMethod);
-                System.out.println(slot.getClass());
-                System.out.println(new Date().getTime()- date.getTime());
-            }
-            System.out.println(new Date().getTime()- date.getTime());
+            for (Slot slot : slots) if (next || slot.must()) next = slot.chain(httpMeta, handlerMethod);
             AuthzException exception = httpMeta.getAuthzException();
             if (exception != null) {
                 if (exception.getExceptionStatus().isClearToken()) TokenHelper.clearCookie(response);
