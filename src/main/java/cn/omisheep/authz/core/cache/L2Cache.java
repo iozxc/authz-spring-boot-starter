@@ -13,8 +13,6 @@ import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.Scheduler;
-import com.sun.javafx.collections.ObservableMapWrapper;
-import com.sun.javafx.collections.UnmodifiableObservableMap;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -265,6 +263,6 @@ public class L2Cache implements Cache {
     @Override
     @NonNull
     public Map<String, CacheItem> asMap() {
-        return new UnmodifiableObservableMap<String, CacheItem>(new ObservableMapWrapper(cache.asMap()));
+        return Collections.unmodifiableMap(cache.asMap());
     }
 }

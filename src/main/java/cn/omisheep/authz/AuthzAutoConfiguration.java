@@ -98,6 +98,15 @@ public class AuthzAutoConfiguration {
         VersionInfo.prefix = prefix;
     }
 
+    @Bean("authzCache")
+    public Cache cache(AuthzProperties properties) {
+        if (properties.getCache().isEnableRedis()) {
+            return new L2Cache(properties);
+        } else {
+            return new DefaultCache(properties.getCache().getCacheMaximumSize(), properties.getCache().getExpireAfterReadOrUpdateTime());
+        }
+    }
+
     @Configuration
     @EnableConfigurationProperties(RedisProperties.class)
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -129,15 +138,6 @@ public class AuthzAutoConfiguration {
             template.setHashKeySerializer(jackson2JsonRedisSerializer);
             template.afterPropertiesSet();
             return template;
-        }
-
-        @Bean("authzCache")
-        public Cache cache(AuthzProperties properties) {
-            if (properties.getCache().isEnableRedis()) {
-                return new L2Cache(properties);
-            } else {
-                return new DefaultCache(properties.getCache().getCacheMaximumSize(), properties.getCache().getExpireAfterReadOrUpdateTime());
-            }
         }
 
         @Bean("authzCacheMessageReceive")
@@ -211,9 +211,9 @@ public class AuthzAutoConfiguration {
     }
 
     @Bean
-    public UserDevicesDict userDevicesDict(AuthzProperties properties, Cache cache) {
+    public UserDevicesDict userDevicesDict(AuthzProperties properties) {
         if (properties.getCache().isEnableRedis()) {
-            return new UserDevicesDictByCache(properties, cache);
+            return new UserDevicesDictByCache(properties);
         } else {
             return new UserDevicesDictByHashMap(properties);
         }
@@ -257,8 +257,8 @@ public class AuthzAutoConfiguration {
         @Bean
         @ConditionalOnProperty(name = "authz.orm", havingValue = "MYBATIS")
         @ConditionalOnMissingBean
-        public DataSecurityInterceptorForMybatis dataSecurityInterceptorForMybatis(PermissionDict permissionDict, PermLibrary permLibrary, DataFinderSecurityInterceptor dataFinderSecurityInterceptor) {
-            return new DataSecurityInterceptorForMybatis(permissionDict, permLibrary, dataFinderSecurityInterceptor);
+        public DataSecurityInterceptorForMybatis dataSecurityInterceptorForMybatis() {
+            return new DataSecurityInterceptorForMybatis();
         }
 
         @Bean
@@ -273,8 +273,8 @@ public class AuthzAutoConfiguration {
     @Bean
     @ConditionalOnProperty(name = "authz.dashboard.enabled", havingValue = "true")
     public ServletRegistrationBean DashboardServlet(AuthzProperties properties) {
-        AuthzProperties.DashboardConfig dashboard = properties.getDashboard();
-        ServletRegistrationBean<SupportServlet> bean = new ServletRegistrationBean<>(new SupportServlet("support/http/resources", dashboard.getMappings()), dashboard.getMappings());
+        AuthzProperties.DashboardConfig         dashboard = properties.getDashboard();
+        ServletRegistrationBean<SupportServlet> bean      = new ServletRegistrationBean<>(new SupportServlet("support/http/resources", dashboard.getMappings()), dashboard.getMappings());
 
         HashMap<String, String> initParameters = new HashMap<>();
 

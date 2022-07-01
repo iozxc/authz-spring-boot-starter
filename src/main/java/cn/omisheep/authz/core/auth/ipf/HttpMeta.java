@@ -9,6 +9,7 @@ import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.web.utils.HttpUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
+import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
@@ -108,7 +109,7 @@ public class HttpMeta {
      * @return 请求体
      */
     public String getBody() {
-        if (!"POST".equals(method)) {
+        if (!"POST".equals(method) || StringUtils.startsWithIgnoreCase(request.getContentType(), "multipart/")) {
             return null;
         }
         if (body == null) {

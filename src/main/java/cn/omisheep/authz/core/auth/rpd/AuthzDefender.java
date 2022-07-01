@@ -1,9 +1,9 @@
 package cn.omisheep.authz.core.auth.rpd;
 
 import cn.omisheep.authz.core.NotLoginException;
+import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.authz.core.init.AuInit;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.tk.TokenHelper;
 import cn.omisheep.authz.core.tk.TokenPair;
@@ -17,7 +17,9 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 import javax.servlet.http.HttpServletResponse;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.*;
@@ -26,16 +28,20 @@ import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.*;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
+@SuppressWarnings("all")
 public class AuthzDefender {
 
     private static UserDevicesDict userDevicesDict;
+    private static PermLibrary     permLibrary;
 
-    public static void init(UserDevicesDict userDevicesDict) {
-        if (AuthzDefender.userDevicesDict != null) {
-            AuInit.log.error("authzDefender 已经初始化");
-            return;
+    public static void init(UserDevicesDict userDevicesDict, PermLibrary permLibrary) {
+        if (AuthzDefender.userDevicesDict == null) {
+            AuthzDefender.userDevicesDict = userDevicesDict;
         }
-        AuthzDefender.userDevicesDict = userDevicesDict;
+
+        if (AuthzDefender.permLibrary == null) {
+            AuthzDefender.permLibrary = permLibrary;
+        }
     }
 
     /**
@@ -167,15 +173,20 @@ public class AuthzDefender {
     }
 
     public static boolean hasRoles(@NonNull List<String> roles) throws NotLoginException {
-        HttpMeta    httpMeta = AUtils.getCurrentHttpMeta();
-        Set<String> r        = httpMeta.getRoles();
+        HttpMeta    httpMeta      = AUtils.getCurrentHttpMeta();
+        Set<String> r = Optional.ofNullable(httpMeta.getRoles()).orElse(permLibrary.getRolesByUserId(httpMeta.getUserId()));
         if (r == null) return false;
         return r.containsAll(roles);
     }
 
     public static boolean hasPermissions(@NonNull List<String> permissions) throws NotLoginException {
-        HttpMeta    httpMeta = AUtils.getCurrentHttpMeta();
-        Set<String> p        = httpMeta.getPermissions();
+        HttpMeta    httpMeta      = AUtils.getCurrentHttpMeta();
+        Set<String> r = Optional.ofNullable(httpMeta.getRoles()).orElse(permLibrary.getRolesByUserId(httpMeta.getUserId()));
+        Set<String> p = Optional.ofNullable(httpMeta.getPermissions()).orElseGet(() -> {
+            HashSet<String> perms = new HashSet<>();
+            r.forEach(role -> perms.addAll(permLibrary.getPermissionsByRole(role)));
+            return perms;
+        });
         if (p == null) return false;
         return p.containsAll(permissions);
     }

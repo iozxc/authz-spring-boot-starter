@@ -4,6 +4,7 @@ package cn.omisheep.authz;
 import cn.omisheep.authz.core.NotLoginException;
 import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.auth.deviced.Device;
+import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.ipf.RequestMeta;
 import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
 import cn.omisheep.authz.core.tk.AuKey;
@@ -202,8 +203,16 @@ public class AuHelper {
 
     // **************************************     状态管理      ************************************** //
 
+    public static Object getUserId() throws NotLoginException {
+        return AUtils.getCurrentToken().getUserId();
+    }
+
     public static Token getToken() throws NotLoginException {
         return AUtils.getCurrentToken();
+    }
+
+    public static HttpMeta getHttpMeta() {
+        return AUtils.getCurrentHttpMeta();
     }
 
     public static String getDeviceType() throws NotLoginException {

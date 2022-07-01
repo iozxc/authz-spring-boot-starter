@@ -12,6 +12,7 @@ import cn.omisheep.web.utils.BufferedServletRequestWrapper;
 import cn.omisheep.web.utils.HttpUtils;
 import lombok.extern.slf4j.Slf4j;
 import orestes.bloomfilter.CountingBloomFilter;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.boot.logging.LogLevel;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -56,7 +57,12 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
     public void doFilterInternal(HttpServletRequest rrequest,
                                  HttpServletResponse response,
                                  FilterChain filterChain) throws ServletException, IOException {
-        HttpServletRequest request = new BufferedServletRequestWrapper(rrequest);
+        HttpServletRequest request;
+        if (StringUtils.startsWithIgnoreCase(rrequest.getContentType(), "multipart/")) {
+            request = rrequest;
+        } else {
+            request = new BufferedServletRequestWrapper(rrequest);
+        }
 
         String ip          = getIp(request);
         String uri         = request.getRequestURI();

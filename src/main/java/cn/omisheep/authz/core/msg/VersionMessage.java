@@ -50,8 +50,8 @@ public class VersionMessage implements Message {
     public static boolean ignore(VersionMessage message) {
         return message == null // 消息为空
                 || Message.uuid.equals(message.getId()) // 自己的消息
-                || !message.context.equals(CHANNEL) // 不在一个频道
-                || failureMd5Check(message); // md5检查失败
+                || !message.context.equals(CHANNEL); // 不在一个频道
+//                || failureMd5Check(message); // md5检查失败
     }
 
     private static boolean failureMd5Check(VersionMessage message) {

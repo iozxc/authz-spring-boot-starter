@@ -10,8 +10,6 @@ import cn.omisheep.authz.support.util.IPRangeMeta;
 import cn.omisheep.web.entity.Result;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.base.Objects;
-import com.sun.javafx.collections.ObservableMapWrapper;
-import com.sun.javafx.collections.UnmodifiableObservableMap;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -76,7 +74,7 @@ public class PermissionDict implements AuthzModifiable {
     private static       Map<String, Map<String, FieldData>>                                           m4;
     private static       Map<String, ArgsMeta>                                                         m5;
     private static final Map<String, Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>>> m6 =
-            new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(rawMap));
+            Collections.unmodifiableMap(rawMap);
     private static       Map<String, Map<String, IPRangeMeta>>                                         m7;
     private static       Map<String, Set<String>>                                                      m8;
 
@@ -685,7 +683,8 @@ public class PermissionDict implements AuthzModifiable {
             return;
         }
         PermissionDict.authzMetadata = authzMetadata;
-        m1                           = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(authzMetadata));
+
+        m1 = Collections.unmodifiableMap(authzMetadata);
     }
 
     public static void addAuthzResourcesNames(Set<String> authzResourcesNames) {
@@ -699,7 +698,7 @@ public class PermissionDict implements AuthzModifiable {
             } catch (Exception ignored) {
             }
         }
-        m2 = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(authzResourcesNameAndTemplate));
+        m2 = Collections.unmodifiableMap(authzResourcesNameAndTemplate);
         AuInit.log.info("authz resources add success ⬇: \n{}", names);
     }
 
@@ -709,7 +708,7 @@ public class PermissionDict implements AuthzModifiable {
             return;
         }
         PermissionDict.dataPermMetadata = dataPermMetadata;
-        m3                              = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(dataPermMetadata));
+        m3                              = Collections.unmodifiableMap(dataPermMetadata);
     }
 
     public static void initFieldMetadata(Map<String, Map<String, FieldData>> fieldMetadata) {
@@ -718,7 +717,7 @@ public class PermissionDict implements AuthzModifiable {
             return;
         }
         PermissionDict.fieldMetadata = fieldMetadata;
-        m4                           = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(fieldMetadata));
+        m4                           = Collections.unmodifiableMap(fieldMetadata);
     }
 
     public static void initArgs(Map<String, ArgsMeta> argsMetadata) {
@@ -727,7 +726,7 @@ public class PermissionDict implements AuthzModifiable {
             return;
         }
         PermissionDict.argsMetadata = argsMetadata;
-        m5                          = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(argsMetadata));
+        m5                          = Collections.unmodifiableMap(argsMetadata);
     }
 
     public static void initIPRangeMeta(Map<String, Map<String, IPRangeMeta>> ipRangeMeta) {
@@ -736,7 +735,8 @@ public class PermissionDict implements AuthzModifiable {
             return;
         }
         PermissionDict.ipRangeMeta = ipRangeMeta;
-        m7                         = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(ipRangeMeta));
+
+        m7 = Collections.unmodifiableMap(ipRangeMeta);
     }
 
     public static void initCertificatedMetadata(Map<String, Set<String>> certificatedMetadata) {
@@ -745,7 +745,7 @@ public class PermissionDict implements AuthzModifiable {
             return;
         }
         PermissionDict.certificatedMetadata = certificatedMetadata;
-        m8                                  = new UnmodifiableObservableMap<>(new ObservableMapWrapper<>(certificatedMetadata));
+        m8                                  = Collections.unmodifiableMap(certificatedMetadata);
     }
 
     public static void setPermSeparator(String permSeparator) {

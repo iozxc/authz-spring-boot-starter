@@ -19,7 +19,6 @@ import cn.omisheep.authz.core.msg.Message;
 import cn.omisheep.authz.core.tk.AuKey;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.authz.core.util.RedisUtils;
-import cn.omisheep.authz.core.util.Utils;
 import cn.omisheep.authz.core.util.ValueMatcher;
 import cn.omisheep.authz.support.util.IPRangeMeta;
 import cn.omisheep.commons.util.Async;
@@ -94,17 +93,17 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
         // init PermissionDict
         initPermissionDict(ctx, mapRet);
-        LogUtils.logDebug("⬇ PermissionDict init success ⬇\n{}\n", Utils.beautifulJson(permissionDict));
+        LogUtils.logDebug("PermissionDict init success \n");
 
         // init Httpd
         initHttpd(ctx, mapRet);
-        LogUtils.logDebug("⬇ Httpd init success ⬇\n{}\n", Utils.beautifulJson(httpd));
+        LogUtils.logDebug("Httpd init success \n");
 
         // init UserDevicesDict
         initUserDevicesDict();
         LogUtils.logDebug("UserDevicesDict init success");
 
-        AuthzDefender.init(userDevicesDict);
+        AuthzDefender.init(userDevicesDict, permLibrary);
 
         // init Jobs
         AuKey.setTime(properties.getRsa().getRsaKeyRefreshWithPeriod());
@@ -128,10 +127,14 @@ public class AuCoreInitialization implements ApplicationContextAware {
     }
 
     private void initVersionInfo() {
-        VersionInfo.setProjectPath(getJarPath());
-        VersionInfo.setMd5check(properties.isMd5check());
-        VersionInfo.compute();
-        VersionInfo.born();
+        try {
+            VersionInfo.setProjectPath(getJarPath());
+            VersionInfo.setMd5check(properties.isMd5check());
+            VersionInfo.compute();
+            VersionInfo.born();
+        } catch (Exception e) {
+            // skip
+        }
     }
 
     @SneakyThrows
