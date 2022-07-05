@@ -24,7 +24,7 @@ import static cn.omisheep.authz.core.auth.rpd.AuthzDefender.logs;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-@Order(40)
+@Order(400)
 @SuppressWarnings("all")
 public class ParameterPermSlot implements Slot {
 

@@ -14,7 +14,7 @@ import java.util.HashSet;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-@Order(3)
+@Order(30)
 public class IPRangeSlot implements Slot {
     private final PermissionDict permissionDict;
 

@@ -17,7 +17,7 @@ import static cn.omisheep.authz.core.Constants.OPTIONS;
  * @since 1.0.0
  */
 @SuppressWarnings("all")
-@Order(1)
+@Order(10)
 public class CheckerSlot implements Slot {
 
     private final PermissionDict permissionDict;

@@ -15,7 +15,7 @@ import static cn.omisheep.authz.core.auth.rpd.AuthzDefender.logs;
  * @since 1.0.0
  */
 @SuppressWarnings("all")
-@Order(10)
+@Order(100)
 public class DeviceSlot implements Slot {
 
     private final PermissionDict  permissionDict;

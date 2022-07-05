@@ -20,7 +20,7 @@ import static cn.omisheep.authz.core.auth.rpd.AuthzDefender.logs;
  * @since 1.0.0
  */
 @SuppressWarnings("all")
-@Order(30)
+@Order(300)
 public class APIPermSlot implements Slot {
 
     private final PermissionDict permissionDict;
