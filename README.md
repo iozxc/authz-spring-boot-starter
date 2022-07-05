@@ -1,6 +1,7 @@
 ### Authz
 
 ## 动态权限框架 - 简单介绍
+> 
 
 ## 1. 导入&配置
 
@@ -23,8 +24,7 @@ authz:
   cache:
     enable-redis: true
   log: error
-  mybatis:
-    version: v_3_4_0_up
+  orm: mybatis
   dashboard:
     enabled: true
 ```
