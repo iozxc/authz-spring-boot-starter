@@ -5,8 +5,11 @@ import org.springframework.core.annotation.AliasFor;
 import java.lang.annotation.*;
 
 /**
+ * like @Decrypt({"name", "content", "obj.name"})
+ * 支持对对象里对某一个属性进行加密解密
+ *
  * @author zhouxinchen[1269670415@qq.com]
- * @since 1.0.0
+ * @since 1.0.9
  */
 @Target({ElementType.PARAMETER, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)

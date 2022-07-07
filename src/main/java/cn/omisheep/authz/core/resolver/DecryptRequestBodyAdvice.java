@@ -5,7 +5,7 @@ import cn.omisheep.authz.annotation.Decrypt;
 import cn.omisheep.authz.core.tk.AuKey;
 import cn.omisheep.authz.core.util.JSONDecryptUtils;
 import cn.omisheep.authz.core.util.Utils;
-import cn.omisheep.commons.util.RsaHelper;
+import cn.omisheep.commons.util.RSAHelper;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
@@ -78,7 +78,7 @@ public class DecryptRequestBodyAdvice implements RequestBodyAdvice {
                     .lines().collect(Collectors.joining(System.lineSeparator()));
             JSONObject object = JSON.parseObject(content);
             for (String field : fields) {
-                object = JSONDecryptUtils.decrypt(field, object, privateKey);
+                JSONDecryptUtils.decrypt(field, object, privateKey);
             }
             // 将原本的json整个加密，然后再放到一个空对象中，请勿直接传递加密的数据
             String decrypt = JSON.toJSONString(object);
@@ -94,7 +94,7 @@ public class DecryptRequestBodyAdvice implements RequestBodyAdvice {
             String content = new BufferedReader(new InputStreamReader(inputMessage.getBody()))
                     .lines().collect(Collectors.joining(System.lineSeparator()));
             // 将原本的json整个加密，然后再放到一个空对象中，请勿直接传递加密的数据
-            String decrypt = RsaHelper.decrypt(Utils.parse_RSA_JSON(content), privateKey);
+            String decrypt = RSAHelper.decrypt(Utils.parse_RSA_JSON(content), privateKey);
             if (decrypt == null) {
                 decrypt = "{}";
             }

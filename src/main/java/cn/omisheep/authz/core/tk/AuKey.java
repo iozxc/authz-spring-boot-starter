@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.tk;
 
 import cn.omisheep.authz.core.util.LogUtils;
-import cn.omisheep.commons.util.RsaHelper;
+import cn.omisheep.commons.util.RSAHelper;
 import cn.omisheep.commons.util.TaskBuilder;
 import lombok.Data;
 import lombok.SneakyThrows;
@@ -20,7 +20,7 @@ public class AuKey {
 
     private static boolean auto;
 
-    private static RsaHelper.RsaKeyPair auKeyPair;
+    private static RSAHelper.RSAKeyPair auKeyPair;
 
     private static String time;
 
@@ -48,7 +48,7 @@ public class AuKey {
             scheduledFuture = null;
         }
         auto      = false;
-        auKeyPair = new RsaHelper.RsaKeyPair(publicKey, privateKey);
+        auKeyPair = new RSAHelper.RSAKeyPair(publicKey, privateKey);
         LogUtils.logDebug("⬇ auKeyPair ⬇ {} \n", auKeyPair);
     }
 
@@ -58,13 +58,18 @@ public class AuKey {
 
     @SneakyThrows
     public static void refreshKeyGroup() {
-        auKeyPair = RsaHelper.genKeyPair();
+        auKeyPair = RSAHelper.genKeyPair();
         LogUtils.logDebug("⬇ auKeyPair ⬇ {} \n", auKeyPair);
     }
 
     @SneakyThrows
+    public static String encrypt(String plaintext) {
+        return RSAHelper.encrypt(plaintext, auKeyPair.getPublicKey());
+    }
+
+    @SneakyThrows
     public static String decrypt(String encryptSource) {
-        return RsaHelper.decrypt(encryptSource, auKeyPair.getPrivateKey());
+        return RSAHelper.decrypt(encryptSource, auKeyPair.getPrivateKey());
     }
 
     public static String getPublicKeyString() {

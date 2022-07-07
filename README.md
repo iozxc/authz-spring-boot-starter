@@ -1,7 +1,9 @@
 ### Authz
 
 ## 动态权限框架 - 简单介绍
-> 
+> [Authz](https://gitee.com/iozxc/authz) 主页地址 https://gitee.com/iozxc/authz
+![Authz.png](http://cdn.omisheep.cn/upload/img/article/320649505852620800.png)
+
 
 ## 1. 导入&配置
 
@@ -9,9 +11,9 @@
 
 ```xml
 <dependency>
-  <groupId>cn.omisheep</groupId>
-  <artifactId>authz-spring-boot-starter</artifactId>
-  <version>LATEST</version>
+    <groupId>cn.omisheep</groupId>
+    <artifactId>authz-spring-boot-starter</artifactId>
+    <version>LATEST</version>
 </dependency>
 ```
 
@@ -50,7 +52,7 @@ AuHelper.logout();
 @Certificated
 public Result getInfo(){
         ...
-}
+        }
 ```
 
 ## 5. 接口需要权限
@@ -60,7 +62,7 @@ public Result getInfo(){
 @Roles("admin")
 public Result roleAdmin(){
         ...
-}
+        }
 ```
 
 ## 6. 参数需要权限
@@ -73,11 +75,11 @@ public Result roleAdmin(){
 @Roles({"admin", "zxc"})
 @GetMapping("/operate/{x}")
 public Result test(@BatchAuthority({
-                           @Roles(value = "zxc", paramRange = {"123-156", "177"}),
-                           @Roles(value = "admin", paramRange = "146-200")
-                   }) @PathVariable int x) {
+        @Roles(value = "zxc", paramRange = {"123-156", "177"}),
+        @Roles(value = "admin", paramRange = "146-200")
+}) @PathVariable int x) {
         ...
-}
+        }
 
 // 对于参数operate
 // 如果需要 "查询" 和 "重启"，则需要 "工程师权限", "运维权限", "技术人员权限" 这三个权限
@@ -86,14 +88,14 @@ public Result test(@BatchAuthority({
 @Roles({"admin", "zxc"})
 @GetMapping("/operate")
 public Result test(@BatchAuthority(
-            perms = {
-                    @Perms(value = {"工程师权限", "运维权限", "技术人员权限"}, paramResources = {"查询", "重启"}),
-                    @Perms(value = {"运维权限"}, paramResources = {"开机", "关机", "添加"}),
-                    @Perms(value = {"技术人员权限"}, paramResources = "登录"),
-            })
-        @RequestParam(required = true) String operate){
+        perms = {
+                @Perms(value = {"工程师权限", "运维权限", "技术人员权限"}, paramResources = {"查询", "重启"}),
+                @Perms(value = {"运维权限"}, paramResources = {"开机", "关机", "添加"}),
+                @Perms(value = {"技术人员权限"}, paramResources = "登录"),
+        })
+@RequestParam(required = true) String operate){
         ....
-}
+        }
 ```
 
 ## 数据行权限（数据权限）和 数据列权限（字段权限）
@@ -129,7 +131,7 @@ public class HnieUser {
     // 只有zxc角色才能看见info字段
     @Roles("zxc")
     private String info;
-    
+
 }
 
 ```
@@ -202,4 +204,16 @@ public class UserPermLibrary implements PermLibrary<Integer> {
     }
 }
 ```
+## 9. 自定义Slot
 
+```java
+@Order(6) // 执行顺序 越大执行越靠后
+@Component
+public class ApiLogSlot implements Slot {
+    @Override
+    public boolean chain(HttpMeta httpMeta, HandlerMethod handler) throws AuthzException, Exception {
+        // ...
+        return true;
+    }
+}
+```

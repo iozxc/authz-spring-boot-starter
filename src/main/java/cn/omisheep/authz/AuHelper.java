@@ -203,28 +203,28 @@ public class AuHelper {
 
     // **************************************     状态管理      ************************************** //
 
-    public static Object getUserId() throws NotLoginException {
-        return AUtils.getCurrentToken().getUserId();
-    }
-
-    public static Token getToken() throws NotLoginException {
-        return AUtils.getCurrentToken();
+    public static boolean isLogin() {
+        return AuthzDefender.isLogin();
     }
 
     public static HttpMeta getHttpMeta() {
         return AUtils.getCurrentHttpMeta();
     }
 
+    public static Token getToken() throws NotLoginException {
+        return AUtils.getCurrentToken();
+    }
+
+    public static Object getUserId() throws NotLoginException {
+        return AUtils.getCurrentToken().getUserId();
+    }
+
     public static String getDeviceType() throws NotLoginException {
         return AUtils.getCurrentToken().getDeviceType();
     }
 
-    public static String getDeviceId() {
+    public static String getDeviceId() throws NotLoginException {
         return AUtils.getCurrentToken().getDeviceId();
-    }
-
-    public static boolean isLogin() {
-        return AuthzDefender.isLogin();
     }
 
     public static boolean hasRole(String role) throws NotLoginException {
@@ -557,6 +557,14 @@ public class AuHelper {
     @NonNull
     public static String getRSAPrivateKey() {
         return AuKey.getPrivateKeyString();
+    }
+
+    public static String encrypt(String plaintext){
+        return AuKey.encrypt(plaintext);
+    }
+
+    public static String decrypt(String encryptText){
+        return AuKey.decrypt(encryptText);
     }
 
     /**
