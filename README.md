@@ -3,7 +3,7 @@
 ## 动态权限框架 - 简单介绍
 
 > [Authz](https://gitee.com/iozxc/authz) 主页地址 https://gitee.com/iozxc/authz
-![Authz.png](http://cdn.omisheep.cn/upload/img/article/320649505852620800.png)
+![Authz](http://cdn.omisheep.cn/upload/img/article/320649505852620800.png)
 
 ## 1. 导入&配置
 
