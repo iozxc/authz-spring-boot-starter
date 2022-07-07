@@ -42,8 +42,8 @@ AuHelper.login(1,"Chrome");
 
 ```java
 AuHelper.logout();
-        AuHelper.logoutAll();
-        AuHelper.logout(1,"Chrome");
+AuHelper.logoutAll();
+AuHelper.logout(1,"Chrome");
 ```
 
 ## 4. 接口需要登录
