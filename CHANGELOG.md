@@ -7,18 +7,18 @@
 - 对于`@Decrypt` 新增了对象加密解密功能，支持对对象内某一个字段进行单独加密以及对整体加密，以及参数加密
 
 ```java
-    @GetMapping("/get")
+@GetMapping("/get")
 public Result get(@Decrypt("name") String name){
-        return Result.SUCCESS.data("name",name);
-        }
+    return Result.SUCCESS.data("name",name);
+}
 
 @PostMapping("/post")
 public Result post(@Decrypt({"name", "content", "obj.name"}) @RequestBody HashMap<String, Object> map){
-        return Result.SUCCESS.data("map",map);
-        }
+    return Result.SUCCESS.data("map",map);
+}
 ```
 
-- 若`@Decrypt`无参数传播，则key无限制,但值为整个加密的json，如
+- 若`@Decrypt`无参，则key无限制,但值必须为整个加密的json，如
 
 ```json
 {
