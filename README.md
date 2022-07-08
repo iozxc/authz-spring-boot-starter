@@ -66,7 +66,58 @@ public Result roleAdmin(){
 }
 ```
 
-## 6. 参数需要权限
+## 6. 数据加密
+
+### 6.1 @Decrypt使用
+- 对于`@Decrypt` 新增了对象加密解密功能，支持对对象内某一个字段进行单独加密以及对整体加密，以及参数加密
+
+```java
+@GetMapping("/get")
+public Result get(@Decrypt("name") String name){
+        return Result.SUCCESS.data("name",name);
+}
+
+@PostMapping("/post")
+public Result post(@Decrypt({"name", "content", "obj.name"}) @RequestBody HashMap<String, Object> map){
+        return Result.SUCCESS.data("map",map);
+}
+```
+
+- 若`@Decrypt`无参，则key无限制,但值必须为整个加密的json，如
+
+```json
+{
+  "key名无限制": "value为整个json加密后的值，包含 `{` `}`"
+}
+```
+
+### 6.2 自定义解码器
+
+- 自定义解码器
+```java
+@Component
+public class CustomDecryptor implements Decryptor {
+    @Override
+    public String decrypt(String encryptText) {
+        return encryptText + new Date();
+    }
+}
+```
+- 使用
+```java
+@GetMapping("/get")
+public Result get(@Decrypt("name") String name) {
+    return Result.SUCCESS.data("name", name);
+}
+
+@GetMapping("/get-custom")
+public Result getCustom(@Decrypt(value = "name", decryptor = CustomDecryptor.class) String name) {
+    return Result.SUCCESS.data("name", name);
+}
+```
+
+
+## 7. 参数需要权限
 
 ```java
 // 对于参数x
@@ -137,7 +188,7 @@ public class HnieUser {
 
 ```
 
-## 7.【资源】
+## 8.【资源】
 
 > 在使用数据权限时会用到condition，里面会有变量，该变量可以动态控制。
 
@@ -180,7 +231,7 @@ public class Testw {
 }
 ```
 
-## 8. 权限接口
+## 9. 权限接口
 
 > 可在这里调用你的数据库
 
@@ -206,7 +257,7 @@ public class UserPermLibrary implements PermLibrary<Integer> {
 }
 ```
 
-## 9. 自定义Slot
+## 10. 自定义Slot
 
 ```java
 
@@ -221,26 +272,3 @@ public class ApiLogSlot implements Slot {
 }
 ```
 
-### 10. 数据加密
-
-- 对于`@Decrypt` 新增了对象加密解密功能，支持对对象内某一个字段进行单独加密以及对整体加密，以及参数加密
-
-```java
-@GetMapping("/get")
-public Result get(@Decrypt("name") String name){
-        return Result.SUCCESS.data("name",name);
-}
-
-@PostMapping("/post")
-public Result post(@Decrypt({"name", "content", "obj.name"}) @RequestBody HashMap<String, Object> map){
-        return Result.SUCCESS.data("map",map);
-}
-```
-
-- 若`@Decrypt`无参，则key无限制,但值必须为整个加密的json，如
-
-```json
-{
-  "key名无限制": "value为整个json加密后的值，包含 `{` `}`"
-}
-```
