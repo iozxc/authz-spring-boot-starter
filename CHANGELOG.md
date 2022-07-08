@@ -1,5 +1,11 @@
 # 更新日记【Authz】
 
+## Version 1.0.12 - 2022.7.8
+
+### Fixed
+
+- 修复了一些bug
+
 ## Version 1.0.11 - 2022.7.8
 
 ### Added
