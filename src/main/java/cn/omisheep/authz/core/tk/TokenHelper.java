@@ -35,6 +35,11 @@ public class TokenHelper {
     private static final byte[]             keyBytes;
     private static final SignatureAlgorithm alg;
 
+    private static final String USER_ID     = "userId";
+    private static final String DEVICE_ID   = "deviceId";
+    private static final String DEVICE_TYPE = "deviceType";
+    private static final String TOKEN_TYPE  = "type";
+
     private TokenHelper() {
     }
 
@@ -56,16 +61,16 @@ public class TokenHelper {
      * @param userId     用户id
      * @param deviceId   设备Id
      * @param deviceType 设备系统类型
-     * @param type       token类型 accessToken和refreshToken
+     * @param tokenType  token类型 accessToken和refreshToken
      * @return claims
      */
-    private static Claims generateClaims(Object userId, String deviceType, String deviceId, Token.Type type) {
+    private static Claims generateClaims(Object userId, String deviceType, String deviceId, Token.Type tokenType) {
         // 设置token里的数据
         Claims claims = Jwts.claims().setSubject(userId.toString());
-        claims.put("userId", userId);
-        claims.put("deviceId", deviceId);
-        claims.put("deviceType", deviceType);
-        claims.put("type", type);
+        claims.put(USER_ID, userId);
+        claims.put(DEVICE_ID, deviceId);
+        claims.put(DEVICE_TYPE, deviceType);
+        claims.put(TOKEN_TYPE, tokenType);
         return claims;
     }
 
@@ -181,13 +186,13 @@ public class TokenHelper {
         if (tokenVal == null || tokenVal.equals("")) return null;
         Claims claims = Jwts.parser().setSigningKey(keyBytes).parseClaimsJws(tokenVal).getBody();
         return new Token(tokenVal,
-                claims.get("userId"),
+                claims.get(USER_ID),
                 claims.getId(),
                 claims.getIssuedAt(),
                 claims.getExpiration(),
-                claims.get("deviceType", String.class),
-                claims.get("deviceId", String.class),
-                Token.Type.valueOf(claims.get("type", String.class))
+                claims.get(DEVICE_TYPE, String.class),
+                claims.get(DEVICE_ID, String.class),
+                Token.Type.valueOf(claims.get(TOKEN_TYPE, String.class))
         );
     }
 }

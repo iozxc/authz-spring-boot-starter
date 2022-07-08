@@ -4,7 +4,6 @@ package cn.omisheep.authz.core.resolver;
 import cn.omisheep.authz.annotation.Decrypt;
 import cn.omisheep.authz.core.codec.DecryptHandler;
 import cn.omisheep.authz.core.util.Utils;
-import cn.omisheep.commons.util.StringUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
@@ -18,8 +17,6 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdvice;
 
 import java.io.*;
 import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -57,13 +54,7 @@ public class DecryptRequestBodyAdvice implements RequestBodyAdvice {
     @Override
     public HttpInputMessage beforeBodyRead(HttpInputMessage inputMessage, MethodParameter parameter, Type targetType,
                                            Class<? extends HttpMessageConverter<?>> converterType) throws IOException {
-        Decrypt decrypt = AnnotationUtils.getAnnotation(parameter.getParameter(), Decrypt.class);
-        if (decrypt.fields().length != 0) {
-            return new DecryptRequestBodyHandler(inputMessage, decrypt, Arrays.asList(decrypt.fields()));
-        } else {
-            return new DecryptRequestBodyHandler(inputMessage, decrypt);
-        }
-
+        return new DecryptRequestBodyHandler(inputMessage, AnnotationUtils.getAnnotation(parameter.getParameter(), Decrypt.class));
     }
 
     @Override
@@ -77,29 +68,21 @@ public class DecryptRequestBodyAdvice implements RequestBodyAdvice {
         private final HttpHeaders headers;
         private final InputStream body;
 
-        public DecryptRequestBodyHandler(HttpInputMessage inputMessage, Decrypt decrypt, List<String> fields) throws IOException {
-            this.headers = inputMessage.getHeaders();
-            String content = new BufferedReader(new InputStreamReader(inputMessage.getBody()))
-                    .lines().collect(Collectors.joining(System.lineSeparator()));
-            JSONObject object = JSON.parseObject(content);
-            for (String field : fields) {
-                decryptJSON(field, object, decrypt);
-            }
-            String decryptedText = JSON.toJSONString(object);
-            if (decryptedText == null) {
-                decryptedText = "{}";
-            }
-            this.body = new ByteArrayInputStream(decryptedText.getBytes());
-        }
-
-
         public DecryptRequestBodyHandler(HttpInputMessage inputMessage, Decrypt decrypt) throws IOException {
             this.headers = inputMessage.getHeaders();
             String content = new BufferedReader(new InputStreamReader(inputMessage.getBody()))
                     .lines().collect(Collectors.joining(System.lineSeparator()));
             // 将原本的json整个加密，然后再放到一个空对象中，请勿直接传递加密的数据
-            String decryptedText = decryptHandler.decrypt(Utils.parse_RSA_JSON(content), decrypt);
-            if (decryptedText == null) {
+            String decryptedText;
+            if (decrypt.fields().length != 0) {
+                JSONObject object = JSON.parseObject(content);
+                decryptHandler.decryptJSON(object, decrypt);
+                decryptedText = JSON.toJSONString(object);
+            } else {
+                decryptedText = decryptHandler.decrypt(Utils.parse_RSA_JSON(content), decrypt);
+            }
+
+            if (decryptedText == null || decryptedText == "") {
                 decryptedText = "{}";
             }
             this.body = new ByteArrayInputStream(decryptedText.getBytes());
@@ -113,25 +96,6 @@ public class DecryptRequestBodyAdvice implements RequestBodyAdvice {
         @Override
         public HttpHeaders getHeaders() {
             return headers;
-        }
-    }
-
-    private void decryptJSON(String name, JSONObject obj, Decrypt decrypt) {
-        if (!StringUtils.hasText(name)) return;
-        String[] trace = Arrays.stream(name.split("\\.")).distinct().toArray(String[]::new);
-        decrypt(trace, obj, decrypt);
-    }
-
-    private void decrypt(String[] trace, JSONObject obj, Decrypt decrypt) {
-        if (obj == null) return;
-
-        if (trace.length == 1) {
-            if (obj.get(trace[0]) instanceof String) {
-                obj.put(trace[0], decryptHandler.decrypt(obj.getString(trace[0]), decrypt));
-            }
-        } else {
-            if (obj.get(trace[0]) instanceof JSONObject)
-                decrypt(Arrays.copyOfRange(trace, 1, trace.length), obj.getJSONObject(trace[0]), decrypt);
         }
     }
 

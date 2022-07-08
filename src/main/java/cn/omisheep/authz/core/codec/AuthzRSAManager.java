@@ -14,7 +14,7 @@ import java.util.concurrent.ScheduledFuture;
  * @since 1.0.0
  */
 @Data
-public class AuKey {
+public class AuthzRSAManager {
 
     private static ScheduledFuture<?> scheduledFuture;
 
@@ -25,20 +25,20 @@ public class AuKey {
     private static String time;
 
 
-    private AuKey() {
+    private AuthzRSAManager() {
     }
 
     public static void setTime(String time) {
-        AuKey.time = time;
+        AuthzRSAManager.time = time;
     }
 
     public static void setAuto(boolean auto) {
-        AuKey.auto = auto;
+        AuthzRSAManager.auto = auto;
         if (auto) {
             if (scheduledFuture != null) {
                 scheduledFuture.cancel(true);
             }
-            scheduledFuture = TaskBuilder.schedule(AuKey::refreshKeyGroup, time);
+            scheduledFuture = TaskBuilder.schedule(AuthzRSAManager::refreshKeyGroup, time);
         }
     }
 
@@ -49,13 +49,13 @@ public class AuKey {
         }
         auto      = false;
         auKeyPair = new RSAHelper.RSAKeyPair(publicKey, privateKey);
-        LogUtils.logDebug("⬇ auKeyPair ⬇ {} \n", auKeyPair);
+        LogUtils.logDebug("⬇ RSA Key Pair ⬇ {} \n", auKeyPair);
     }
 
     @SneakyThrows
     public static void refreshKeyGroup() {
         auKeyPair = RSAHelper.genKeyPair();
-        LogUtils.logDebug("⬇ auKeyPair ⬇ {} \n", auKeyPair);
+        LogUtils.logDebug("⬇ RSA Key Pair ⬇ {} \n", auKeyPair);
     }
 
     @SneakyThrows

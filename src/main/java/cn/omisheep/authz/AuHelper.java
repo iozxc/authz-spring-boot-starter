@@ -7,7 +7,7 @@ import cn.omisheep.authz.core.auth.deviced.Device;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.ipf.RequestMeta;
 import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
-import cn.omisheep.authz.core.codec.AuKey;
+import cn.omisheep.authz.core.codec.AuthzRSAManager;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.tk.TokenPair;
 import cn.omisheep.authz.core.util.AUtils;
@@ -548,7 +548,7 @@ public class AuHelper {
      */
     @NonNull
     public static String getRSAPublicKey() {
-        return AuKey.getPublicKeyString();
+        return AuthzRSAManager.getPublicKeyString();
     }
 
     /**
@@ -556,29 +556,29 @@ public class AuHelper {
      */
     @NonNull
     public static String getRSAPrivateKey() {
-        return AuKey.getPrivateKeyString();
+        return AuthzRSAManager.getPrivateKeyString();
     }
 
     public static String encrypt(String plaintext){
-        return AuKey.encrypt(plaintext);
+        return AuthzRSAManager.encrypt(plaintext);
     }
 
     public static String decrypt(String encryptText){
-        return AuKey.decrypt(encryptText);
+        return AuthzRSAManager.decrypt(encryptText);
     }
 
     /**
      * 打开自动刷新RSA，会将自定义的RSA关闭
      */
     public static void openAutoRefresh() {
-        AuKey.setAuto(true);
+        AuthzRSAManager.setAuto(true);
     }
 
     /**
      * 关闭自动刷新RSA，需要额外指定公钥私钥对
      */
     public static void closeAutoRefreshAndSetup(String publicKey, String privateKey) {
-        AuKey.setAuKeyPair(publicKey, privateKey);
+        AuthzRSAManager.setAuKeyPair(publicKey, privateKey);
     }
 
     // **************************************     缓存      ************************************** //

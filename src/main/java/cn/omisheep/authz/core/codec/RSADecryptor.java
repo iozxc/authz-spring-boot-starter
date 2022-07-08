@@ -8,6 +8,6 @@ public class RSADecryptor implements Decryptor {
 
     @Override
     public String decrypt(String encryptText) {
-        return AuKey.decrypt(encryptText);
+        return AuthzRSAManager.decrypt(encryptText);
     }
 }

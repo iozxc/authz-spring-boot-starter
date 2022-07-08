@@ -15,8 +15,8 @@ import cn.omisheep.authz.core.auth.rpd.ParamMetadata;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.cache.Cache;
+import cn.omisheep.authz.core.codec.AuthzRSAManager;
 import cn.omisheep.authz.core.msg.Message;
-import cn.omisheep.authz.core.codec.AuKey;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.authz.core.util.RedisUtils;
 import cn.omisheep.authz.core.util.ValueMatcher;
@@ -106,13 +106,13 @@ public class AuCoreInitialization implements ApplicationContextAware {
         AuthzDefender.init(userDevicesDict, permLibrary);
 
         // init Jobs
-        AuKey.setTime(properties.getRsa().getRsaKeyRefreshWithPeriod());
+        AuthzRSAManager.setTime(properties.getRsa().getRsaKeyRefreshWithPeriod());
         if (properties.getRsa().isAuto() && (properties.getRsa().getCustomPrivateKey() == null || properties.getRsa().getCustomPublicKey() == null)) {
-            AuKey.setAuto(true);
+            AuthzRSAManager.setAuto(true);
         } else {
-            AuKey.setAuto(false);
+            AuthzRSAManager.setAuto(false);
             AuthzProperties.RSAConfig rsaConfig = properties.getRsa();
-            AuKey.setAuKeyPair(rsaConfig.getCustomPublicKey(), rsaConfig.getCustomPrivateKey());
+            AuthzRSAManager.setAuKeyPair(rsaConfig.getCustomPublicKey(), rsaConfig.getCustomPrivateKey());
         }
 
         if (!properties.getCache().isEnableRedis()) {
@@ -195,14 +195,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
         applicationContext.getBeansWithAnnotation(Certificated.class).forEach((key, value) -> {
             Certificated certificated = getAnnoatation(value, Certificated.class);
             if (certificated != null) {
-                String name = getTypeName(value);
-                int    i    = name.indexOf('$');
-                if (i != -1) {
-                    cList.add(name.substring(0, name.indexOf('$')));
-                } else {
-                    cList.add(name);
-                }
-
+                cList.add(getTypeName(value));
             }
         });
 

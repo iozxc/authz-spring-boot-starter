@@ -74,7 +74,8 @@ public class AuthzMethodPermissionChecker {
             }
             if (roles != null || perms != null) {
                 Set<String> rolesByUserId = Optional.ofNullable(httpMeta.getRoles()).orElse(permLibrary.getRolesByUserId(httpMeta.getUserId()));
-                if (!CollectionUtils.containsSub(permRolesMeta.getRequireRoles(), rolesByUserId)) {
+                if (!CollectionUtils.containsSub(permRolesMeta.getRequireRoles(), rolesByUserId) ||
+                        CollectionUtils.containsSub(permRolesMeta.getExcludeRoles(), rolesByUserId)) {
                     throw new PermissionException();
                 }
                 if (perms != null) {
@@ -83,7 +84,8 @@ public class AuthzMethodPermissionChecker {
                         rolesByUserId.forEach(role -> p.addAll(permLibrary.getPermissionsByRole(role)));
                         return p;
                     });
-                    if (!CollectionUtils.containsSub(permRolesMeta.getRequirePermissions(), rolesByUserId)) {
+                    if (!CollectionUtils.containsSub(permRolesMeta.getRequirePermissions(), permissionsByRole) ||
+                            CollectionUtils.containsSub(permRolesMeta.getExcludePermissions(), permissionsByRole)) {
                         throw new PermissionException();
                     }
                 }
