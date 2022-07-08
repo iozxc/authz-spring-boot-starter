@@ -77,8 +77,6 @@ public class AuthzAutoConfiguration {
         RequestMessage.c.accept(StringUtils.hasText(name) ? name : "application");
         VersionMessage.CHANNEL = "AU_MODIFY_ID:" + VersionInfo.APP_NAME;
 
-        // 获取app的 访问地址
-        //environment.getProperty("server.servlet.context-path") 应用的上下文路径，也可以称为项目路径
         String host;
         try {
             host = InetAddress.getLocalHost().getHostAddress();
@@ -208,6 +206,11 @@ public class AuthzAutoConfiguration {
     @Bean
     public PermLibraryCache permLibraryCache(Cache cache) {
         return new PermLibraryCache(cache);
+    }
+
+    @Bean
+    public AuthzMethodPermissionChecker authzMethodPermissionChecker(PermLibrary permLibrary) {
+        return new AuthzMethodPermissionChecker(permLibrary);
     }
 
     @Bean

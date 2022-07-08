@@ -32,7 +32,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotatedElementUtils;
-import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -40,6 +39,7 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.handler.AbstractHandlerMethodMapping;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 
+import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -148,6 +148,27 @@ public class AuCoreInitialization implements ApplicationContextAware {
     }
 
 
+    private <E extends Annotation> E getAnnoatation(Object value, Class<E> clz) {
+        E annotation = AnnotatedElementUtils.getMergedAnnotation(value.getClass(), clz);
+        try {
+            if (annotation == null) {
+                return AnnotatedElementUtils.getMergedAnnotation(Class.forName(getTypeName(value)), clz);
+            } else return annotation;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public String getTypeName(Object value) {
+        String name = value.getClass().getTypeName();
+        int    i    = name.indexOf('$');
+        if (i != -1) {
+            return name.substring(0, name.indexOf("$"));
+        } else {
+            return name;
+        }
+    }
+
     private void initPermissionDict(ApplicationContext applicationContext, Map<RequestMappingInfo, HandlerMethod> mapRet) {
         PermissionDict.setPermSeparator(Constants.COMMA);
         Set<String>                                 toBeLoadedRoles      = new HashSet<>();
@@ -160,23 +181,34 @@ public class AuCoreInitialization implements ApplicationContextAware {
         LinkedList<String>                          cList                = new LinkedList<>();
 
         applicationContext.getBeansWithAnnotation(Auth.class).forEach((key, value) -> {
-            Auth   auth = AnnotatedElementUtils.getMergedAnnotation(value.getClass(), Auth.class);
-            String name = value.getClass().getName();
-            if (AuthScope.ROLE.equals(auth.scope())) {
-                rMap.put(name, generatePermRolesMeta(null, auth));
-            } else {
-                pMap.put(name, generatePermRolesMeta(auth, null));
+            Auth auth = getAnnoatation(value, Auth.class);
+            if (auth != null) {
+                String name = getTypeName(value);
+                if (AuthScope.ROLE.equals(auth.scope())) {
+                    rMap.put(name, generatePermRolesMeta(null, auth));
+                } else {
+                    pMap.put(name, generatePermRolesMeta(auth, null));
+                }
             }
         });
 
         applicationContext.getBeansWithAnnotation(Certificated.class).forEach((key, value) -> {
-            Certificated certificated = AnnotationUtils.getAnnotation(value.getClass(), Certificated.class);
-            if (certificated != null) cList.add(key);
+            Certificated certificated = getAnnoatation(value, Certificated.class);
+            if (certificated != null) {
+                String name = getTypeName(value);
+                int    i    = name.indexOf('$');
+                if (i != -1) {
+                    cList.add(name.substring(0, name.indexOf('$')));
+                } else {
+                    cList.add(name);
+                }
+
+            }
         });
 
         applicationContext.getBeansWithAnnotation(IPRangeLimit.class).forEach((key, value) -> {
-            IPRangeLimit ipRangeLimit = AnnotationUtils.getAnnotation(value.getClass(), IPRangeLimit.class);
-            iMap.put(value.getClass().getName(), new IPRangeMeta().setAllow(ipRangeLimit.allow()).setDeny(ipRangeLimit.deny()));
+            IPRangeLimit ipRangeLimit = getAnnoatation(value, IPRangeLimit.class);
+            iMap.put(getTypeName(value), new IPRangeMeta().setAllow(ipRangeLimit.allow()).setDeny(ipRangeLimit.deny()));
         });
 
         mapRet.forEach((key, value) -> {
@@ -188,7 +220,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
             // 初始化Certifecated
             Certificated certificated = AnnotatedElementUtils.getMergedAnnotation(value.getMethod(), Certificated.class);
-            if (cList.contains(key) || certificated != null) {
+            if (cList.contains(value.getBeanType().getTypeName()) || certificated != null) {
                 key.getMethodsCondition().getMethods().forEach(method -> certificatedMetadata.computeIfAbsent(method.name(), r -> new HashSet<>()).addAll(getPatterns(key)));
             }
 
@@ -251,8 +283,10 @@ public class AuCoreInitialization implements ApplicationContextAware {
             IPRangeLimit ipRangeLimit = value.getMethodAnnotation(IPRangeLimit.class);
             if (ipRangeLimit != null) {
                 ipRangeMeta.setAllow(ipRangeLimit.allow()).setDeny(ipRangeLimit.deny());
-                ipRangeMeta.getAllow().addAll(iFc.getAllow());
-                ipRangeMeta.getDeny().addAll(iFc.getDeny());
+                if (iFc != null) {
+                    ipRangeMeta.getAllow().addAll(iFc.getAllow());
+                    ipRangeMeta.getDeny().addAll(iFc.getDeny());
+                }
             }
             if (ipRangeMeta.getDeny() != null && !ipRangeMeta.getDeny().isEmpty() || ipRangeMeta.getAllow() != null && !ipRangeMeta.getAllow().isEmpty()) {
                 key.getMethodsCondition().getMethods().forEach(method -> {
