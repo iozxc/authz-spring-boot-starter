@@ -7,7 +7,7 @@ import cn.omisheep.authz.core.auth.deviced.Device;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.ipf.RequestMeta;
 import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
-import cn.omisheep.authz.core.tk.AuKey;
+import cn.omisheep.authz.core.codec.AuKey;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.tk.TokenPair;
 import cn.omisheep.authz.core.util.AUtils;

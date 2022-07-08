@@ -1,4 +1,4 @@
-package cn.omisheep.authz.core.tk;
+package cn.omisheep.authz.core.codec;
 
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.RSAHelper;
@@ -50,10 +50,6 @@ public class AuKey {
         auto      = false;
         auKeyPair = new RSAHelper.RSAKeyPair(publicKey, privateKey);
         LogUtils.logDebug("⬇ auKeyPair ⬇ {} \n", auKeyPair);
-    }
-
-    public static void setScheduledFuture(ScheduledFuture<?> scheduledFuture) {
-        AuKey.scheduledFuture = scheduledFuture;
     }
 
     @SneakyThrows

@@ -15,6 +15,8 @@ import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.cache.DefaultCache;
 import cn.omisheep.authz.core.cache.L2Cache;
 import cn.omisheep.authz.core.cache.PermLibraryCache;
+import cn.omisheep.authz.core.codec.DecryptHandler;
+import cn.omisheep.authz.core.codec.RSADecryptor;
 import cn.omisheep.authz.core.init.AuCoreInitialization;
 import cn.omisheep.authz.core.init.AuInit;
 import cn.omisheep.authz.core.interceptor.*;
@@ -199,8 +201,8 @@ public class AuthzAutoConfiguration {
     }
 
     @Bean
-    public DecryptRequestBodyAdvice auDecryptRequestBodyAdvice() {
-        return new DecryptRequestBodyAdvice();
+    public DecryptRequestBodyAdvice auDecryptRequestBodyAdvice(DecryptHandler decryptHandler) {
+        return new DecryptRequestBodyAdvice(decryptHandler);
     }
 
     @Bean
@@ -235,8 +237,20 @@ public class AuthzAutoConfiguration {
     }
 
     @Bean
-    public AuthzHandlerRegister authzHandlerRegister(AuthzExceptionHandler authzExceptionHandler) {
-        return new AuthzHandlerRegister(authzExceptionHandler);
+    @ConditionalOnMissingBean
+    public RSADecryptor rsaDecryptor() {
+        return new RSADecryptor();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public DecryptHandler decryptHandler(AuthzProperties properties) {
+        return new DecryptHandler(properties.getDefaultDecryptor());
+    }
+
+    @Bean
+    public AuthzHandlerRegister authzHandlerRegister(AuthzExceptionHandler authzExceptionHandler, DecryptHandler decryptHandler) {
+        return new AuthzHandlerRegister(authzExceptionHandler, decryptHandler);
     }
 
     @Bean("AuthzHttpFilter")

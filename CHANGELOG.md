@@ -4,6 +4,12 @@
 
 ### Added
 
+- 自定义解码器 （需注册在Spring容器中且实现`cn.omisheep.authz.core.codec.Decryptor`类）
+
+## Version 1.0.10 - 2022.7.8
+
+### Added
+
 - 现在`@Roles` `@Perms` `@Certificated`能够作用与非Mapping上进行权限拦截了。
 - 如：对`MyService`中的`test方法`进行登录检查
 
@@ -18,10 +24,10 @@ public class MethodTestController {
 
     @Autowired
     private MyService myService;
-  
+
     @GetMapping("/u")
     public Result u1() {
-      return Result.SUCCESS.data(myService.test());
+        return Result.SUCCESS.data(myService.test());
     }
 }
 
@@ -29,7 +35,7 @@ public class MethodTestController {
 public class MyService {
     @Certificated
     public List<Object> test() {
-      return new ArrayList<Object>();
+        return new ArrayList<Object>();
     }
 }
 ```
@@ -44,12 +50,12 @@ public class MyService {
 @GetMapping("/get")
 public Result get(@Decrypt("name") String name){
         return Result.SUCCESS.data("name",name);
-}
+        }
 
 @PostMapping("/post")
 public Result post(@Decrypt({"name", "content", "obj.name"}) @RequestBody HashMap<String, Object> map){
         return Result.SUCCESS.data("map",map);
-}
+        }
 ```
 
 - 若`@Decrypt`无参，则key无限制,但值必须为整个加密的json，如

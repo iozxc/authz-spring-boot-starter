@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.resolver;
 
 import cn.omisheep.authz.annotation.Decrypt;
-import cn.omisheep.authz.core.tk.AuKey;
+import cn.omisheep.authz.core.codec.DecryptHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.MethodParameter;
 import org.springframework.web.bind.support.WebDataBinderFactory;
@@ -22,6 +22,13 @@ import java.lang.reflect.Constructor;
 @SuppressWarnings("all")
 public class DecryptRequestParamHandler implements HandlerMethodArgumentResolver {
 
+
+    private final DecryptHandler decryptHandler;
+
+    public DecryptRequestParamHandler(DecryptHandler decryptHandler) {
+        this.decryptHandler = decryptHandler;
+    }
+
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
         return (parameter.hasParameterAnnotation(Decrypt.class) || parameter.hasMethodAnnotation(Decrypt.class));
@@ -32,8 +39,8 @@ public class DecryptRequestParamHandler implements HandlerMethodArgumentResolver
         if (request != null) {
             Constructor<?> constructor = parameter.getParameterType().getConstructor(String.class);
             String         text        = request.getParameter(parameter.getParameterName());
-            String         decrypt     = AuKey.decrypt(text);
-            return constructor.newInstance(decrypt);
+            Decrypt        decrypt     = parameter.getParameterAnnotation(Decrypt.class);
+            return constructor.newInstance(decryptHandler.decrypt(text, decrypt));
         }
         return null;
     }

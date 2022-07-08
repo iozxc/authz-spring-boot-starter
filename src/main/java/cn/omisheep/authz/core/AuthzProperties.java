@@ -1,5 +1,7 @@
 package cn.omisheep.authz.core;
 
+import cn.omisheep.authz.core.codec.Decryptor;
+import cn.omisheep.authz.core.codec.RSADecryptor;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.logging.LogLevel;
@@ -23,6 +25,8 @@ public class AuthzProperties {
     private IpRangeConfig globalIpRange = new IpRangeConfig();
 
     private DashboardConfig dashboard = new DashboardConfig();
+
+    private Class<? extends Decryptor> defaultDecryptor = RSADecryptor.class;
 
     /**
      * 开启redis缓存时可以不用设置。用户缓存刷新频率，清除掉过期掉值 默认10秒一次，单位 s|m|h|d

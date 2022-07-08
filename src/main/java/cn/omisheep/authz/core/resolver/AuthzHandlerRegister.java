@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core.resolver;
 
+import cn.omisheep.authz.core.codec.DecryptHandler;
 import cn.omisheep.authz.core.interceptor.AuthzExceptionHandler;
 import cn.omisheep.authz.core.interceptor.AuthzSlotCoreInterceptor;
 import cn.omisheep.authz.core.slot.Slot;
@@ -26,9 +27,11 @@ import java.util.Map;
 public class AuthzHandlerRegister implements WebMvcConfigurer, ApplicationContextAware {
 
     private final AuthzExceptionHandler authzExceptionHandler;
+    private final DecryptHandler        decryptHandler;
 
-    public AuthzHandlerRegister(AuthzExceptionHandler authzExceptionHandler) {
+    public AuthzHandlerRegister(AuthzExceptionHandler authzExceptionHandler, DecryptHandler decryptHandler) {
         this.authzExceptionHandler = authzExceptionHandler;
+        this.decryptHandler        = decryptHandler;
     }
 
     private Collection<Slot> slots = new ArrayList<>();
@@ -43,7 +46,7 @@ public class AuthzHandlerRegister implements WebMvcConfigurer, ApplicationContex
     public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
         resolvers.add(new AuTokenOrHttpMetaResolver());
         resolvers.add(new AuHttpMetaResolver());
-        resolvers.add(new DecryptRequestParamHandler());
+        resolvers.add(new DecryptRequestParamHandler(decryptHandler));
     }
 
     @Override

@@ -16,7 +16,7 @@ import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.msg.Message;
-import cn.omisheep.authz.core.tk.AuKey;
+import cn.omisheep.authz.core.codec.AuKey;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.authz.core.util.RedisUtils;
 import cn.omisheep.authz.core.util.ValueMatcher;
