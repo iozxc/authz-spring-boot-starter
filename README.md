@@ -149,7 +149,7 @@ public Result test(
 }
 ```
 
-## 数据行权限（数据权限）和 数据列权限（字段权限）
+## 8. 数据行权限（数据权限）和 数据列权限（字段权限）
 
 > 目前只支持Mybatis
 
@@ -188,7 +188,7 @@ public class HnieUser {
 
 ```
 
-## 8.【资源】
+## 9.【资源】
 
 > 在使用数据权限时会用到condition，里面会有变量，该变量可以动态控制。
 
@@ -231,7 +231,7 @@ public class Testw {
 }
 ```
 
-## 9. 权限接口
+## 10. 权限接口
 
 > 可在这里调用你的数据库
 
@@ -257,7 +257,7 @@ public class UserPermLibrary implements PermLibrary<Integer> {
 }
 ```
 
-## 10. 自定义Slot
+## 11. 自定义Slot
 
 ```java
 
