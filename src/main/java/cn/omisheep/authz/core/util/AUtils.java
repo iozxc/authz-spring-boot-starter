@@ -54,7 +54,9 @@ public class AUtils implements ApplicationContextAware {
     @NonNull
     public static Token getCurrentToken() throws NotLoginException {
         try {
-            return getCurrentHttpMeta().getToken();
+            Token token = getCurrentHttpMeta().getToken();
+            if (token==null) throw new NotLoginException();
+            return token;
         } catch (Exception e) {
             throw new NotLoginException();
         }

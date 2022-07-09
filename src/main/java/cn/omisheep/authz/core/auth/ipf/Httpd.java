@@ -9,9 +9,11 @@ import lombok.Getter;
 import lombok.Setter;
 import orestes.bloomfilter.CountingBloomFilter;
 import orestes.bloomfilter.FilterBuilder;
+import org.springframework.http.server.PathContainer;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
-import org.springframework.util.AntPathMatcher;
+import org.springframework.web.util.pattern.PathPattern;
+import org.springframework.web.util.pattern.PathPatternParser;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,7 +24,26 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Httpd implements AuthzModifiable {
 
-    public static final AntPathMatcher antPathMatcher = new AntPathMatcher("/");
+    private static final HashMap<String, PathPattern> pathMatcherMap = new HashMap<>();
+
+    public void setPathPattern(String pattern) {
+        pathMatcherMap.put(pattern, PathPatternParser.defaultInstance.parse(pattern));
+    }
+
+    public boolean match(String pattern, String path) {
+        PathPattern pathPattern = pathMatcherMap.get(pattern);
+        if (pathPattern == null) return false;
+        return pathPattern.matches(PathContainer.parsePath(path));
+    }
+
+    public String getPattern(String path) {
+        for (Map.Entry<String, PathPattern> entry : pathMatcherMap.entrySet()) {
+            if (entry.getValue().matches(PathContainer.parsePath(path))) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
 
     @Getter
     @Setter
@@ -98,7 +119,7 @@ public class Httpd implements AuthzModifiable {
                                 .get(meth);
                         if (map != null) {
                             map.keySet()
-                                    .stream().filter(path -> antPathMatcher.match(associatedPattern.getPattern(), path))
+                                    .stream().filter(path -> match(associatedPattern.getPattern(), path))
                                     .forEach(path -> oIpPools.add(map.get(path)));
                         }
                     })

@@ -1,5 +1,11 @@
 # 更新日记【Authz】
 
+## Version 1.0.13 - 2022.7.9
+
+### Fixed
+
+- 修复了一些bug
+
 ## Version 1.0.12 - 2022.7.8
 
 ### Fixed
@@ -53,15 +59,20 @@ public class MyService {
 - 对于`@Decrypt` 新增了对象加密解密功能，支持对对象内某一个字段进行单独加密以及对整体加密，以及参数加密
 
 ```java
-@GetMapping("/get")
-public Result get(@Decrypt("name") String name){
-        return Result.SUCCESS.data("name",name);
-        }
+import org.springframework.web.bind.annotation.RestController;
 
-@PostMapping("/post")
-public Result post(@Decrypt({"name", "content", "obj.name"}) @RequestBody HashMap<String, Object> map){
-        return Result.SUCCESS.data("map",map);
-        }
+@RestController
+class MainController {
+    @GetMapping("/get")
+    public Result get(@Decrypt("name") String name) {
+        return Result.SUCCESS.data("name", name);
+    }
+
+    @PostMapping("/post")
+    public Result post(@Decrypt({"name", "content", "obj.name"}) @RequestBody HashMap<String, Object> map) {
+        return Result.SUCCESS.data("map", map);
+    }
+}
 ```
 
 - 若`@Decrypt`无参，则key无限制,但值必须为整个加密的json，如

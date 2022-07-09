@@ -523,7 +523,10 @@ public class AuCoreInitialization implements ApplicationContextAware {
                     method -> {
                         getPatterns(key)
                                 .forEach(
-                                        patternValue -> requestPool.put(patternValue, new Httpd.RequestPool()));
+                                        patternValue -> {
+                                            requestPool.put(patternValue, new Httpd.RequestPool());
+                                            httpd.setPathPattern(patternValue);
+                                        });
                         httpd.getRequestPools().computeIfAbsent(method.toString(), r -> new ConcurrentHashMap<>()).putAll(requestPool);
                     });
         });
