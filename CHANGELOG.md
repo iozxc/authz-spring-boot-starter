@@ -3,14 +3,15 @@
 ## Version 1.0.13 - 2022.7.9
 
 ### Fixed
-
-- 修复了一些bug
+- 路径匹配异常
+- AuHelper中部分方法返回结果与预期不一致（标记为@Nonnull结果返回为空）
 
 ## Version 1.0.12 - 2022.7.8
 
 ### Fixed
 
-- 修复了一些bug
+- AuKey rename -> AuthzRSAManager
+- 优化了解码部分的代码
 
 ## Version 1.0.11 - 2022.7.8
 
