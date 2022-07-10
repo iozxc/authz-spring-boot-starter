@@ -22,7 +22,7 @@ authz:
     - 现在能够主动对【某用户 - by `userId` `deviceType` `deviceId` `ip` `iprange`】进行封禁xx时间
     - 解除封禁（触发RateLimit的无法解除）
     - 修改封禁时间
-    - 删除封禁
+    - 查看封禁信息
 
 ```java
 import cn.omisheep.authz.AuHelper;
