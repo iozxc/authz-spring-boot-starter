@@ -20,7 +20,7 @@ import java.util.Locale;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-@Order(5)
+@Order(1)
 @SuppressWarnings("all")
 public class CookieAndRequestSlot implements Slot {
 
@@ -39,7 +39,7 @@ public class CookieAndRequestSlot implements Slot {
     }
 
     @Override
-    public boolean chain(HttpMeta httpMeta, HandlerMethod handler) throws Exception {
+    public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
         Cookie cookie     = HttpUtils.readSingleCookieInRequestByName(cookieName);
         String tokenValue = null;
 
@@ -60,11 +60,9 @@ public class CookieAndRequestSlot implements Slot {
                 Async.run(userDevicesDict::request);
                 httpMeta.setHasToken(true);
             } catch (Exception e) {
-                // 惰性删除策略，如果此用户存在，但是过期，则删除
                 if (e instanceof JwtException) {
                     httpMeta.setHasToken(false);
                     try {
-                        httpMeta.setTokenException(HttpMeta.TokenException.valueOf(e.getClass().getSimpleName()));
                         if (e instanceof ExpiredJwtException) {
                             Claims claims = ((ExpiredJwtException) e).getClaims();
                             userDevicesDict.removeDeviceByUserIdAndAccessTokenId(claims.get("userId"), claims.getId());
@@ -75,12 +73,10 @@ public class CookieAndRequestSlot implements Slot {
                 }
 
             }
-        }else {
+        } else {
             httpMeta.setHasToken(false);
         }
 
-
-        return true;
     }
 
 }

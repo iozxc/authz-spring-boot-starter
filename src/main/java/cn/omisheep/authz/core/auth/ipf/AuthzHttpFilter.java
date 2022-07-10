@@ -96,8 +96,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
 
         httpMeta.setServletPath(servletPath);
         request.setAttribute(HTTP_META, httpMeta);
-        Async.run(() -> RedisUtils.publish(RequestMessage.CHANNEL, new RequestMessage(method, httpMeta.getApi(), ip, now, null)));
-
+        Async.run(() -> RedisUtils.publish(RequestMessage.CHANNEL, new RequestMessage(method, httpMeta.getApi(), ip, now)));
         filterChain.doFilter(request, response);
     }
 

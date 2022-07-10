@@ -15,8 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Date;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -28,27 +27,29 @@ import java.util.stream.Collectors;
 public class HttpMeta {
 
     @JsonIgnore
-    private final HttpServletRequest request;
-    private final String             ip;
-    private final String             uri;
-    private final String             api;
-    private       String             servletPath;
-    private final String             method;
-    private final String             userAgent;
-    private final String             refer;
-    private       String             body;
-    private final Date               date;
-    private       Token              token;
-    private       Object             userId;
-    private       TokenException     tokenException;
-    private       boolean            hasToken;
-    private       AuthzException     authzException;
-    private       Set<String>        roles;
-    private       Set<String>        permissions;
-    private       boolean            requireProtect;
-    private       boolean            requireLogin;
-    private       PermRolesMeta      permRolesMeta;
-    private       boolean            ignore = false;
+    private final HttpServletRequest          request;
+    private final String                      ip;
+    private final String                      uri;
+    private final String                      api;
+    private       String                      servletPath;
+    private final String                      method;
+    private final String                      userAgent;
+    private final String                      refer;
+    private       String                      body;
+    private final Date                        date;
+    private       Token                       token;
+    private       Object                      userId;
+    private       boolean                     hasToken;
+    private       Set<String>                 roles;
+    private       Set<String>                 permissions;
+    private       boolean                     requireProtect;
+    private       boolean                     requireLogin;
+    private       PermRolesMeta               permRolesMeta;
+    private       boolean                     ignore              = false;
+    @JsonIgnore
+    private       LinkedList<Object>          exceptionObjectList = new LinkedList<>();
+    @JsonIgnore
+    private       LinkedList<ExceptionStatus> exceptionStatusList = new LinkedList<>();
 
     public HttpMeta setRoles(Set<String> roles) {
         if (roles == null) return this;
@@ -79,22 +80,13 @@ public class HttpMeta {
     }
 
     public HttpMeta error(AuthzException authzException) {
-        this.authzException = authzException;
-        return this;
+        if (authzException == null) return this;
+        return error(authzException.getExceptionStatus());
     }
 
     public HttpMeta error(ExceptionStatus exceptionStatus) {
-        return error(new AuthzException(null, exceptionStatus));
-    }
-
-    public HttpMeta error(ExceptionStatus exceptionStatus, Throwable e) {
-        return error(new AuthzException(e, exceptionStatus));
-    }
-
-    public enum TokenException {
-        ExpiredJwtException,
-        MalformedJwtException,
-        SignatureException
+        if (exceptionStatus != null) this.exceptionStatusList.add(exceptionStatus);
+        return this;
     }
 
     public boolean setHasToken(boolean hasToken) {

@@ -7,6 +7,7 @@ import cn.omisheep.web.utils.HttpUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.List;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -15,11 +16,11 @@ import javax.servlet.http.HttpServletResponse;
 public class DefaultAuthzExceptionHandler implements AuthzExceptionHandler {
     @Override
     public boolean handle(HttpServletRequest request, HttpServletResponse response,
-                          HttpMeta httpMeta, ExceptionStatus exceptionStatus) throws Exception {
-        if (exceptionStatus.equals(ExceptionStatus.MISMATCHED_URL)) return true;
+                          HttpMeta httpMeta, ExceptionStatus firstExceptionStatus, List<Object> errorObjects) throws Exception {
+        if (firstExceptionStatus.equals(ExceptionStatus.MISMATCHED_URL)) return true;
 
-        HttpUtils.returnResponse(exceptionStatus.getHttpStatus(),
-                Result.of(exceptionStatus.getCode(), exceptionStatus.getMessage()));
+        HttpUtils.returnResponse(firstExceptionStatus.getHttpStatus(),
+                Result.of(firstExceptionStatus.getCode(), firstExceptionStatus.getMessage()));
 
         return false;
     }

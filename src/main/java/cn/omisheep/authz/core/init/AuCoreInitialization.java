@@ -87,6 +87,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
     @SneakyThrows
     public void init() {
+        VersionInfo.init(properties.getApp());
         AbstractHandlerMethodMapping<RequestMappingInfo> methodMapping =
                 (AbstractHandlerMethodMapping<RequestMappingInfo>) ctx.getBean("requestMappingHandlerMapping");
         Map<RequestMappingInfo, HandlerMethod> mapRet = methodMapping.getHandlerMethods();
@@ -377,7 +378,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
             List<String> collect = toBeLoadedRoles.stream().collect(Collectors.toList());
             List<Set<String>> rolesPerms = RedisUtils.Obj.get(
                     collect.stream()
-                            .map(role -> Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX + role)
+                            .map(role -> Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role)
                             .collect(Collectors.toList())
             );
             Iterator<String>             iterator = collect.iterator();
@@ -385,7 +386,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
             rolesPerms.forEach(perms -> map.put(iterator.next(), perms));
             map.forEach((role, v) -> {
                 Set<String> permissions = permLibrary.getPermissionsByRole(role);
-                cache.setSneaky(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX + role, permissions, Cache.INFINITE);
+                cache.setSneaky(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role, permissions, Cache.INFINITE);
             });
         });
 

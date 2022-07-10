@@ -9,6 +9,7 @@ import org.springframework.web.method.HandlerMethod;
  * @since 1.0.0
  */
 @Order
+@SuppressWarnings("all")
 public class LogSlot implements Slot {
 
     @Override
@@ -17,8 +18,7 @@ public class LogSlot implements Slot {
     }
 
     @Override
-    public boolean chain(HttpMeta httpMeta, HandlerMethod handler) {
+    public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
         LogUtils.exportLogsFromRequest(httpMeta.getRequest());
-        return true;
     }
 }

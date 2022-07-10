@@ -1,8 +1,52 @@
 # 更新日记【Authz】
 
+## Version 1.1.0 - 2022.7.9
+
+### Added
+
+- 新增app范围限制，避免不同应用在同一redis中启动的情况下出现数据污染
+
+```yaml
+authz:
+  app: omisheep1
+  ...
+```
+
+```yaml
+authz:
+  app: omisheep2
+  ...
+```
+
+- 新增主动封禁功能，如下。
+    - 现在能够主动对【某用户 - by `userId` `deviceType` `deviceId` `ip` `iprange`】进行封禁xx时间
+    - 解除封禁（触发RateLimit的无法解除）
+    - 修改封禁时间
+    - 删除封禁
+
+```java
+import cn.omisheep.authz.AuHelper;
+
+class Main {
+    public void test() {
+        AuHelper.denyUser(1, "2s"); // 对用户1进行封禁2秒
+        AuHelper.denyUser(2, "mac", "10s"); // 对用户2的mac设备进行封禁10秒
+        AuHelper.removeDenyUser(1); // 移除用户1的封禁
+        AuHelper.denyIPRange("10.2.0.0/24", "10d"); // 对10.2.0.0/24网段下的IP进行封禁10天
+        AuHelper.denyIP("10.2.0.2", "10d"); // 对ip 10.2.0.2进行封禁10天
+    }
+}
+```
+
+### Fixed
+
+- 修改了`cn.omisheep.authz.core.slot.Slot`接口
+  在其内的chain方法不在返回值，若此slot需要返回错误并且中断之后的slot，则调用`cn.omisheep.authz.core.slot.Error`函数接口中error方法即可
+
 ## Version 1.0.13 - 2022.7.9
 
 ### Fixed
+
 - 路径匹配异常
 - AuHelper中部分方法返回结果与预期不一致（标记为@Nonnull结果返回为空）
 

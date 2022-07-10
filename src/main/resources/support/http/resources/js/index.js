@@ -1206,7 +1206,7 @@ setTimeout(() => {
     axios.get("api/info").then(res => {
         if (res.data) {
             var info = res.data;
-            $('#info').html(`${info.prefix}    -   ${info.name}`)
+            $('#info').html(`${info.prefix}    -   ${info.application}`)
         }
     })
 }, 10)

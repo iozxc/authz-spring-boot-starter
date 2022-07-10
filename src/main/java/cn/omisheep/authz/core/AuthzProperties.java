@@ -14,6 +14,11 @@ import org.springframework.boot.logging.LogLevel;
 @ConfigurationProperties(prefix = "authz")
 public class AuthzProperties {
 
+    /**
+     * @since 1.1.0
+     */
+    private String app = "defaultApp";
+
     private TokenConfig token = new TokenConfig();
 
     private UserConfig user = new UserConfig();
@@ -26,6 +31,9 @@ public class AuthzProperties {
 
     private DashboardConfig dashboard = new DashboardConfig();
 
+    /**
+     * @since 1.0.11
+     */
     private Class<? extends Decryptor> defaultDecryptor = RSADecryptor.class;
 
     /**
@@ -47,8 +55,9 @@ public class AuthzProperties {
     private boolean md5check = false;
 
     /**
-     * orm框架
-     * 1.0.5 仅支持mybatis
+     * orm框架 目前仅支持mybatis
+     *
+     * @since 1.0.5
      */
     private ORM orm;
 

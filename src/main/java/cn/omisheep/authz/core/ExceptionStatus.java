@@ -20,6 +20,10 @@ public enum ExceptionStatus {
     TOKEN_EXCEPTION(-201, "Token exception", true, FORBIDDEN),
     REQUEST_REPEAT(-202, "Request repeat error", false, TOO_MANY_REQUESTS),
     LOGIN_EXCEPTION(-203, "You are offline, or you may have logged in elsewhere", true, FORBIDDEN),
+    /**
+     * @since 1.1.0
+     */
+    REQUEST_EXCEPTION(-204, "Request error", false, FORBIDDEN),
 
     CONTENT_TYPE_ERROR(-301, "Content type not supported, must be json", false, INTERNAL_SERVER_ERROR),
     PAGE_NOT_SUPPORT(-302, "Page not support, check database type, only mysql and oracle", false, INTERNAL_SERVER_ERROR);
@@ -33,6 +37,20 @@ public enum ExceptionStatus {
         this.code       = code;
         this.message    = message;
         this.clearToken = clearToken;
+        this.httpStatus = httpStatus;
+    }
+
+    ExceptionStatus(int code, String message, HttpStatus httpStatus) {
+        this.code       = code;
+        this.message    = message;
+        this.clearToken = false;
+        this.httpStatus = httpStatus;
+    }
+
+    ExceptionStatus(HttpStatus httpStatus) {
+        this.code       = httpStatus.value();
+        this.message    = httpStatus.getReasonPhrase();
+        this.clearToken = false;
         this.httpStatus = httpStatus;
     }
 

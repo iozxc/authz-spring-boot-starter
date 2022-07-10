@@ -27,13 +27,13 @@ public class DeviceSlot implements Slot {
     }
 
     @Override
-    public boolean chain(HttpMeta httpMeta, HandlerMethod handler) {
-        if (!httpMeta.isRequireLogin()) return true;
+    public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
+        if (!httpMeta.isRequireLogin()) return;
 
         if (!httpMeta.isHasToken()) {
             logs("Require Login", httpMeta);
-            httpMeta.error(ExceptionStatus.REQUIRE_LOGIN);
-            return false;
+            error.error(ExceptionStatus.REQUIRE_LOGIN);
+            return;
         }
 
         Token accessToken = httpMeta.getToken();
@@ -42,20 +42,18 @@ public class DeviceSlot implements Slot {
             case ACCESS_TOKEN_OVERDUE:
                 // accessToken过期
                 logs("Forbid : expired token exception", httpMeta);
-                httpMeta.error(ExceptionStatus.ACCESS_TOKEN_OVERDUE);
-                return false;
+                error.error(ExceptionStatus.ACCESS_TOKEN_OVERDUE);
+                return;
             case REQUIRE_LOGIN:
                 // 需要重新登录
                 logs("Require Login", httpMeta);
-                httpMeta.error(ExceptionStatus.REQUIRE_LOGIN);
-                return false;
+                error.error(ExceptionStatus.REQUIRE_LOGIN);
+                return;
             case LOGIN_EXCEPTION:
                 // 在别处登录
                 logs("forbid : may have logged in elsewhere", httpMeta);
-                httpMeta.error(ExceptionStatus.LOGIN_EXCEPTION);
-                return false;
+                error.error(ExceptionStatus.LOGIN_EXCEPTION);
+                return;
         }
-
-        return true;
     }
 }

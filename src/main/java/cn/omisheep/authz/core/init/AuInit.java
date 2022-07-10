@@ -6,7 +6,7 @@ import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.slot.SlotScan;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
-import io.jsonwebtoken.lang.Assert;
+import cn.omisheep.commons.util.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Import;
@@ -25,7 +25,7 @@ public class AuInit {
 
     public AuInit(AuthzProperties properties) {
         this.properties = properties;
-        Assert.notNull(this.properties.getToken().getKey(), "token配置异常,请在yml中配置key");
+        Assert.hasText(properties.getToken().getKey(), "token配置异常,请在yml中配置key");
         initLogManager();
     }
 

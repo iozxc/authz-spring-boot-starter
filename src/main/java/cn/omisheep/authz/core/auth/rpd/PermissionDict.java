@@ -174,34 +174,30 @@ public class PermissionDict implements AuthzModifiable {
 
     @Nullable
     public Object modify(@NonNull AuthzModifier authzModifier) {
-        try {
-            if (authzModifier.getTarget() == null) {
-                return modifyParam(authzModifier);
-            }
-            switch (authzModifier.getTarget()) {
-                case API:
-                    return modifyAPI(authzModifier);
-                case PATH:
-                case PARAM:
-                case PATH_VARIABLE_PERMISSION:
-                case PATH_VAR_PERMISSION:
-                case PATH_VARIABLE_ROLE:
-                case PATH_VAR_ROLE:
-                case REQUEST_PARAM_ROLE:
-                case PARAM_ROLE:
-                case REQUEST_PARAM_PERMISSION:
-                case PARAM_PERMISSION:
-                    return modifyParam(authzModifier);
-                case DATA_ROW:
-                case DATA_COL:
-                    return modifyData(authzModifier);
-                case NON:
-                    return null;
-            }
-            return null;
-        } finally {
-            version.incrementAndGet();
+        if (authzModifier.getTarget() == null) {
+            return modifyParam(authzModifier);
         }
+        switch (authzModifier.getTarget()) {
+            case API:
+                return modifyAPI(authzModifier);
+            case PATH:
+            case PARAM:
+            case PATH_VARIABLE_PERMISSION:
+            case PATH_VAR_PERMISSION:
+            case PATH_VARIABLE_ROLE:
+            case PATH_VAR_ROLE:
+            case REQUEST_PARAM_ROLE:
+            case PARAM_ROLE:
+            case REQUEST_PARAM_PERMISSION:
+            case PARAM_PERMISSION:
+                return modifyParam(authzModifier);
+            case DATA_ROW:
+            case DATA_COL:
+                return modifyData(authzModifier);
+            case NON:
+                return null;
+        }
+        return null;
     }
 
     public static List<Class<?>> argType(String argsName) {

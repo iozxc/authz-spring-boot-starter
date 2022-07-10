@@ -32,10 +32,10 @@ public class APIPermSlot implements Slot {
     }
 
     @Override
-    public boolean chain(HttpMeta httpMeta, HandlerMethod handler) {
-        if (!httpMeta.isRequireProtect()) return true;
+    public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
+        if (!httpMeta.isRequireProtect()) return;
         PermRolesMeta permRolesMeta = permissionDict.getRolePermission().get(httpMeta.getMethod()).get(httpMeta.getApi());
-        if (permRolesMeta.non()) return true;
+        if (permRolesMeta.non()) return;
 
         Token accessToken = httpMeta.getToken();
 
@@ -47,8 +47,8 @@ public class APIPermSlot implements Slot {
             httpMeta.setRoles(roles);
             if (!e1 && !CollectionUtils.containsSub(permRolesMeta.getRequireRoles(), roles) || !e2 && CollectionUtils.containsSub(permRolesMeta.getExcludeRoles(), roles)) {
                 logs("Forbid : permissions exception", httpMeta, permRolesMeta);
-                httpMeta.error(ExceptionStatus.PERM_EXCEPTION);
-                return false;
+                error.error(ExceptionStatus.PERM_EXCEPTION);
+                return;
             }
         }
 
@@ -65,19 +65,18 @@ public class APIPermSlot implements Slot {
                 perms.addAll(permissionsByRole);
                 if (!e4 && CollectionUtils.containsSub(permRolesMeta.getExcludePermissions(), permissionsByRole)) {
                     logs("Forbid : permissions exception", httpMeta, permRolesMeta);
-                    httpMeta.error(ExceptionStatus.PERM_EXCEPTION);
-                    return false;
+                    error.error(ExceptionStatus.PERM_EXCEPTION);
+                    return;
                 }
             }
             if (!e3 && !CollectionUtils.containsSub(permRolesMeta.getRequirePermissions(), perms)) {
                 logs("Forbid : permissions exception", httpMeta, permRolesMeta);
-                httpMeta.error(ExceptionStatus.PERM_EXCEPTION);
-                return false;
+                error.error(ExceptionStatus.PERM_EXCEPTION);
+                return;
             }
             httpMeta.setPermissions(perms);
         }
 
         logs("Success", httpMeta, permRolesMeta);
-        return true;
     }
 }

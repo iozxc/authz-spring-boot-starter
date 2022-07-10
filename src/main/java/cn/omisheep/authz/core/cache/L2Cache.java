@@ -46,7 +46,7 @@ public class L2Cache implements Cache {
                 Object  o   = RedisUtils.Obj.get(key); // cache中没有，加载redis
                 long    ttl = RedisUtils.ttl(key);
                 boolean b   = ttl != -2;
-                if (key.startsWith(Constants.USER_ROLES_KEY_PREFIX) || key.startsWith(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX)) {
+                if (key.startsWith(Constants.USER_ROLES_KEY_PREFIX.get()) || key.startsWith(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get())) {
                     ttl = INFINITE;
                 }
                 if (o != null) { // redis中有 且值不为空
@@ -69,7 +69,7 @@ public class L2Cache implements Cache {
                     String  key = iterator.next();
                     long    ttl = RedisUtils.ttl(key);
                     boolean b   = ttl != -2;
-                    if (key.startsWith(Constants.USER_ROLES_KEY_PREFIX) || key.startsWith(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX)) {
+                    if (key.startsWith(Constants.USER_ROLES_KEY_PREFIX.get()) || key.startsWith(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get())) {
                         ttl = INFINITE;
                     }
                     if (o != null) { // redis中有 且值不为空

@@ -21,10 +21,7 @@ import cn.omisheep.authz.core.init.AuCoreInitialization;
 import cn.omisheep.authz.core.init.AuInit;
 import cn.omisheep.authz.core.interceptor.*;
 import cn.omisheep.authz.core.interceptor.mybatis.DataSecurityInterceptorForMybatis;
-import cn.omisheep.authz.core.msg.CacheMessage;
-import cn.omisheep.authz.core.msg.MessageReceive;
-import cn.omisheep.authz.core.msg.RequestMessage;
-import cn.omisheep.authz.core.msg.VersionMessage;
+import cn.omisheep.authz.core.msg.*;
 import cn.omisheep.authz.core.resolver.AuthzHandlerRegister;
 import cn.omisheep.authz.core.resolver.DecryptRequestBodyAdvice;
 import cn.omisheep.authz.core.util.Utils;
@@ -74,10 +71,18 @@ public class AuthzAutoConfiguration {
 
 
     @Autowired
-    private void init(ConfigurableEnvironment environment) {
+    private void init(ConfigurableEnvironment environment, AuthzProperties properties) {
         String name = environment.getProperty("spring.application.name");
-        RequestMessage.c.accept(StringUtils.hasText(name) ? name : "application");
-        VersionMessage.CHANNEL = "AU_MODIFY_ID:" + VersionInfo.APP_NAME;
+
+        String applicationName = StringUtils.hasText(name) ? name : "application";
+        VersionInfo.APPLICATION_NAME = applicationName;
+        VersionInfo.APP_NAME         = properties.getApp();
+
+        VersionMessage.CHANNEL = "AU:" + properties.getApp() + ":MODIFY_ID:" + applicationName;
+        CacheMessage.CHANNEL   = "AU:" + properties.getApp() + ":CACHE_DATA_UPDATE";
+        RequestMessage.CHANNEL = "AU:" + properties.getApp() + ":CONTEXT_CLOUD_APP_ID:" + applicationName;
+        AuInit.log.info("Version channel: 【 {} 】, Cache channel: 【 {} 】, Request channel: 【 {} 】",
+                VersionMessage.CHANNEL, CacheMessage.CHANNEL, RequestMessage.CHANNEL);
 
         String host;
         try {
@@ -166,7 +171,11 @@ public class AuthzAutoConfiguration {
 
         @Bean("auCacheRedisMessageListenerContainer")
         @ConditionalOnBean(value = MessageReceive.class, name = "authzCacheMessageReceive")
-        public RedisMessageListenerContainer container(@Qualifier("authzRedisTemplate") RedisTemplate redisTemplate, RedisConnectionFactory connectionFactory, @Qualifier("authzCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter1, @Qualifier("authzRequestCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter2, @Qualifier("authzVersionMessageListenerAdapter") MessageListenerAdapter listenerAdapter3) {
+        public RedisMessageListenerContainer container(@Qualifier("authzRedisTemplate") RedisTemplate redisTemplate,
+                                                       RedisConnectionFactory connectionFactory,
+                                                       @Qualifier("authzCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter1,
+                                                       @Qualifier("authzRequestCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter2,
+                                                       @Qualifier("authzVersionMessageListenerAdapter") MessageListenerAdapter listenerAdapter3) {
             try {
                 redisTemplate.execute((RedisCallback<Object>) RedisConnectionCommands::ping);
             } catch (Exception e) {

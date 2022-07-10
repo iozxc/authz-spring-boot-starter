@@ -284,7 +284,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
             });
             rfKeys.removeIf(rfKey -> {
                 Device device = (Device) cache.get().get(rfKey);
-                if (!device.isEmpty()) {
+                if (device == null || !device.isEmpty()) {
                     if (equalsDeviceByType(device, deviceType)) {
                         keys.add(rfKey);
                         return true;
@@ -321,7 +321,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
             });
             rfKeys.removeIf(rfKey -> {
                 Device device = (Device) cache.get().get(rfKey);
-                if (!device.isEmpty()) {
+                if (device == null || !device.isEmpty()) {
                     if (equalsDeviceByTypeAndId(device, deviceType, deviceId)) {
                         keys.add(rfKey);
                         return true;
@@ -338,7 +338,8 @@ public class UserDevicesDictByCache implements UserDevicesDict {
 
     private Device getDeviceOe(Object userId, String acKey) {
         AccessInfo accessInfo = (AccessInfo) cache.get().get(acKey);
-        String     rtid       = accessInfo.getRefreshTokenId();
+        if (accessInfo == null) return null;
+        String rtid = accessInfo.getRefreshTokenId();
         if (rtid != null) {
             String rfKey = rfKey(userId, rtid);
             return (Device) cache.get().get(rfKey);
@@ -400,7 +401,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         long        now    = TimeUtils.nowTime();
         Set<String> rfKeys = cache.get().keysAndLoad(rfKey(userId, Constants.WILDCARD));
         return rfKeys.stream().map(rfKey -> (Device) cache.get().get(rfKey))
-                .filter(device -> (now - device.getLastRequestTime().getTime()) < ms)
+                .filter(device -> device != null && ((now - device.getLastRequestTime().getTime()) < ms))
                 .collect(Collectors.toList());
     }
 
@@ -429,19 +430,15 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     private String requestKey(Object userId, String rfKey) {
-        return Constants.DEVICE_REQUEST_INFO_KEY_PREFIX + userId + Constants.SEPARATOR + rfKey.split(Constants.SEPARATOR)[3];
-    }
-
-    private String requestKeyByTokenId(Object userId, String tokenId) {
-        return Constants.DEVICE_REQUEST_INFO_KEY_PREFIX + userId + Constants.SEPARATOR + tokenId;
+        return Constants.DEVICE_REQUEST_INFO_KEY_PREFIX.get() + userId + Constants.SEPARATOR + rfKey.split(Constants.SEPARATOR)[3];
     }
 
     private String acKey(Object userId, String tokenId) {
-        return Constants.ACCESS_INFO_KEY_PREFIX + userId + Constants.SEPARATOR + tokenId;
+        return Constants.ACCESS_INFO_KEY_PREFIX.get() + userId + Constants.SEPARATOR + tokenId;
     }
 
     private String rfKey(Object userId, String tokenId) {
-        return Constants.REFRESH_INFO_KEY_PREFIX + userId + Constants.SEPARATOR + tokenId;
+        return Constants.REFRESH_INFO_KEY_PREFIX.get() + userId + Constants.SEPARATOR + tokenId;
     }
 
     private String acKey(Object userId, TokenPair tokenPair) {

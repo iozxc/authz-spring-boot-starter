@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core;
 
 import cn.omisheep.authz.core.auth.AuthzModifier;
+import cn.omisheep.authz.core.auth.Blacklist;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
@@ -26,7 +27,6 @@ public class Authz {
 
     static {
         permissionDict = PermissionDict.self();
-
         userDevicesDict = AUtils.getBean(UserDevicesDict.class);
         cache           = AUtils.getBean(Cache.class);
         httpd           = AUtils.getBean(Httpd.class);
@@ -36,6 +36,8 @@ public class Authz {
     public static Object op(@NonNull AuthzModifier authzModifier) {
         if (authzModifier.getTarget() == AuthzModifier.Target.RATE) {
             return httpd.modify(authzModifier);
+        } else if (authzModifier.getTarget() == AuthzModifier.Target.BLACKLIST) {
+            return Blacklist.modify(authzModifier);
         } else {
             return permissionDict.modify(authzModifier);
         }

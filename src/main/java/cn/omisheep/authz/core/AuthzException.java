@@ -9,7 +9,7 @@ import lombok.Getter;
 @SuppressWarnings("serial")
 public class AuthzException extends RuntimeException {
     @Getter
-    private final        ExceptionStatus exceptionStatus;
+    private final ExceptionStatus exceptionStatus;
 
     public AuthzException(ExceptionStatus exceptionStatus) {
         super(exceptionStatus.getMessage());
@@ -24,5 +24,9 @@ public class AuthzException extends RuntimeException {
     public AuthzException(Throwable cause) {
         super(cause.getMessage(), cause);
         this.exceptionStatus = ExceptionStatus.UNKNOWN;
+    }
+
+    public static AuthzException of(ExceptionStatus exceptionStatus) {
+        return new AuthzException(exceptionStatus);
     }
 }

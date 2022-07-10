@@ -37,10 +37,10 @@ public class ParameterPermSlot implements Slot {
     }
 
     @Override
-    public boolean chain(HttpMeta httpMeta, HandlerMethod handler) throws Exception {
-        if (!httpMeta.isRequireProtect()) return true;
+    public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
+        if (!httpMeta.isRequireProtect()) return;
         PermRolesMeta permRolesMeta = permissionDict.getRolePermission().get(httpMeta.getMethod()).get(httpMeta.getApi());
-        if (permRolesMeta.getParamPermissionsMetadata() == null) return true;
+        if (permRolesMeta.getParamPermissionsMetadata() == null) return;
         Set<String> roles       = null;
         Set<String> permissions = null;
 
@@ -59,8 +59,7 @@ public class ParameterPermSlot implements Slot {
                 type = ParamMetadata.ParamType.PATH_VARIABLE;
                 if (!pathVariable.name().equals("")) paramName = pathVariable.name();
 
-                Map<String, String> pathVariables = (Map<String, String>) httpMeta.getRequest().getAttribute(
-                        HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+                Map<String, String> pathVariables = (Map<String, String>) httpMeta.getRequest().getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
                 value = pathVariables.get(paramName);
             } else if (requestParam != null) {
                 type = ParamMetadata.ParamType.REQUEST_PARAM;
@@ -85,8 +84,8 @@ public class ParameterPermSlot implements Slot {
                 if (rolesMetaList != null && !rolesMetaList.isEmpty()) {
                     if (httpMeta.getToken() == null) {
                         logs("Require Login", httpMeta, permRolesMeta);
-                        httpMeta.error(ExceptionStatus.REQUIRE_LOGIN);
-                        return false;
+                        error.error(ExceptionStatus.REQUIRE_LOGIN);
+                        return;
                     }
 
                     roles = Optional.ofNullable(httpMeta.getRoles()).orElse(permLibrary.getRolesByUserId(httpMeta.getToken().getUserId()));
@@ -117,8 +116,8 @@ public class ParameterPermSlot implements Slot {
                     }
                     if (!next_resources || !(next_range || !next_range && flag)) {
                         logs("Forbid : permissions exception by request parameter", httpMeta, permRolesMeta);
-                        httpMeta.error(ExceptionStatus.PERM_EXCEPTION);
-                        return false;
+                        error.error(ExceptionStatus.PERM_EXCEPTION);
+                        return;
                     }
                 }
 
@@ -127,8 +126,8 @@ public class ParameterPermSlot implements Slot {
                 if (permissionsMetaList != null && !permissionsMetaList.isEmpty()) {
                     if (httpMeta.getToken() == null) {
                         logs("Require Login", httpMeta, permRolesMeta);
-                        httpMeta.error(ExceptionStatus.REQUIRE_LOGIN);
-                        return false;
+                        error.error(ExceptionStatus.REQUIRE_LOGIN);
+                        return;
                     }
                     if (roles == null) {
                         roles = Optional.ofNullable(httpMeta.getRoles()).orElse(permLibrary.getRolesByUserId(httpMeta.getToken().getUserId()));
@@ -172,14 +171,12 @@ public class ParameterPermSlot implements Slot {
                     }
                     if (!next_resources || !(next_range || !next_range && flag)) {
                         logs("Forbid : permissions exception by request parameter", httpMeta, permRolesMeta);
-                        httpMeta.error(ExceptionStatus.PERM_EXCEPTION);
-                        return false;
+                        error.error(ExceptionStatus.PERM_EXCEPTION);
+                        return;
                     }
                 }
             }
         }
-
-        return true;
     }
 
 

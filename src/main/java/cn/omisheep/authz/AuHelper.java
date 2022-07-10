@@ -3,6 +3,7 @@ package cn.omisheep.authz;
 
 import cn.omisheep.authz.core.NotLoginException;
 import cn.omisheep.authz.core.auth.AuthzModifier;
+import cn.omisheep.authz.core.auth.Blacklist;
 import cn.omisheep.authz.core.auth.deviced.Device;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.ipf.RequestMeta;
@@ -338,12 +339,99 @@ public class AuHelper {
         return userDevicesDict.listActiveUsers(ms);
     }
 
-    // **************************************     ip黑名单      ************************************** //
+    // **************************************     黑名单操作      ************************************** //
+
+
+    public static void denyIP(@NonNull String ip, @NonNull String time) {
+        Blacklist.IP.add(ip, time);
+    }
+
+    public static void denyUser(@NonNull Object userId, @NonNull String time) {
+        Blacklist.User.add(userId, null, null, time);
+    }
+
+    public static void denyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String time) {
+        Blacklist.User.add(userId, deviceType, null, time);
+    }
+
+    public static void denyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId, @NonNull String time) {
+        Blacklist.User.add(userId, deviceType, deviceId, time);
+    }
+
+    public static void denyIPRange(@NonNull String ipRange, @NonNull String time) {
+        Blacklist.IPRangeDeny.add(ipRange, time);
+    }
+
+    @NonNull
+    public static List<Blacklist.User> getDenyUserInfo() {
+        return Blacklist.User.list();
+    }
+
+    @NonNull
+    public static List<Blacklist.User> getDenyUserInfo(@NonNull Object userId) {
+        return Blacklist.User.list(userId);
+    }
+
+    @Nullable
+    public static Blacklist.User getDenyUserInfo(@NonNull Object userId, @Nullable String deviceType, @Nullable String deviceId) {
+        return Blacklist.User.get(userId, deviceType, deviceId);
+    }
+
+    @NonNull
+    public static List<Blacklist.IP> getDenyIPInfo() {
+        return Blacklist.IP.list();
+    }
+
+    @NonNull
+    public static List<Blacklist.IPRangeDeny> getDenyIPRangeInfo() {
+        return Blacklist.IPRangeDeny.list();
+    }
+
+    public static void changeDenyUser(@NonNull Object userId, @NonNull String time) {
+        Blacklist.User.change(userId, null, null, time);
+    }
+
+    public static void changeDenyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String time) {
+        Blacklist.User.change(userId, deviceType, null, time);
+    }
+
+    public static void changeDenyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId, @NonNull String time) {
+        Blacklist.User.change(userId, deviceType, deviceId, time);
+    }
+
+    public static void changeDenyIP(@NonNull String ip, @NonNull String time) {
+        Blacklist.IP.change(ip, time);
+    }
+
+    public static void changeDenyIPRange(@NonNull String ipRange, @NonNull String time) {
+        Blacklist.IPRangeDeny.change(ipRange, time);
+    }
+
+    public static void removeDenyUser(@NonNull Object userId) {
+        Blacklist.User.remove(userId, null, null);
+    }
+
+    public static void removeDenyUser(@NonNull Object userId, @NonNull String deviceType) {
+        Blacklist.User.remove(userId, deviceType, null);
+    }
+
+    public static void removeDenyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId) {
+        Blacklist.User.remove(userId, deviceType, deviceId);
+    }
+
+    public static void removeDenyIP(@NonNull String ip) {
+        Blacklist.IP.remove(ip);
+    }
+
+    public static void removeDenyIPRange(@NonNull String ipRange) {
+        Blacklist.IPRangeDeny.remove(ipRange);
+    }
+
 
     /**
-     * 获得只可观察的黑名单请求元信息
+     * 获得黑名单请求元信息
      *
-     * @return 不可修改的黑名单请求元信息
+     * @return 请求频繁导致进入黑名单的请求元信息
      */
     @NonNull
     public static Collection<RequestMeta> queryMetaOfIpBlacklist() {
@@ -351,13 +439,77 @@ public class AuHelper {
     }
 
     /**
-     * 获得只可观察的黑名单请求元信息
+     * 获得黑名单请求元信息
      *
-     * @return 不可修改的黑名单请求元信息
+     * @return 请求频繁导致进入黑名单的ip list
      */
     @NonNull
     public static List<String> queryIpBlacklist() {
         return httpd.getIpBlacklist().stream().map(RequestMeta::getIp).collect(Collectors.toList());
+    }
+
+    // **************************************     RSA      ************************************** //
+
+    /**
+     * @return RSA 公钥
+     */
+    @NonNull
+    public static String getRSAPublicKey() {
+        return AuthzRSAManager.getPublicKeyString();
+    }
+
+    /**
+     * @return RSA 私钥
+     */
+    @NonNull
+    public static String getRSAPrivateKey() {
+        return AuthzRSAManager.getPrivateKeyString();
+    }
+
+    public static String encrypt(String plaintext) {
+        return AuthzRSAManager.encrypt(plaintext);
+    }
+
+    public static String decrypt(String encryptText) {
+        return AuthzRSAManager.decrypt(encryptText);
+    }
+
+    /**
+     * 打开自动刷新RSA，会将自定义的RSA关闭
+     */
+    public static void openAutoRefresh() {
+        AuthzRSAManager.setAuto(true);
+    }
+
+    /**
+     * 关闭自动刷新RSA，需要额外指定公钥私钥对
+     */
+    public static void closeAutoRefreshAndSetup(String publicKey, String privateKey) {
+        AuthzRSAManager.setAuKeyPair(publicKey, privateKey);
+    }
+
+    // **************************************     缓存      ************************************** //
+
+    /**
+     * 重新加载所有缓存
+     */
+    public static void reloadCache() {
+        cache.reload();
+    }
+
+    /**
+     * 重新加载所有缓存
+     */
+    public static void reloadCache(String... keys) {
+        cache.reload(keys);
+    }
+
+    /**
+     * 重新加载指定的缓存
+     */
+    @SafeVarargs
+    public static void reloadCache(Collection<String>... keys) {
+        cache.reload(keys);
     }
 
     // *************************************     api权限、数据权限、rate-limit 动态修改      ************************************* //
@@ -539,70 +691,6 @@ public class AuHelper {
     @Nullable
     public static Object authzModify(@NonNull AuthzModifier authzModifier) {
         return modify(authzModifier);
-    }
-
-    // **************************************     RSA      ************************************** //
-
-    /**
-     * @return RSA 公钥
-     */
-    @NonNull
-    public static String getRSAPublicKey() {
-        return AuthzRSAManager.getPublicKeyString();
-    }
-
-    /**
-     * @return RSA 私钥
-     */
-    @NonNull
-    public static String getRSAPrivateKey() {
-        return AuthzRSAManager.getPrivateKeyString();
-    }
-
-    public static String encrypt(String plaintext){
-        return AuthzRSAManager.encrypt(plaintext);
-    }
-
-    public static String decrypt(String encryptText){
-        return AuthzRSAManager.decrypt(encryptText);
-    }
-
-    /**
-     * 打开自动刷新RSA，会将自定义的RSA关闭
-     */
-    public static void openAutoRefresh() {
-        AuthzRSAManager.setAuto(true);
-    }
-
-    /**
-     * 关闭自动刷新RSA，需要额外指定公钥私钥对
-     */
-    public static void closeAutoRefreshAndSetup(String publicKey, String privateKey) {
-        AuthzRSAManager.setAuKeyPair(publicKey, privateKey);
-    }
-
-    // **************************************     缓存      ************************************** //
-
-    /**
-     * 重新加载所有缓存
-     */
-    public static void reloadCache() {
-        cache.reload();
-    }
-
-    /**
-     * 重新加载所有缓存
-     */
-    public static void reloadCache(String... keys) {
-        cache.reload(keys);
-    }
-
-    /**
-     * 重新加载指定的缓存
-     */
-    @SafeVarargs
-    public static void reloadCache(Collection<String>... keys) {
-        cache.reload(keys);
     }
 
     private AuHelper() {

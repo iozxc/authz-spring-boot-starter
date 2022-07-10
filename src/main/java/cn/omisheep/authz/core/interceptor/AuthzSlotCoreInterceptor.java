@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static cn.omisheep.authz.core.Constants.HTTP_META;
 
@@ -43,26 +44,42 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        HttpMeta       httpMeta      = (HttpMeta) request.getAttribute(HTTP_META);
-        AuthzException httpException = httpMeta.getAuthzException();
-        if (httpException != null) {
+        HttpMeta                    httpMeta = (HttpMeta) request.getAttribute(HTTP_META);
+        LinkedList<ExceptionStatus> list     = httpMeta.getExceptionStatusList();
+        if (!list.isEmpty()) {
             LogUtils.exportLogsFromRequest(request);
-            return authzExceptionHandler.handle(request, response, httpMeta, httpException.getExceptionStatus());
+            return authzExceptionHandler.handle(request, response, httpMeta, list.getFirst(), httpMeta.getExceptionObjectList());
         }
         if (!(handler instanceof HandlerMethod)) return false;
         HandlerMethod handlerMethod = (HandlerMethod) handler;
         try {
-            boolean next = true;
-            for (Slot slot : slots) if (next || slot.must()) next = slot.chain(httpMeta, handlerMethod);
-            AuthzException exception = httpMeta.getAuthzException();
-            if (exception != null) {
-                if (exception.getExceptionStatus().isClearToken()) TokenHelper.clearCookie(response);
-                return authzExceptionHandler.handle(request, response, httpMeta, exception.getExceptionStatus());
+            AtomicBoolean               next                = new AtomicBoolean(true);
+            LinkedList<ExceptionStatus> exceptionStatusList = httpMeta.getExceptionStatusList();
+            LinkedList<Object>          exceptionObjectList = httpMeta.getExceptionObjectList();
+            for (Slot slot : slots) {
+                if (next.get() || slot.must()) slot.chain(httpMeta, handlerMethod, (error) -> {
+                    next.set(false);
+                    if (error == null) return;
+                    if (error instanceof ExceptionStatus) {
+                        exceptionStatusList.offer((ExceptionStatus) error);
+                    } else if (error instanceof AuthzException) {
+                        exceptionStatusList.offer(((AuthzException) error).getExceptionStatus());
+                    } else {
+                        exceptionObjectList.offer(error);
+                    }
+                });
+            }
+            if (!exceptionStatusList.isEmpty() || !exceptionObjectList.isEmpty()) {
+                ExceptionStatus status = exceptionStatusList.getFirst();
+                if (status != null && status.isClearToken()) {
+                    TokenHelper.clearCookie(response);
+                }
+                return authzExceptionHandler.handle(request, response, httpMeta, status, exceptionObjectList);
             } else return true;
         } catch (Exception e) {
             e.printStackTrace();
             LogUtils.logError(e.getMessage(), e.getCause());
-            return authzExceptionHandler.handle(request, response, httpMeta, ExceptionStatus.UNKNOWN);
+            return authzExceptionHandler.handle(request, response, httpMeta, ExceptionStatus.UNKNOWN, httpMeta.getExceptionObjectList());
         }
     }
 

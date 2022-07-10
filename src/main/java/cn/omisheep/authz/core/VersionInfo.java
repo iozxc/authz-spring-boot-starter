@@ -4,12 +4,11 @@ import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.msg.VersionMessage;
 import cn.omisheep.authz.core.util.MD5Utils;
 import cn.omisheep.authz.core.util.RedisUtils;
+import cn.omisheep.commons.util.Assert;
 import cn.omisheep.commons.util.Async;
 import cn.omisheep.commons.util.TaskBuilder;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -18,10 +17,22 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class VersionInfo {
 
-    public static       AtomicInteger            version   = new AtomicInteger(0);
+    public static final AtomicInteger            version   = new AtomicInteger(0);
     public static final ArrayList<AuthzModifier> changeLog = new ArrayList<>();
     public static final ArrayList<AuthzModifier> cache     = new ArrayList<>();
 
+    private static final Map<String, String> _values = new HashMap<>();
+    public static final  Map<String, String> values  = Collections.unmodifiableMap(_values);
+
+    public static void init(String app) {
+        Assert.state(!_values.containsKey("APP"), "APP已初始化");
+        _values.put("APP", app);
+        _values.put("ACCESS_INFO_KEY_PREFIX", "au:" + app + ":usersAccessInfo:");
+        _values.put("REFRESH_INFO_KEY_PREFIX", "au:" + app + ":usersRefreshInfo:");
+        _values.put("DEVICE_REQUEST_INFO_KEY_PREFIX", "au:" + app + ":requestInfo:");
+        _values.put("PERMISSIONS_BY_ROLE_KEY_PREFIX", "au:" + app + ":permissionsByRole:");
+        _values.put("USER_ROLES_KEY_PREFIX", "au:" + app + ":userRoles:");
+    }
 
     private static String  md5;
     private static boolean md5check    = false;
@@ -43,7 +54,8 @@ public class VersionInfo {
         VersionInfo.md5check = md5check;
     }
 
-    public static  String  APP_NAME;
+    public static  String  APPLICATION_NAME;
+    public static String APP_NAME;
     private static boolean loading = false;
 
     public static String host;
@@ -63,6 +75,7 @@ public class VersionInfo {
         HashMap<String, String> v = new HashMap<>();
         v.put("version", version + "");
         v.put("name", APP_NAME);
+        v.put("application", APPLICATION_NAME);
         v.put("host", host);
         v.put("port", port);
         v.put("path", path);

@@ -45,8 +45,4 @@ public abstract class ExceptionUtils {
         return authzException;
     }
 
-
-    public static boolean isSafe(HttpServletRequest request) {
-        return get(request) == null;
-    }
 }

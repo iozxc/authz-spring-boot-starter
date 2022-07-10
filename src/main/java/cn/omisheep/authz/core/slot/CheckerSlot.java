@@ -27,13 +27,21 @@ public class CheckerSlot implements Slot {
     }
 
     @Override
-    public boolean chain(HttpMeta httpMeta, HandlerMethod handler) {
-        if (httpMeta == null || httpMeta.isMethod(OPTIONS) || httpMeta.isIgnore()) return false;
+    public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
+        if (httpMeta == null || httpMeta.isMethod(OPTIONS) || httpMeta.isIgnore()) {
+            error.error(null);
+            return;
+        }
         AuthzException exception = ExceptionUtils.get(httpMeta.getRequest());
-        if (exception != null) return false;
+        if (exception != null) {
+            error.error(null);
+            return;
+        }
         httpMeta.setRequireProtect(requireProtect(httpMeta));
         httpMeta.setRequireLogin(requireLogin(httpMeta));
-        return httpMeta.isRequireProtect() || httpMeta.isRequireLogin();
+        if (httpMeta.isRequireProtect() || httpMeta.isRequireLogin()) {
+            return;
+        } else error.error(null);
     }
 
     private boolean requireProtect(HttpMeta httpMeta) {

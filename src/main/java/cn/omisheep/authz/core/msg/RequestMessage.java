@@ -1,10 +1,7 @@
 package cn.omisheep.authz.core.msg;
 
-import cn.omisheep.authz.core.VersionInfo;
 import lombok.Data;
 import lombok.experimental.Accessors;
-
-import java.util.function.Consumer;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -23,25 +20,18 @@ public class RequestMessage implements Message {
     private String api;
     private String ip;
     private long   now;
-    private String msg = "hello";
 
     public RequestMessage() {
     }
 
-    public RequestMessage(String method, String api, String ip, long now, String msg) {
+    public RequestMessage(String method, String api, String ip, long now) {
         this.method = method;
         this.api    = api;
         this.ip     = ip;
         this.now    = now;
-        this.msg    = msg;
     }
 
     public static boolean ignore(RequestMessage message) {
         return message == null || Message.uuid.equals(message.getId()) || !message.context.equals(CHANNEL);
     }
-
-    public static Consumer<String> c = (s) -> {
-        VersionInfo.APP_NAME = s;
-        CHANNEL              = "AU_CONTEXT_CLOUD_APP_ID:" + s;
-    };
 }

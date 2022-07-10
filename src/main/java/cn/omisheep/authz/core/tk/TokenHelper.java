@@ -2,7 +2,6 @@ package cn.omisheep.authz.core.tk;
 
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.util.AUtils;
-import cn.omisheep.commons.util.Assert;
 import cn.omisheep.commons.util.TimeUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -45,7 +44,6 @@ public class TokenHelper {
 
     static {
         AuthzProperties properties = AUtils.getBean(AuthzProperties.class);
-        Assert.hasText(properties.getToken().getKey(), "token配置异常,请在yml中配置key");
         keyBytes    = TextCodec.BASE64.decode(properties.getToken().getKey());
         issuer      = properties.getToken().getIssuer();
         expire      = (int) (TimeUtils.parseTimeValue(properties.getToken().getRefreshTime()) / 1000);

@@ -42,6 +42,7 @@ public class AuthzModifier {
 
     private RateLimitInfo rateLimit;
 
+    private BlacklistInfo blacklistInfo;
 
     @Data
     public static class Role {
@@ -65,6 +66,27 @@ public class AuthzModifier {
         private BannedType   bannedType;
     }
 
+    @Data
+    public static class BlacklistInfo {
+        private TYPE   type;
+        private OP     op;
+        private Long   start;
+        private String ip;
+        private String ipRange;
+        private Object userId;
+        private String deviceType;
+        private String deviceId;
+        private String time;
+
+        enum OP {
+            ADD, CHANGE, REMOVE
+        }
+
+        enum TYPE {
+            IP, USER, IP_RANGE
+        }
+    }
+
 
     /**
      * API
@@ -83,9 +105,10 @@ public class AuthzModifier {
         REQUEST_PARAM_PERMISSION(5, "permission"), PARAM_PERMISSION(5, "permission"),
         DATA_ROW(6, "role", "permission"),
         DATA_COL(7, "role", "permission"),
-        PATH(9, "role", "permission"),
-        PARAM(10, "role", "permission"),
-        RATE(8),
+        PATH(8, "role", "permission"),
+        PARAM(9, "role", "permission"),
+        RATE(10),
+        BLACKLIST(11),
         NON(0);
 
         public final int      i;
