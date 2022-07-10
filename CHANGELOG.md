@@ -67,7 +67,7 @@ class Main {
 
 ### Added
 
-- 现在`@Roles` `@Perms` `@Certificated`能够作用与非Mapping上进行权限拦截了。
+- 现在`@Roles` `@Perms` `@Certificated`能够作用于非Mapping上进行权限拦截了。
 - 如：对`MyService`中的`test方法`进行登录检查
 
 ```java
