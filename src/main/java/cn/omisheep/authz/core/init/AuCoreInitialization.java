@@ -83,6 +83,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
     public void setApplicationContext(ApplicationContext applicationContext) {
         ctx = applicationContext;
         init();
+        CallbackInit.callbackInit(applicationContext);
     }
 
     @SneakyThrows
@@ -148,13 +149,23 @@ public class AuCoreInitialization implements ApplicationContextAware {
         return null;
     }
 
-
-    private <E extends Annotation> E getAnnoatation(Object value, Class<E> clz) {
-        E annotation = AnnotatedElementUtils.getMergedAnnotation(value.getClass(), clz);
+    private <A extends Annotation> A getAnnoatation(Object value, Class<A> clz) {
+        A annotation = AnnotatedElementUtils.getMergedAnnotation(value.getClass(), clz);
         try {
             if (annotation == null) {
                 return AnnotatedElementUtils.getMergedAnnotation(Class.forName(getTypeName(value)), clz);
             } else return annotation;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private <A extends Annotation> Set<A> getAnnoatations(Object value, Class<A> clz) {
+        Set<A> annotations = AnnotatedElementUtils.getAllMergedAnnotations(value.getClass(), clz);
+        try {
+            if (annotations == null || annotations.isEmpty()) {
+                return AnnotatedElementUtils.getAllMergedAnnotations(Class.forName(getTypeName(value)), clz);
+            } else return annotations;
         } catch (Exception e) {
             return null;
         }
@@ -181,17 +192,18 @@ public class AuCoreInitialization implements ApplicationContextAware {
         Map<String, IPRangeMeta>                    iMap                 = new HashMap<>();
         LinkedList<String>                          cList                = new LinkedList<>();
 
-        applicationContext.getBeansWithAnnotation(Auth.class).forEach((key, value) -> {
-            Auth auth = getAnnoatation(value, Auth.class);
-            if (auth != null) {
-                String name = getTypeName(value);
-                if (AuthScope.ROLE.equals(auth.scope())) {
-                    rMap.put(name, generatePermRolesMeta(null, auth));
-                } else {
-                    pMap.put(name, generatePermRolesMeta(auth, null));
-                }
-            }
+        applicationContext.getBeansWithAnnotation(Roles.class).forEach((key, value) -> {
+            String name  = getTypeName(value);
+            Roles  roles = getAnnoatation(value, Roles.class);
+            if (roles != null) rMap.put(name, generatePermRolesMeta(null, roles));
         });
+
+        applicationContext.getBeansWithAnnotation(Perms.class).forEach((key, value) -> {
+            String name  = getTypeName(value);
+            Perms  perms = getAnnoatation(value, Perms.class);
+            if (perms != null) pMap.put(name, generatePermRolesMeta(perms, null));
+        });
+
 
         applicationContext.getBeansWithAnnotation(Certificated.class).forEach((key, value) -> {
             Certificated certificated = getAnnoatation(value, Certificated.class);
@@ -434,30 +446,6 @@ public class AuCoreInitialization implements ApplicationContextAware {
         return flag ? rolesMeta : null;
     }
 
-    public static PermRolesMeta generatePermRolesMeta(Auth p, Auth r) {
-        PermRolesMeta prm  = new PermRolesMeta();
-        boolean       flag = false;
-        if (p != null) {
-            if (p.require() != null && p.require().length != 0) {
-                prm.setRequirePermissions(CollectionUtils.splitStrValsToSets(Constants.COMMA, p.require()));
-            }
-            if (p.exclude() != null && p.exclude().length != 0) {
-                prm.setExcludePermissions(CollectionUtils.splitStrValsToSets(Constants.COMMA, p.exclude()));
-            }
-            flag = true;
-        }
-        if (r != null) {
-            if (r.require() != null && r.require().length != 0) {
-                prm.setRequireRoles(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.require()));
-            }
-            if (r.exclude() != null && r.exclude().length != 0) {
-                prm.setExcludeRoles(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.exclude()));
-            }
-            flag = true;
-        }
-        return flag ? prm : null;
-    }
-
     public static PermRolesMeta generatePermRolesMeta(Perms p, Roles r) {
         PermRolesMeta prm  = new PermRolesMeta();
         boolean       flag = false;
@@ -491,7 +479,12 @@ public class AuCoreInitialization implements ApplicationContextAware {
             RateLimit rateLimit = aClass.getAnnotation(RateLimit.class);
             if (rateLimit != null) {
                 cMap.put(aClass.getName(),
-                        new LimitMeta(rateLimit.window(), rateLimit.maxRequests(), rateLimit.punishmentTime(), rateLimit.minInterval(), rateLimit.associatedPatterns(), rateLimit.bannedType()));
+                        new LimitMeta(rateLimit.window(),
+                                rateLimit.maxRequests(),
+                                rateLimit.punishmentTime(),
+                                rateLimit.minInterval(),
+                                rateLimit.associatedPatterns(),
+                                rateLimit.checkType()));
             }
         });
 
@@ -499,7 +492,12 @@ public class AuCoreInitialization implements ApplicationContextAware {
             Set<RequestMethod> methods   = key.getMethodsCondition().getMethods();
             RateLimit          rateLimit = value.getMethodAnnotation(RateLimit.class);
             if (rateLimit != null) {
-                LimitMeta limitMeta = new LimitMeta(rateLimit.window(), rateLimit.maxRequests(), rateLimit.punishmentTime(), rateLimit.minInterval(), rateLimit.associatedPatterns(), rateLimit.bannedType());
+                LimitMeta limitMeta = new LimitMeta(rateLimit.window(),
+                        rateLimit.maxRequests(),
+                        rateLimit.punishmentTime(),
+                        rateLimit.minInterval(),
+                        rateLimit.associatedPatterns(),
+                        rateLimit.checkType());
                 methods.forEach(
                         method -> getPatterns(key).forEach(
                                 patternValue -> httpdLimitedMetaMap.computeIfAbsent(method.toString(), r -> new HashMap<>()).put(patternValue, limitMeta))
@@ -507,7 +505,6 @@ public class AuCoreInitialization implements ApplicationContextAware {
             } else {
                 methods.forEach(
                         method -> {
-
                             getPatterns(key).forEach(
                                     patternValue -> {
                                         LimitMeta limitMeta = cMap.get(value.getBeanType().getName());
@@ -518,17 +515,20 @@ public class AuCoreInitialization implements ApplicationContextAware {
                         });
             }
 
-            HashMap<String, Httpd.RequestPool> requestPool = new HashMap<>();
+            HashMap<String, Httpd.RequestPool> userIdRequestPool = new HashMap<>();
+            HashMap<String, Httpd.RequestPool> ipRequestPool     = new HashMap<>();
 
             key.getMethodsCondition().getMethods().forEach(
                     method -> {
                         getPatterns(key)
                                 .forEach(
                                         patternValue -> {
-                                            requestPool.put(patternValue, new Httpd.RequestPool());
+                                            userIdRequestPool.put(patternValue, new Httpd.RequestPool());
+                                            ipRequestPool.put(patternValue, new Httpd.RequestPool());
                                             httpd.setPathPattern(patternValue);
                                         });
-                        httpd.getRequestPools().computeIfAbsent(method.toString(), r -> new ConcurrentHashMap<>()).putAll(requestPool);
+                        httpd.getIpRequestPools().computeIfAbsent(method.toString(), r -> new ConcurrentHashMap<>()).putAll(ipRequestPool);
+                        httpd.getUserIdRequestPools().computeIfAbsent(method.toString(), r -> new ConcurrentHashMap<>()).putAll(userIdRequestPool);
                     });
         });
 

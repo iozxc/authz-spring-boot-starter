@@ -1,6 +1,6 @@
 package cn.omisheep.authz.core.auth.ipf;
 
-import cn.omisheep.authz.annotation.BannedType;
+import cn.omisheep.authz.annotation.RateLimit;
 import cn.omisheep.authz.core.Constants;
 import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.commons.util.TimeUtils;
@@ -14,28 +14,32 @@ import java.util.stream.Collectors;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-@Getter
+
 public class LimitMeta {
+    @Getter
     private final long                    window;
+    @Getter
     private final int                     maxRequests;
-    private final List<Long>              punishmentTime = new ArrayList<>();
+    @Getter
     private final long                    minInterval;
+    @Getter
+    private final RateLimit.CheckType     checkType;
     private final List<AssociatedPattern> associatedPatterns;
-    private final BannedType              bannedType;
+    private final List<Long>              punishmentTime = new ArrayList<>();
+
 
     public LimitMeta(String window,
                      int maxRequests,
                      String[] punishmentTime,
                      String minInterval,
                      String[] associatedPatterns,
-                     BannedType bannedType) {
+                     RateLimit.CheckType checkType) {
         this.window      = TimeUtils.parseTimeValue(window);
         this.maxRequests = maxRequests;
+        this.checkType   = checkType;
         Arrays.stream(punishmentTime).forEach(val -> this.punishmentTime.add(TimeUtils.parseTimeValue(val)));
         Collections.sort(this.punishmentTime);
         this.minInterval = TimeUtils.parseTimeValue(minInterval);
-        this.bannedType  = bannedType;
-
         if (associatedPatterns.length > 0) {
             this.associatedPatterns = new ArrayList<>();
             for (String info : associatedPatterns) {
@@ -48,6 +52,15 @@ public class LimitMeta {
                 }
             }
         } else this.associatedPatterns = null;
+    }
+
+    public List<AssociatedPattern> getAssociatedPatterns() {
+        if (associatedPatterns == null) return null;
+        return Collections.unmodifiableList(associatedPatterns);
+    }
+
+    public List<Long> getPunishmentTime() {
+        return Collections.unmodifiableList(punishmentTime);
     }
 
     @Getter

@@ -4,7 +4,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.util.Arrays;
 
 /**
  * RateLimit 的注解配置，也可以使用json配置来完成对于某个api的配置或者对全局进行配置
@@ -61,21 +60,11 @@ public @interface RateLimit {
     String minInterval() default "0ms";
 
     /**
-     * 封禁角色时，是针对某个接口来说的封禁还是全局的封禁
-     * <p>
-     * API 针对接口
-     * IP 全局封禁
-     *
-     * @return -
-     */
-    BannedType bannedType() default BannedType.API;
-
-    /**
-     * 检查类型，可以是ip或则用户id，或者同时检查
+     * 检查类型，可以是ip或则用户id
      *
      * @return 检查类型
      */
-    CheckType[] checkType() default {CheckType.IP};
+    CheckType checkType() default CheckType.IP;
 
     /**
      * 1. 关联的api.当此api封禁时，该ip或者用户id在其他api同样封禁，支持*
@@ -97,23 +86,8 @@ public @interface RateLimit {
     String[] associatedPatterns() default {};
 
     enum CheckType {
-        IP("ip"),
-        USER_ID("USER_ID", "user_id", "userId", "id");
-
-        CheckType(String... names) {
-            this.names = names;
-        }
-
-        public static CheckType of(String name) {
-            for (CheckType value : CheckType.values()) {
-                if (Arrays.asList(value.names).contains(name)) {
-                    return value;
-                }
-            }
-            return null;
-        }
-
-        private final String[] names;
+        IP,
+        USER_ID;
     }
 
 }

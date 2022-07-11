@@ -1,6 +1,6 @@
 package cn.omisheep.authz.core.auth;
 
-import cn.omisheep.authz.annotation.BannedType;
+import cn.omisheep.authz.annotation.RateLimit;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.Rule;
 import lombok.Data;
@@ -63,7 +63,7 @@ public class AuthzModifier {
         private List<String> punishmentTime;
         private String       minInterval;
         private List<String> associatedPatterns;
-        private BannedType   bannedType;
+        private RateLimit.CheckType checkType;
     }
 
     @Data

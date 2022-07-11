@@ -1,7 +1,5 @@
 package cn.omisheep.authz.annotation;
 
-import org.springframework.core.annotation.AliasFor;
-
 import java.lang.annotation.*;
 
 /**
@@ -13,10 +11,6 @@ import java.lang.annotation.*;
 @Documented
 public @interface BatchAuthority {
 
-    @AliasFor("roles")
-    Roles[] value() default {};
-
-    @AliasFor("value")
     Roles[] roles() default {};
 
     Perms[] perms() default {};

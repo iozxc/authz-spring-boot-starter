@@ -3,6 +3,7 @@ package cn.omisheep.authz.core.util;
 import org.apache.commons.lang.ObjectUtils;
 import org.springframework.lang.NonNull;
 
+import java.util.Collection;
 import java.util.Set;
 
 import static cn.omisheep.authz.core.Constants.WILDCARD;
@@ -32,26 +33,45 @@ public abstract class ValueMatcher {
     }
 
     @SuppressWarnings({"all"})
+    private static boolean matchArg(Object obj, Object rawValue, Class<?> valueType) {
+        if (obj instanceof Collection) {
+            return ((Collection) obj).stream().anyMatch(o->
+                ObjectUtils.equals(o, parse(rawValue.toString(), valueType)));
+        } else {
+            return ObjectUtils.equals(obj, parse(rawValue.toString(), valueType));
+        }
+    }
+
+    @SuppressWarnings({"all"})
     public static boolean match(String resources, String rawValue, Class<?> valueType) {
         if (resources == null) return false;
         if (resources.equals(WILDCARD)) return true;
         try {
+
             ValueType type = checkType(valueType);
             if (type.equals(ValueType.EQUALS)) {
-                return ObjectUtils.equals(resources, parse(rawValue, valueType));
+                return matchArg(ArgsParser.parse(resources), rawValue, valueType);
             } else if (type.equals(ValueType.RANGE)) {
                 String[] split = resources.split("-");
                 if (split.length > 2) {
                     return false;
                 } else if (split.length == 2) {
-                    Object     value = parse(rawValue, valueType);
-                    Comparable left  = (Comparable) parse(split[0], valueType);
-                    Comparable right = (Comparable) parse(split[1], valueType);
+                    Object value = parse(rawValue, valueType);
+                    Object v1    = ArgsParser.parse(split[0], () -> parse((String) split[0], valueType));
+                    Object v2    = ArgsParser.parse(split[1], () -> parse((String) split[1], valueType));
+                    if (v1 == null || v2 == null || v1 instanceof Collection
+                            || v2 instanceof Collection
+                            || checkType(v1) != ValueType.RANGE
+                            || checkType(v2) != ValueType.RANGE) {
+                        return false;
+                    }
+                    Comparable left  = (Comparable) v1;
+                    Comparable right = (Comparable) v2;
                     if (left.compareTo(value) <= 0 && right.compareTo(value) >= 0) {
                         return true;
                     }
                 } else if (split.length == 1) {
-                    return ObjectUtils.equals(parse(split[0], valueType), parse(rawValue, valueType));
+                    return matchArg(ArgsParser.parse(split[0]), parse(rawValue, valueType), valueType);
                 }
             }
             return false;

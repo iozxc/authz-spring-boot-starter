@@ -20,14 +20,16 @@ public class RequestMessage implements Message {
     private String api;
     private String ip;
     private long   now;
+    private Object userId;
 
     public RequestMessage() {
     }
 
-    public RequestMessage(String method, String api, String ip, long now) {
+    public RequestMessage(String method, String api, String ip,Object userId, long now) {
         this.method = method;
         this.api    = api;
         this.ip     = ip;
+        this.userId = userId;
         this.now    = now;
     }
 

@@ -1,7 +1,6 @@
 package cn.omisheep.authz.core.slot;
 
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.authz.core.util.LogUtils;
 import org.springframework.web.method.HandlerMethod;
 
 /**
@@ -19,6 +18,6 @@ public class LogSlot implements Slot {
 
     @Override
     public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
-        LogUtils.exportLogsFromRequest(httpMeta.getRequest());
+        httpMeta.exportLog();
     }
 }

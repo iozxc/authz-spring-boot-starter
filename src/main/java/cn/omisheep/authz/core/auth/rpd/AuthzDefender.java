@@ -194,10 +194,9 @@ public class AuthzDefender {
     public static void logs(String status, HttpMeta httpMeta, PermRolesMeta meta) {
         Token token = httpMeta.getToken();
         if (token == null) {
-            LogUtils.pushLogToRequest("「{}」\t{}",
-                    status, meta);
+            httpMeta.log("「{}」\t{}", status, meta);
         } else {
-            LogUtils.pushLogToRequest("「{}」\t\t{}\t, userId: [{}]\t, deviceType = {}\t, deviceId = {}",
+            httpMeta.log("「{}」\t\t{}\t, userId: [{}]\t, deviceType = {}\t, deviceId = {}",
                     status, meta, token.getUserId(), token.getDeviceType(), token.getDeviceId());
         }
     }
@@ -205,9 +204,9 @@ public class AuthzDefender {
     public static void logs(String status, HttpMeta httpMeta) {
         Token token = httpMeta.getToken();
         if (token == null) {
-            LogUtils.pushLogToRequest("「{}」", status);
+            httpMeta.log("「{}」", status);
         } else {
-            LogUtils.pushLogToRequest("「{}」\t, userId: [{}]\t, deviceType = {}\t, deviceId = {}",
+            httpMeta.log("「{}」\t, userId: [{}]\t, deviceType = {}\t, deviceId = {}",
                     status, token.getUserId(), token.getDeviceType(), token.getDeviceId());
         }
     }

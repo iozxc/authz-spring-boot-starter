@@ -47,9 +47,10 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
         HttpMeta                    httpMeta = (HttpMeta) request.getAttribute(HTTP_META);
         LinkedList<ExceptionStatus> list     = httpMeta.getExceptionStatusList();
         if (!list.isEmpty()) {
-            LogUtils.exportLogsFromRequest(request);
+            httpMeta.exportLog();
             return authzExceptionHandler.handle(request, response, httpMeta, list.getFirst(), httpMeta.getExceptionObjectList());
         }
+        httpMeta.clearError();
         if (!(handler instanceof HandlerMethod)) return false;
         HandlerMethod handlerMethod = (HandlerMethod) handler;
         try {

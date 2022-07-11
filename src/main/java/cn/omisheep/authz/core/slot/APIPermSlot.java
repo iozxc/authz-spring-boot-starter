@@ -77,6 +77,6 @@ public class APIPermSlot implements Slot {
             httpMeta.setPermissions(perms);
         }
 
-        logs("Success", httpMeta, permRolesMeta);
+        logs("Success: API", httpMeta, permRolesMeta);
     }
 }

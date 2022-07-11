@@ -6,7 +6,7 @@
 
     <groupId>cn.omisheep</groupId>
     <artifactId>authz-spring-boot-starter</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
     <description>by zhou xin chen</description>
     <url>https://gitee.com/iozxc/authz</url>
     <packaging>jar</packaging>

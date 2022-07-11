@@ -8,6 +8,7 @@ import com.alibaba.fastjson.JSONObject;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -22,6 +23,31 @@ import java.util.stream.Stream;
  * @since 1.0.0
  */
 public abstract class ArgsParser {
+
+
+    private static final Pattern c = Pattern.compile("[#$]?\\{(.*?)}");
+
+    public static Object parse(String argName) {
+        return parse(argName, null);
+    }
+
+    public static <E> Object parse(String argName, Supplier<E> fail) {
+        Matcher matcher = c.matcher(argName);
+        if (!matcher.find()) {
+            if (fail == null) return argName;
+            else return fail.get();
+        }
+        String   obj     = matcher.group(1);
+        String[] trace   = obj.split("\\.");
+        Object   convert = convert(trace, PermissionDict.argsHandle(trace[0]));
+        if (isArrayOrCollection(convert)) {
+            String arrString = parseAndToString(convert);
+            if (arrString == null) return argName;
+            return Arrays.stream(arrString.substring(1, arrString.length() - 1).trim().split(",")).map(String::trim).collect(Collectors.toList());
+        } else {
+            return convert;
+        }
+    }
 
     public static String parse(DataPermMeta dataPermMeta) {
         StringBuilder stringBuilder = new StringBuilder();
@@ -94,8 +120,6 @@ public abstract class ArgsParser {
         return builder.toString();
     }
 
-    public static final Pattern c = Pattern.compile("[#$]?\\{(.*?)}");
-
     private static Object ref(String argName, DataPermMeta dataPermMeta) {
         Map<String, List<String>> argsMap = dataPermMeta.getArgsMap();
         if (argsMap == null) return argsHandle(argName);
@@ -137,8 +161,8 @@ public abstract class ArgsParser {
         }
     }
 
-    private static Object argsHandle(String argsName, Object... otherArgs) {
-        return PermissionDict.argsHandle(argsName, otherArgs);
+    private static Object argsHandle(String argName, Object... otherArgs) {
+        return PermissionDict.argsHandle(argName, otherArgs);
     }
 
     private static final Pattern compile = Pattern.compile("(.*?)\\[(\\d+|\\*)]");

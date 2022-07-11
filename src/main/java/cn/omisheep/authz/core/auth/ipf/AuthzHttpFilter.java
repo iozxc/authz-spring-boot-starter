@@ -1,19 +1,11 @@
 package cn.omisheep.authz.core.auth.ipf;
 
-import cn.omisheep.authz.annotation.BannedType;
 import cn.omisheep.authz.core.Constants;
 import cn.omisheep.authz.core.ExceptionStatus;
-import cn.omisheep.authz.core.msg.RequestMessage;
-import cn.omisheep.authz.core.util.ExceptionUtils;
-import cn.omisheep.authz.core.util.LogUtils;
-import cn.omisheep.authz.core.util.RedisUtils;
-import cn.omisheep.commons.util.Async;
 import cn.omisheep.web.utils.BufferedServletRequestWrapper;
 import cn.omisheep.web.utils.HttpUtils;
 import lombok.extern.slf4j.Slf4j;
-import orestes.bloomfilter.CountingBloomFilter;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.boot.logging.LogLevel;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.FilterChain;
@@ -22,8 +14,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static cn.omisheep.authz.core.Constants.HTTP_META;
 import static cn.omisheep.authz.core.util.Utils.isIgnoreSuffix;
@@ -73,7 +63,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
         if (isIgnoreSuffix(uri, httpd.getIgnoreSuffix()) || (isDashboard && uri.startsWith(mappings))) {
             HttpMeta httpMeta = new HttpMeta(
                     request,
-                    ip, uri, servletPath, method, new Date()).error(ExceptionUtils.pop(request));
+                    ip, uri, servletPath, method, new Date());
             httpMeta.setIgnore(true);
             request.setAttribute(HTTP_META, httpMeta);
             httpMeta.setServletPath(servletPath);
@@ -81,109 +71,18 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
             return;
         }
 
-        String api = null;
-        try {
-            api = execLimit(now, ip, servletPath, method);
-        } catch (Exception e) {
-            // skip
-            ExceptionUtils.error(ExceptionStatus.UNKNOWN);
-        }
-
-        if (api == null) api = servletPath;
+        String api = httpd.getPattern(method, servletPath);
         HttpMeta httpMeta = new HttpMeta(
                 request,
-                ip, uri, api, method, new Date()).error(ExceptionUtils.pop(request));
+                ip, uri, api == null ? servletPath : api, method, new Date());
+        if (api == null) {
+            httpMeta.log("「普通访问(uri不存在)」 \tmethod: [{}] , ip : [{}] , servletPath: [{}]   ", method, ip, servletPath);
+            httpMeta.error(ExceptionStatus.MISMATCHED_URL);
+        }
 
         httpMeta.setServletPath(servletPath);
         request.setAttribute(HTTP_META, httpMeta);
-        Async.run(() -> RedisUtils.publish(RequestMessage.CHANNEL, new RequestMessage(method, httpMeta.getApi(), ip, now)));
         filterChain.doFilter(request, response);
-    }
-
-    private String execLimit(long now, String ip, String servletPath, String method) throws IOException {
-        HashSet<RequestMeta>        ipBlacklist            = httpd.getIpBlacklist();
-        CountingBloomFilter<String> ipBlacklistBloomFilter = httpd.getIpBlacklistBloomFilter();
-
-        // 全局ip黑名单过滤
-        if (ipBlacklistBloomFilter.contains(ip)) { // 使用布隆过滤器过滤。若存在，则去黑名单里搜索
-            RequestMeta orElse = ipBlacklist.stream() // 黑名单内搜索
-                    .filter(_ipMeta -> _ipMeta.getIp().equals(ip)).findFirst().orElse(null);
-            if (orElse != null && orElse.isBan()) { // 若存在且确实是被禁止了。则
-                if (!orElse.enableRelive(now)) {
-                    LogUtils.pushLogToRequest("「请求频繁ip封锁(拒绝)」 \t距上次访问: [{}] , method: [{}] , ip : [{}] , servletPath: [{}]  ", orElse.sinceLastTime(), method, ip, servletPath);
-                    ExceptionUtils.error(ExceptionStatus.REQUEST_REPEAT);
-                    return null;
-                } else {
-                    LogUtils.pushLogToRequest("「解除ip封禁(解封)」");
-                    ipBlacklistBloomFilter.remove(ip);
-                    ipBlacklist.remove(orElse);
-                    orElse.relive();
-                }
-            } // 假阳性，不做任何操作
-        }
-
-        // 局部api黑名单过滤
-        ConcurrentHashMap<String, Httpd.RequestPool> map = httpd.getRequestPools().get(method);
-        if (map == null) {
-            LogUtils.pushLogToRequest("「普通访问(uri不存在)」 \tmethod: [{}] , ip : [{}] , servletPath: [{}]   ", method, ip, servletPath);
-            ExceptionUtils.error(ExceptionStatus.MISMATCHED_URL);
-            return null;
-        }
-
-        String            pattern     = httpd.getPattern(servletPath);
-        Httpd.RequestPool requestPool = map.get(pattern);
-
-        if (pattern == null || requestPool == null) {
-            LogUtils.pushLogToRequest("「普通访问(uri不存在)」 \tmethod: [{}] , ip : [{}] , servletPath: [{}]   ", method, ip, servletPath);
-            ExceptionUtils.error(ExceptionStatus.MISMATCHED_URL);
-            return null;
-        }
-
-        LimitMeta limitMeta = null;
-
-        try {
-            limitMeta = httpd.getRateLimitMetadata().get(method).get(pattern);
-        } catch (NullPointerException e) {
-            LogUtils.pushLogToRequest("「普通访问」 \tmethod: [{}] , ip : [{}] , servletPath: [{}]   ", method, ip, servletPath);
-            return pattern;
-        }
-
-        if (limitMeta == null) {
-            LogUtils.pushLogToRequest("「普通访问」 \tmethod: [{}] , ip : [{}] , servletPath: [{}]   ", method, ip, servletPath);
-            return pattern;
-        }
-
-        RequestMeta ipMeta = requestPool.get(ip);
-        if (ipMeta == null) {
-            requestPool.put(ip, new RequestMeta(now, ip));
-            LogUtils.pushLogToRequest("「普通访问(首次)」 \tmethod: [{}] , ip : [{}] , servletPath: [{}]  ", method, ip, servletPath);
-        } else {
-            if (ipMeta.isBan()) {
-                if (!ipMeta.enableRelive(now)) {
-                    LogUtils.pushLogToRequest(LogLevel.WARN, "「请求频繁(拒绝)」 \t距上次访问: [{}] , method: [{}] , ip : [{}] , servletPath: [{}]  ", ipMeta.sinceLastTime(), method, ip, servletPath);
-                    ExceptionUtils.error(ExceptionStatus.REQUEST_REPEAT);
-                    ipMeta.setLastRequestTime(now);
-                    return null;
-                } else {
-                    LogUtils.pushLogToRequest("「解除封禁(解封)」  \tmethod: [{}] , ip : [{}] , servletPath: [{}]  ", method, ip, servletPath);
-                    httpd.relive(ipMeta, limitMeta);
-                }
-            }
-            if (ipMeta.request(now, limitMeta.getMaxRequests(), limitMeta.getWindow(), limitMeta.getMinInterval())) {
-                LogUtils.pushLogToRequest("「普通访问(正常)」\t距上次访问: [{}] , method: [{}] , ip : [{}] , servletPath: [{}]  ", ipMeta.sinceLastTime(), method, ip, servletPath);
-            } else {
-                httpd.forbid(now, ipMeta, limitMeta);
-                LogUtils.pushLogToRequest(LogLevel.WARN, "「请求频繁(封禁)」 \t距上次访问: [{}] , method: [{}] , ip : [{}] , servletPath: [{}]  ", ipMeta.sinceLastTime(), method, ip, servletPath);
-                ExceptionUtils.error(ExceptionStatus.REQUEST_REPEAT);
-                if (BannedType.IP.equals(limitMeta.getBannedType())) {
-                    ipBlacklist.add(ipMeta); // 若是封锁ip，则添加到ipBlacklist中，在第一层ip过滤时则会将其拦下
-                    ipBlacklistBloomFilter.add(ip);
-                }
-                return null;
-            }
-        }
-
-        return pattern;
     }
 
     private String getIp(HttpServletRequest request) {

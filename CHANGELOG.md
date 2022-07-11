@@ -1,5 +1,68 @@
 # 更新日记【Authz】
 
+## Version 1.1.1 - 2022.7.11
+
+### Added
+
+1. 为了弥补封禁类型，新增 **封禁时和解封时** 的【回调函数】，可以在程序初始化时调用，或者直接继承`cn.omisheep.authz.core.callback.RateLimitCallback`接口并将其注入Spring。
+
+```java
+import cn.omisheep.authz.AuHelper;
+
+class Main {
+    void test() {
+        AuHelper.Callback.setRateLimitCallback((v1, v2, v3, v4, v5, v6) -> {
+            ...
+        });
+    }
+}
+```
+
+2. 新增根据userId进行RateLimit限制。
+3. 对参数权限进行限制时，在参数配置时可以使用`@ArgResource`标注过的资源了，用法与数据权限中的condition用法一致。
+
+```java
+public class ArgResourceTest {
+    @ArgResource("name")
+    public static String name() {
+        return "ooo";
+    }
+
+    @ArgResource
+    public static int id() {
+        return 123;
+    }
+}
+
+@RestController
+class Main {
+    // 参数name为ooo时，必须需要role包含zxc  
+    // id为177时必须需要admin权限
+    // zxc 能够访问id属于123-156 不能访问177
+    // admin 能够访问id属于146-200
+    // 如果某个用户有两个角色，那么取并集。如 zxc,admin 能访问123-200
+    @Roles({"admin", "zxc"})
+    @GetMapping("/get/{name}/{id}")
+    public Result getPath2(@Roles(value = "zxc", paramResources = "#{name}") @PathVariable String name,
+                           @BatchAuthority(roles = {
+                                   @Roles(value = "zxc", paramRange = {"#{id}-156", "177"}),
+                                   @Roles(value = "admin", paramRange = "146-200", paramResources = "177")
+                           }) @PathVariable int id) {
+    ...
+    }
+}
+```
+
+### Fixed
+
+- 修复了一些bug和文字描述
+- 优化了部分代码
+
+### Removed
+
+- 移除`cn.omisheep.authz.annotation.Auth`,`cn.omisheep.authz.annotation.BannedType`
+- 移除封禁类型，现在只能封禁API
+
 ## Version 1.1.0 - 2022.7.11
 
 ### Added

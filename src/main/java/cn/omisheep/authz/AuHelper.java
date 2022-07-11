@@ -6,8 +6,9 @@ import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.auth.Blacklist;
 import cn.omisheep.authz.core.auth.deviced.Device;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.authz.core.auth.ipf.RequestMeta;
+import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
+import cn.omisheep.authz.core.callback.RateLimitCallback;
 import cn.omisheep.authz.core.codec.AuthzRSAManager;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.tk.TokenPair;
@@ -25,7 +26,7 @@ import static cn.omisheep.authz.core.Authz.*;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-public class AuHelper {
+public final class AuHelper {
 
     // **************************************     登录 & 用户设备      ************************************** //
 
@@ -197,49 +198,89 @@ public class AuHelper {
      */
     @NonNull
     public static List<Device> queryAllDeviceByUserIdAndDeviceType(@NonNull Object userId, @NonNull String deviceType) {
-        return userDevicesDict.listDevicesByUserId(userId).stream()
-                .filter(device -> device.getType().equals(deviceType))
-                .collect(Collectors.toList());
+        return userDevicesDict.listDevicesByUserId(userId).stream().filter(device -> device.getType().equals(deviceType)).collect(Collectors.toList());
     }
 
     // **************************************     状态管理      ************************************** //
 
+    /**
+     * @return 当前请求是否登录 true为登录、false为未登录
+     */
     public static boolean isLogin() {
         return AuthzDefender.isLogin();
     }
 
+    /**
+     * @return 获得当前请求的HttpMeta信息
+     */
     public static HttpMeta getHttpMeta() {
         return AUtils.getCurrentHttpMeta();
     }
 
+    /**
+     * @return 获得当前请求的Token信息
+     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
+     */
     public static Token getToken() throws NotLoginException {
         return AUtils.getCurrentToken();
     }
 
+    /**
+     * @return 获得当前请求的userId
+     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
+     */
     public static Object getUserId() throws NotLoginException {
         return AUtils.getCurrentToken().getUserId();
     }
 
+    /**
+     * @return 获得当前请求的deviceType
+     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
+     */
     public static String getDeviceType() throws NotLoginException {
         return AUtils.getCurrentToken().getDeviceType();
     }
 
+    /**
+     * @return 获得当前请求的deviceId
+     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
+     */
     public static String getDeviceId() throws NotLoginException {
         return AUtils.getCurrentToken().getDeviceId();
     }
 
+    /**
+     * @param role 所指定的角色
+     * @return 判断当前请求用户是否有指定角色
+     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
+     */
     public static boolean hasRole(String role) throws NotLoginException {
         return AuthzDefender.hasRoles(Collections.singletonList(role));
     }
 
+    /**
+     * @param roles 所指定的角色
+     * @return 判断当前请求用户是否有指定角色
+     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
+     */
     public static boolean hasRoles(List<String> roles) throws NotLoginException {
         return AuthzDefender.hasRoles(roles);
     }
 
+    /**
+     * @param permission 所指定的权限
+     * @return 判断当前请求用户是否有指定角色
+     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
+     */
     public static boolean hasPermission(String permission) throws NotLoginException {
         return AuthzDefender.hasPermissions(Collections.singletonList(permission));
     }
 
+    /**
+     * @param permissions 所指定的权限
+     * @return 判断当前请求用户是否有指定角色
+     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
+     */
     public static boolean hasPermissions(List<String> permissions) throws NotLoginException {
         return AuthzDefender.hasPermissions(permissions);
     }
@@ -342,110 +383,204 @@ public class AuHelper {
     // **************************************     黑名单操作      ************************************** //
 
 
+    /**
+     * 封禁 ip time时间
+     *
+     * @param ip   封禁的ip
+     * @param time 时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
+     */
     public static void denyIP(@NonNull String ip, @NonNull String time) {
         Blacklist.IP.add(ip, time);
     }
 
-    public static void denyUser(@NonNull Object userId, @NonNull String time) {
-        Blacklist.User.add(userId, null, null, time);
-    }
-
-    public static void denyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String time) {
-        Blacklist.User.add(userId, deviceType, null, time);
-    }
-
-    public static void denyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId, @NonNull String time) {
-        Blacklist.User.add(userId, deviceType, deviceId, time);
-    }
-
+    /**
+     * 封禁 ipRange网段 time时间
+     *
+     * @param ipRange 封禁的ip范围 xx.xx.xx.xx/xx
+     * @param time    时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
+     */
     public static void denyIPRange(@NonNull String ipRange, @NonNull String time) {
         Blacklist.IPRangeDeny.add(ipRange, time);
     }
 
-    @NonNull
-    public static List<Blacklist.User> getDenyUserInfo() {
-        return Blacklist.User.list();
+    /**
+     * 封禁 userId time时间
+     *
+     * @param userId 封禁的userId
+     * @param time   时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
+     */
+    public static void denyUser(@NonNull Object userId, @NonNull String time) {
+        Blacklist.User.add(userId, null, null, time);
     }
 
-    @NonNull
-    public static List<Blacklist.User> getDenyUserInfo(@NonNull Object userId) {
-        return Blacklist.User.list(userId);
+    /**
+     * 封禁 userId time时间
+     *
+     * @param userId     封禁的userId
+     * @param deviceType 封禁的设备类型
+     * @param time       时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
+     */
+    public static void denyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String time) {
+        Blacklist.User.add(userId, deviceType, null, time);
     }
 
-    @Nullable
-    public static Blacklist.User getDenyUserInfo(@NonNull Object userId, @Nullable String deviceType, @Nullable String deviceId) {
-        return Blacklist.User.get(userId, deviceType, deviceId);
+    /**
+     * 封禁 userId time时间
+     *
+     * @param userId     封禁的userId
+     * @param deviceType 封禁的设备类型
+     * @param deviceId   封禁的设备id
+     * @param time       时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
+     */
+    public static void denyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId, @NonNull String time) {
+        Blacklist.User.add(userId, deviceType, deviceId, time);
     }
 
+    /**
+     * @return 得到封禁的ip信息
+     */
     @NonNull
     public static List<Blacklist.IP> getDenyIPInfo() {
         return Blacklist.IP.list();
     }
 
+    /**
+     * @return 得到封禁的iprange信息
+     */
     @NonNull
     public static List<Blacklist.IPRangeDeny> getDenyIPRangeInfo() {
         return Blacklist.IPRangeDeny.list();
     }
 
-    public static void changeDenyUser(@NonNull Object userId, @NonNull String time) {
-        Blacklist.User.change(userId, null, null, time);
+    /**
+     * @return 获得封禁用户的信息
+     */
+    @NonNull
+    public static List<Blacklist.User> getDenyUserInfo() {
+        return Blacklist.User.list();
     }
 
-    public static void changeDenyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String time) {
-        Blacklist.User.change(userId, deviceType, null, time);
+    /**
+     * @param userId 指定用户id
+     * @return 获得指定的封禁用户的信息
+     */
+    @NonNull
+    public static List<Blacklist.User> getDenyUserInfo(@NonNull Object userId) {
+        return Blacklist.User.list(userId);
     }
 
-    public static void changeDenyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId, @NonNull String time) {
-        Blacklist.User.change(userId, deviceType, deviceId, time);
+    /**
+     * @param userId     指定用户id
+     * @param deviceType 指定设备deviceType
+     * @param deviceId   指定设备deviceId
+     * @return 封禁信息
+     */
+    @Nullable
+    public static Blacklist.User getDenyUserInfo(@NonNull Object userId, @Nullable String deviceType, @Nullable String deviceId) {
+        return Blacklist.User.get(userId, deviceType, deviceId);
     }
 
+    /**
+     * 修改 ip的封禁时间时间
+     *
+     * @param ip   封禁的ip
+     * @param time 时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
+     */
     public static void changeDenyIP(@NonNull String ip, @NonNull String time) {
         Blacklist.IP.change(ip, time);
     }
 
+    /**
+     * 修改 ipRange网段封禁的时间
+     *
+     * @param ipRange 封禁的ip范围 xx.xx.xx.xx/xx
+     * @param time    时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
+     */
     public static void changeDenyIPRange(@NonNull String ipRange, @NonNull String time) {
         Blacklist.IPRangeDeny.change(ipRange, time);
     }
 
-    public static void removeDenyUser(@NonNull Object userId) {
-        Blacklist.User.remove(userId, null, null);
+    /**
+     * 修改 userId封禁时间
+     *
+     * @param userId 封禁的userId
+     * @param time   时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
+     */
+    public static void changeDenyUser(@NonNull Object userId, @NonNull String time) {
+        Blacklist.User.change(userId, null, null, time);
     }
 
-    public static void removeDenyUser(@NonNull Object userId, @NonNull String deviceType) {
-        Blacklist.User.remove(userId, deviceType, null);
+    /**
+     * 修改 userId封禁时间
+     *
+     * @param userId     封禁的userId
+     * @param deviceType 封禁的设备类型
+     * @param time       时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
+     */
+    public static void changeDenyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String time) {
+        Blacklist.User.change(userId, deviceType, null, time);
     }
 
-    public static void removeDenyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId) {
-        Blacklist.User.remove(userId, deviceType, deviceId);
+
+    /**
+     * 修改 userId封禁时间
+     *
+     * @param userId     封禁的userId
+     * @param deviceType 封禁的设备类型
+     * @param deviceId   封禁的设备id
+     * @param time       时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
+     */
+    public static void changeDenyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId, @NonNull String time) {
+        Blacklist.User.change(userId, deviceType, deviceId, time);
     }
 
+    /**
+     * 移除封禁
+     *
+     * @param ip ip
+     */
     public static void removeDenyIP(@NonNull String ip) {
         Blacklist.IP.remove(ip);
     }
 
+    /**
+     * 移除封禁
+     *
+     * @param ipRange ip范围
+     */
     public static void removeDenyIPRange(@NonNull String ipRange) {
         Blacklist.IPRangeDeny.remove(ipRange);
     }
 
 
     /**
-     * 获得黑名单请求元信息
+     * 移除封禁
      *
-     * @return 请求频繁导致进入黑名单的请求元信息
+     * @param userId 指定用户
      */
-    @NonNull
-    public static Collection<RequestMeta> queryMetaOfIpBlacklist() {
-        return Collections.unmodifiableCollection(httpd.getIpBlacklist());
+    public static void removeDenyUser(@NonNull Object userId) {
+        Blacklist.User.remove(userId, null, null);
     }
 
     /**
-     * 获得黑名单请求元信息
+     * 移除封禁
      *
-     * @return 请求频繁导致进入黑名单的ip list
+     * @param userId     指定用户
+     * @param deviceType 指定设备类型
      */
-    @NonNull
-    public static List<String> queryIpBlacklist() {
-        return httpd.getIpBlacklist().stream().map(RequestMeta::getIp).collect(Collectors.toList());
+    public static void removeDenyUser(@NonNull Object userId, @NonNull String deviceType) {
+        Blacklist.User.remove(userId, deviceType, null);
+    }
+
+    /**
+     * 移除封禁
+     *
+     * @param userId     指定用户
+     * @param deviceType 指定设备类型
+     * @param deviceId   指定设备id
+     */
+    public static void removeDenyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId) {
+        Blacklist.User.remove(userId, deviceType, deviceId);
     }
 
     // **************************************     RSA      ************************************** //
@@ -691,6 +826,17 @@ public class AuHelper {
     @Nullable
     public static Object authzModify(@NonNull AuthzModifier authzModifier) {
         return modify(authzModifier);
+    }
+
+    public static class Callback {
+        /**
+         * 设置封禁和解封时的回调函数 「或者」 继承{@link RateLimitCallback} 将其注册入Spring容器中
+         *
+         * @param rateLimitCallback 封禁和解封时的回调函数
+         */
+        public static void setRateLimitCallback(RateLimitCallback rateLimitCallback) {
+            Httpd.setRateLimitCallback(rateLimitCallback);
+        }
     }
 
     private AuHelper() {

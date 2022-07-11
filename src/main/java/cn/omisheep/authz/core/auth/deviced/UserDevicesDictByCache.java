@@ -156,7 +156,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
 
         AccessInfo  accessInfo  = new AccessInfo().setRefreshTokenId(tokenPair.getRefreshToken().getTokenId());
         RefreshInfo refreshInfo = new RefreshInfo().setDevice(device);
-        refreshInfo.setIp(httpMeta.getIp()).setLastRequestTime(httpMeta.getDate());
+        refreshInfo.setIp(httpMeta.getIp()).setLastRequestTime(httpMeta.getNow());
 
         long rfLiveTime = TimeUtils.parseTimeValueTotal(properties.getToken().getLiveTime(), properties.getToken().getRefreshTime(), "10s");
 
@@ -419,7 +419,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
                     String rfKey = rfKey(token.getUserId(), rtid);
                     Device d     = (Device) cache.get().get(rfKey);
                     if (d != null) {
-                        d.setLastRequestTime(currentHttpMeta.getDate());
+                        d.setLastRequestTime(currentHttpMeta.getNow());
                         d.setIp(currentHttpMeta.getIp());
                         cache.get().set(rfKey, d);
                     }

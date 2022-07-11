@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core.auth.ipf;
 
+import cn.omisheep.authz.core.callback.RateLimitCallback;
 import cn.omisheep.commons.util.TimeUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
@@ -8,6 +9,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -16,14 +18,21 @@ import java.util.stream.Collectors;
  */
 public class RequestMeta {
     @Getter
-    private final String           ip;
+    private final  String            ip;
     @Getter
-    private       boolean          ban;
-    private       int              punishmentLevel;
-    private       long             reliveTime;
-    private       long             lastRequestTime;
-    private       long             sinceLastTime;
-    private final LinkedList<Long> requestTimeList = new LinkedList<>();
+    private final  Object            userId;
+    @Getter
+    private        boolean           ban;
+    private        int               punishmentLevel;
+    private        long              reliveTime;
+    private        long              lastRequestTime;
+    private        long              sinceLastTime;
+    private final  LinkedList<Long>  requestTimeList = new LinkedList<>();
+    private static RateLimitCallback callback;
+
+    protected static void setCallback(RateLimitCallback callback) {
+        RequestMeta.callback = callback;
+    }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public Date getReliveTime() {
@@ -44,8 +53,9 @@ public class RequestMeta {
         return new Date(lastRequestTime);
     }
 
-    public RequestMeta(long now, String ip) {
-        this.ip = ip;
+    public RequestMeta(long now, String ip, Object userId) {
+        this.ip     = ip;
+        this.userId = userId;
         request(now, 1, 0, 0);
     }
 
@@ -53,12 +63,15 @@ public class RequestMeta {
         return reliveTime <= now;
     }
 
-    public void relive() {
-        if (ban) ban = false;
+    public void relive(String method, String api, LimitMeta limitMeta) {
+        ban = false;
+        callback.relive(method, api, ip, userId, limitMeta);
     }
 
-    public RequestMeta forbidden(List<Long> punishmentTime) {
-        long nowTime = TimeUtils.nowTime();
+    public RequestMeta forbidden(String method, String api, LimitMeta limitMeta) {
+        long       nowTime        = TimeUtils.nowTime();
+        List<Long> punishmentTime = limitMeta.getPunishmentTime();
+        if (punishmentTime == null) return this;
         // 惩罚升级
         punishmentLevel++;
         if (punishmentLevel <= punishmentTime.size()) {
@@ -68,6 +81,7 @@ public class RequestMeta {
         }
         requestTimeList.clear();
         ban = true;
+        if (callback != null) callback.forbid(method, api, ip, userId, limitMeta, new Date(reliveTime));
         return this;
     }
 
@@ -149,13 +163,11 @@ public class RequestMeta {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         RequestMeta ipMeta = (RequestMeta) o;
-        return ip.equals(ipMeta.ip)
-                && ipMeta.reliveTime < reliveTime;
+        return Objects.equals(ip, ipMeta.ip) && Objects.equals(userId, ipMeta.userId) && ipMeta.reliveTime < reliveTime;
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37)
-                .append(ip).toHashCode();
+        return new HashCodeBuilder(17, 37).append(ip).toHashCode();
     }
 }

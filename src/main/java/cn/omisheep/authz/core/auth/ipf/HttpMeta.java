@@ -9,6 +9,7 @@ import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.web.utils.HttpUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
+import org.springframework.boot.logging.LogLevel;
 import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
@@ -17,6 +18,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static cn.omisheep.authz.core.util.LogUtils.exportLogsFromRequest;
+import static cn.omisheep.authz.core.util.LogUtils.pushLogToRequest;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -36,7 +40,7 @@ public class HttpMeta {
     private final String                      userAgent;
     private final String                      refer;
     private       String                      body;
-    private final Date                        date;
+    private final Date                        now;
     private       Token                       token;
     private       Object                      userId;
     private       boolean                     hasToken;
@@ -89,6 +93,23 @@ public class HttpMeta {
         return this;
     }
 
+    public HttpMeta clearError() {
+        this.exceptionStatusList.clear();
+        return this;
+    }
+
+    public void log(String formatMsg, Object... args) {
+        pushLogToRequest(LogLevel.INFO, formatMsg, args);
+    }
+
+    public void log(LogLevel logLevel, String formatMsg, Object... args) {
+        pushLogToRequest(logLevel, formatMsg, args);
+    }
+
+    public void exportLog() {
+        exportLogsFromRequest(request);
+    }
+
     public boolean setHasToken(boolean hasToken) {
         this.hasToken = hasToken;
         return hasToken;
@@ -124,7 +145,7 @@ public class HttpMeta {
     }
 
     public HttpMeta(HttpServletRequest request, String ip, String uri, String api,
-                    String method, Date date) {
+                    String method, Date now) {
         this.request   = request;
         this.refer     = request.getHeader("Referer");
         this.ip        = ip;
@@ -132,7 +153,7 @@ public class HttpMeta {
         this.api       = api;
         this.method    = method.toUpperCase();
         this.userAgent = request.getHeader("user-agent");
-        this.date      = date;
+        this.now      = now;
     }
 
     public boolean isMethod(String method) {

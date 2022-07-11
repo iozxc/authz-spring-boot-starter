@@ -206,10 +206,10 @@ public class PermissionDict implements AuthzModifiable {
         return meta.parameterList;
     }
 
-    public static Object argsHandle(String argsName, Object... otherArgs) {
-        ArgsMeta meta = argsMetadata.get(argsName);
+    public static Object argsHandle(String argName, Object... otherArgs) {
+        ArgsMeta meta = argsMetadata.get(argName);
         if (meta == null) {
-            LogUtils.logError("arg {} is null", argsName);
+            LogUtils.logError("arg {} is null", argName);
             return null;
         }
         try {
