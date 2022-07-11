@@ -5,20 +5,20 @@
 > [Authz](https://gitee.com/iozxc/authz) 主页地址 https://gitee.com/iozxc/authz
 ![Authz](http://cdn.omisheep.cn/upload/img/article/320649505852620800.png)
 
-## 1. 导入&配置
+## 导入&配置
 
-### 1.1 Maven
+### Maven
 
 ```xml
 
 <dependency>
     <groupId>cn.omisheep</groupId>
     <artifactId>authz-spring-boot-starter</artifactId>
-    <version>LATEST</version>
+    <version>1.1.1</version>
 </dependency>
 ```
 
-### 1.2 yml配置
+### yml配置
 
 ```yaml
 authz:
@@ -32,22 +32,52 @@ authz:
     enabled: true
 ```
 
-## 2. 登录
+## 登录 & 退出 & 封禁、ip限制、网段限制 & RateLimit
 
+### 登录
 ```java
 AuHelper.login(1,"Chrome");
 ```
 
-## 3. 退出
-
+### 退出
 ```java
 AuHelper.logout();
 AuHelper.logoutAll();
 AuHelper.logout(1,"Chrome");
 ```
 
-## 4. 接口需要登录
+### 封禁、ip限制、网段限制
+```java
+AuHelper.denyUser(1, "2s"); // 对用户1进行封禁2秒
+AuHelper.denyUser(2, "mac", "10s"); // 对用户2的mac设备进行封禁10秒
+AuHelper.removeDenyUser(1); // 移除用户1的封禁
+AuHelper.denyIPRange("10.2.0.0/24", "10d"); // 对10.2.0.0/24网段下的IP进行封禁10天
+AuHelper.denyIP("10.2.0.2", "10d"); // 对ip 10.2.0.2进行封禁10天
+```
 
+### RateLimit
+#### RateLimit注解配置
+限制接口10秒内最多访问3次，当超过时进行封禁，若重复封禁，时间递增3s-5s-10s
+```java
+@RateLimit(maxRequests = 3, window = "10s",
+        punishmentTime = {"3s", "5s", "10s"})
+@GetMapping("/limit")
+public Result limit() {
+        ...
+}
+```
+#### RateLimit封禁时回调函数
+1、直接继承`cn.omisheep.authz.core.callback.RateLimitCallback`接口并将其注入Spring。
+2、方法配置回调函数，如下
+```java
+AuHelper.Callback.setRateLimitCallback((method, api, ip, userId, limitMeta, reliveDate) -> {
+            ...
+});
+```
+
+## 接口需要登录 & 接口需要权限
+
+### 接口需要登录
 ```java
 @GetMapping("/info")
 @Certificated
@@ -56,8 +86,14 @@ public Result getInfo(){
 }
 ```
 
-## 5. 接口需要权限
-
+### 接口需要权限
+```java
+@GetMapping("/role-admin")
+@Roles("admin")
+public Result roleAdmin(){
+        ...
+}
+```
 ```java
 @GetMapping("/role-admin")
 @Roles("admin")
@@ -66,21 +102,22 @@ public Result roleAdmin(){
 }
 ```
 
-## 6. 数据加密
+## 数据加密
 
-### 6.1 @Decrypt使用
+### @Decrypt使用
+
 - 对于`@Decrypt` 新增了对象加密解密功能，支持对对象内某一个字段进行单独加密以及对整体加密，以及参数加密
 
 ```java
 @GetMapping("/get")
 public Result get(@Decrypt("name") String name){
         return Result.SUCCESS.data("name",name);
-}
+        }
 
 @PostMapping("/post")
 public Result post(@Decrypt({"name", "content", "obj.name"}) @RequestBody HashMap<String, Object> map){
         return Result.SUCCESS.data("map",map);
-}
+        }
 ```
 
 - 若`@Decrypt`无参，则key无限制,但值必须为整个加密的json，如
@@ -91,10 +128,12 @@ public Result post(@Decrypt({"name", "content", "obj.name"}) @RequestBody HashMa
 }
 ```
 
-### 6.2 自定义解码器
+### 自定义解码器
 
 - 自定义解码器
+
 ```java
+
 @Component
 public class CustomDecryptor implements Decryptor {
     @Override
@@ -103,53 +142,71 @@ public class CustomDecryptor implements Decryptor {
     }
 }
 ```
+
 - 使用
+
 ```java
 @GetMapping("/get")
-public Result get(@Decrypt("name") String name) {
-    return Result.SUCCESS.data("name", name);
-}
+public Result get(@Decrypt("name") String name){
+        return Result.SUCCESS.data("name",name);
+        }
 
 @GetMapping("/get-custom")
-public Result getCustom(@Decrypt(value = "name", decryptor = CustomDecryptor.class) String name) {
-    return Result.SUCCESS.data("name", name);
-}
+public Result getCustom(@Decrypt(value = "name", decryptor = CustomDecryptor.class) String name){
+        return Result.SUCCESS.data("name",name);
+        }
 ```
 
-
-## 7. 参数需要权限
+## 参数需要权限
 
 ```java
-// 对于参数x
-// zxc 只能够访问123-156,177
-// admin 只能访问146-200
-// 如果某个用户有两个角色，那么取并集。如 zxc,admin 能访问123-200
-@Roles({"admin", "zxc"})
-@GetMapping("/operate/{x}")
-public Result test(@BatchAuthority({
-        @Roles(value = "zxc", paramRange = {"123-156", "177"}),
-        @Roles(value = "admin", paramRange = "146-200")
-}) @PathVariable int x){
-        ...
+public class ArgResourceTest {
+    @ArgResource("name")
+    public static String name() {
+        return "ooo";
+    }
+
+    @ArgResource
+    public static int id() {
+        return 123;
+    }
 }
 
-// 对于参数operate
+@RestController
+class Main {
+    // 参数name为ooo时，必须需要role包含zxc  
+    // id为177时必须需要admin权限
+    // zxc 能够访问id属于123-156 不能访问177
+    // admin 能够访问id属于146-200
+    // 如果某个用户有两个角色，那么取并集。如 zxc,admin 能访问123-200
+    @Roles({"admin", "zxc"})
+    @GetMapping("/get/{name}/{id}")
+    public Result getPath2(@Roles(value = "zxc", paramResources = "#{name}") @PathVariable String name,
+                           @BatchAuthority(roles = {
+                                   @Roles(value = "zxc", paramRange = {"#{id}-156", "177"}),
+                                   @Roles(value = "admin", paramRange = "146-200", paramResources = "177")
+                           }) @PathVariable int id) {
+    ...
+    }
+}
+
+    // 对于参数operate
 // 如果需要 "查询" 和 "重启"，则需要 "工程师权限", "运维权限", "技术人员权限" 这三个权限
 // 如果需要 "开机", "关机", "添加" 则需要 "运维权限" 权限
 // 如果需要 "登录" 则需要 "技术人员权限" 权限
-@Roles({"admin", "zxc"})
-@GetMapping("/operate")
-public Result test(
-@BatchAuthority(perms = {
-        @Perms(value = {"工程师权限", "运维权限", "技术人员权限"}, paramResources = {"查询", "重启"}),
-        @Perms(value = {"运维权限"}, paramResources = {"开机", "关机", "添加"}),
-        @Perms(value = {"技术人员权限"}, paramResources = "登录")})
-@RequestParam(required = true) String operate){
+    @Roles({"admin", "zxc"})
+    @GetMapping("/operate")
+    public Result test(
+            @BatchAuthority(perms = {
+                    @Perms(value = {"工程师权限", "运维权限", "技术人员权限"}, paramResources = {"查询", "重启"}),
+                    @Perms(value = {"运维权限"}, paramResources = {"开机", "关机", "添加"}),
+                    @Perms(value = {"技术人员权限"}, paramResources = "登录")})
+            @RequestParam(required = true) String operate) {
         ....
-}
+    }
 ```
 
-## 8. 数据行权限（数据权限）和 数据列权限（字段权限）
+## 数据行权限（数据权限）和 数据列权限（字段权限）
 
 > 目前只支持Mybatis
 
@@ -188,7 +245,7 @@ public class HnieUser {
 
 ```
 
-## 9.【资源】
+## 【资源】
 
 > 在使用数据权限时会用到condition，里面会有变量，该变量可以动态控制。
 
@@ -231,7 +288,7 @@ public class Testw {
 }
 ```
 
-## 10. 权限接口
+## 权限接口
 
 > 可在这里调用你的数据库
 
@@ -257,7 +314,7 @@ public class UserPermLibrary implements PermLibrary<Integer> {
 }
 ```
 
-## 11. 自定义Slot
+## 自定义Slot
 
 ```java
 
