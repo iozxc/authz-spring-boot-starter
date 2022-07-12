@@ -10,7 +10,7 @@ package cn.omisheep.authz;
  */
 
 import cn.omisheep.authz.core.NotLoginException;
-import cn.omisheep.authz.core.WebThreadEnvironmentException;
+import cn.omisheep.authz.core.ThreadWebEnvironmentException;
 import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.auth.Blacklist;
 import cn.omisheep.authz.core.auth.deviced.Device;
@@ -48,7 +48,7 @@ public final class AuHelper {
         String deviceType;
         try {
             deviceType = getHttpMeta().getUserAgent();
-        } catch (WebThreadEnvironmentException e) {
+        } catch (ThreadWebEnvironmentException e) {
             deviceType = "unknown";
         }
         return login(userId, deviceType, null);
@@ -228,7 +228,7 @@ public final class AuHelper {
     /**
      * @return 获得当前请求的HttpMeta信息
      */
-    public static HttpMeta getHttpMeta() throws WebThreadEnvironmentException {
+    public static HttpMeta getHttpMeta() throws ThreadWebEnvironmentException {
         return AUtils.getCurrentHttpMeta();
     }
 

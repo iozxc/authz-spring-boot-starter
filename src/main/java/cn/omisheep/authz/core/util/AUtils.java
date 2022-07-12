@@ -1,15 +1,13 @@
 package cn.omisheep.authz.core.util;
 
 import cn.omisheep.authz.core.NotLoginException;
-import cn.omisheep.authz.core.WebThreadEnvironmentException;
+import cn.omisheep.authz.core.ThreadWebEnvironmentException;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.web.utils.HttpUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.lang.NonNull;
 
 import java.util.Map;
@@ -20,9 +18,12 @@ import java.util.Map;
  */
 @Slf4j
 @SuppressWarnings("all")
-public class AUtils implements ApplicationContextAware {
+public final class AUtils {
 
-    public static ApplicationContext ctx;
+    private AUtils() {
+    }
+
+    private static ApplicationContext ctx;
 
     public static <T> T getBean(Class<T> clz) {
         return ctx.getBean(clz);
@@ -36,19 +37,18 @@ public class AUtils implements ApplicationContextAware {
         return ctx.getBeansOfType(clz);
     }
 
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+    public static void init(ApplicationContext applicationContext) {
         ctx = applicationContext;
     }
 
     @NonNull
-    public static HttpMeta getCurrentHttpMeta() throws WebThreadEnvironmentException {
+    public static HttpMeta getCurrentHttpMeta() throws ThreadWebEnvironmentException {
         try {
             HttpMeta currentHttpMeta = (HttpMeta) HttpUtils.getCurrentRequest().getAttribute(Constants.HTTP_META);
-            if (currentHttpMeta == null) throw new WebThreadEnvironmentException();
+            if (currentHttpMeta == null) throw new ThreadWebEnvironmentException();
             return currentHttpMeta;
         } catch (Exception e) {
-            throw new WebThreadEnvironmentException();
+            throw new ThreadWebEnvironmentException();
         }
     }
 

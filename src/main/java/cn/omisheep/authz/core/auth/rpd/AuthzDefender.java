@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.auth.rpd;
 
 import cn.omisheep.authz.core.NotLoginException;
-import cn.omisheep.authz.core.WebThreadEnvironmentException;
+import cn.omisheep.authz.core.ThreadWebEnvironmentException;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
@@ -176,7 +176,7 @@ public class AuthzDefender {
         try {
             HttpMeta httpMeta = AUtils.getCurrentHttpMeta();
             r = Optional.ofNullable(httpMeta.getRoles()).orElse(permLibrary.getRolesByUserId(httpMeta.getUserId()));
-        } catch (WebThreadEnvironmentException e) {
+        } catch (ThreadWebEnvironmentException e) {
             return false;
         }
         if (r == null) return false;
@@ -193,7 +193,7 @@ public class AuthzDefender {
                  r.forEach(role -> perms.addAll(permLibrary.getPermissionsByRole(role)));
                 return perms;
             });
-        } catch (WebThreadEnvironmentException e) {
+        } catch (ThreadWebEnvironmentException e) {
             return false;
         }
         if (p == null) return false;

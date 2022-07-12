@@ -14,6 +14,7 @@ import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.codec.AuthzRSAManager;
 import cn.omisheep.authz.core.msg.Message;
+import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.authz.core.util.RedisUtils;
 import cn.omisheep.authz.core.util.ValueMatcher;
@@ -48,26 +49,17 @@ import java.util.stream.Collectors;
 @SuppressWarnings("all")
 public class AuCoreInitialization implements ApplicationContextAware {
 
-    private final AuthzProperties properties;
+    private       ApplicationContext ctx;
+    private final AuthzProperties    properties;
+    private final Httpd              httpd;
+    private final UserDevicesDict    userDevicesDict;
+    private final PermissionDict     permissionDict;
+    private final PermLibrary        permLibrary;
+    private final Cache              cache;
 
-    private final Httpd httpd;
-
-    private final UserDevicesDict userDevicesDict;
-
-    private final PermissionDict permissionDict;
-
-    private final PermLibrary permLibrary;
-
-    private final Cache cache;
-
-    private ApplicationContext ctx;
-
-    public AuCoreInitialization(AuthzProperties properties,
-                                Httpd httpd,
-                                UserDevicesDict userDevicesDict,
-                                PermissionDict permissionDict,
-                                PermLibrary permLibrary,
-                                Cache cache) {
+    public AuCoreInitialization(AuthzProperties properties, Httpd httpd,
+                                UserDevicesDict userDevicesDict, PermissionDict permissionDict,
+                                PermLibrary permLibrary, Cache cache) {
         this.properties      = properties;
         this.httpd           = httpd;
         this.userDevicesDict = userDevicesDict;
@@ -79,6 +71,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) {
         ctx = applicationContext;
+        AUtils.init(applicationContext);
         init();
         CallbackInit.callbackInit(applicationContext);
         printBanner();
