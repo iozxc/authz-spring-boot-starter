@@ -37,6 +37,11 @@ public class AuthzProperties {
     private DashboardConfig dashboard = new DashboardConfig();
 
     /**
+     * @since 1.1.3
+     */
+    private ResponseConfig response = new ResponseConfig();
+
+    /**
      * @since 1.0.11
      */
     private Class<? extends Decryptor> defaultDecryptor = RSADecryptor.class;
@@ -217,4 +222,10 @@ public class AuthzProperties {
 
         private String mappings = "/authz-dashboard/*";
     }
+
+    @Data
+    public static class ResponseConfig {
+        private boolean alwaysOk = false;
+    }
+
 }

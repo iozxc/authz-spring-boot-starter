@@ -80,11 +80,14 @@ public class DataSecurityInterceptorForMybatis implements Interceptor {
         Object obj = invocation.proceed();
         if (PermissionDict.self().getFieldsData() == null) return obj;
         Class<?> type = resultMapThreadLocal.get().getType();
-        if (obj instanceof Collection || obj.getClass().equals(type)) {
-            Map<String, FieldData> fieldDataMap = PermissionDict.self().getFieldsData().get(type.getTypeName());
-            obj = dataFinderSecurityInterceptor.dataTrim(AUtils.getCurrentHttpMeta(), permLibrary, fieldDataMap, type, obj);
+        try {
+            if (obj instanceof Collection || obj.getClass().equals(type)) {
+                Map<String, FieldData> fieldDataMap = PermissionDict.self().getFieldsData().get(type.getTypeName());
+                obj = dataFinderSecurityInterceptor.dataTrim(AUtils.getCurrentHttpMeta(), permLibrary, fieldDataMap, type, obj);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
         return obj;
     }
 

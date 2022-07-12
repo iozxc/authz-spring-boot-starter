@@ -26,8 +26,9 @@ public enum ExceptionStatus {
     REQUEST_EXCEPTION(-204, "Request error", false, FORBIDDEN),
 
     CONTENT_TYPE_ERROR(-301, "Content type not supported, must be json", false, INTERNAL_SERVER_ERROR),
-    PAGE_NOT_SUPPORT(-302, "Page not support, check database type, only mysql and oracle", false, INTERNAL_SERVER_ERROR);
+    PAGE_NOT_SUPPORT(-302, "Page not support, check database type, only mysql and oracle", false, INTERNAL_SERVER_ERROR),
 
+    WEB_ENVIRONMENT(-401, "The current thread is in a non Web Environment", false, INTERNAL_SERVER_ERROR);
     private final int        code;
     private final String     message;
     private final boolean    clearToken;

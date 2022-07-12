@@ -241,8 +241,8 @@ public class AuthzAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public AuthzExceptionHandler authzExceptionHandler() {
-        return new DefaultAuthzExceptionHandler();
+    public AuthzExceptionHandler authzExceptionHandler(AuthzProperties properties) {
+        return new DefaultAuthzExceptionHandler(properties.getResponse());
     }
 
     @Bean

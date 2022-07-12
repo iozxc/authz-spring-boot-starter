@@ -1,8 +1,9 @@
 package cn.omisheep.authz.core.util;
 
-import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.NotLoginException;
+import cn.omisheep.authz.core.WebThreadEnvironmentException;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
+import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.web.utils.HttpUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -41,13 +42,13 @@ public class AUtils implements ApplicationContextAware {
     }
 
     @NonNull
-    public static HttpMeta getCurrentHttpMeta() throws NotLoginException {
+    public static HttpMeta getCurrentHttpMeta() throws WebThreadEnvironmentException {
         try {
             HttpMeta currentHttpMeta = (HttpMeta) HttpUtils.getCurrentRequest().getAttribute(Constants.HTTP_META);
-            if (currentHttpMeta == null) throw new NotLoginException();
+            if (currentHttpMeta == null) throw new WebThreadEnvironmentException();
             return currentHttpMeta;
         } catch (Exception e) {
-            throw new NotLoginException();
+            throw new WebThreadEnvironmentException();
         }
     }
 
@@ -55,7 +56,7 @@ public class AUtils implements ApplicationContextAware {
     public static Token getCurrentToken() throws NotLoginException {
         try {
             Token token = getCurrentHttpMeta().getToken();
-            if (token==null) throw new NotLoginException();
+            if (token == null) throw new NotLoginException();
             return token;
         } catch (Exception e) {
             throw new NotLoginException();

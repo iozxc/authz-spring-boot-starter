@@ -2,13 +2,15 @@ package cn.omisheep.authz;
 
 /*
                  _    _
-    /\          | |  | |   v1.1.1
+    /\          | |  | |   v1.1.3
    /  \   _   _ | |_ | |__   ____
   / /\ \ | | | || __|| '_ \ |_  /
  / ____ \| |_| || |_ | | | | / /
 /_/    \_\\__,_| \__||_| |_|/___|
  */
+
 import cn.omisheep.authz.core.NotLoginException;
+import cn.omisheep.authz.core.WebThreadEnvironmentException;
 import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.auth.Blacklist;
 import cn.omisheep.authz.core.auth.deviced.Device;
@@ -43,7 +45,13 @@ public final class AuHelper {
      */
     @Nullable
     public static TokenPair login(@NonNull Object userId) {
-        return login(userId, "unknown", null);
+        String deviceType;
+        try {
+            deviceType = getHttpMeta().getUserAgent();
+        } catch (WebThreadEnvironmentException e) {
+            deviceType = "unknown";
+        }
+        return login(userId, deviceType, null);
     }
 
     /**
@@ -220,7 +228,7 @@ public final class AuHelper {
     /**
      * @return 获得当前请求的HttpMeta信息
      */
-    public static HttpMeta getHttpMeta() {
+    public static HttpMeta getHttpMeta() throws WebThreadEnvironmentException {
         return AUtils.getCurrentHttpMeta();
     }
 

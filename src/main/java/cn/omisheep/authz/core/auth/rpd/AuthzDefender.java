@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core.auth.rpd;
 
 import cn.omisheep.authz.core.NotLoginException;
+import cn.omisheep.authz.core.WebThreadEnvironmentException;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
@@ -8,7 +9,6 @@ import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.tk.TokenHelper;
 import cn.omisheep.authz.core.tk.TokenPair;
 import cn.omisheep.authz.core.util.AUtils;
-import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.web.utils.HttpUtils;
 import io.jsonwebtoken.ExpiredJwtException;
 import org.apache.commons.lang.ObjectUtils;
@@ -51,14 +51,13 @@ public class AuthzDefender {
      * @return 授权后的tokenPair(accessToken以及refreshToken)
      */
     public static TokenPair grant(Object userId, String deviceType, String deviceId) {
-        TokenPair tokenPair = TokenHelper.createTokenPair(userId, deviceType, deviceId);
-
-        HttpServletResponse response = HttpUtils.getCurrentResponse();
-        HttpMeta            httpMeta = AUtils.getCurrentHttpMeta();
-        if (response != null) {
-            response.addCookie(TokenHelper.generateCookie(tokenPair.getAccessToken()));
-        }
+        TokenPair           tokenPair = TokenHelper.createTokenPair(userId, deviceType, deviceId);
+        HttpServletResponse response  = HttpUtils.getCurrentResponse();
         try {
+            HttpMeta httpMeta = AUtils.getCurrentHttpMeta();
+            if (response != null) {
+                response.addCookie(TokenHelper.generateCookie(tokenPair.getAccessToken()));
+            }
             if (userDevicesDict.addUser(userId, tokenPair, deviceType, deviceId, httpMeta)) return tokenPair;
             else return null;
         } catch (Exception e) {
@@ -173,20 +172,30 @@ public class AuthzDefender {
     }
 
     public static boolean hasRoles(@NonNull List<String> roles) throws NotLoginException {
-        HttpMeta    httpMeta      = AUtils.getCurrentHttpMeta();
-        Set<String> r = Optional.ofNullable(httpMeta.getRoles()).orElse(permLibrary.getRolesByUserId(httpMeta.getUserId()));
+        Set<String> r = null;
+        try {
+            HttpMeta httpMeta = AUtils.getCurrentHttpMeta();
+            r = Optional.ofNullable(httpMeta.getRoles()).orElse(permLibrary.getRolesByUserId(httpMeta.getUserId()));
+        } catch (WebThreadEnvironmentException e) {
+            return false;
+        }
         if (r == null) return false;
         return r.containsAll(roles);
     }
 
     public static boolean hasPermissions(@NonNull List<String> permissions) throws NotLoginException {
-        HttpMeta    httpMeta      = AUtils.getCurrentHttpMeta();
-        Set<String> r = Optional.ofNullable(httpMeta.getRoles()).orElse(permLibrary.getRolesByUserId(httpMeta.getUserId()));
-        Set<String> p = Optional.ofNullable(httpMeta.getPermissions()).orElseGet(() -> {
-            HashSet<String> perms = new HashSet<>();
-            r.forEach(role -> perms.addAll(permLibrary.getPermissionsByRole(role)));
-            return perms;
-        });
+        Set<String> p = null;
+        try {
+            HttpMeta httpMeta = AUtils.getCurrentHttpMeta();
+             p = Optional.ofNullable(httpMeta.getPermissions()).orElseGet(() -> {
+                HashSet<String> perms = new HashSet<>();
+                 Set<String> r = Optional.ofNullable(httpMeta.getRoles()).orElse(permLibrary.getRolesByUserId(httpMeta.getUserId()));
+                 r.forEach(role -> perms.addAll(permLibrary.getPermissionsByRole(role)));
+                return perms;
+            });
+        } catch (WebThreadEnvironmentException e) {
+            return false;
+        }
         if (p == null) return false;
         return p.containsAll(permissions);
     }
