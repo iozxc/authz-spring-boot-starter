@@ -13,11 +13,6 @@ import javax.servlet.http.HttpServletRequest;
 public abstract class ExceptionUtils {
     private static final String AUTHZ_EXCEPTION = "AUTHZ_EXCEPTION";
 
-
-    public static void error(ExceptionStatus exceptionStatus) {
-        error(HttpUtils.getCurrentRequest(), new AuthzException(null, exceptionStatus));
-    }
-
     public static void error(ExceptionStatus exceptionStatus, Throwable e) {
         error(HttpUtils.getCurrentRequest(), new AuthzException(e, exceptionStatus));
     }

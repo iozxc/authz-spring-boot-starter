@@ -49,13 +49,13 @@ public class AuthzRSAManager {
         }
         auto      = false;
         auKeyPair = new RSAHelper.RSAKeyPair(publicKey, privateKey);
-        LogUtils.logDebug("⬇ RSA Key Pair ⬇ {} \n", auKeyPair);
+        LogUtils.debug("⬇ RSA Key Pair ⬇ {} \n", auKeyPair);
     }
 
     @SneakyThrows
     public static void refreshKeyGroup() {
         auKeyPair = RSAHelper.genKeyPair();
-        LogUtils.logDebug("⬇ RSA Key Pair ⬇ {} \n", auKeyPair);
+        LogUtils.debug("⬇ RSA Key Pair ⬇ {} \n", auKeyPair);
     }
 
     @SneakyThrows

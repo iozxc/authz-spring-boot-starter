@@ -105,7 +105,7 @@ public abstract class RedisUtils {
     }
 
     public static void publish(String channel, Message message) {
-        LogUtils.logDebug("time: {} message: {}", TimeUtils.nowTime(), message);
+        LogUtils.debug("time: {} message: {}", TimeUtils.nowTime(), message);
         redisTemplate.convertAndSend(channel, message);
     }
 

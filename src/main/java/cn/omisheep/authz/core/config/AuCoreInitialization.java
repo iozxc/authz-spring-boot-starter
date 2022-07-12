@@ -98,15 +98,15 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
         // init PermissionDict
         initPermissionDict(ctx, mapRet);
-        LogUtils.logDebug("PermissionDict init success \n");
+        LogUtils.debug("PermissionDict init success \n");
 
         // init Httpd
         initHttpd(ctx, mapRet);
-        LogUtils.logDebug("Httpd init success \n");
+        LogUtils.debug("Httpd init success \n");
 
         // init UserDevicesDict
         initUserDevicesDict();
-        LogUtils.logDebug("UserDevicesDict init success");
+        LogUtils.debug("UserDevicesDict init success");
 
         AuthzDefender.init(userDevicesDict, permLibrary);
 
@@ -381,8 +381,8 @@ public class AuCoreInitialization implements ApplicationContextAware {
             permissionDict.initAuthzMetadata(authzMetadata);
             permissionDict.initIPRangeMeta(ipRangeMedata);
             permissionDict.initCertificatedMetadata(certificatedMetadata);
-            permissionDict.setGlobalAllow(IPRangeMeta.parse(properties.getGlobalIpRange().getAllow()));
-            permissionDict.setGlobalDeny(IPRangeMeta.parse(properties.getGlobalIpRange().getDeny()));
+            permissionDict.initGlobalAllow(IPRangeMeta.parse(properties.getGlobalIpRange().getAllow()));
+            permissionDict.initGlobalDeny(IPRangeMeta.parse(properties.getGlobalIpRange().getDeny()));
             permissionDict.setSupportNative(properties.getGlobalIpRange().isSupportNative());
         } catch (Exception e) {
             e.printStackTrace();

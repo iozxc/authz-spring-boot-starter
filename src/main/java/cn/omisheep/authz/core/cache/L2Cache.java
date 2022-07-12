@@ -152,7 +152,7 @@ public class L2Cache implements Cache {
                 }
             }
         } catch (Exception e) {
-            LogUtils.logError("{}", e.getMessage());
+            LogUtils.error("{}", e.getMessage());
         } finally {
             cache.put(key, new CacheItem(ttl, element));
         }

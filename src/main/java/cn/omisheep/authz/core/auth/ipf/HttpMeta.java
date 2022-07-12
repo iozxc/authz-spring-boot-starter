@@ -19,8 +19,8 @@ import java.io.InputStreamReader;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static cn.omisheep.authz.core.util.LogUtils.exportLogsFromRequest;
-import static cn.omisheep.authz.core.util.LogUtils.pushLogToRequest;
+import static cn.omisheep.authz.core.util.LogUtils.exportFromRequest;
+import static cn.omisheep.authz.core.util.LogUtils.pushToRequest;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -99,15 +99,15 @@ public class HttpMeta {
     }
 
     public void log(String formatMsg, Object... args) {
-        pushLogToRequest(LogLevel.INFO, formatMsg, args);
+        pushToRequest(LogLevel.INFO, formatMsg, args);
     }
 
     public void log(LogLevel logLevel, String formatMsg, Object... args) {
-        pushLogToRequest(logLevel, formatMsg, args);
+        pushToRequest(logLevel, formatMsg, args);
     }
 
     public void exportLog() {
-        exportLogsFromRequest(request);
+        exportFromRequest(request);
     }
 
     public boolean setHasToken(boolean hasToken) {
@@ -130,7 +130,7 @@ public class HttpMeta {
                 body = new BufferedReader(new InputStreamReader(request.getInputStream()))
                         .lines().collect(Collectors.joining(System.lineSeparator()));
             } catch (IOException e) {
-                LogUtils.logError("read body error");
+                LogUtils.error("read body error");
                 return null;
             }
         }

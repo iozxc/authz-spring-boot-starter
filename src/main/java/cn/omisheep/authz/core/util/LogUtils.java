@@ -26,33 +26,33 @@ public abstract class LogUtils {
     private static final String   AU_LOGS = "au_logs";
     private static final Marker   MARKER  = MarkerFactory.getMarker("cn.omisheep.au");
 
-    public static void logInfo(String msg, Object... args) {
+    public static void info(String msg, Object... args) {
         if (logLevel.ordinal() <= LogLevel.INFO.ordinal()) log.info(MARKER, msg, args);
     }
 
-    public static void logError(String msg, Object... args) {
+    public static void error(String msg, Object... args) {
         if (logLevel.ordinal() <= LogLevel.ERROR.ordinal()) log.error(MARKER, msg, args);
     }
 
-    public static void logError(String msg, Throwable throwable) {
+    public static void error(String msg, Throwable throwable) {
         if (logLevel.ordinal() <= LogLevel.ERROR.ordinal()) log.error(msg, throwable);
     }
 
-    public static void logWarn(String msg, Object... args) {
+    public static void warn(String msg, Object... args) {
         if (logLevel.ordinal() <= LogLevel.WARN.ordinal()) log.warn(MARKER, msg, args);
     }
 
-    public static void logDebug(String msg, Object... args) {
+    public static void debug(String msg, Object... args) {
         if (logLevel.ordinal() <= LogLevel.DEBUG.ordinal()) log.info(MARKER, Constants.DEBUG_PREFIX + msg, args);
     }
 
 
-    public static void pushLogToRequest(String formatMsg, Object... args) {
-        pushLogToRequest(LogLevel.INFO, formatMsg, args);
+    public static void pushToRequest(String formatMsg, Object... args) {
+        pushToRequest(LogLevel.INFO, formatMsg, args);
     }
 
     @SuppressWarnings("unchecked")
-    public static void pushLogToRequest(LogLevel logLevel, String formatMsg, Object... args) {
+    public static void pushToRequest(LogLevel logLevel, String formatMsg, Object... args) {
         HttpServletRequest request = HttpUtils.getCurrentRequest();
         ArrayList<LogMeta> au_logs = (ArrayList<LogMeta>) request.getAttribute(AU_LOGS);
         if (au_logs == null) {
@@ -62,12 +62,12 @@ public abstract class LogUtils {
         au_logs.add(new LogMeta(logLevel, format(formatMsg, args)));
     }
 
-    public static void exportLogsFromRequest() {
-        exportLogsFromRequest(HttpUtils.getCurrentRequest());
+    public static void exportFromRequest() {
+        exportFromRequest(HttpUtils.getCurrentRequest());
     }
 
     @SuppressWarnings("unchecked")
-    public static void exportLogsFromRequest(HttpServletRequest request) {
+    public static void exportFromRequest(HttpServletRequest request) {
         ArrayList<LogMeta> logs = (ArrayList<LogMeta>) request.getAttribute(AU_LOGS);
         if (logLevel.equals(LogLevel.OFF) || logs == null) return;
         StringBuilder info  = new StringBuilder();
@@ -91,16 +91,16 @@ public abstract class LogUtils {
             }
         });
         if (info.length() > 0) {
-            logInfo(info.append(Constants.CRLF).toString());
+            info(info.append(Constants.CRLF).toString());
         }
         if (warn.length() > 0) {
-            logWarn(warn.append(Constants.CRLF).toString());
+            warn(warn.append(Constants.CRLF).toString());
         }
         if (debug.length() > 0) {
-            logDebug(debug.append(Constants.CRLF).toString());
+            debug(debug.append(Constants.CRLF).toString());
         }
         if (error.length() > 0) {
-            logError(error.append(Constants.CRLF).toString());
+            error(error.append(Constants.CRLF).toString());
         }
         logs.clear();
     }

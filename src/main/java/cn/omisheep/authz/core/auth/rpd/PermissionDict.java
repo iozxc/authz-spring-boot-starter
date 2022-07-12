@@ -38,11 +38,9 @@ public class PermissionDict implements AuthzModifiable {
         return SELF;
     }
 
-    @Setter
-    private static HashSet<IPRange> globalAllow;
+    private static Set<IPRange> globalAllow;
 
-    @Setter
-    private static HashSet<IPRange> globalDeny;
+    private static Set<IPRange> globalDeny;
 
     @Setter
     private static boolean supportNative;
@@ -77,6 +75,8 @@ public class PermissionDict implements AuthzModifiable {
             Collections.unmodifiableMap(rawMap);
     private static       Map<String, Map<String, IPRangeMeta>>                                         m7;
     private static       Map<String, Set<String>>                                                      m8;
+    private static       Set<IPRange>                                                                  m9;
+    private static       Set<IPRange>                                                                  m10;
 
     public boolean isSupportNative() {
         return PermissionDict.supportNative;
@@ -114,9 +114,11 @@ public class PermissionDict implements AuthzModifiable {
         return m8;
     }
 
-    public HashSet<IPRange> getGlobalAllow() {return globalAllow;}
+    public Set<IPRange> getGlobalAllow() {
+        return m9;
+    }
 
-    public HashSet<IPRange> getGlobalDeny()  {return globalDeny;}
+    public Set<IPRange> getGlobalDeny() {return m10;}
 
     @Getter
     public static class ArgsMeta {
@@ -209,7 +211,7 @@ public class PermissionDict implements AuthzModifiable {
     public static Object argsHandle(String argName, Object... otherArgs) {
         ArgsMeta meta = argsMetadata.get(argName);
         if (meta == null) {
-            LogUtils.logError("arg {} is null", argName);
+            LogUtils.error("arg {} is null", argName);
             return null;
         }
         try {
@@ -742,6 +744,24 @@ public class PermissionDict implements AuthzModifiable {
         }
         PermissionDict.certificatedMetadata = certificatedMetadata;
         m8                                  = Collections.unmodifiableMap(certificatedMetadata);
+    }
+
+    public static void initGlobalAllow(Set<IPRange> allow) {
+        if (PermissionDict.globalAllow != null) {
+            AuInit.log.error("globalAllow 已经初始化");
+            return;
+        }
+        PermissionDict.globalAllow = allow;
+        m9                         = Collections.unmodifiableSet(globalAllow);
+    }
+
+    public static void initGlobalDeny(Set<IPRange> deny) {
+        if (PermissionDict.globalDeny != null) {
+            AuInit.log.error("globalDeny 已经初始化");
+            return;
+        }
+        PermissionDict.globalDeny = deny;
+        m10                       = Collections.unmodifiableSet(globalDeny);
     }
 
     public static void setPermSeparator(String permSeparator) {

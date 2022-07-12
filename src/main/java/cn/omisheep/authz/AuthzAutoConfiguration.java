@@ -24,6 +24,7 @@ import cn.omisheep.authz.core.interceptor.mybatis.DataSecurityInterceptorForMyba
 import cn.omisheep.authz.core.msg.*;
 import cn.omisheep.authz.core.resolver.AuthzHandlerRegister;
 import cn.omisheep.authz.core.resolver.DecryptRequestBodyAdvice;
+import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.authz.core.util.Utils;
 import cn.omisheep.authz.support.http.SupportServlet;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
@@ -81,7 +82,7 @@ public class AuthzAutoConfiguration {
         VersionMessage.CHANNEL = "AU:" + properties.getApp() + ":MODIFY_ID:" + applicationName;
         CacheMessage.CHANNEL   = "AU:" + properties.getApp() + ":CACHE_DATA_UPDATE";
         RequestMessage.CHANNEL = "AU:" + properties.getApp() + ":CONTEXT_CLOUD_APP_ID:" + applicationName;
-        AuInit.log.info("Version channel: 【 {} 】, Cache channel: 【 {} 】, Request channel: 【 {} 】",
+        LogUtils.debug("Version channel: 【 {} 】, Cache channel: 【 {} 】, Request channel: 【 {} 】",
                 VersionMessage.CHANNEL, CacheMessage.CHANNEL, RequestMessage.CHANNEL);
 
         String host;

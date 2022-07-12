@@ -8,7 +8,7 @@ import cn.omisheep.authz.support.util.IPRange;
 import cn.omisheep.authz.support.util.IPRangeMeta;
 import org.springframework.web.method.HandlerMethod;
 
-import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -47,7 +47,7 @@ public class IPRangeSlot implements Slot {
         }
     }
 
-    public boolean isPermittedRequest(String remoteAddress, HashSet<IPRange> allowList, HashSet<IPRange> denyList) {
+    public boolean isPermittedRequest(String remoteAddress, Set<IPRange> allowList, Set<IPRange> denyList) {
         boolean ipV6 = remoteAddress.indexOf(':') != -1;
 
         if (ipV6) {

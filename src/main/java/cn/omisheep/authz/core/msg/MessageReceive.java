@@ -28,19 +28,19 @@ public class MessageReceive {
         if (oo instanceof CacheMessage) {
             CacheMessage message = (CacheMessage) oo;
             if (!CacheMessage.ignore(message)) {
-                LogUtils.logDebug("MessageReceive time: {} message: {}", TimeUtils.nowTime(), message);
+                LogUtils.debug("MessageReceive time: {} message: {}", TimeUtils.nowTime(), message);
                 cache.receive(message);
             }
         } else if (oo instanceof RequestMessage) {
             RequestMessage message = (RequestMessage) oo;
             if (!RequestMessage.ignore(message)) {
-                LogUtils.logDebug("RequestMessage time: {} message: {}", TimeUtils.nowTime(), message);
+                LogUtils.debug("RequestMessage time: {} message: {}", TimeUtils.nowTime(), message);
                 httpd.receive(message);
             }
         } else if (oo instanceof VersionMessage) {
             VersionMessage message = (VersionMessage) oo;
             if (!VersionMessage.ignore(message)) {
-                LogUtils.logDebug("VersionMessage time: {} message: {}", TimeUtils.nowTime(), message);
+                LogUtils.debug("VersionMessage time: {} message: {}", TimeUtils.nowTime(), message);
                 InfoVersion.receive(message);
             }
         }
