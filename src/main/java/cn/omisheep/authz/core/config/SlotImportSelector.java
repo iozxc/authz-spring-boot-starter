@@ -1,4 +1,4 @@
-package cn.omisheep.authz.core.init;
+package cn.omisheep.authz.core.config;
 
 import cn.omisheep.authz.core.slot.Slot;
 import cn.omisheep.authz.core.slot.SlotScan;

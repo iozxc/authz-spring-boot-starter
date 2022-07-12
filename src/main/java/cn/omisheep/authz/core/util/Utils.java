@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static cn.omisheep.authz.core.init.AuInit.log;
+import static cn.omisheep.authz.core.config.AuInit.log;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]

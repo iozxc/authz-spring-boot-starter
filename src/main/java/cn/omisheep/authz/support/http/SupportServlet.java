@@ -1,8 +1,8 @@
 package cn.omisheep.authz.support.http;
 
 import cn.omisheep.authz.core.Authz;
-import cn.omisheep.authz.core.Constants;
-import cn.omisheep.authz.core.VersionInfo;
+import cn.omisheep.authz.core.config.Constants;
+import cn.omisheep.authz.core.config.InfoVersion;
 import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.util.Utils;
@@ -214,7 +214,7 @@ public class SupportServlet extends HttpServlet {
             AuthzModifier authzModifier = JSON.parseObject(httpMeta.getBody(), AuthzModifier.class);
             response.getWriter().println(JSON.toJSONString(Authz.operate(authzModifier)));
         } else if ("/info".equals(api)) {
-            response.getWriter().println(JSON.toJSONString(VersionInfo.getVersion()));
+            response.getWriter().println(JSON.toJSONString(InfoVersion.getVersion()));
         }
 
     }

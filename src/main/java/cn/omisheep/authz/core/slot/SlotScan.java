@@ -1,6 +1,6 @@
 package cn.omisheep.authz.core.slot;
 
-import cn.omisheep.authz.core.init.SlotImportSelector;
+import cn.omisheep.authz.core.config.SlotImportSelector;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.AliasFor;
 

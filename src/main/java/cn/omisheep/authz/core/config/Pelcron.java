@@ -1,4 +1,4 @@
-package cn.omisheep.authz.core;
+package cn.omisheep.authz.core.config;
 
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDictByHashMap;

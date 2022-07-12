@@ -1,6 +1,6 @@
 package cn.omisheep.authz.core.auth.ipf;
 
-import cn.omisheep.authz.core.Constants;
+import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.web.utils.BufferedServletRequestWrapper;
 import cn.omisheep.web.utils.HttpUtils;
@@ -15,7 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Date;
 
-import static cn.omisheep.authz.core.Constants.HTTP_META;
+import static cn.omisheep.authz.core.config.Constants.HTTP_META;
 import static cn.omisheep.authz.core.util.Utils.isIgnoreSuffix;
 
 /**

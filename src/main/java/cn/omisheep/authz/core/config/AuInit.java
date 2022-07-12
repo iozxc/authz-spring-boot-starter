@@ -1,4 +1,4 @@
-package cn.omisheep.authz.core.init;
+package cn.omisheep.authz.core.config;
 
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.auth.ipf.Httpd;

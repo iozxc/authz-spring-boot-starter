@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.auth.deviced;
 
 import cn.omisheep.authz.core.AuthzProperties;
-import cn.omisheep.authz.core.Constants;
+import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.tk.Token;

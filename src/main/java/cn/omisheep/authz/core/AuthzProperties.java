@@ -19,6 +19,11 @@ public class AuthzProperties {
      */
     private String app = "defaultApp";
 
+    /**
+     * @since 1.1.2
+     */
+    private boolean banner = true;
+
     private TokenConfig token = new TokenConfig();
 
     private UserConfig user = new UserConfig();

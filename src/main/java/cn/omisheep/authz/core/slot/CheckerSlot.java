@@ -10,7 +10,7 @@ import org.springframework.web.method.HandlerMethod;
 import java.util.Map;
 import java.util.Set;
 
-import static cn.omisheep.authz.core.Constants.OPTIONS;
+import static cn.omisheep.authz.core.config.Constants.OPTIONS;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]

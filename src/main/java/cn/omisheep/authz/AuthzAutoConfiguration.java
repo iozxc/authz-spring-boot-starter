@@ -2,7 +2,7 @@ package cn.omisheep.authz;
 
 
 import cn.omisheep.authz.core.AuthzProperties;
-import cn.omisheep.authz.core.VersionInfo;
+import cn.omisheep.authz.core.config.InfoVersion;
 import cn.omisheep.authz.core.auth.DefaultPermLibrary;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
@@ -17,8 +17,8 @@ import cn.omisheep.authz.core.cache.L2Cache;
 import cn.omisheep.authz.core.cache.PermLibraryCache;
 import cn.omisheep.authz.core.codec.DecryptHandler;
 import cn.omisheep.authz.core.codec.RSADecryptor;
-import cn.omisheep.authz.core.init.AuCoreInitialization;
-import cn.omisheep.authz.core.init.AuInit;
+import cn.omisheep.authz.core.config.AuCoreInitialization;
+import cn.omisheep.authz.core.config.AuInit;
 import cn.omisheep.authz.core.interceptor.*;
 import cn.omisheep.authz.core.interceptor.mybatis.DataSecurityInterceptorForMybatis;
 import cn.omisheep.authz.core.msg.*;
@@ -75,8 +75,8 @@ public class AuthzAutoConfiguration {
         String name = environment.getProperty("spring.application.name");
 
         String applicationName = StringUtils.hasText(name) ? name : "application";
-        VersionInfo.APPLICATION_NAME = applicationName;
-        VersionInfo.APP_NAME         = properties.getApp();
+        InfoVersion.APPLICATION_NAME = applicationName;
+        InfoVersion.APP_NAME         = properties.getApp();
 
         VersionMessage.CHANNEL = "AU:" + properties.getApp() + ":MODIFY_ID:" + applicationName;
         CacheMessage.CHANNEL   = "AU:" + properties.getApp() + ":CACHE_DATA_UPDATE";
@@ -97,10 +97,10 @@ public class AuthzAutoConfiguration {
         }
         String prefix = Utils.format("http://{}:{}{}", host, port, path);
 
-        VersionInfo.host   = host;
-        VersionInfo.port   = port;
-        VersionInfo.path   = path;
-        VersionInfo.prefix = prefix;
+        InfoVersion.host   = host;
+        InfoVersion.port   = port;
+        InfoVersion.path   = path;
+        InfoVersion.prefix = prefix;
     }
 
     @Bean("authzCache")

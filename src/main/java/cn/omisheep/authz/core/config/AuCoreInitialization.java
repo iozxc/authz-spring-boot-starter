@@ -1,10 +1,7 @@
-package cn.omisheep.authz.core.init;
+package cn.omisheep.authz.core.config;
 
 import cn.omisheep.authz.annotation.*;
-import cn.omisheep.authz.core.AuthzProperties;
-import cn.omisheep.authz.core.Constants;
-import cn.omisheep.authz.core.Pelcron;
-import cn.omisheep.authz.core.VersionInfo;
+import cn.omisheep.authz.core.*;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.DeviceConfig;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
@@ -84,11 +81,24 @@ public class AuCoreInitialization implements ApplicationContextAware {
         ctx = applicationContext;
         init();
         CallbackInit.callbackInit(applicationContext);
+        printBanner();
+    }
+
+    public void printBanner() {
+        if (properties.isBanner()) {
+            System.out.println("               _    _          ");
+            System.out.println("   :)         | |  | |         ");
+            System.out.println("  __ _  _   _ | |_ | |__   ____");
+            System.out.println(" / _` || | | || __|| '_ \\ |_  /");
+            System.out.println("| (_| || |_| || |_ | | | | / / ");
+            System.out.println(" \\__,_| \\__,_| \\__||_| |_|/___|");
+            System.out.println("  \t\tAuthz  v" + AuthzVersion.getVersion());
+        }
     }
 
     @SneakyThrows
     public void init() {
-        VersionInfo.init(properties.getApp());
+        InfoVersion.init(properties.getApp());
         AbstractHandlerMethodMapping<RequestMappingInfo> methodMapping =
                 (AbstractHandlerMethodMapping<RequestMappingInfo>) ctx.getBean("requestMappingHandlerMapping");
         Map<RequestMappingInfo, HandlerMethod> mapRet = methodMapping.getHandlerMethods();
@@ -125,15 +135,15 @@ public class AuCoreInitialization implements ApplicationContextAware {
         AuInit.log.info("Started Authz Message id: {}", Message.uuid);
 
         initVersionInfo();
-        AuInit.log.info("project md5 => {}", VersionInfo.getMd5());
+        AuInit.log.info("project md5 => {}", InfoVersion.getMd5());
     }
 
     private void initVersionInfo() {
         try {
-            VersionInfo.setProjectPath(getJarPath());
-            VersionInfo.setMd5check(properties.isMd5check());
-            VersionInfo.compute();
-            VersionInfo.born();
+            InfoVersion.setProjectPath(getJarPath());
+            InfoVersion.setMd5check(properties.isMd5check());
+            InfoVersion.compute();
+            InfoVersion.born();
         } catch (Exception e) {
             // skip
         }

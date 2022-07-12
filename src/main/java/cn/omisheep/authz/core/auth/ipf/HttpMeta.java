@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.auth.ipf;
 
 import cn.omisheep.authz.core.AuthzException;
-import cn.omisheep.authz.core.Constants;
+import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.tk.Token;

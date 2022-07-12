@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.auth.ipf;
 
 import cn.omisheep.authz.annotation.RateLimit;
-import cn.omisheep.authz.core.Constants;
+import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.commons.util.TimeUtils;
 import com.google.common.base.Objects;

@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.cache;
 
 import cn.omisheep.authz.core.AuthzProperties;
-import cn.omisheep.authz.core.Constants;
+import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.msg.CacheMessage;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.authz.core.util.RedisUtils;

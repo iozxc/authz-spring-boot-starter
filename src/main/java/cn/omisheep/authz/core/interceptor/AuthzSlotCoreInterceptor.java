@@ -17,7 +17,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static cn.omisheep.authz.core.Constants.HTTP_META;
+import static cn.omisheep.authz.core.config.Constants.HTTP_META;
 
 
 /**

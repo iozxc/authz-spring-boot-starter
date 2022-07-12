@@ -9,7 +9,7 @@ import cn.omisheep.authz.core.PermissionException;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
-import cn.omisheep.authz.core.init.AuCoreInitialization;
+import cn.omisheep.authz.core.config.AuCoreInitialization;
 import cn.omisheep.commons.util.CollectionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;

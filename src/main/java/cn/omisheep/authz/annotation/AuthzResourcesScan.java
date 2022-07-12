@@ -1,6 +1,6 @@
 package cn.omisheep.authz.annotation;
 
-import cn.omisheep.authz.core.init.AuthzResourcesInit;
+import cn.omisheep.authz.core.config.AuthzResourcesInit;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.AliasFor;
 

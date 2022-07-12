@@ -2,7 +2,7 @@ package cn.omisheep.authz.core.auth.rpd;
 
 import cn.omisheep.authz.core.auth.AuthzModifiable;
 import cn.omisheep.authz.core.auth.AuthzModifier;
-import cn.omisheep.authz.core.init.AuInit;
+import cn.omisheep.authz.core.config.AuInit;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.authz.support.util.IPRange;

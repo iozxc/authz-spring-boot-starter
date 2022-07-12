@@ -1,5 +1,6 @@
-package cn.omisheep.authz.core;
+package cn.omisheep.authz.core.config;
 
+import cn.omisheep.authz.core.Authz;
 import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.msg.VersionMessage;
 import cn.omisheep.authz.core.util.MD5Utils;
@@ -15,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-public class VersionInfo {
+public class InfoVersion {
 
     public static final AtomicInteger            version   = new AtomicInteger(0);
     public static final ArrayList<AuthzModifier> changeLog = new ArrayList<>();
@@ -43,7 +44,7 @@ public class VersionInfo {
     }
 
     public static void setProjectPath(String projectPath) {
-        if (VersionInfo.projectPath == null) VersionInfo.projectPath = projectPath;
+        if (InfoVersion.projectPath == null) InfoVersion.projectPath = projectPath;
     }
 
     public static boolean isMd5check() {
@@ -51,7 +52,7 @@ public class VersionInfo {
     }
 
     public static void setMd5check(boolean md5check) {
-        VersionInfo.md5check = md5check;
+        InfoVersion.md5check = md5check;
     }
 
     public static  String  APPLICATION_NAME;
@@ -114,7 +115,7 @@ public class VersionInfo {
             }
             receiveCut(authzModifier);
             version.incrementAndGet();
-            VersionInfo.changeLog.add(versionMessage.getAuthzModifier());
+            InfoVersion.changeLog.add(versionMessage.getAuthzModifier());
         }
     }
 
@@ -123,7 +124,7 @@ public class VersionInfo {
             if (loading) {
                 TaskBuilder.schedule(task(), "10s");
             } else {
-                cache.forEach(VersionInfo::receiveCut);
+                cache.forEach(InfoVersion::receiveCut);
                 cache.clear();
             }
         };
@@ -137,16 +138,16 @@ public class VersionInfo {
     }
 
     public static void born() {
-        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(-1, VersionInfo.md5)));
+        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(-1, InfoVersion.md5)));
     }
 
     public static void send(AuthzModifier authzModifier) {
-        VersionInfo.changeLog.add(authzModifier);
-        int v = VersionInfo.version.incrementAndGet();
-        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(authzModifier, v, VersionInfo.md5)));
+        InfoVersion.changeLog.add(authzModifier);
+        int v = InfoVersion.version.incrementAndGet();
+        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(authzModifier, v, InfoVersion.md5)));
     }
 
     public static void send() {
-        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(changeLog, VersionInfo.version.get(), VersionInfo.md5).setTag(true)));
+        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(changeLog, InfoVersion.version.get(), InfoVersion.md5).setTag(true)));
     }
 }

@@ -6,7 +6,7 @@ import org.springframework.lang.NonNull;
 import java.util.Collection;
 import java.util.Set;
 
-import static cn.omisheep.authz.core.Constants.WILDCARD;
+import static cn.omisheep.authz.core.config.Constants.WILDCARD;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]

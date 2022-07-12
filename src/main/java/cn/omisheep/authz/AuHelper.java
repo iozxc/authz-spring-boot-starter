@@ -1,6 +1,13 @@
 package cn.omisheep.authz;
 
-
+/*
+                 _    _
+    /\          | |  | |   v1.1.1
+   /  \   _   _ | |_ | |__   ____
+  / /\ \ | | | || __|| '_ \ |_  /
+ / ____ \| |_| || |_ | | | | / /
+/_/    \_\\__,_| \__||_| |_|/___|
+ */
 import cn.omisheep.authz.core.NotLoginException;
 import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.auth.Blacklist;

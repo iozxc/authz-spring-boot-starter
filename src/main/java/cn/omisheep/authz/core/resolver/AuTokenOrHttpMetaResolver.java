@@ -11,7 +11,7 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 
 import javax.servlet.http.HttpServletRequest;
 
-import static cn.omisheep.authz.core.Constants.HTTP_META;
+import static cn.omisheep.authz.core.config.Constants.HTTP_META;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
