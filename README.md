@@ -102,7 +102,7 @@ public Result roleAdmin(){
 }
 ```
 ```java
-@GetMapping("/permission-user-add-update")
+@GetMapping("/permission-user-or-update")
 @Perms({"user:add","user:update"}) // 或
 public Result permissionUser(){
         ...
