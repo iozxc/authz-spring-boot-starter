@@ -2,7 +2,11 @@
 
 ## 动态权限框架 - 简单介绍
 
-> [Authz](https://gitee.com/iozxc/authz) 主页地址 https://gitee.com/iozxc/authz
+> [Authz](https://gitee.com/iozxc/authz) 
+- 主页地址 https://gitee.com/iozxc/authz
+- 主页地址 https://github.com/TinkerUnicorn/authz-spring-boot-starter
+- 更新日志 <a href='CHANGELOG.md'>CHANGELOG.md</a>
+
 ![Authz](http://cdn.omisheep.cn/upload/img/article/320649505852620800.png)
 
 ## 导入&配置
@@ -14,7 +18,7 @@
 <dependency>
     <groupId>cn.omisheep</groupId>
     <artifactId>authz-spring-boot-starter</artifactId>
-    <version>1.1.1</version>
+    <version>1.1.6</version>
 </dependency>
 ```
 
