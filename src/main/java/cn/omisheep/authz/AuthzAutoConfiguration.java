@@ -73,6 +73,7 @@ public class AuthzAutoConfiguration {
 
     @Autowired
     private void init(ConfigurableEnvironment environment, AuthzProperties properties) {
+        LogUtils.setLogLevel(properties.getLog());
         String name = environment.getProperty("spring.application.name");
 
         String applicationName = StringUtils.hasText(name) ? name : "application";
