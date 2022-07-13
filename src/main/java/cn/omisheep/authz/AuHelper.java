@@ -29,7 +29,7 @@ import org.springframework.lang.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static cn.omisheep.authz.core.Authz.*;
+import static cn.omisheep.authz.core.AuthzFactory.*;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]

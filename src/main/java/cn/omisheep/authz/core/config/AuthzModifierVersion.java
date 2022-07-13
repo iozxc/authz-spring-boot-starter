@@ -1,6 +1,6 @@
 package cn.omisheep.authz.core.config;
 
-import cn.omisheep.authz.core.Authz;
+import cn.omisheep.authz.core.AuthzFactory;
 import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.msg.VersionMessage;
 import cn.omisheep.authz.core.util.MD5Utils;
@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-public class InfoVersion {
+public class AuthzModifierVersion {
 
     public static final AtomicInteger            version   = new AtomicInteger(0);
     public static final ArrayList<AuthzModifier> changeLog = new ArrayList<>();
@@ -44,7 +44,7 @@ public class InfoVersion {
     }
 
     public static void setProjectPath(String projectPath) {
-        if (InfoVersion.projectPath == null) InfoVersion.projectPath = projectPath;
+        if (AuthzModifierVersion.projectPath == null) AuthzModifierVersion.projectPath = projectPath;
     }
 
     public static boolean isMd5check() {
@@ -52,7 +52,7 @@ public class InfoVersion {
     }
 
     public static void setMd5check(boolean md5check) {
-        InfoVersion.md5check = md5check;
+        AuthzModifierVersion.md5check = md5check;
     }
 
     public static  String  APPLICATION_NAME;
@@ -115,7 +115,7 @@ public class InfoVersion {
             }
             receiveCut(authzModifier);
             version.incrementAndGet();
-            InfoVersion.changeLog.add(versionMessage.getAuthzModifier());
+            AuthzModifierVersion.changeLog.add(versionMessage.getAuthzModifier());
         }
     }
 
@@ -124,7 +124,7 @@ public class InfoVersion {
             if (loading) {
                 TaskBuilder.schedule(task(), "10s");
             } else {
-                cache.forEach(InfoVersion::receiveCut);
+                cache.forEach(AuthzModifierVersion::receiveCut);
                 cache.clear();
             }
         };
@@ -133,21 +133,21 @@ public class InfoVersion {
     public static void receiveCut(AuthzModifier authzModifier) {
         AuthzModifier.Operate operate = authzModifier.getOperate();
         if (AuthzModifier.Operate.READ != operate && AuthzModifier.Operate.GET != operate) {
-            Authz.op(authzModifier);
+            AuthzFactory.op(authzModifier);
         }
     }
 
     public static void born() {
-        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(-1, InfoVersion.md5)));
+        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(-1, AuthzModifierVersion.md5)));
     }
 
     public static void send(AuthzModifier authzModifier) {
-        InfoVersion.changeLog.add(authzModifier);
-        int v = InfoVersion.version.incrementAndGet();
-        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(authzModifier, v, InfoVersion.md5)));
+        AuthzModifierVersion.changeLog.add(authzModifier);
+        int v = AuthzModifierVersion.version.incrementAndGet();
+        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(authzModifier, v, AuthzModifierVersion.md5)));
     }
 
     public static void send() {
-        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(changeLog, InfoVersion.version.get(), InfoVersion.md5).setTag(true)));
+        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(changeLog, AuthzModifierVersion.version.get(), AuthzModifierVersion.md5).setTag(true)));
     }
 }

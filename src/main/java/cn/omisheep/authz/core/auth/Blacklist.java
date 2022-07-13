@@ -1,6 +1,6 @@
 package cn.omisheep.authz.core.auth;
 
-import cn.omisheep.authz.core.Authz;
+import cn.omisheep.authz.core.AuthzFactory;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.support.util.IPAddress;
 import cn.omisheep.authz.support.util.IPRange;
@@ -68,10 +68,10 @@ public class Blacklist {
         }
 
         public static void add(Object userId, @Nullable String deviceType, @Nullable String deviceId, String time) {
-            long nowTime = TimeUtils.nowTime();
+            long                        nowTime       = TimeUtils.nowTime();
             AuthzModifier.BlacklistInfo blacklistInfo = new AuthzModifier.BlacklistInfo().setType(AuthzModifier.BlacklistInfo.TYPE.USER).setOp(AuthzModifier.BlacklistInfo.OP.ADD).setUserId(userId).setDeviceType(deviceType).setDeviceId(deviceId).setTime(time).setStart(nowTime);
             AuthzModifier               authzModifier = new AuthzModifier().setTarget(AuthzModifier.Target.BLACKLIST).setBlacklistInfo(blacklistInfo);
-            Authz.operate(authzModifier);
+            AuthzFactory.operate(authzModifier);
         }
 
         private static void _change(Object userId, @Nullable String deviceType, @Nullable String deviceId, String time) {
@@ -85,7 +85,7 @@ public class Blacklist {
         public static void change(Object userId, @Nullable String deviceType, @Nullable String deviceId, String time) {
             AuthzModifier.BlacklistInfo blacklistInfo = new AuthzModifier.BlacklistInfo().setType(AuthzModifier.BlacklistInfo.TYPE.USER).setOp(AuthzModifier.BlacklistInfo.OP.CHANGE).setUserId(userId).setDeviceType(deviceType).setDeviceId(deviceId).setTime(time);
             AuthzModifier               authzModifier = new AuthzModifier().setTarget(AuthzModifier.Target.BLACKLIST).setBlacklistInfo(blacklistInfo);
-            Authz.operate(authzModifier);
+            AuthzFactory.operate(authzModifier);
         }
 
         private static void _remove(Object userId, @Nullable String deviceType, @Nullable String deviceId) {
@@ -98,7 +98,7 @@ public class Blacklist {
         public static void remove(Object userId, @Nullable String deviceType, @Nullable String deviceId) {
             AuthzModifier.BlacklistInfo blacklistInfo = new AuthzModifier.BlacklistInfo().setType(AuthzModifier.BlacklistInfo.TYPE.USER).setOp(AuthzModifier.BlacklistInfo.OP.REMOVE).setUserId(userId).setDeviceType(deviceType).setDeviceId(deviceId);
             AuthzModifier               authzModifier = new AuthzModifier().setTarget(AuthzModifier.Target.BLACKLIST).setBlacklistInfo(blacklistInfo);
-            Authz.operate(authzModifier);
+            AuthzFactory.operate(authzModifier);
         }
 
         @Nullable
@@ -162,10 +162,10 @@ public class Blacklist {
         }
 
         public static void add(String ip, String time) {
-            long nowTime = TimeUtils.nowTime();
+            long                        nowTime       = TimeUtils.nowTime();
             AuthzModifier.BlacklistInfo blacklistInfo = new AuthzModifier.BlacklistInfo().setType(AuthzModifier.BlacklistInfo.TYPE.IP).setOp(AuthzModifier.BlacklistInfo.OP.ADD).setIp(ip).setTime(time).setStart(nowTime);
             AuthzModifier               authzModifier = new AuthzModifier().setTarget(AuthzModifier.Target.BLACKLIST).setBlacklistInfo(blacklistInfo);
-            Authz.operate(authzModifier);
+            AuthzFactory.operate(authzModifier);
         }
 
         private static void _change(String ip, String time) {
@@ -179,7 +179,7 @@ public class Blacklist {
         public static void change(String ip, String time) {
             AuthzModifier.BlacklistInfo blacklistInfo = new AuthzModifier.BlacklistInfo().setType(AuthzModifier.BlacklistInfo.TYPE.IP).setOp(AuthzModifier.BlacklistInfo.OP.CHANGE).setIp(ip).setTime(time);
             AuthzModifier               authzModifier = new AuthzModifier().setTarget(AuthzModifier.Target.BLACKLIST).setBlacklistInfo(blacklistInfo);
-            Authz.operate(authzModifier);
+            AuthzFactory.operate(authzModifier);
         }
 
         private static void _remove(String ip) {
@@ -190,7 +190,7 @@ public class Blacklist {
         public static void remove(String ip) {
             AuthzModifier.BlacklistInfo blacklistInfo = new AuthzModifier.BlacklistInfo().setType(AuthzModifier.BlacklistInfo.TYPE.IP).setOp(AuthzModifier.BlacklistInfo.OP.REMOVE).setIp(ip);
             AuthzModifier               authzModifier = new AuthzModifier().setTarget(AuthzModifier.Target.BLACKLIST).setBlacklistInfo(blacklistInfo);
-            Authz.operate(authzModifier);
+            AuthzFactory.operate(authzModifier);
         }
 
         @Nullable
@@ -242,10 +242,10 @@ public class Blacklist {
         }
 
         public static void add(String ipRange, String time) {
-            long nowTime = TimeUtils.nowTime();
+            long                        nowTime       = TimeUtils.nowTime();
             AuthzModifier.BlacklistInfo blacklistInfo = new AuthzModifier.BlacklistInfo().setType(AuthzModifier.BlacklistInfo.TYPE.IP_RANGE).setOp(AuthzModifier.BlacklistInfo.OP.ADD).setIpRange(ipRange).setTime(time).setStart(nowTime);
             AuthzModifier               authzModifier = new AuthzModifier().setTarget(AuthzModifier.Target.BLACKLIST).setBlacklistInfo(blacklistInfo);
-            Authz.operate(authzModifier);
+            AuthzFactory.operate(authzModifier);
         }
 
         private static void _change(String ipRange, String time) {
@@ -259,7 +259,7 @@ public class Blacklist {
         public static void change(String ipRange, String time) {
             AuthzModifier.BlacklistInfo blacklistInfo = new AuthzModifier.BlacklistInfo().setType(AuthzModifier.BlacklistInfo.TYPE.IP_RANGE).setOp(AuthzModifier.BlacklistInfo.OP.CHANGE).setIpRange(ipRange).setTime(time);
             AuthzModifier               authzModifier = new AuthzModifier().setTarget(AuthzModifier.Target.BLACKLIST).setBlacklistInfo(blacklistInfo);
-            Authz.operate(authzModifier);
+            AuthzFactory.operate(authzModifier);
         }
 
         private static void _remove(String ipRange) {
@@ -269,16 +269,17 @@ public class Blacklist {
         public static void remove(String ipRange) {
             AuthzModifier.BlacklistInfo blacklistInfo = new AuthzModifier.BlacklistInfo().setType(AuthzModifier.BlacklistInfo.TYPE.IP_RANGE).setOp(AuthzModifier.BlacklistInfo.OP.REMOVE).setIpRange(ipRange);
             AuthzModifier               authzModifier = new AuthzModifier().setTarget(AuthzModifier.Target.BLACKLIST).setBlacklistInfo(blacklistInfo);
-            Authz.operate(authzModifier);
+            AuthzFactory.operate(authzModifier);
         }
 
         public static boolean check(String ip) {
             AtomicBoolean hit = new AtomicBoolean(false);
             ipRangeBlacklist.removeIf(v -> {
-                if (v.ipRange.isIPAddressInRange(new IPAddress(ip))) {
+                boolean relive = v.timeMeta.relive();
+                if (!relive && v.ipRange.isIPAddressInRange(new IPAddress(ip))) {
                     hit.set(true);
                 }
-                return v.timeMeta.relive();
+                return relive;
             });
             return !hit.get();
         }

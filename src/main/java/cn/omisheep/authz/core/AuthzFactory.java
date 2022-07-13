@@ -7,7 +7,7 @@ import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.cache.L2Cache;
-import cn.omisheep.authz.core.config.InfoVersion;
+import cn.omisheep.authz.core.config.AuthzModifierVersion;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.web.entity.Result;
 import cn.omisheep.web.entity.ResultCode;
@@ -18,7 +18,7 @@ import org.springframework.lang.Nullable;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-public class Authz {
+public class AuthzFactory {
 
     public static final PermissionDict permissionDict;
 
@@ -49,7 +49,7 @@ public class Authz {
         try {
             return op(authzModifier);
         } finally {
-            if (cache instanceof L2Cache) InfoVersion.send(authzModifier);
+            if (cache instanceof L2Cache) AuthzModifierVersion.send(authzModifier);
         }
     }
 

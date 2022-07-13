@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.msg;
 
 import cn.omisheep.authz.AuthzAutoConfiguration;
-import cn.omisheep.authz.core.config.InfoVersion;
+import cn.omisheep.authz.core.config.AuthzModifierVersion;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.util.LogUtils;
@@ -41,7 +41,7 @@ public class MessageReceive {
             VersionMessage message = (VersionMessage) oo;
             if (!VersionMessage.ignore(message)) {
                 LogUtils.debug("VersionMessage time: {} message: {}", TimeUtils.nowTime(), message);
-                InfoVersion.receive(message);
+                AuthzModifierVersion.receive(message);
             }
         }
     }

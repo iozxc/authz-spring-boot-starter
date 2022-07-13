@@ -2,7 +2,7 @@ package cn.omisheep.authz;
 
 
 import cn.omisheep.authz.core.AuthzProperties;
-import cn.omisheep.authz.core.config.InfoVersion;
+import cn.omisheep.authz.core.config.AuthzModifierVersion;
 import cn.omisheep.authz.core.auth.DefaultPermLibrary;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
@@ -76,8 +76,8 @@ public class AuthzAutoConfiguration {
         String name = environment.getProperty("spring.application.name");
 
         String applicationName = StringUtils.hasText(name) ? name : "application";
-        InfoVersion.APPLICATION_NAME = applicationName;
-        InfoVersion.APP_NAME         = properties.getApp();
+        AuthzModifierVersion.APPLICATION_NAME = applicationName;
+        AuthzModifierVersion.APP_NAME         = properties.getApp();
 
         VersionMessage.CHANNEL = "AU:" + properties.getApp() + ":MODIFY_ID:" + applicationName;
         CacheMessage.CHANNEL   = "AU:" + properties.getApp() + ":CACHE_DATA_UPDATE";
@@ -98,10 +98,10 @@ public class AuthzAutoConfiguration {
         }
         String prefix = Utils.format("http://{}:{}{}", host, port, path);
 
-        InfoVersion.host   = host;
-        InfoVersion.port   = port;
-        InfoVersion.path   = path;
-        InfoVersion.prefix = prefix;
+        AuthzModifierVersion.host   = host;
+        AuthzModifierVersion.port   = port;
+        AuthzModifierVersion.path   = path;
+        AuthzModifierVersion.prefix = prefix;
     }
 
     @Bean("authzCache")
