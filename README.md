@@ -29,7 +29,9 @@ authz:
   token:
     key: 123456 # token加密密钥
   cache:
-    enable-redis: true  # 是否开启redis，若为cloud项目建议开启。否则用户信息无法同步
+    enable-redis: true 
+    # 是否开启redis二级缓存，默认为一级缓存，单机版可以不开启。
+    # 若为cloud项目建议开启。否则用户信息无法同步
   log: error   # authz的log等级
   orm: mybatis # orm框架
   dashboard:
@@ -93,16 +95,16 @@ public Result getInfo(){
 
 ### 接口需要权限
 ```java
-@GetMapping("/role-admin")
-@Roles("admin")
+@GetMapping("/role-admin-and-zxc")
+@Roles("admin,zxc")  // 并
 public Result roleAdmin(){
         ...
 }
 ```
 ```java
-@GetMapping("/role-admin")
-@Roles("admin")
-public Result roleAdmin(){
+@GetMapping("/permission-user-add-update")
+@Perms({"user:add","user:update"}) // 或
+public Result permissionUser(){
         ...
 }
 ```
@@ -117,12 +119,12 @@ public Result roleAdmin(){
 @GetMapping("/get")
 public Result get(@Decrypt("name") String name){
         return Result.SUCCESS.data("name",name);
-        }
+}
 
 @PostMapping("/post")
 public Result post(@Decrypt({"name", "content", "obj.name"}) @RequestBody HashMap<String, Object> map){
         return Result.SUCCESS.data("map",map);
-        }
+}
 ```
 
 - 若`@Decrypt`无参，则key无限制,但值必须为整个加密的json，如
@@ -154,12 +156,12 @@ public class CustomDecryptor implements Decryptor {
 @GetMapping("/get")
 public Result get(@Decrypt("name") String name){
         return Result.SUCCESS.data("name",name);
-        }
+}
 
 @GetMapping("/get-custom")
 public Result getCustom(@Decrypt(value = "name", decryptor = CustomDecryptor.class) String name){
         return Result.SUCCESS.data("name",name);
-        }
+}
 ```
 
 ## 参数需要权限
