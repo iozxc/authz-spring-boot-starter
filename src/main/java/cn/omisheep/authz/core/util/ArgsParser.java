@@ -139,7 +139,7 @@ public abstract class ArgsParser {
                 try {
                     argsList.add(aClass.getConstructor(String.class).newInstance(list.get(i)));
                 } catch (InstantiationException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                    e.printStackTrace();
+                    LogUtils.error(e);
                 }
             }
         }

@@ -6,6 +6,7 @@ import cn.omisheep.authz.core.auth.rpd.FieldData;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.interceptor.DataFinderSecurityInterceptor;
 import cn.omisheep.authz.core.util.AUtils;
+import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.ReflectUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.cache.CacheKey;
@@ -72,8 +73,7 @@ public class DataSecurityInterceptorForMybatis implements Interceptor {
                 String             change           = dataFinderSecurityInterceptor.sqlChange(AUtils.getCurrentHttpMeta(), permLibrary, dataPermMetaList, type, boundSql.getSql());
                 ReflectUtils.setFieldValue(boundSql, "sql", change);
             } catch (Exception e) {
-                e.printStackTrace();
-                log.error("sql解析异常或则可能处于非web环境");
+                LogUtils.error("sql解析异常或则可能处于非web环境", e);
                 return invocation.proceed();
             }
         }
@@ -86,7 +86,7 @@ public class DataSecurityInterceptorForMybatis implements Interceptor {
                 obj = dataFinderSecurityInterceptor.dataTrim(AUtils.getCurrentHttpMeta(), permLibrary, fieldDataMap, type, obj);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtils.error(e);
         }
         return obj;
     }

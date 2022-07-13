@@ -385,7 +385,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
             permissionDict.initGlobalDeny(IPRangeMeta.parse(properties.getGlobalIpRange().getDeny()));
             permissionDict.setSupportNative(properties.getGlobalIpRange().isSupportNative());
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtils.error("init permissionDict error", e);
         }
         PermissionDict.init(permissionDict);
 

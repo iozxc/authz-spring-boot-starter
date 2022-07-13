@@ -149,7 +149,7 @@ public class PermissionDict implements AuthzModifiable {
             try {
                 return new ArgsMeta(type, type.getMethod(methodName, args));
             } catch (NoSuchMethodException e) {
-                e.printStackTrace();
+                LogUtils.error("NoSuchMethodException", e);
                 return null;
             }
         }

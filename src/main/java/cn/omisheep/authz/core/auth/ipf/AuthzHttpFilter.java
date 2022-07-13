@@ -76,7 +76,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
                 request,
                 ip, uri, api == null ? servletPath : api, method, new Date());
         if (api == null) {
-            httpMeta.log("「普通访问(uri不存在)」 \tmethod: [{}] , ip : [{}] , servletPath: [{}]   ", method, ip, servletPath);
+            httpMeta.log("「普通访问(uri不存在)」 \tmethod: [{}] , ip : [{}] , path: [{}]   ", method, ip, servletPath);
             httpMeta.error(ExceptionStatus.MISMATCHED_URL);
         }
 

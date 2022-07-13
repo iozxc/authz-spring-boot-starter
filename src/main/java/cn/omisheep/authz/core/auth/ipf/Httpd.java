@@ -5,6 +5,7 @@ import cn.omisheep.authz.core.auth.AuthzModifiable;
 import cn.omisheep.authz.core.auth.AuthzModifier;
 import cn.omisheep.authz.core.callback.RateLimitCallback;
 import cn.omisheep.authz.core.msg.RequestMessage;
+import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.web.entity.Result;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
@@ -191,6 +192,7 @@ public class Httpd implements AuthzModifiable {
                     return Result.FAIL;
             }
         } catch (Exception e) {
+            LogUtils.error("modify error", e);
             return Result.FAIL;
         }
     }

@@ -2,7 +2,6 @@ package cn.omisheep.authz;
 
 
 import cn.omisheep.authz.core.AuthzProperties;
-import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.auth.DefaultPermLibrary;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
@@ -19,9 +18,13 @@ import cn.omisheep.authz.core.codec.DecryptHandler;
 import cn.omisheep.authz.core.codec.RSADecryptor;
 import cn.omisheep.authz.core.config.AuCoreInitialization;
 import cn.omisheep.authz.core.config.AuInit;
+import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.interceptor.*;
 import cn.omisheep.authz.core.interceptor.mybatis.DataSecurityInterceptorForMybatis;
-import cn.omisheep.authz.core.msg.*;
+import cn.omisheep.authz.core.msg.CacheMessage;
+import cn.omisheep.authz.core.msg.MessageReceive;
+import cn.omisheep.authz.core.msg.RequestMessage;
+import cn.omisheep.authz.core.msg.VersionMessage;
 import cn.omisheep.authz.core.resolver.AuthzHandlerRegister;
 import cn.omisheep.authz.core.resolver.DecryptRequestBodyAdvice;
 import cn.omisheep.authz.core.util.LogUtils;
@@ -69,7 +72,6 @@ import java.util.HashMap;
 @Import({AuInit.class})
 @SuppressWarnings("rawtypes")
 public class AuthzAutoConfiguration {
-
 
     @Autowired
     private void init(ConfigurableEnvironment environment, AuthzProperties properties) {
@@ -295,7 +297,6 @@ public class AuthzAutoConfiguration {
             return new DefaultDataSecurityInterceptor();
         }
     }
-
 
     // dashboard
     @Bean

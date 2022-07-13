@@ -30,7 +30,7 @@ public class CompressDirUtil {
             zipOutput.close();
             bool = true;
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtils.error(e);
         }
         return bool;
     }

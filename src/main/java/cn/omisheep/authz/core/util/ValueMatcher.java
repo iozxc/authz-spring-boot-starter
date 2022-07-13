@@ -128,7 +128,7 @@ public abstract class ValueMatcher {
         try {
             return checkType(Class.forName(type));
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            LogUtils.error(e);
             return ValueType.OTHER;
         }
     }
