@@ -226,7 +226,10 @@ public final class AuHelper {
     }
 
     /**
+     * 若当前线程未绑定HttpRequest。则抛出 {@link ThreadWebEnvironmentException}
+     *
      * @return 获得当前请求的HttpMeta信息
+     * @throws ThreadWebEnvironmentException 线程Web环境异常
      */
     public static HttpMeta getHttpMeta() throws ThreadWebEnvironmentException {
         return AUtils.getCurrentHttpMeta();
