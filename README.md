@@ -39,7 +39,7 @@ authz:
   app: omisheep # app名。默认为defaultApp，若不同项目用一个redis建议单独命名各个项目的app名
 ```
 
-## 登录 & 退出 & 封禁、ip限制、网段限制 & RateLimit
+## 登录 & 退出 & 封禁、ip限制、网段限制 & RateLimit & 在线人数信息、人数查询
 
 ### 登录
 ```java
@@ -53,6 +53,12 @@ AuHelper.logoutAll();
 AuHelper.logout(1,"Chrome");
 ```
 
+### 在线人数
+```java
+AuHelper.checkUserIsActive(1); // 检查用户1是否最近活跃 返回：true｜false
+AuHepler.queryActiveUsers(); // 获得所有活跃的用户信息 返回：用户id集合
+```
+
 ### 封禁、ip限制、网段限制
 ```java
 AuHelper.denyUser(1, "2s"); // 对用户1进行封禁2秒
@@ -60,6 +66,27 @@ AuHelper.denyUser(2, "mac", "10s"); // 对用户2的mac设备进行封禁10秒
 AuHelper.removeDenyUser(1); // 移除用户1的封禁
 AuHelper.denyIPRange("10.2.0.0/24", "10d"); // 对10.2.0.0/24网段下的IP进行封禁10天
 AuHelper.denyIP("10.2.0.2", "10d"); // 对ip 10.2.0.2进行封禁10天
+```
+
+### 更多操作
+```java
+AuHelper.login(1);    // 登录用户1，返回：TokenPair
+AuHelper.refreshToken("用户的RefreshTokenValue"); // 利用RefreshToken刷新获得新的AccessToken
+AuHelper.getToken();    // 获取当前用户的Token，返回：Token
+AuHelper.isLogin();    // 此次访问是否已经登录, 返回：true｜false
+AuHelper.logout();    // 注销当前访问用户的当前设备
+AuHelper.logoutAll();    // 注销当前访问用户的所有设备
+AuHelper.logoutAll(2);    // 注销用户2的所有设备
+AuHelper.logout(2, "macOS");    // 注销用户2的macOS系统的设备
+AuHelper.hasRole("admin");    // 查询当前访问用户是否含有指定角色标识， 返回：true｜false
+AuHelper.hasPermission("admin");    // 查询当前访问用户是否含有指定权限标识，返回：true｜false
+AuHelper.getRSAPublicKey(); // 得到当前RSA的公钥， 返回String
+AuHelper.checkUserIsActive(1); // 检查用户1是否活跃， 返回true或false
+AuHelper.checkUserIsActive(1, "20s"); // 检查用户1是否在20s内访问过，返回：true｜false
+AuHelper.queryActiveUsers(); // 查询活跃用户，返回：List
+AuHelper.queryNumberOfActiveUsers(); // 查询活跃用户人数，返回：int
+AuHelper.queryAllDeviceByUserId(1); // 获得用户id为1的所有设备信息，返回：List<Device>
+AuHelper.reloadCache(); // 重写加载二级缓存
 ```
 
 ### RateLimit
@@ -117,7 +144,7 @@ public Result permissionUser(){
 
 ```java
 @GetMapping("/get")
-public Result get(@Decrypt("name") String name){
+public Result get(@Decrypt String name){
         return Result.SUCCESS.data("name",name);
 }
 
