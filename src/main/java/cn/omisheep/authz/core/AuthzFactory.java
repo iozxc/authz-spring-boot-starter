@@ -7,7 +7,7 @@ import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.cache.L2Cache;
-import cn.omisheep.authz.core.config.AuthzModifierVersion;
+import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.web.entity.Result;
 import cn.omisheep.web.entity.ResultCode;
@@ -49,7 +49,7 @@ public class AuthzFactory {
         try {
             return op(authzModifier);
         } finally {
-            if (cache instanceof L2Cache) AuthzModifierVersion.send(authzModifier);
+            if (cache instanceof L2Cache) AuthzAppVersion.send(authzModifier);
         }
     }
 

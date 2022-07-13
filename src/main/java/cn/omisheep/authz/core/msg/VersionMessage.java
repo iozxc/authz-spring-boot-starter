@@ -1,6 +1,6 @@
 package cn.omisheep.authz.core.msg;
 
-import cn.omisheep.authz.core.config.AuthzModifierVersion;
+import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.auth.AuthzModifier;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -55,8 +55,8 @@ public class VersionMessage implements Message {
     }
 
     private static boolean failureMd5Check(VersionMessage message) {
-        if (AuthzModifierVersion.isMd5check()) {
-            return !Objects.equals(message.md5, AuthzModifierVersion.getMd5());
+        if (AuthzAppVersion.isMd5check()) {
+            return !Objects.equals(message.md5, AuthzAppVersion.getMd5());
         } else {
             return false;
         }

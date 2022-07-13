@@ -19,11 +19,11 @@ public interface Constants {
     String WARN_PREFIX  = "[WARN]  ";
     String OPTIONS      = "OPTIONS";
 
-    Supplier<String> ACCESS_INFO_KEY_PREFIX         = () -> AuthzModifierVersion.values.get("ACCESS_INFO_KEY_PREFIX");
-    Supplier<String> REFRESH_INFO_KEY_PREFIX        = () -> AuthzModifierVersion.values.get("REFRESH_INFO_KEY_PREFIX");
-    Supplier<String> DEVICE_REQUEST_INFO_KEY_PREFIX = () -> AuthzModifierVersion.values.get("DEVICE_REQUEST_INFO_KEY_PREFIX");
-    Supplier<String> PERMISSIONS_BY_ROLE_KEY_PREFIX = () -> AuthzModifierVersion.values.get("PERMISSIONS_BY_ROLE_KEY_PREFIX");
-    Supplier<String> USER_ROLES_KEY_PREFIX          = () -> AuthzModifierVersion.values.get("USER_ROLES_KEY_PREFIX");
+    Supplier<String> ACCESS_INFO_KEY_PREFIX         = () -> AuthzAppVersion.values.get("ACCESS_INFO_KEY_PREFIX");
+    Supplier<String> REFRESH_INFO_KEY_PREFIX        = () -> AuthzAppVersion.values.get("REFRESH_INFO_KEY_PREFIX");
+    Supplier<String> DEVICE_REQUEST_INFO_KEY_PREFIX = () -> AuthzAppVersion.values.get("DEVICE_REQUEST_INFO_KEY_PREFIX");
+    Supplier<String> PERMISSIONS_BY_ROLE_KEY_PREFIX = () -> AuthzAppVersion.values.get("PERMISSIONS_BY_ROLE_KEY_PREFIX");
+    Supplier<String> USER_ROLES_KEY_PREFIX          = () -> AuthzAppVersion.values.get("USER_ROLES_KEY_PREFIX");
 
     String[] METHODS = {"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE"};
 }

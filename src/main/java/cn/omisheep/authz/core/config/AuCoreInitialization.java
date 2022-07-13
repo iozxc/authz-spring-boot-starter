@@ -91,7 +91,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
     @SneakyThrows
     public void init() {
-        AuthzModifierVersion.init(properties.getApp());
+        AuthzAppVersion.init(properties.getApp());
         AbstractHandlerMethodMapping<RequestMappingInfo> methodMapping =
                 (AbstractHandlerMethodMapping<RequestMappingInfo>) ctx.getBean("requestMappingHandlerMapping");
         Map<RequestMappingInfo, HandlerMethod> mapRet = methodMapping.getHandlerMethods();
@@ -128,15 +128,15 @@ public class AuCoreInitialization implements ApplicationContextAware {
         AuInit.log.info("Started Authz Message id: {}", Message.uuid);
 
         initVersionInfo();
-        AuInit.log.info("project md5 => {}", AuthzModifierVersion.getMd5());
+        AuInit.log.info("project md5 => {}", AuthzAppVersion.getMd5());
     }
 
     private void initVersionInfo() {
         try {
-            AuthzModifierVersion.setProjectPath(getJarPath());
-            AuthzModifierVersion.setMd5check(properties.isMd5check());
-            AuthzModifierVersion.compute();
-            AuthzModifierVersion.born();
+            AuthzAppVersion.setProjectPath(getJarPath());
+            AuthzAppVersion.setMd5check(properties.isMd5check());
+            AuthzAppVersion.compute();
+            AuthzAppVersion.born();
         } catch (Exception e) {
             // skip
         }

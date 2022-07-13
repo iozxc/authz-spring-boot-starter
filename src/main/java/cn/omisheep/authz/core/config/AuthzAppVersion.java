@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-public class AuthzModifierVersion {
+public class AuthzAppVersion {
 
     public static final AtomicInteger            version   = new AtomicInteger(0);
     public static final ArrayList<AuthzModifier> changeLog = new ArrayList<>();
@@ -44,7 +44,7 @@ public class AuthzModifierVersion {
     }
 
     public static void setProjectPath(String projectPath) {
-        if (AuthzModifierVersion.projectPath == null) AuthzModifierVersion.projectPath = projectPath;
+        if (AuthzAppVersion.projectPath == null) AuthzAppVersion.projectPath = projectPath;
     }
 
     public static boolean isMd5check() {
@@ -52,7 +52,7 @@ public class AuthzModifierVersion {
     }
 
     public static void setMd5check(boolean md5check) {
-        AuthzModifierVersion.md5check = md5check;
+        AuthzAppVersion.md5check = md5check;
     }
 
     public static  String  APPLICATION_NAME;
@@ -115,7 +115,7 @@ public class AuthzModifierVersion {
             }
             receiveCut(authzModifier);
             version.incrementAndGet();
-            AuthzModifierVersion.changeLog.add(versionMessage.getAuthzModifier());
+            AuthzAppVersion.changeLog.add(versionMessage.getAuthzModifier());
         }
     }
 
@@ -124,7 +124,7 @@ public class AuthzModifierVersion {
             if (loading) {
                 TaskBuilder.schedule(task(), "10s");
             } else {
-                cache.forEach(AuthzModifierVersion::receiveCut);
+                cache.forEach(AuthzAppVersion::receiveCut);
                 cache.clear();
             }
         };
@@ -138,16 +138,16 @@ public class AuthzModifierVersion {
     }
 
     public static void born() {
-        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(-1, AuthzModifierVersion.md5)));
+        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(-1, AuthzAppVersion.md5)));
     }
 
     public static void send(AuthzModifier authzModifier) {
-        AuthzModifierVersion.changeLog.add(authzModifier);
-        int v = AuthzModifierVersion.version.incrementAndGet();
-        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(authzModifier, v, AuthzModifierVersion.md5)));
+        AuthzAppVersion.changeLog.add(authzModifier);
+        int v = AuthzAppVersion.version.incrementAndGet();
+        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(authzModifier, v, AuthzAppVersion.md5)));
     }
 
     public static void send() {
-        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(changeLog, AuthzModifierVersion.version.get(), AuthzModifierVersion.md5).setTag(true)));
+        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(changeLog, AuthzAppVersion.version.get(), AuthzAppVersion.md5).setTag(true)));
     }
 }
