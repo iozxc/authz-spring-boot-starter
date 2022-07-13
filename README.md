@@ -33,7 +33,7 @@ authz:
   log: error   # authz的log等级
   orm: mybatis # orm框架
   dashboard:
-    enabled: true # 是否开启dashboard，默认页面为 http[s]://{bashUrl}/authz-dashboard/
+    enabled: true # 是否开启dashboard，默认页面为 http[s]://{baseUrl}/authz-dashboard/
   app: omisheep # app名。默认为defaultApp，若不同项目用一个redis建议单独命名各个项目的app名
 ```
 
