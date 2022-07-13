@@ -86,7 +86,7 @@ AuHelper.checkUserIsActive(1, "20s"); // 检查用户1是否在20s内访问过�
 AuHelper.queryActiveUsers(); // 查询活跃用户，返回：List
 AuHelper.queryNumberOfActiveUsers(); // 查询活跃用户人数，返回：int
 AuHelper.queryAllDeviceByUserId(1); // 获得用户id为1的所有设备信息，返回：List<Device>
-AuHelper.reloadCache(); // 重写加载二级缓存
+AuHelper.reloadCache(); // 重新加载二级缓存
 ```
 
 ### RateLimit
@@ -159,35 +159,6 @@ public Result post(@Decrypt({"name", "content", "obj.name"}) @RequestBody HashMa
 ```json
 {
   "key名无限制": "value为整个json加密后的值，包含 `{` `}`"
-}
-```
-
-### 自定义解码器
-
-- 自定义解码器
-
-```java
-
-@Component
-public class CustomDecryptor implements Decryptor {
-    @Override
-    public String decrypt(String encryptText) {
-        return encryptText + new Date();
-    }
-}
-```
-
-- 使用
-
-```java
-@GetMapping("/get")
-public Result get(@Decrypt("name") String name){
-        return Result.SUCCESS.data("name",name);
-}
-
-@GetMapping("/get-custom")
-public Result getCustom(@Decrypt(value = "name", decryptor = CustomDecryptor.class) String name){
-        return Result.SUCCESS.data("name",name);
 }
 ```
 
@@ -279,6 +250,32 @@ public class HnieUser {
 
 ```
 
+## 权限接口
+
+> 可在这里调用你的数据库
+
+```java
+
+@Component
+public class UserPermLibrary implements PermLibrary<Integer> {
+
+    @Autowired
+    private UserService userService;
+
+    @NonNull
+    @Override
+    public Set<String> getRolesByUserId(@NonNull Integer userId) {
+        return userService.getRolesByUserId(userId);
+    }
+
+    @NonNull
+    @Override
+    public Set<String> getPermissionsByRole(@NonNull String role) {
+        return userService.getPermissionsByRole(role);
+    }
+}
+```
+
 ## 【资源】
 
 > 在使用数据权限时会用到condition，里面会有变量，该变量可以动态控制。
@@ -322,29 +319,32 @@ public class Testw {
 }
 ```
 
-## 权限接口
+### 自定义解码器
 
-> 可在这里调用你的数据库
+- 自定义解码器
 
 ```java
 
 @Component
-public class UserPermLibrary implements PermLibrary<Integer> {
-
-    @Autowired
-    private UserService userService;
-
-    @NonNull
+public class CustomDecryptor implements Decryptor {
     @Override
-    public Set<String> getRolesByUserId(@NonNull Integer userId) {
-        return userService.getRolesByUserId(userId);
+    public String decrypt(String encryptText) {
+        return encryptText + new Date();
     }
+}
+```
 
-    @NonNull
-    @Override
-    public Set<String> getPermissionsByRole(@NonNull String role) {
-        return userService.getPermissionsByRole(role);
-    }
+- 使用
+
+```java
+@GetMapping("/get")
+public Result get(@Decrypt("name") String name){
+        return Result.SUCCESS.data("name",name);
+}
+
+@GetMapping("/get-custom")
+public Result getCustom(@Decrypt(value = "name", decryptor = CustomDecryptor.class) String name){
+        return Result.SUCCESS.data("name",name);
 }
 ```
 
