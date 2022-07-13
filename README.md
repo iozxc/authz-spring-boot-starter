@@ -27,13 +27,14 @@
 ```yaml
 authz:
   token:
-    key: 123456
+    key: 123456 # token加密密钥
   cache:
-    enable-redis: true
-  log: error
-  orm: mybatis
+    enable-redis: true  # 是否开启redis，若为cloud项目建议开启。否则用户信息无法同步
+  log: error   # authz的log等级
+  orm: mybatis # orm框架
   dashboard:
-    enabled: true
+    enabled: true # 是否开启dashboard，默认页面为 http[s]://{bashUrl}/authz-dashboard/
+  app: omisheep # app名。默认为defaultApp，若不同项目用一个redis建议单独命名各个项目的app名
 ```
 
 ## 登录 & 退出 & 封禁、ip限制、网段限制 & RateLimit
