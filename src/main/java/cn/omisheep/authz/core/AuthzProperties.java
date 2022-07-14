@@ -60,7 +60,7 @@ public class AuthzProperties {
     /**
      * authz的日志等级
      */
-    private LogLevel log = LogLevel.INFO;
+    private LogLevel log = LogLevel.WARN;
 
     private boolean md5check = false;
 

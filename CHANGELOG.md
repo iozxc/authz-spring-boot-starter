@@ -1,6 +1,13 @@
 # 更新日记【Authz】
 
-## (<span style="color: green">Version 1.1.6</span>)_Recommend_ - 2022.7.14
+## (<span style="color: green">Version 1.1.7</span>)_Recommend_ - 2022.7.14
+
+### Fixed
+
+- 修复了进入swagger-ui的一些bug
+- 修改了日志打印的等级，默认为off
+
+## Version 1.1.6 - 2022.7.14
 
 ### Fixed
 

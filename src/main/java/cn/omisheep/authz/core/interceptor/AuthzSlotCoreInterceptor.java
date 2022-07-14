@@ -52,7 +52,7 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
             return authzExceptionHandler.handle(request, response, httpMeta, list.getFirst(), httpMeta.getExceptionObjectList());
         }
         httpMeta.clearError();
-        if (!(handler instanceof HandlerMethod)) return false;
+        if (!(handler instanceof HandlerMethod)) return true;
         HandlerMethod handlerMethod = (HandlerMethod) handler;
         try {
             AtomicBoolean               next                = new AtomicBoolean(true);

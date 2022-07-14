@@ -1,9 +1,9 @@
 package cn.omisheep.authz.core.auth.ipf;
 
 import cn.omisheep.authz.core.AuthzException;
-import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
+import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.web.utils.HttpUtils;
@@ -16,11 +16,12 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.*;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import static cn.omisheep.authz.core.util.LogUtils.exportFromRequest;
-import static cn.omisheep.authz.core.util.LogUtils.pushToRequest;
+import static cn.omisheep.authz.core.util.LogUtils.export;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -99,15 +100,15 @@ public class HttpMeta {
     }
 
     public void log(String formatMsg, Object... args) {
-        pushToRequest(LogLevel.INFO, formatMsg, args);
+        LogUtils.push(LogLevel.INFO, formatMsg, args);
     }
 
     public void log(LogLevel logLevel, String formatMsg, Object... args) {
-        pushToRequest(logLevel, formatMsg, args);
+        LogUtils.push(logLevel, formatMsg, args);
     }
 
     public void exportLog() {
-        exportFromRequest(request);
+        export();
     }
 
     public boolean setHasToken(boolean hasToken) {
