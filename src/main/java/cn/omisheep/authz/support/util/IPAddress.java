@@ -1,5 +1,7 @@
 package cn.omisheep.authz.support.util;
 
+import cn.omisheep.authz.core.util.LogUtils;
+
 import java.util.NoSuchElementException;
 
 /**
@@ -17,7 +19,7 @@ public class IPAddress implements Cloneable {
             this.ipAddressStr = ipAddressStr;
             ipAddress         = parseIPAddress(ipAddressStr);
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtils.error(e);
         }
     }
 

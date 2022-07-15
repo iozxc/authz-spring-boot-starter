@@ -22,8 +22,8 @@ public abstract class LogUtils {
 
     @Setter
     private static       LogLevel                   logLevel;
-    private static final Marker                     MARKER  = MarkerFactory.getMarker("cn.omisheep.authz");
-    private static final ThreadLocal<List<LogMeta>> logs    = new ThreadLocal<>();
+    private static final Marker                     MARKER = MarkerFactory.getMarker("cn.omisheep.authz");
+    private static final ThreadLocal<List<LogMeta>> logs   = ThreadLocal.withInitial(ArrayList::new);
 
     public static void info(String msg, Object... args) {
         if (logLevel.ordinal() <= LogLevel.INFO.ordinal()) log.info(MARKER, msg, args);
@@ -55,17 +55,13 @@ public abstract class LogUtils {
 
     public static void push(LogLevel logLevel, String formatMsg, Object... args) {
         if (LogUtils.logLevel.ordinal() > logLevel.ordinal()) return;
-        List<LogMeta> logMetas = logs.get();
-        if (logMetas == null) {
-            logMetas = new ArrayList<>();
-            logs.set(logMetas);
-        }
-        logMetas.add(new LogMeta(logLevel, formatMsg, args));
+        logs.get().add(new LogMeta(logLevel, formatMsg, args));
     }
 
     public static void export() {
-        if (logLevel.equals(LogLevel.OFF) || logs.get() == null) return;
+        if (logLevel.equals(LogLevel.OFF)) return;
         List<LogMeta> logMetas = logs.get();
+        if (logMetas == null) return;
         StringBuilder info  = new StringBuilder();
         StringBuilder warn  = new StringBuilder();
         StringBuilder debug = new StringBuilder();

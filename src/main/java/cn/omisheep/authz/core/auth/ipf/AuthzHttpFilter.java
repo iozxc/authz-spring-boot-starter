@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.auth.ipf;
 
-import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.ExceptionStatus;
+import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.web.utils.BufferedServletRequestWrapper;
 import cn.omisheep.web.utils.HttpUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -73,10 +73,9 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
 
         String api = httpd.getPattern(method, servletPath);
         HttpMeta httpMeta = new HttpMeta(
-                request,
-                ip, uri, api == null ? servletPath : api, method, new Date());
+                request, ip, uri,
+                api == null ? servletPath : api, method, new Date());
         if (api == null) {
-            httpMeta.log("「普通访问(uri不存在)」 \tmethod: [{}] , ip : [{}] , path: [{}]   ", method, ip, servletPath);
             httpMeta.error(ExceptionStatus.MISMATCHED_URL);
         }
 
@@ -106,11 +105,12 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
             if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
                 ip = request.getRemoteAddr();
             }
-        } else if (ip.length() > 15) {
+        }
+        if (ip.length() > 15) {
             String[] ips = ip.split(Constants.COMMA);
-            for (String strIp : ips) {
-                if (!(UNKNOWN.equalsIgnoreCase(strIp))) {
-                    ip = strIp;
+            for (int i = ips.length - 1; i >= 0; i--) {
+                if (!UNKNOWN.equalsIgnoreCase(ips[i].trim())) {
+                    ip = ips[i].trim();
                     break;
                 }
             }

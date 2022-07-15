@@ -1,6 +1,13 @@
 # 更新日记【Authz】
 
-## (<span style="color: green">Version 1.1.7</span>)_Recommend_ - 2022.7.14
+## (<span style="color: green">Version 1.1.8</span>)_Recommend_ - 2022.7.14
+
+### Fixed
+
+- 修复了在proxy代理环境下ip获取出现错误的问题
+- 修复了一些日志打印错误
+
+## Version 1.1.7 - 2022.7.14
 
 ### Fixed
 

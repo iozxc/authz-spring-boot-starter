@@ -23,12 +23,15 @@ public class DefaultAuthzExceptionHandler implements AuthzExceptionHandler {
     @Override
     public boolean handle(HttpServletRequest request, HttpServletResponse response,
                           HttpMeta httpMeta, ExceptionStatus firstExceptionStatus, List<Object> errorObjects) throws Exception {
-        if (firstExceptionStatus.equals(ExceptionStatus.MISMATCHED_URL)) return true;
+        if (firstExceptionStatus.equals(ExceptionStatus.MISMATCHED_URL)) {
+            httpMeta.log("「普通访问(uri不存在)」 \tmethod: [{}] , ip : [{}] , path: [{}]   ", httpMeta.getMethod(), httpMeta.getIp(), httpMeta.getApi());
+            return true;
+        }
 
-        if (config.isAlwaysOk()){
+        if (config.isAlwaysOk()) {
             HttpUtils.returnResponse(200,
                     Result.of(firstExceptionStatus.getCode(), firstExceptionStatus.getMessage()));
-        }else {
+        } else {
             HttpUtils.returnResponse(firstExceptionStatus.getHttpStatus(),
                     Result.of(firstExceptionStatus.getCode(), firstExceptionStatus.getMessage()));
         }

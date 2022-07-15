@@ -205,7 +205,7 @@ public class AuthzDefender {
         if (token == null) {
             httpMeta.log("「{}」\t{}", status, meta);
         } else {
-            httpMeta.log("「{}」\t\t{}\t, userId: [{}]\t, deviceType = {}\t, deviceId = {}",
+            httpMeta.log("「{}」\t\t{}\t, userId: [{}]\t, deviceType = [{}]\t, deviceId = [{}]",
                     status, meta, token.getUserId(), token.getDeviceType(), token.getDeviceId());
         }
     }
@@ -215,7 +215,7 @@ public class AuthzDefender {
         if (token == null) {
             httpMeta.log("「{}」", status);
         } else {
-            httpMeta.log("「{}」\t, userId: [{}]\t, deviceType = {}\t, deviceId = {}",
+            httpMeta.log("「{}」\t, userId: [{}]\t, deviceType = [{}]\t, deviceId = [{}]",
                     status, token.getUserId(), token.getDeviceType(), token.getDeviceId());
         }
     }

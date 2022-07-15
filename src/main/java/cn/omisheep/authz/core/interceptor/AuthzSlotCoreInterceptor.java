@@ -44,16 +44,20 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        if (!(handler instanceof HandlerMethod)) return true;
         HttpMeta httpMeta = (HttpMeta) request.getAttribute(HTTP_META);
         if (httpMeta == null) return true;
-        LinkedList<ExceptionStatus> list = httpMeta.getExceptionStatusList();
+        if (!(handler instanceof HandlerMethod)) {
+            httpMeta.exportLog();
+            return true;
+        }
+        HandlerMethod               handlerMethod = (HandlerMethod) handler;
+        LinkedList<ExceptionStatus> list          = httpMeta.getExceptionStatusList();
         if (!list.isEmpty()) {
             httpMeta.exportLog();
             return authzExceptionHandler.handle(request, response, httpMeta, list.getFirst(), httpMeta.getExceptionObjectList());
         }
         httpMeta.clearError();
-        HandlerMethod handlerMethod = (HandlerMethod) handler;
+
         try {
             AtomicBoolean               next                = new AtomicBoolean(true);
             LinkedList<ExceptionStatus> exceptionStatusList = httpMeta.getExceptionStatusList();

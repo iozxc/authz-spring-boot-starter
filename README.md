@@ -18,7 +18,7 @@
 <dependency>
     <groupId>cn.omisheep</groupId>
     <artifactId>authz-spring-boot-starter</artifactId>
-    <version>1.1.7</version>
+    <version>1.1.8</version>
 </dependency>
 ```
 
