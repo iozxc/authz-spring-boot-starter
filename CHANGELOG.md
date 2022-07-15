@@ -1,6 +1,6 @@
 # 更新日记【Authz】
 
-## (<span style="color: green">Version 1.1.8</span>)_Recommend_ - 2022.7.14
+## Version 1.1.8(<span style="color: green">_Recommend_</span>) - 2022.7.14
 
 ### Fixed
 
