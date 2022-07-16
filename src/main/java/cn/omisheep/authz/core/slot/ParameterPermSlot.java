@@ -83,7 +83,7 @@ public class ParameterPermSlot implements Slot {
             List<PermRolesMeta.Meta> rolesMetaList = paramMetadata.getRolesMetaList();
             rolesMetaCheck:
             if (rolesMetaList != null && !rolesMetaList.isEmpty()) {
-                if (httpMeta.getToken() == null) {
+                if (!httpMeta.isHasToken()) {
                     logs("Require Login", httpMeta, permRolesMeta);
                     error.error(ExceptionStatus.REQUIRE_LOGIN);
                     return;

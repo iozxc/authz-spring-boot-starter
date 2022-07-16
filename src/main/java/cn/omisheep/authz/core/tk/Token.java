@@ -5,7 +5,9 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Getter;
 import lombok.ToString;
 
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -58,11 +60,24 @@ public class Token {
     private final Type type;
 
     public enum Type {
-        ACCESS, REFRESH;
+        ACCESS("acs", "access", "ACCESS"), REFRESH("rfh", "refresh", "REFRESH");
+
+        final List<String> names;
+
+        Type(String... names) {
+            this.names = Arrays.asList(names);
+        }
 
         @JsonCreator
         public static Type fromValue(String text) {
-            for (Type type : Type.values()) if (type.name().equalsIgnoreCase(text)) return type;
+            for (Type type : Type.values()) {
+                if (type.name().equalsIgnoreCase(text)) {
+                    return type;
+                }
+                if (type.names.contains(text)) {
+                    return type;
+                }
+            }
             return null;
         }
     }

@@ -2,14 +2,10 @@ package cn.omisheep.authz.core;
 
 import cn.omisheep.authz.core.codec.Decryptor;
 import cn.omisheep.authz.core.codec.RSADecryptor;
-import io.jsonwebtoken.CompressionCodec;
-import io.jsonwebtoken.CompressionCodecs;
 import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.logging.LogLevel;
-
-import static io.jsonwebtoken.SignatureAlgorithm.HS256;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -81,6 +77,82 @@ public class AuthzProperties {
     private ResponseConfig  response  = new ResponseConfig();
 
     @Data
+    public static class TokenConfig {
+
+        /**
+         * 签名的私钥，若长度不够将自动填充，若为空，将不执行数字签名
+         */
+        private String key;
+
+        private Mode mode = Mode.STANDARD;
+
+        private SignatureAlgorithm algorithm = SignatureAlgorithm.HS256;
+
+        private Compress compress = Compress.NONE;
+
+        private int tokenIdBits = 8;
+
+        /**
+         * cookie name
+         */
+        private String cookieName = "atkn";
+
+        /**
+         * header name
+         */
+        private String headerName = "Authorization";
+
+        /**
+         * prefix 例如："Bearer <token>"
+         */
+        private String headerPrefix = "Bearer";
+
+        /**
+         * 存活时间 access token有效时间，默认 7d ，单位 ms|s|m|h|d
+         */
+        private String accessTime = "7d";
+
+        /**
+         * 刷新时间 refresh token有效时间，默认 30d ，单位 ms|s|m|h|d
+         */
+        private String refreshTime = "30d";
+
+        /**
+         * issuer
+         */
+        private String issuer;
+
+
+        public enum Mode {
+            STANDARD,
+            BRIEF,
+            OLD
+        }
+
+        public enum Compress {
+            GZIP,
+            DEFLATE,
+            NONE
+        }
+
+    }
+
+    @Data
+    public static class UserConfig {
+
+        /**
+         * 是否支持多设备登录(type不同，id不同)
+         */
+        private boolean supportMultiDevice = true;
+
+        /**
+         * 是否支持同类型设备多登录（type相同，id不同）
+         */
+        private boolean supportMultiUserForSameDeviceType = false;
+
+    }
+
+    @Data
     public static class IpRangeConfig {
         /**
          * 若配置，则必须在这些范围内
@@ -128,72 +200,6 @@ public class AuthzProperties {
          * 在读取或者更新之后刷新缓存存活的时间 默认10分钟
          */
         private String expireAfterReadOrUpdateTime = "10m";
-
-    }
-
-    @Data
-    public static class TokenConfig {
-
-        /**
-         * 签名的私钥，若长度不够将自动填充，若为空，将不执行数字签名
-         */
-        private String key;
-
-
-        /**
-         * SignatureAlgorithm 默认为HS256 至少需要256bit
-         */
-        private SignatureAlgorithm algorithm = HS256;
-
-        /**
-         * 压缩算法
-         */
-        private CompressionCodec codec = CompressionCodecs.DEFLATE;
-
-        /**
-         * cookie name
-         */
-        private String cookieName = "atkn";
-
-        /**
-         * header name
-         */
-        private String headerName = "Authorization";
-
-        /**
-         * prefix 例如："Bearer <token>"
-         */
-        private String headerPrefix = "Bearer";
-
-        /**
-         * 存活时间，默认 7d ，单位 ms|s|m|h|d
-         */
-        private String accessTime = "7d";
-
-        /**
-         * 刷新时间，默认 30d ，单位 ms|s|m|h|d
-         */
-        private String refreshTime = "30d";
-
-        /**
-         * issuer
-         */
-        private String issuer = "authz";
-
-    }
-
-    @Data
-    public static class UserConfig {
-
-        /**
-         * 是否支持多设备登录(type不同，id不同)
-         */
-        private boolean supportMultiDevice = true;
-
-        /**
-         * 是否支持同类型设备多登录（type相同，id不同）
-         */
-        private boolean supportMultiUserForSameDeviceType = false;
 
     }
 

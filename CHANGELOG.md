@@ -6,6 +6,8 @@
 - 现在默认不给出key的情况下也能运行
 - 现在token的key需要满足指定签名算法的长度
 - 增加了token压缩算法。
+- 可自定义压缩算法和签名算法
+- 增加了token的简洁模式
 - 在没有实现 `cn.omisheep.authz.core.auth.PermLibrary` 的情况下会报warn
 
 ## <span style="color: green">Version 1.1.8</span>(_Recommend_) - 2022.7.14

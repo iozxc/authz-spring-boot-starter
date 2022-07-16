@@ -2,13 +2,19 @@ package cn.omisheep.authz.core.tk;
 
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.util.AUtils;
+import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.TimeUtils;
+import cn.omisheep.commons.util.UUIDBits;
 import cn.omisheep.web.utils.HttpUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.io.Encoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.crypto.SecretKey;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
@@ -16,7 +22,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.UUID;
+
+import static io.jsonwebtoken.CompressionCodecs.DEFLATE;
+import static io.jsonwebtoken.CompressionCodecs.GZIP;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -26,40 +34,76 @@ import java.util.UUID;
 public class TokenHelper {
 
     @Getter
-    private static final Long               accessTime; // 存活时间,单位 ms
-    private static final Long               refreshTime; // 存活时间,单位 ms
-    private static final String             issuer;
-    private static final int                expire;
-    private static final String             cookieName;
-    private static final byte[]             keyBytes;
-    private static final SignatureAlgorithm alg;
-    private static final CompressionCodec   codec;
+    private static final Long      accessTime; // 存活时间,单位 ms
+    private static final Long      refreshTime; // 存活时间,单位 ms
+    private static final String    issuer;
+    private static final int       expire;
+    private static final String    cookieName;
+    private static final SecretKey secretKey;
 
-    private static final String USER_ID     = "userId";
-    private static final String DEVICE_ID   = "deviceId";
-    private static final String DEVICE_TYPE = "deviceType";
-    private static final String TOKEN_TYPE  = "type";
+    private static final SignatureAlgorithm               alg;
+    private static final CompressionCodec                 codec;
+    private static final AuthzProperties.TokenConfig.Mode mode;
+    private static final int                              tokenIdBits;
+    private static final String                           prefix;
+    private static final String[]                         USER_ID     = {"uid", "uid", "userId",};
+    private static final String[]                         DEVICE_ID   = {"did", "did", "deviceId"};
+    private static final String[]                         DEVICE_TYPE = {"dtp", "dtp", "deviceType"};
+    private static final String[]                         TOKEN_TYPE  = {"tpe", "tpe", "type"};
 
 
     private TokenHelper() {
     }
 
     static {
+        String                      prefix1;
         AuthzProperties             properties = AUtils.getBean(AuthzProperties.class);
         AuthzProperties.TokenConfig token      = properties.getToken();
         String                      key        = token.getKey();
-        if (key == null || key.equals("")) {
-            alg      = SignatureAlgorithm.NONE;
-            keyBytes = new byte[]{};
+        SignatureAlgorithm          algorithm  = token.getAlgorithm();
+        tokenIdBits = token.getTokenIdBits();
+        if (key == null || key.equals("") || algorithm == null || algorithm == SignatureAlgorithm.NONE) {
+            alg       = SignatureAlgorithm.NONE;
+            secretKey = null;
         } else {
-            alg = token.getAlgorithm();
             StringBuilder stringBuilder = new StringBuilder(key);
-            while (stringBuilder.length() * 8 < alg.getMinKeyLength()) {
-                stringBuilder.append(".");
+            if (stringBuilder.length() * 8 < algorithm.getMinKeyLength()) {
+                while (stringBuilder.length() * 8 < algorithm.getMinKeyLength()) {
+                    stringBuilder.append(".");
+                }
             }
-            keyBytes = stringBuilder.toString().getBytes(StandardCharsets.UTF_8);
+            secretKey = Keys.hmacShaKeyFor(stringBuilder.toString().getBytes(StandardCharsets.UTF_8));
+            alg       = algorithm;
         }
-        codec       = token.getCodec();
+        AuthzProperties.TokenConfig.Compress compress = token.getCompress();
+        if (compress == AuthzProperties.TokenConfig.Compress.DEFLATE) {
+            codec = DEFLATE;
+        } else if (compress == AuthzProperties.TokenConfig.Compress.GZIP) {
+            codec = GZIP;
+        } else {
+            codec = null;
+        }
+
+        AuthzProperties.TokenConfig.Mode m = token.getMode();
+        if (m == null) mode = AuthzProperties.TokenConfig.Mode.STANDARD;
+        else mode = m;
+        if (mode == AuthzProperties.TokenConfig.Mode.BRIEF) {
+            JwsHeader jwsHeader = Jwts.jwsHeader();
+            if (alg != SignatureAlgorithm.NONE) jwsHeader.setAlgorithm(alg.getValue());
+            if (codec != null) jwsHeader.setCompressionAlgorithm(codec.getAlgorithmName());
+            try {
+                byte[] bytes = new ObjectMapper().writeValueAsBytes(jwsHeader);
+                prefix1 = Encoders.BASE64URL.encode(bytes) + ".";
+            } catch (JsonProcessingException e) {
+                LogUtils.error(e);
+                prefix1 = "";
+            }
+
+        } else {
+            prefix1 = "";
+        }
+
+        prefix      = prefix1;
         issuer      = token.getIssuer();
         expire      = (int) (TimeUtils.parseTimeValue(token.getRefreshTime()) / 1000);
         cookieName  = properties.getToken().getCookieName();
@@ -78,11 +122,11 @@ public class TokenHelper {
      */
     private static Claims generateClaims(Object userId, String deviceType, String deviceId, Token.Type tokenType) {
         // 设置token里的数据
-        Claims claims = Jwts.claims().setSubject(userId.toString());
-        claims.put(USER_ID, userId);
-        claims.put(DEVICE_ID, deviceId);
-        claims.put(DEVICE_TYPE, deviceType);
-        claims.put(TOKEN_TYPE, tokenType);
+        Claims claims = Jwts.claims();
+        claims.put(USER_ID[mode.ordinal()], userId);
+        claims.put(DEVICE_ID[mode.ordinal()], deviceId);
+        claims.put(DEVICE_TYPE[mode.ordinal()], deviceType);
+        claims.put(TOKEN_TYPE[mode.ordinal()], tokenType.names.get(0));
         return claims;
     }
 
@@ -120,21 +164,26 @@ public class TokenHelper {
     public static Token createToken(Object userId, String deviceType, String deviceId, Token.Type type, Date from, Date to) {
         Claims claims = generateClaims(userId, deviceType, deviceId, type);
 
-        String tokenId = UUID.randomUUID().toString();
+        String tokenId = UUIDBits.getUUIDBits(tokenIdBits);
 
         JwtBuilder jwtBuilder = Jwts.builder()
                 .setClaims(claims) // 设置 claims
                 .setId(tokenId)
-                .setIssuer(issuer) // 发行用户
                 .setIssuedAt(from) // 发行时间
                 .setExpiration(to);
-        if (alg != SignatureAlgorithm.NONE && keyBytes.length != 0) {
-            jwtBuilder.signWith(Keys.hmacShaKeyFor(keyBytes), alg);
+        if (secretKey != null) {
+            jwtBuilder.signWith(secretKey, alg);
+        }
+        if (issuer != null) {
+            jwtBuilder.setIssuer(issuer); // 发行用户
         }
         if (codec != null) {
             jwtBuilder.compressWith(codec);
         }
         String tokenVal = jwtBuilder.compact();
+        if (mode == AuthzProperties.TokenConfig.Mode.BRIEF) {
+            tokenVal = tokenVal.substring(tokenVal.indexOf(".") + 1);
+        }
         return new Token(tokenVal, userId, tokenId, from, to, deviceType, deviceId, type);
     }
 
@@ -209,17 +258,22 @@ public class TokenHelper {
      */
     public static Token parseToken(String tokenVal) {
         if (tokenVal == null || tokenVal.equals("")) return null;
-        Claims claims = Jwts.parserBuilder().setSigningKey(Keys.hmacShaKeyFor(keyBytes))
+        String tv = null;
+        if (mode == AuthzProperties.TokenConfig.Mode.BRIEF) {
+            tv       = tokenVal;
+            tokenVal = prefix + tokenVal;
+        }
+        Claims claims = Jwts.parserBuilder().setSigningKey(secretKey)
                 .build()
                 .parseClaimsJws(tokenVal).getBody();
-        return new Token(tokenVal,
-                claims.get(USER_ID),
+        return new Token(tv != null ? tv : tokenVal,
+                claims.get(USER_ID[mode.ordinal()]),
                 claims.getId(),
                 claims.getIssuedAt(),
                 claims.getExpiration(),
-                claims.get(DEVICE_TYPE, String.class),
-                claims.get(DEVICE_ID, String.class),
-                Token.Type.valueOf(claims.get(TOKEN_TYPE, String.class))
+                claims.get(DEVICE_TYPE[mode.ordinal()], String.class),
+                claims.get(DEVICE_ID[mode.ordinal()], String.class),
+                Token.Type.fromValue((String) claims.get(TOKEN_TYPE[mode.ordinal()]))
         );
     }
 }
