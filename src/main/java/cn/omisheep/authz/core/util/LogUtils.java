@@ -34,11 +34,11 @@ public abstract class LogUtils {
     }
 
     public static void error(Throwable throwable) {
-        if (logLevel.ordinal() <= LogLevel.ERROR.ordinal() && log.isErrorEnabled(MARKER)) log.error(throwable.getMessage(), throwable);
+        if (logLevel.ordinal() <= LogLevel.ERROR.ordinal() && log.isErrorEnabled(MARKER)) log.error(MARKER, throwable.getMessage(), throwable);
     }
 
     public static void error(String msg, Throwable throwable) {
-        if (logLevel.ordinal() <= LogLevel.ERROR.ordinal() && log.isErrorEnabled(MARKER)) log.error(msg, throwable);
+        if (logLevel.ordinal() <= LogLevel.ERROR.ordinal() && log.isErrorEnabled(MARKER)) log.error(MARKER, msg, throwable);
     }
 
     public static void warn(String msg, Object... args) {
