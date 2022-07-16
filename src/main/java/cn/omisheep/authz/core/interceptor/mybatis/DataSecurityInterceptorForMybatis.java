@@ -73,7 +73,7 @@ public class DataSecurityInterceptorForMybatis implements Interceptor {
                 String             change           = dataFinderSecurityInterceptor.sqlChange(AUtils.getCurrentHttpMeta(), permLibrary, dataPermMetaList, type, boundSql.getSql());
                 ReflectUtils.setFieldValue(boundSql, "sql", change);
             } catch (Exception e) {
-                LogUtils.error("sql解析异常或则可能处于非web环境", e);
+                LogUtils.error(e);
                 return invocation.proceed();
             }
         }
