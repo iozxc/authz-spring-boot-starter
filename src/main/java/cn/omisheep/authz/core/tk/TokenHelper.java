@@ -3,15 +3,15 @@ package cn.omisheep.authz.core.tk;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.commons.util.TimeUtils;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.impl.TextCodec;
+import cn.omisheep.web.utils.HttpUtils;
+import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -26,31 +26,45 @@ import java.util.UUID;
 public class TokenHelper {
 
     @Getter
-    private static final Long               liveTime; // 存活时间,单位 ms
+    private static final Long               accessTime; // 存活时间,单位 ms
     private static final Long               refreshTime; // 存活时间,单位 ms
     private static final String             issuer;
     private static final int                expire;
     private static final String             cookieName;
     private static final byte[]             keyBytes;
     private static final SignatureAlgorithm alg;
+    private static final CompressionCodec   codec;
 
     private static final String USER_ID     = "userId";
     private static final String DEVICE_ID   = "deviceId";
     private static final String DEVICE_TYPE = "deviceType";
     private static final String TOKEN_TYPE  = "type";
 
+
     private TokenHelper() {
     }
 
     static {
-        AuthzProperties properties = AUtils.getBean(AuthzProperties.class);
-        keyBytes    = TextCodec.BASE64.decode(properties.getToken().getKey());
-        issuer      = properties.getToken().getIssuer();
-        expire      = (int) (TimeUtils.parseTimeValue(properties.getToken().getRefreshTime()) / 1000);
+        AuthzProperties             properties = AUtils.getBean(AuthzProperties.class);
+        AuthzProperties.TokenConfig token      = properties.getToken();
+        String                      key        = token.getKey();
+        if (key == null || key.equals("")) {
+            alg      = SignatureAlgorithm.NONE;
+            keyBytes = new byte[]{};
+        } else {
+            alg = token.getAlgorithm();
+            StringBuilder stringBuilder = new StringBuilder(key);
+            while (stringBuilder.length() * 8 < alg.getMinKeyLength()) {
+                stringBuilder.append(".");
+            }
+            keyBytes = stringBuilder.toString().getBytes(StandardCharsets.UTF_8);
+        }
+        codec       = token.getCodec();
+        issuer      = token.getIssuer();
+        expire      = (int) (TimeUtils.parseTimeValue(token.getRefreshTime()) / 1000);
         cookieName  = properties.getToken().getCookieName();
-        alg         = SignatureAlgorithm.HS256;
-        liveTime    = TimeUtils.parseTimeValue(properties.getToken().getLiveTime());
-        refreshTime = TimeUtils.parseTimeValue(properties.getToken().getRefreshTime());
+        accessTime  = TimeUtils.parseTimeValue(token.getAccessTime());
+        refreshTime = TimeUtils.parseTimeValue(token.getRefreshTime());
     }
 
     /**
@@ -83,7 +97,7 @@ public class TokenHelper {
     public static TokenPair createTokenPair(Object userId, String deviceType, String deviceId) {
         Date fromNow = Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant());
         Date toAccessExpiredTime = // accessToken失效时间
-                Date.from(LocalDateTime.now().plus(liveTime, ChronoUnit.MILLIS).atZone(ZoneId.systemDefault()).toInstant());
+                Date.from(LocalDateTime.now().plus(accessTime, ChronoUnit.MILLIS).atZone(ZoneId.systemDefault()).toInstant());
         Date toRefreshExpiredTime = // refreshToken失效时间
                 Date.from(LocalDateTime.now().plus(refreshTime, ChronoUnit.MILLIS).atZone(ZoneId.systemDefault()).toInstant());
 
@@ -108,13 +122,19 @@ public class TokenHelper {
 
         String tokenId = UUID.randomUUID().toString();
 
-        String tokenVal = Jwts.builder().signWith(alg, keyBytes)
+        JwtBuilder jwtBuilder = Jwts.builder()
                 .setClaims(claims) // 设置 claims
                 .setId(tokenId)
                 .setIssuer(issuer) // 发行用户
                 .setIssuedAt(from) // 发行时间
-                .setExpiration(to)
-                .compact();
+                .setExpiration(to);
+        if (alg != SignatureAlgorithm.NONE && keyBytes.length != 0) {
+            jwtBuilder.signWith(Keys.hmacShaKeyFor(keyBytes), alg);
+        }
+        if (codec != null) {
+            jwtBuilder.compressWith(codec);
+        }
+        String tokenVal = jwtBuilder.compact();
         return new Token(tokenVal, userId, tokenId, from, to, deviceType, deviceId, type);
     }
 
@@ -141,7 +161,7 @@ public class TokenHelper {
         Token accessToken = createToken(refreshToken.getUserId(),
                 refreshToken.getDeviceType(), refreshToken.getDeviceId(), Token.Type.ACCESS,
                 TimeUtils.now(),
-                Date.from(LocalDateTime.now().plus(liveTime, ChronoUnit.MILLIS).atZone(ZoneId.systemDefault()).toInstant())
+                Date.from(LocalDateTime.now().plus(accessTime, ChronoUnit.MILLIS).atZone(ZoneId.systemDefault()).toInstant())
         );
         return new TokenPair(accessToken, refreshToken);
     }
@@ -175,6 +195,13 @@ public class TokenHelper {
     }
 
     /**
+     * 清空cookie
+     */
+    public static void clearCookie() {
+        clearCookie(HttpUtils.getCurrentResponse());
+    }
+
+    /**
      * 根据tokenVal解析生成Token
      *
      * @param tokenVal tokenVal
@@ -182,7 +209,9 @@ public class TokenHelper {
      */
     public static Token parseToken(String tokenVal) {
         if (tokenVal == null || tokenVal.equals("")) return null;
-        Claims claims = Jwts.parser().setSigningKey(keyBytes).parseClaimsJws(tokenVal).getBody();
+        Claims claims = Jwts.parserBuilder().setSigningKey(Keys.hmacShaKeyFor(keyBytes))
+                .build()
+                .parseClaimsJws(tokenVal).getBody();
         return new Token(tokenVal,
                 claims.get(USER_ID),
                 claims.getId(),

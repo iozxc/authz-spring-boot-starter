@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.config;
 
 import cn.omisheep.authz.core.AuthzFactory;
-import cn.omisheep.authz.core.auth.AuthzModifier;
+import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.msg.VersionMessage;
 import cn.omisheep.authz.core.util.MD5Utils;
 import cn.omisheep.authz.core.util.RedisUtils;
@@ -53,10 +53,13 @@ public class AuthzAppVersion {
 
     public static void setMd5check(boolean md5check) {
         AuthzAppVersion.md5check = md5check;
+        if (md5check) {
+            compute();
+        }
     }
 
     public static  String  APPLICATION_NAME;
-    public static String APP_NAME;
+    public static  String  APP_NAME;
     private static boolean loading = false;
 
     public static String host;

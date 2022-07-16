@@ -2,6 +2,7 @@ package cn.omisheep.authz.core.config;
 
 import cn.omisheep.authz.annotation.*;
 import cn.omisheep.authz.core.*;
+import cn.omisheep.authz.core.auth.DefaultPermLibrary;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.DeviceConfig;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
@@ -74,6 +75,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
         AUtils.init(applicationContext);
         init();
         CallbackInit.callbackInit(applicationContext);
+        chechPermLibrary();
         printBanner();
     }
 
@@ -86,6 +88,14 @@ public class AuCoreInitialization implements ApplicationContextAware {
             System.out.println("| (_| || |_| || |_ | | | | / / ");
             System.out.println(" \\__,_| \\__,_| \\__||_| |_|/___|");
             System.out.println("  \t\tAuthz  v" + AuthzVersion.getVersion());
+        }
+    }
+
+
+    public void chechPermLibrary() {
+        PermLibrary bean = ctx.getBean(PermLibrary.class);
+        if (bean == null || bean instanceof DefaultPermLibrary) {
+            AuInit.log.warn("not configured PermLibrary，Possible error in permission acquisition. Please implements cn.omisheep.authz.core.auth.PermLibrary");
         }
     }
 
@@ -128,15 +138,18 @@ public class AuCoreInitialization implements ApplicationContextAware {
         AuInit.log.info("Started Authz Message id: {}", Message.uuid);
 
         initVersionInfo();
-        AuInit.log.info("project md5 => {}", AuthzAppVersion.getMd5());
+        if (properties.isMd5check()) {
+            AuInit.log.info("project md5 => {}", AuthzAppVersion.getMd5());
+        }
     }
 
     private void initVersionInfo() {
         try {
             AuthzAppVersion.setProjectPath(getJarPath());
             AuthzAppVersion.setMd5check(properties.isMd5check());
-            AuthzAppVersion.compute();
-            AuthzAppVersion.born();
+            if (properties.getCache().isEnableRedis()) {
+                AuthzAppVersion.born();
+            }
         } catch (Exception e) {
             // skip
         }
@@ -389,22 +402,23 @@ public class AuCoreInitialization implements ApplicationContextAware {
         }
         PermissionDict.init(permissionDict);
 
-        Async.run(() -> {
-            List<String> collect = toBeLoadedRoles.stream().collect(Collectors.toList());
-            List<Set<String>> rolesPerms = RedisUtils.Obj.get(
-                    collect.stream()
-                            .map(role -> Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role)
-                            .collect(Collectors.toList())
-            );
-            Iterator<String>             iterator = collect.iterator();
-            HashMap<String, Set<String>> map      = new HashMap<>();
-            rolesPerms.forEach(perms -> map.put(iterator.next(), perms));
-            map.forEach((role, v) -> {
-                Set<String> permissions = permLibrary.getPermissionsByRole(role);
-                cache.setSneaky(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role, permissions, Cache.INFINITE);
+        if (properties.getCache().isEnableRedis()) {
+            Async.run(() -> {
+                List<String> collect = toBeLoadedRoles.stream().collect(Collectors.toList());
+                List<Set<String>> rolesPerms = RedisUtils.Obj.get(
+                        collect.stream()
+                                .map(role -> Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role)
+                                .collect(Collectors.toList())
+                );
+                Iterator<String>             iterator = collect.iterator();
+                HashMap<String, Set<String>> map      = new HashMap<>();
+                rolesPerms.forEach(perms -> map.put(iterator.next(), perms));
+                map.forEach((role, v) -> {
+                    Set<String> permissions = permLibrary.getPermissionsByRole(role);
+                    cache.setSneaky(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role, permissions, Cache.INFINITE);
+                });
             });
-        });
-
+        }
     }
 
     public static PermRolesMeta.Meta generatePermMeta(Perms p) {

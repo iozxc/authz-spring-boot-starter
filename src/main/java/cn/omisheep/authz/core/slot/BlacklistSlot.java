@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.slot;
 
 import cn.omisheep.authz.core.ExceptionStatus;
-import cn.omisheep.authz.core.auth.Blacklist;
+import cn.omisheep.authz.core.auth.ipf.Blacklist;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import org.springframework.web.method.HandlerMethod;
 

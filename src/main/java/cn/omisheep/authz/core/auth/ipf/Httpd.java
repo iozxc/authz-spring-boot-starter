@@ -1,8 +1,8 @@
 package cn.omisheep.authz.core.auth.ipf;
 
 import cn.omisheep.authz.annotation.RateLimit;
-import cn.omisheep.authz.core.auth.AuthzModifiable;
-import cn.omisheep.authz.core.auth.AuthzModifier;
+import cn.omisheep.authz.core.msg.AuthzModifiable;
+import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.callback.RateLimitCallback;
 import cn.omisheep.authz.core.msg.RequestMessage;
 import cn.omisheep.authz.core.util.LogUtils;

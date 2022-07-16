@@ -1,4 +1,4 @@
-package cn.omisheep.authz.core.auth;
+package cn.omisheep.authz.core.msg;
 
 import cn.omisheep.authz.annotation.RateLimit;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
@@ -78,11 +78,11 @@ public class AuthzModifier {
         private String deviceId;
         private String time;
 
-        enum OP {
+        public enum OP {
             ADD, CHANGE, REMOVE
         }
 
-        enum TYPE {
+        public enum TYPE {
             IP, USER, IP_RANGE
         }
     }

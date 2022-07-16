@@ -1,7 +1,6 @@
 package cn.omisheep.authz.core.msg;
 
 import cn.omisheep.authz.core.config.AuthzAppVersion;
-import cn.omisheep.authz.core.auth.AuthzModifier;
 import lombok.Data;
 import lombok.experimental.Accessors;
 

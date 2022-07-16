@@ -244,7 +244,7 @@ public abstract class ArgsParser {
     }
 
     private static List<Object> collect(List<Object> a, String name, int i) {
-        return a.stream().flatMap(jo -> {
+        return (List<Object>) a.stream().flatMap(jo -> {
             if (jo == null) return null;
             if (jo instanceof JSONObject) {
                 return Stream.of(((JSONObject) jo).getJSONArray(name).get(i));
@@ -256,7 +256,7 @@ public abstract class ArgsParser {
     }
 
     private static List<Object> collect(List<Object> a, String name) {
-        return a.stream().flatMap(jo -> {
+        return (List<Object>) a.stream().flatMap(jo -> {
             if (jo == null) return null;
             if (jo instanceof JSONObject) {
                 return Stream.of(((JSONObject) jo).get(name));

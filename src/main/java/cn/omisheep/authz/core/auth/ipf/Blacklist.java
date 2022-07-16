@@ -1,6 +1,7 @@
-package cn.omisheep.authz.core.auth;
+package cn.omisheep.authz.core.auth.ipf;
 
 import cn.omisheep.authz.core.AuthzFactory;
+import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.support.util.IPAddress;
 import cn.omisheep.authz.support.util.IPRange;

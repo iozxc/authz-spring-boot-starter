@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core.util;
 
 import cn.omisheep.authz.core.AuthzProperties;
+import cn.omisheep.authz.core.msg.Message;
 import cn.omisheep.commons.util.Assert;
 import cn.omisheep.commons.util.TimeUtils;
 import cn.omisheep.commons.util.Utils;
@@ -98,10 +99,6 @@ public abstract class RedisUtils {
     public static boolean hasKey(String key) {
         Boolean bool = redisTemplate.hasKey(key);
         return bool != null && bool;
-    }
-
-    public static void publish(String channel, Object msg) {
-        redisTemplate.convertAndSend(channel, msg);
     }
 
     public static void publish(String channel, Message message) {

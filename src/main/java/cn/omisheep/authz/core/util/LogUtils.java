@@ -26,27 +26,29 @@ public abstract class LogUtils {
     private static final ThreadLocal<List<LogMeta>> logs   = ThreadLocal.withInitial(ArrayList::new);
 
     public static void info(String msg, Object... args) {
-        if (logLevel.ordinal() <= LogLevel.INFO.ordinal()) log.info(MARKER, msg, args);
+        if (logLevel.ordinal() <= LogLevel.INFO.ordinal() && log.isInfoEnabled(MARKER)) log.info(MARKER, msg, args);
     }
 
     public static void error(String msg, Object... args) {
-        if (logLevel.ordinal() <= LogLevel.ERROR.ordinal()) log.error(MARKER, msg, args);
+        if (logLevel.ordinal() <= LogLevel.ERROR.ordinal() && log.isErrorEnabled(MARKER)) log.error(MARKER, msg, args);
     }
 
     public static void error(Throwable throwable) {
-        if (logLevel.ordinal() <= LogLevel.ERROR.ordinal()) log.error(throwable.getMessage(), throwable);
+        if (logLevel.ordinal() <= LogLevel.ERROR.ordinal() && log.isErrorEnabled(MARKER)) log.error(throwable.getMessage(), throwable);
     }
 
     public static void error(String msg, Throwable throwable) {
-        if (logLevel.ordinal() <= LogLevel.ERROR.ordinal()) log.error(msg, throwable);
+        if (logLevel.ordinal() <= LogLevel.ERROR.ordinal() && log.isErrorEnabled(MARKER)) log.error(msg, throwable);
     }
 
     public static void warn(String msg, Object... args) {
-        if (logLevel.ordinal() <= LogLevel.WARN.ordinal()) log.warn(MARKER, msg, args);
+        if (logLevel.ordinal() <= LogLevel.WARN.ordinal() && log.isWarnEnabled(MARKER)) log.warn(MARKER, msg, args);
     }
 
     public static void debug(String msg, Object... args) {
-        if (logLevel.ordinal() <= LogLevel.DEBUG.ordinal()) log.info(MARKER, Constants.DEBUG_PREFIX + msg, args);
+        if (logLevel.ordinal() <= LogLevel.DEBUG.ordinal() && log.isDebugEnabled(MARKER)) {
+            log.debug(MARKER, Constants.DEBUG_PREFIX + msg, args);
+        }
     }
 
     public static void push(String formatMsg, Object... args) {
@@ -83,16 +85,16 @@ public abstract class LogUtils {
             }
         });
         if (info.length() > 0) {
-            info(info.append(Constants.CRLF).toString());
+            info(info.toString());
         }
         if (warn.length() > 0) {
-            warn(warn.append(Constants.CRLF).toString());
+            warn(warn.toString());
         }
         if (debug.length() > 0) {
-            debug(debug.append(Constants.CRLF).toString());
+            debug(debug.toString());
         }
         if (error.length() > 0) {
-            error(error.append(Constants.CRLF).toString());
+            error(error.toString());
         }
         logMetas.clear();
     }

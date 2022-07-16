@@ -12,13 +12,13 @@ import java.util.Set;
 public class DefaultPermLibrary implements PermLibrary<Object> {
     @Override
     public Set<String> getRolesByUserId(Object userId) {
-        LogUtils.debug("[WARN] 没有配置自定义的PermLibrary");
+        LogUtils.warn("[WARN] 没有配置自定义的PermLibrary");
         return new HashSet<>();
     }
 
     @Override
     public Set<String> getPermissionsByRole(String role) {
-        LogUtils.debug("[WARN] 没有配置自定义的PermLibrary");
+        LogUtils.warn("[WARN] 没有配置自定义的PermLibrary");
         return new HashSet<>();
     }
 }

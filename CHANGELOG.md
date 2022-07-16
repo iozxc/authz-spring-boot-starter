@@ -1,4 +1,12 @@
 # 更新日记【Authz】
+## Version 1.1.9 - 2022.7.16
+
+### Added
+
+- 现在默认不给出key的情况下也能运行
+- 现在token的key需要满足指定签名算法的长度
+- 增加了token压缩算法。
+- 在没有实现 `cn.omisheep.authz.core.auth.PermLibrary` 的情况下会报warn
 
 ## <span style="color: green">Version 1.1.8</span>(_Recommend_) - 2022.7.14
 

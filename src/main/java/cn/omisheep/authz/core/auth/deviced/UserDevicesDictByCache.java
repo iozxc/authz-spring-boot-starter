@@ -158,7 +158,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         RefreshInfo refreshInfo = new RefreshInfo().setDevice(device);
         refreshInfo.setIp(httpMeta.getIp()).setLastRequestTime(httpMeta.getNow());
 
-        long rfLiveTime = TimeUtils.parseTimeValueTotal(properties.getToken().getLiveTime(), properties.getToken().getRefreshTime(), "10s");
+        long rfLiveTime = TimeUtils.parseTimeValueTotal(properties.getToken().getAccessTime(), properties.getToken().getRefreshTime(), "10s");
 
         Async.run(() -> {
             cache.get().del(acKey(userId, Constants.WILDCARD));
@@ -168,7 +168,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
 
         return Async.joinAndCheck(
                 Async.combine(
-                        () -> cache.get().set(acKey(userId, tokenPair), accessInfo, properties.getToken().getLiveTime()),
+                        () -> cache.get().set(acKey(userId, tokenPair), accessInfo, properties.getToken().getAccessTime()),
                         () -> cache.get().set(rfKey(userId, tokenPair), refreshInfo, rfLiveTime, TimeUnit.MILLISECONDS)
                 )
         );
@@ -200,7 +200,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
             cache.get().del(acKey(userId, Constants.WILDCARD));
             cache.get().del(rfKey(userId, Constants.WILDCARD));
         });
-        cache.get().set(acKey(userId, tokenPair), accessInfo, properties.getToken().getLiveTime());
+        cache.get().set(acKey(userId, tokenPair), accessInfo, properties.getToken().getAccessTime());
         return true;
     }
 

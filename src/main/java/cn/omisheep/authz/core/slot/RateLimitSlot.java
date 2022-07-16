@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core.slot;
 
 import cn.omisheep.authz.annotation.RateLimit;
+import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
@@ -22,9 +23,13 @@ import static cn.omisheep.authz.annotation.RateLimit.CheckType.USER_ID;
 @Order(2)
 public class RateLimitSlot implements Slot {
 
-    private final Httpd httpd;
+    private final Httpd           httpd;
+    private final AuthzProperties properties;
 
-    public RateLimitSlot(Httpd httpd) {this.httpd = httpd;}
+    public RateLimitSlot(Httpd httpd, AuthzProperties properties) {
+        this.httpd      = httpd;
+        this.properties = properties;
+    }
 
     @Override
     public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
@@ -44,19 +49,24 @@ public class RateLimitSlot implements Slot {
         }
 
         if (limitMeta == null) {
-
             httpMeta.log("「普通访问」 \t api: [{}] ,  method: [{}] , ip : [{}] , userId : [{}] , deviceType: [{}] , deviceId: [{}] , path: [{}]  ", api, method, ip, userId, deviceType, deviceId, path);
             return;
         }
-        RequestMessage requestMessage = new RequestMessage(method, api, ip, userId, now);
-        Async.run(() -> RedisUtils.publish(RequestMessage.CHANNEL, requestMessage));
+
+        if (properties.getCache().isEnableRedis()) {
+            RequestMessage requestMessage = new RequestMessage(method, api, ip, userId, now);
+            Async.run(() -> RedisUtils.publish(RequestMessage.CHANNEL, requestMessage));
+        }
 
         RateLimit.CheckType checkType = limitMeta.getCheckType();
 
         Httpd.RequestPool ipRequestPool     = httpd.getIpRequestPools().get(method).get(api);
         Httpd.RequestPool userIdRequestPool = httpd.getUserIdRequestPools().get(method).get(api);
 
-        if (checkType.equals(USER_ID) && userId == null) return;
+        if (checkType.equals(USER_ID) && userId == null) {
+            httpMeta.log("「普通访问」 \t api: [{}] ,  method: [{}] , ip : [{}] , userId : [{}] , deviceType: [{}] , deviceId: [{}] , path: [{}]  ", api, method, ip, userId, deviceType, deviceId, path);
+            return;
+        }
         RequestMeta requestMeta = checkType.equals(IP) ? ipRequestPool.get(ip) : userIdRequestPool.get(userId.toString());
         if (requestMeta != null && requestMeta.isBan()) {
             if (!requestMeta.enableRelive(now)) {

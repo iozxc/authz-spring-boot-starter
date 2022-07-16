@@ -63,6 +63,7 @@ public class CookieAndRequestSlot implements Slot {
                 if (e instanceof JwtException) {
                     httpMeta.setHasToken(false);
                     try {
+                        TokenHelper.clearCookie();
                         if (e instanceof ExpiredJwtException) {
                             Claims claims = ((ExpiredJwtException) e).getClaims();
                             userDevicesDict.removeDeviceByUserIdAndAccessTokenId(claims.get("userId"), claims.getId());

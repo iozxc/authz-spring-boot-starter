@@ -1,4 +1,4 @@
-package cn.omisheep.authz.core.auth;
+package cn.omisheep.authz.core.msg;
 
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;

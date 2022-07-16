@@ -3,7 +3,7 @@ package cn.omisheep.authz.support.http;
 import cn.omisheep.authz.core.AuthzFactory;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.config.AuthzAppVersion;
-import cn.omisheep.authz.core.auth.AuthzModifier;
+import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.util.Utils;
 import cn.omisheep.authz.support.util.IPAddress;

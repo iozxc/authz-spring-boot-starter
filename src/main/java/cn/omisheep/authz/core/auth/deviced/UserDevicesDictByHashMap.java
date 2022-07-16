@@ -110,7 +110,7 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
         accessInfoHeap.put(accessToken.getTokenId(),
                 new AccessInfo().setRefreshTokenId(refreshToken.getTokenId()).setExpiration(accessToken.getExpiredTime()));
         refreshInfoHeap.put(refreshToken.getTokenId(),
-                new RefreshInfo().setDevice(device).setExpiration(TimeUtils.datePlus(refreshToken.getExpiredTime(), properties.getToken().getLiveTime())));
+                new RefreshInfo().setDevice(device).setExpiration(TimeUtils.datePlus(refreshToken.getExpiredTime(), properties.getToken().getAccessTime())));
         return true;
     }
 

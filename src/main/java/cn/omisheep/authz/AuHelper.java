@@ -11,8 +11,8 @@ package cn.omisheep.authz;
 
 import cn.omisheep.authz.core.NotLoginException;
 import cn.omisheep.authz.core.ThreadWebEnvironmentException;
-import cn.omisheep.authz.core.auth.AuthzModifier;
-import cn.omisheep.authz.core.auth.Blacklist;
+import cn.omisheep.authz.core.msg.AuthzModifier;
+import cn.omisheep.authz.core.auth.ipf.Blacklist;
 import cn.omisheep.authz.core.auth.deviced.Device;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.ipf.Httpd;

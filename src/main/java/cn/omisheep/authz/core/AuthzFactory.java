@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core;
 
-import cn.omisheep.authz.core.auth.AuthzModifier;
-import cn.omisheep.authz.core.auth.Blacklist;
+import cn.omisheep.authz.core.msg.AuthzModifier;
+import cn.omisheep.authz.core.auth.ipf.Blacklist;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;

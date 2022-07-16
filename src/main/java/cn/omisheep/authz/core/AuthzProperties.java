@@ -2,9 +2,14 @@ package cn.omisheep.authz.core;
 
 import cn.omisheep.authz.core.codec.Decryptor;
 import cn.omisheep.authz.core.codec.RSADecryptor;
+import io.jsonwebtoken.CompressionCodec;
+import io.jsonwebtoken.CompressionCodecs;
+import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.logging.LogLevel;
+
+import static io.jsonwebtoken.SignatureAlgorithm.HS256;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -24,27 +29,10 @@ public class AuthzProperties {
      */
     private boolean banner = true;
 
-    private TokenConfig token = new TokenConfig();
-
-    private UserConfig user = new UserConfig();
-
-    private CacheConfig cache = new CacheConfig();
-
-    private RSAConfig rsa = new RSAConfig();
-
-    private IpRangeConfig globalIpRange = new IpRangeConfig();
-
-    private DashboardConfig dashboard = new DashboardConfig();
-
     /**
-     * @since 1.1.3
+     * authz的日志等级
      */
-    private ResponseConfig response = new ResponseConfig();
-
-    /**
-     * @since 1.0.11
-     */
-    private Class<? extends Decryptor> defaultDecryptor = RSADecryptor.class;
+    private LogLevel log = LogLevel.WARN;
 
     /**
      * 开启redis缓存时可以不用设置。用户缓存刷新频率，清除掉过期掉值 默认10秒一次，单位 s|m|h|d
@@ -52,15 +40,15 @@ public class AuthzProperties {
     private String userBufferRefreshWithPeriod = "10s";
 
     /**
-     * 定期GC时间，单位 s|m|h|d
-     * 为0则关闭
+     * @since 1.0.11
      */
-    private String gcPeriod;
+    private Class<? extends Decryptor> defaultDecryptor = RSADecryptor.class;
 
     /**
-     * authz的日志等级
+     * 定期GC时间，单位 s|m|h|d
+     * 为0或为空则关闭
      */
-    private LogLevel log = LogLevel.WARN;
+    private String gcPeriod;
 
     private boolean md5check = false;
 
@@ -75,6 +63,22 @@ public class AuthzProperties {
      * 过滤后缀名
      */
     private String[] ignoreSuffix = new String[]{".css", ".js", ".html", ".png", ".jpg", ".gif", ".svg"};
+
+    private TokenConfig token = new TokenConfig();
+
+    private UserConfig user = new UserConfig();
+
+    private CacheConfig cache = new CacheConfig();
+
+    private RSAConfig rsa = new RSAConfig();
+
+    private IpRangeConfig globalIpRange = new IpRangeConfig();
+
+    private DashboardConfig dashboard = new DashboardConfig();
+    /**
+     * @since 1.1.3
+     */
+    private ResponseConfig  response  = new ResponseConfig();
 
     @Data
     public static class IpRangeConfig {
@@ -131,9 +135,20 @@ public class AuthzProperties {
     public static class TokenConfig {
 
         /**
-         * 签名的私钥
+         * 签名的私钥，若长度不够将自动填充，若为空，将不执行数字签名
          */
         private String key;
+
+
+        /**
+         * SignatureAlgorithm 默认为HS256 至少需要256bit
+         */
+        private SignatureAlgorithm algorithm = HS256;
+
+        /**
+         * 压缩算法
+         */
+        private CompressionCodec codec = CompressionCodecs.DEFLATE;
 
         /**
          * cookie name
@@ -153,7 +168,7 @@ public class AuthzProperties {
         /**
          * 存活时间，默认 7d ，单位 ms|s|m|h|d
          */
-        private String liveTime = "7d";
+        private String accessTime = "7d";
 
         /**
          * 刷新时间，默认 30d ，单位 ms|s|m|h|d
@@ -163,7 +178,7 @@ public class AuthzProperties {
         /**
          * issuer
          */
-        private String issuer = "au";
+        private String issuer = "authz";
 
     }
 
