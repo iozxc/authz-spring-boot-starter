@@ -84,10 +84,19 @@ public class AuthzProperties {
          */
         private String key;
 
+        /**
+         * Token字符串表示模式。默认为标准模式。
+         */
         private Mode mode = Mode.STANDARD;
 
+        /**
+         * Token签名算法
+         */
         private SignatureAlgorithm algorithm = SignatureAlgorithm.HS256;
 
+        /**
+         * Token压缩算法
+         */
         private Compress compress = Compress.NONE;
 
         private int tokenIdBits = 8;
