@@ -52,9 +52,8 @@ public class ApiHandler implements WebHandler {
             Object obj = invoke.invoke(AUtils.getBean(invoke.getDeclaringClass()), request, response, httpMeta);
             response.setContentType("application/json;charset=utf-8");
             response.getWriter().println(JSONUtils.toPrettyJSONString(obj));
-            return;
         } catch (Exception e) {
-            return;
+            // skip
         }
     }
 }
