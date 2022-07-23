@@ -30,17 +30,16 @@ import java.util.List;
 @Slf4j
 public class SupportServlet extends HttpServlet {
 
-    public static final String                SESSION_USER_KEY = "authz-dashboard-user";
-    private final       List<IPRange>         allowList        = new ArrayList<>();
-    private final       List<IPRange>         denyList         = new ArrayList<>();
-    private final       String                resourcePath;
-    private final       String                mappings;
-    private             String                baseMapping      = "";
-    protected           ArrayList<WebHandler> webHandlers      = new ArrayList<>();
+    public static final  String                SESSION_USER_KEY = "authz-dashboard-user";
+    private static final String                resourcePath     = "support/http";
+    private final        List<IPRange>         allowList        = new ArrayList<>();
+    private final        List<IPRange>         denyList         = new ArrayList<>();
+    private final        String                mappings;
+    private              String                baseMapping      = "";
+    protected            ArrayList<WebHandler> webHandlers      = new ArrayList<>();
 
     public SupportServlet(AuthzProperties.DashboardConfig dashboardConfig) {
-        this.resourcePath = "support/http/dist";
-        this.mappings     = dashboardConfig.getMappings();
+        this.mappings = dashboardConfig.getMappings();
 
         try {
             allowList.addAll(IPRangeMeta.parse(dashboardConfig.getAllow()));
