@@ -13,6 +13,7 @@ import cn.omisheep.authz.support.util.IPRangeMeta;
 import cn.omisheep.authz.support.util.SupportUtils;
 import io.jsonwebtoken.lang.Classes;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -34,12 +35,14 @@ public class SupportServlet extends HttpServlet {
     private static final String                resourcePath     = "support/http";
     private final        List<IPRange>         allowList        = new ArrayList<>();
     private final        List<IPRange>         denyList         = new ArrayList<>();
-    private final        String                mappings;
-    private              String                baseMapping      = "";
-    protected            ArrayList<WebHandler> webHandlers      = new ArrayList<>();
+    private final        ArrayList<WebHandler> webHandlers      = new ArrayList<>();
+    private final        boolean               requireLogin;
+    private final        String                baseMapping;
 
     public SupportServlet(AuthzProperties.DashboardConfig dashboardConfig) {
-        this.mappings = dashboardConfig.getMappings();
+        String mappings = dashboardConfig.getMappings();
+
+        this.requireLogin = !StringUtils.isEmpty(dashboardConfig.getUsername()) && !StringUtils.isEmpty(dashboardConfig.getPassword());
 
         try {
             allowList.addAll(IPRangeMeta.parse(dashboardConfig.getAllow()));
@@ -52,10 +55,7 @@ public class SupportServlet extends HttpServlet {
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
-    }
 
-    @Override
-    public void init() throws ServletException {
         String val = mappings.substring(0, mappings.indexOf("/*"));
         if (!mappings.startsWith("/")) {
             baseMapping = val;
@@ -81,7 +81,13 @@ public class SupportServlet extends HttpServlet {
 
         if (!checkIp(request, response)) return; // 检查ip
         if (gotoIndex(contextPath, path, response)) return; // 跳转匹配
-        if (process(request, response, path)) return; // v1 api匹配
+
+        if (!requireLogin || request.getSession().getAttribute(SESSION_USER_KEY) != null) {
+            if (process(request, response, path)) return; // v1 api匹配
+        } else {
+            nopermit(response);
+            return;
+        }
 
         returnResourceFile(path, uri, response);
     }
