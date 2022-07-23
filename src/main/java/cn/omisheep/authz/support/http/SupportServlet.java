@@ -76,9 +76,7 @@ public class SupportServlet extends HttpServlet {
 
         response.setCharacterEncoding("utf-8");
 
-        if (contextPath == null) { // root context
-            contextPath = "";
-        }
+        if (contextPath == null) contextPath = ""; // root context
 
         String uri  = contextPath + servletPath;
         String path = requestURI.substring(contextPath.length() + servletPath.length());
@@ -98,24 +96,12 @@ public class SupportServlet extends HttpServlet {
             return;
         }
 
-        if ("".equals(path)) {
-            if (contextPath.equals("") || contextPath.equals("/")) {
-                response.sendRedirect("/" + baseMapping + "/index.html");
-            } else {
-                response.sendRedirect(baseMapping + "/index.html");
-            }
-            return;
-        }
-
-        if ("/".equals(path)) {
-            response.sendRedirect("index.html");
-            return;
-        }
+        if (gotoIndex(contextPath, path, response)) return;
 
         returnResourceFile(path, uri, response);
     }
 
-    public void process(HttpServletRequest request, HttpServletResponse response, String path) throws IOException {
+    private void process(HttpServletRequest request, HttpServletResponse response, String path) throws IOException {
         webHandlers.stream().filter(v -> v.match(path)).forEach(v -> v.process(request, response, (HttpMeta) request.getAttribute(Constants.HTTP_META), path));
     }
 
@@ -123,7 +109,7 @@ public class SupportServlet extends HttpServlet {
         return resourcePath + fileName;
     }
 
-    protected void nopermit(HttpServletResponse response)
+    private void nopermit(HttpServletResponse response)
             throws IOException {
         response.setContentType("text/html; charset=utf-8");
         String text = SupportUtils.readFromResource("support/http/nopermit.html");
@@ -131,7 +117,7 @@ public class SupportServlet extends HttpServlet {
         else response.getWriter().write(text);
     }
 
-    protected void returnResourceFile(String fileName, String uri, HttpServletResponse response)
+    private void returnResourceFile(String fileName, String uri, HttpServletResponse response)
             throws IOException {
 
         String filePath = getFilePath(fileName);
@@ -190,4 +176,21 @@ public class SupportServlet extends HttpServlet {
         return true;
     }
 
+    private boolean gotoIndex(String contextPath, String path, HttpServletResponse response) throws IOException {
+        if ("".equals(path)) {
+            if (contextPath.equals("") || contextPath.equals("/")) {
+                response.sendRedirect("/" + baseMapping + "/index.html");
+            } else {
+                response.sendRedirect(baseMapping + "/index.html");
+            }
+            return true;
+        }
+
+        if ("/".equals(path)) {
+            response.sendRedirect("index.html");
+            return true;
+        }
+
+        return false;
+    }
 }
