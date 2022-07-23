@@ -35,7 +35,7 @@ import static cn.omisheep.authz.core.AuthzFactory.*;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-public final class AuHelper {
+public class AuHelper {
 
     // **************************************     登录 & 用户设备      ************************************** //
 
@@ -412,6 +412,16 @@ public final class AuHelper {
     }
 
     /**
+     * 封禁 ip time时间
+     *
+     * @param ip 封禁的ip
+     * @param ms 毫秒
+     */
+    public static void denyIP(@NonNull String ip, @NonNull long ms) {
+        denyIP(ip, TimeUtils.parseTime(ms));
+    }
+
+    /**
      * 封禁 ipRange网段 time时间
      *
      * @param ipRange 封禁的ip范围 xx.xx.xx.xx/xx
@@ -422,6 +432,16 @@ public final class AuHelper {
     }
 
     /**
+     * 封禁 ipRange网段 time时间
+     *
+     * @param ipRange 封禁的ip范围 xx.xx.xx.xx/xx
+     * @param ms      毫秒
+     */
+    public static void denyIPRange(@NonNull String ipRange, @NonNull long ms) {
+        denyIPRange(ipRange, TimeUtils.parseTime(ms));
+    }
+
+    /**
      * 封禁 userId time时间
      *
      * @param userId 封禁的userId
@@ -429,6 +449,16 @@ public final class AuHelper {
      */
     public static void denyUser(@NonNull Object userId, @NonNull String time) {
         Blacklist.User.add(userId, null, null, time);
+    }
+
+    /**
+     * 封禁 userId time时间
+     *
+     * @param userId 封禁的userId
+     * @param ms     毫秒
+     */
+    public static void denyUser(@NonNull Object userId, @NonNull long ms) {
+        denyUser(userId, TimeUtils.parseTime(ms));
     }
 
     /**
@@ -447,11 +477,34 @@ public final class AuHelper {
      *
      * @param userId     封禁的userId
      * @param deviceType 封禁的设备类型
+     * @param ms         毫秒
+     */
+    public static void denyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull long ms) {
+        denyUser(userId, deviceType, TimeUtils.parseTime(ms));
+    }
+
+    /**
+     * 封禁 userId time时间
+     *
+     * @param userId     封禁的userId
+     * @param deviceType 封禁的设备类型
      * @param deviceId   封禁的设备id
      * @param time       时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
      */
     public static void denyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId, @NonNull String time) {
         Blacklist.User.add(userId, deviceType, deviceId, time);
+    }
+
+    /**
+     * 封禁 userId time时间
+     *
+     * @param userId     封禁的userId
+     * @param deviceType 封禁的设备类型
+     * @param deviceId   封禁的设备id
+     * @param ms         毫秒
+     */
+    public static void denyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId, @NonNull long ms) {
+        denyUser(userId, deviceType, deviceId, TimeUtils.parseTime(ms));
     }
 
     /**
@@ -509,6 +562,16 @@ public final class AuHelper {
     }
 
     /**
+     * 修改 ip的封禁时间时间
+     *
+     * @param ip 封禁的ip
+     * @param ms 毫秒
+     */
+    public static void changeDenyIP(@NonNull String ip, @NonNull long ms) {
+        changeDenyIP(ip, TimeUtils.parseTime(ms));
+    }
+
+    /**
      * 修改 ipRange网段封禁的时间
      *
      * @param ipRange 封禁的ip范围 xx.xx.xx.xx/xx
@@ -516,6 +579,16 @@ public final class AuHelper {
      */
     public static void changeDenyIPRange(@NonNull String ipRange, @NonNull String time) {
         Blacklist.IPRangeDeny.change(ipRange, time);
+    }
+
+    /**
+     * 修改 ipRange网段封禁的时间
+     *
+     * @param ipRange 封禁的ip范围 xx.xx.xx.xx/xx
+     * @param ms      毫秒
+     */
+    public static void changeDenyIPRange(@NonNull String ipRange, @NonNull long ms) {
+        changeDenyIPRange(ipRange, TimeUtils.parseTime(ms));
     }
 
     /**
@@ -531,12 +604,33 @@ public final class AuHelper {
     /**
      * 修改 userId封禁时间
      *
+     * @param userId 封禁的userId
+     * @param ms     毫秒
+     */
+    public static void changeDenyUser(@NonNull Object userId, @NonNull long ms) {
+        changeDenyUser(userId, TimeUtils.parseTime(ms));
+    }
+
+    /**
+     * 修改 userId封禁时间
+     *
      * @param userId     封禁的userId
      * @param deviceType 封禁的设备类型
      * @param time       时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
      */
     public static void changeDenyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String time) {
         Blacklist.User.change(userId, deviceType, null, time);
+    }
+
+    /**
+     * 修改 userId封禁时间
+     *
+     * @param userId     封禁的userId
+     * @param deviceType 封禁的设备类型
+     * @param ms         毫秒
+     */
+    public static void changeDenyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull long ms) {
+        changeDenyUser(userId, deviceType, TimeUtils.parseTime(ms));
     }
 
 
@@ -550,6 +644,18 @@ public final class AuHelper {
      */
     public static void changeDenyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId, @NonNull String time) {
         Blacklist.User.change(userId, deviceType, deviceId, time);
+    }
+
+    /**
+     * 修改 userId封禁时间
+     *
+     * @param userId     封禁的userId
+     * @param deviceType 封禁的设备类型
+     * @param deviceId   封禁的设备id
+     * @param ms         毫秒
+     */
+    public static void changeDenyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId, @NonNull long ms) {
+        changeDenyUser(userId, deviceType, deviceId, TimeUtils.parseTime(ms));
     }
 
     /**

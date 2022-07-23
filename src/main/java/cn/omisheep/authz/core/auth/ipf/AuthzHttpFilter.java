@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.auth.ipf;
 
 import cn.omisheep.authz.core.ExceptionStatus;
-import cn.omisheep.authz.core.config.Constants;
+import cn.omisheep.authz.core.util.IPUtils;
 import cn.omisheep.web.utils.BufferedServletRequestWrapper;
 import cn.omisheep.web.utils.HttpUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -52,9 +52,10 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
             request = new BufferedServletRequestWrapper(rrequest);
         }
 
-        String ip          = getIp(request);
+        String ip          = IPUtils.getIp(request);
         String uri         = request.getRequestURI();
         String method      = request.getMethod();
+        String contextPath = request.getContextPath();
         long   now         = new Date().getTime();
         String servletPath = request.getServletPath();
 
@@ -67,6 +68,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
             httpMeta.setIgnore(true);
             request.setAttribute(HTTP_META, httpMeta);
             httpMeta.setServletPath(servletPath);
+            httpMeta.setPath(servletPath);
             filterChain.doFilter(request, response);
             return;
         }
@@ -80,51 +82,10 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
         }
 
         httpMeta.setServletPath(servletPath);
+        httpMeta.setPath(servletPath);
         request.setAttribute(HTTP_META, httpMeta);
         filterChain.doFilter(request, response);
     }
-
-    private String getIp(HttpServletRequest request) {
-        String ip = request.getHeader(X_FORWARDED_FOR);
-        if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
-            if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
-                ip = request.getHeader(PROXY_CLIENT_IP);
-            }
-            if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
-                ip = request.getHeader(WL_PROXY_CLIENT_IP);
-            }
-            if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
-                ip = request.getHeader(HTTP_CLIENT_IP);
-            }
-            if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
-                ip = request.getHeader(HTTP_X_FORWARDED_FOR);
-            }
-            if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
-                ip = request.getHeader(X_REAL_IP);
-            }
-            if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {
-                ip = request.getRemoteAddr();
-            }
-        }
-        if (ip.length() > 15) {
-            String[] ips = ip.split(Constants.COMMA);
-            for (int i = ips.length - 1; i >= 0; i--) {
-                if (!UNKNOWN.equalsIgnoreCase(ips[i].trim())) {
-                    ip = ips[i].trim();
-                    break;
-                }
-            }
-        }
-        return ip.equals("0:0:0:0:0:0:0:1") ? "127.0.0.1" : ip;
-    }
-
-    private static final String UNKNOWN              = "unknown";
-    private static final String X_FORWARDED_FOR      = "x-forwarded-for";
-    private static final String PROXY_CLIENT_IP      = "Proxy-Client-IP";
-    private static final String WL_PROXY_CLIENT_IP   = "WL-Proxy-Client-IP";
-    private static final String HTTP_CLIENT_IP       = "HTTP_CLIENT_IP";
-    private static final String HTTP_X_FORWARDED_FOR = "HTTP_X_FORWARDED_FOR";
-    private static final String X_REAL_IP            = "X-Real-IP";
 
 }
 

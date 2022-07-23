@@ -36,7 +36,7 @@ public class IPRangeSlot implements Slot {
                 error.error(ExceptionStatus.PERM_EXCEPTION);
                 return;
             }
-            IPRangeMeta ipRangeMeta = permissionDict.getIPRange().get(httpMeta.getMethod()).get(httpMeta.getApi());
+            IPRangeMeta ipRangeMeta = permissionDict.getIPRange().get(httpMeta.getApi()).get(httpMeta.getMethod());
             if (ipRangeMeta != null && !isPermittedRequest(httpMeta.getIp(), ipRangeMeta.getAllow(), ipRangeMeta.getDeny())) {
                 error.error(ExceptionStatus.PERM_EXCEPTION);
                 return;

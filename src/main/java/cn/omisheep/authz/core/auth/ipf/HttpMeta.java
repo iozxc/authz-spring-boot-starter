@@ -37,6 +37,7 @@ public class HttpMeta {
     private final String                      uri;
     private final String                      api;
     private       String                      servletPath;
+    private       String                      path;
     private final String                      method;
     private final String                      userAgent;
     private final String                      refer;

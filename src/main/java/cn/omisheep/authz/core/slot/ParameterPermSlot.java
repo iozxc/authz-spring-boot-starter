@@ -39,7 +39,7 @@ public class ParameterPermSlot implements Slot {
     @Override
     public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
         if (!httpMeta.isRequireProtect()) return;
-        PermRolesMeta permRolesMeta = permissionDict.getRolePermission().get(httpMeta.getMethod()).get(httpMeta.getApi());
+        PermRolesMeta permRolesMeta = permissionDict.getRolePermission().get(httpMeta.getApi()).get(httpMeta.getMethod());
         if (permRolesMeta.getParamPermissionsMetadata() == null) return;
         Set<String> roles       = null;
         Set<String> permissions = null;

@@ -8,7 +8,7 @@ import cn.omisheep.authz.core.util.RedisUtils;
 import cn.omisheep.commons.util.Async;
 import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.commons.util.TimeUtils;
-import cn.omisheep.commons.util.Utils;
+import cn.omisheep.commons.util.KeyMatchUtils;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static cn.omisheep.commons.util.Utils.castValue;
+import static cn.omisheep.commons.util.ClassUtils.castValue;
 
 /**
  * Double Deck Cache
@@ -125,7 +125,7 @@ public class L2Cache implements Cache {
     public <E> void set(@NonNull String key, @Nullable E element, long ttl) {
         if (cache.asMap().get(key) == null) {
             Async.run(() -> {
-                List<String> collect = keyPatterns.stream().filter(k -> Utils.stringMatch(k, key, false)).collect(Collectors.toList());
+                List<String> collect = keyPatterns.stream().filter(k -> KeyMatchUtils.stringMatch(k, key, false)).collect(Collectors.toList());
                 cache.invalidateAll(collect);
             });
         }
@@ -191,7 +191,7 @@ public class L2Cache implements Cache {
         Async.run(() -> {
             RedisUtils.Obj.del(key);
             RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.delete(key));
-            List<String> collect = keyPatterns.stream().filter(k -> Utils.stringMatch(k, key, false)).collect(Collectors.toList());
+            List<String> collect = keyPatterns.stream().filter(k -> KeyMatchUtils.stringMatch(k, key, false)).collect(Collectors.toList());
             cache.invalidateAll(collect);
         });
     }
@@ -202,7 +202,7 @@ public class L2Cache implements Cache {
         Async.run(() -> {
             RedisUtils.Obj.del(keys);
             RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.delete(keys));
-            List<String> collect = keyPatterns.stream().filter(k -> keys.stream().anyMatch(key -> Utils.stringMatch(k, key, false))).collect(Collectors.toList());
+            List<String> collect = keyPatterns.stream().filter(k -> keys.stream().anyMatch(key -> KeyMatchUtils.stringMatch(k, key, false))).collect(Collectors.toList());
             cache.invalidateAll(collect);
         });
     }
@@ -227,7 +227,7 @@ public class L2Cache implements Cache {
             long   ttl = RedisUtils.ttl(key);
             if (ttl != -2) {
                 if (cache.asMap().get(key) == null) {
-                    List<String> collect = keyPatterns.stream().filter(k -> Utils.stringMatch(k, key, false)).collect(Collectors.toList());
+                    List<String> collect = keyPatterns.stream().filter(k -> KeyMatchUtils.stringMatch(k, key, false)).collect(Collectors.toList());
                     cache.invalidateAll(collect);
                 }
                 cache.put(key, new CacheItem(ttl, o));
@@ -237,7 +237,7 @@ public class L2Cache implements Cache {
 
     private void delSync(Set<String> keys) {
         if (keys == null || keys.isEmpty()) return;
-        List<String> collect = keyPatterns.stream().filter(k -> keys.stream().anyMatch(key -> Utils.stringMatch(k, key, false))).collect(Collectors.toList());
+        List<String> collect = keyPatterns.stream().filter(k -> keys.stream().anyMatch(key -> KeyMatchUtils.stringMatch(k, key, false))).collect(Collectors.toList());
         cache.invalidateAll(collect);
         cache.invalidateAll(keys);
     }

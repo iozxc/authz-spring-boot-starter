@@ -1,8 +1,8 @@
 package cn.omisheep.authz.core.auth.rpd;
 
+import cn.omisheep.authz.core.config.AuInit;
 import cn.omisheep.authz.core.msg.AuthzModifiable;
 import cn.omisheep.authz.core.msg.AuthzModifier;
-import cn.omisheep.authz.core.config.AuInit;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.authz.support.util.IPRange;
@@ -19,9 +19,11 @@ import org.springframework.lang.Nullable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+
+import static cn.omisheep.authz.core.auth.rpd.ParamMetadata.ParamType.PATH_VARIABLE;
+import static cn.omisheep.authz.core.auth.rpd.ParamMetadata.ParamType.REQUEST_PARAM;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -29,8 +31,6 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class PermissionDict implements AuthzModifiable {
-
-    private static final AtomicInteger version = new AtomicInteger(0);
 
     private static PermissionDict SELF;
 
@@ -124,6 +124,7 @@ public class PermissionDict implements AuthzModifiable {
     public static class ArgsMeta {
         private final Class<?>            type;
         private final Method              method;
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
         private final List<Class<?>>      parameterList;
         private final Class<?>            returnType;
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -237,6 +238,7 @@ public class PermissionDict implements AuthzModifiable {
     }
 
     public static Map<String, String> parseTypeForTemplate(String className) {
+        if (className.startsWith("java.")) return new HashMap<>();
         HashMap<String, String> typeTemplate = new HashMap<>();
         try {
             Class<?> clz = Class.forName(className);
@@ -266,46 +268,41 @@ public class PermissionDict implements AuthzModifiable {
         try {
             switch (authzModifier.getOperate()) {
                 case ADD: {
-                    Map<String, PermRolesMeta> target = authzMetadata.get(authzModifier.getMethod());
+                    Map<String, PermRolesMeta> target = authzMetadata.get(authzModifier.getApi());
                     PermRolesMeta              build  = authzModifier.build();
-                    target.put(authzModifier.getApi(), build);
-                    if (build.non()) certificatedMetadata.get(authzModifier.getMethod()).remove(authzModifier.getApi());
-                    else certificatedMetadata.get(authzModifier.getMethod()).add(authzModifier.getApi());
+                    target.put(authzModifier.getMethod(), build);
+                    if (build.non()) certificatedMetadata.get(authzModifier.getApi()).remove(authzModifier.getMethod());
+                    else certificatedMetadata.get(authzModifier.getApi()).add(authzModifier.getMethod());
                     return Result.SUCCESS;
                 }
                 case MODIFY:
                 case UPDATE: {
-                    authzMetadata.get(authzModifier.getMethod())
-                            .get(authzModifier.getApi())
+                    authzMetadata.get(authzModifier.getApi())
+                            .get(authzModifier.getMethod())
                             .merge(authzModifier.build());
-                    if (authzMetadata.get(authzModifier.getMethod()).get(authzModifier.getApi()).non()) {
-                        certificatedMetadata.get(authzModifier.getMethod()).remove(authzModifier.getApi());
+                    if (authzMetadata.get(authzModifier.getApi()).get(authzModifier.getMethod()).non()) {
+                        certificatedMetadata.get(authzModifier.getApi()).remove(authzModifier.getMethod());
                     } else {
-                        certificatedMetadata.get(authzModifier.getMethod()).add(authzModifier.getApi());
+                        certificatedMetadata.get(authzModifier.getApi()).add(authzModifier.getMethod());
                     }
                     return Result.SUCCESS;
                 }
                 case DELETE:
                 case DEL: {
-                    authzMetadata.get(authzModifier.getMethod())
-                            .get(authzModifier.getApi()).removeApi();
-                    certificatedMetadata.get(authzModifier.getMethod()).remove(authzModifier.getApi());
+                    authzMetadata.get(authzModifier.getApi())
+                            .get(authzModifier.getMethod()).removeApi();
+                    certificatedMetadata.get(authzModifier.getApi()).remove(authzModifier.getMethod());
                     return Result.SUCCESS;
                 }
                 case GET:
                 case READ:
-                    if (authzModifier.getApi() == null && authzModifier.getMethod() == null) return authzMetadata;
-                    if (authzModifier.getApi() == null) return authzMetadata.get(authzModifier.getMethod());
+                    if (authzModifier.getApi() == null && authzModifier.getMethod() == null) return m1;
+                    if (authzModifier.getApi() == null)
+                        return m1.values().stream().filter(stringPermRolesMetaMap -> stringPermRolesMetaMap.containsKey(authzModifier.getMethod())).map(stringPermRolesMetaMap -> stringPermRolesMetaMap.get(authzModifier.getMethod())).collect(Collectors.toList());
                     if (authzModifier.getMethod() == null) {
-                        HashMap<String, List<PermRolesMeta>> mp = new HashMap<>();
-                        authzMetadata.forEach((k, v) -> v.entrySet().stream().map(e -> {
-                            if (e.getKey().equals(authzModifier.getApi())) return e.getValue();
-                            return null;
-                        }).filter(java.util.Objects::nonNull).forEach(s -> mp.computeIfAbsent(k, r -> new ArrayList<>()).add(s)));
-                        return mp;
+                        return m1.get(authzModifier.getApi());
                     }
-                    Map<String, PermRolesMeta> target = authzMetadata.get(authzModifier.getMethod());
-                    return target.get(authzModifier.getApi());
+                    return m1.get(authzModifier.getApi()).get(authzModifier.getMethod());
                 default:
                     return Result.FAIL;
             }
@@ -320,7 +317,7 @@ public class PermissionDict implements AuthzModifiable {
     public Object modifyParam(AuthzModifier authzModifier) {
         lock.lock();
         try {
-            PermRolesMeta        meta   = authzMetadata.get(authzModifier.getMethod()).get(authzModifier.getApi());
+            PermRolesMeta        meta   = authzMetadata.get(authzModifier.getApi()).get(authzModifier.getMethod());
             AuthzModifier.Target target = authzModifier.getTarget();
 
             if (target == null &&
@@ -328,10 +325,10 @@ public class PermissionDict implements AuthzModifiable {
                 if (authzModifier.getTarget() == null && authzModifier.getValue() == null)
                     return meta.getParamPermissionsMetadata();
                 HashMap<Object, Object>    map = new HashMap<>();
-                Map<String, ParamMetadata> m1  = meta.getParamPermissionsMetadata().get(ParamMetadata.ParamType.PATH_VARIABLE);
-                Map<String, ParamMetadata> m2  = meta.getParamPermissionsMetadata().get(ParamMetadata.ParamType.REQUEST_PARAM);
-                if (m1 != null && m1.containsKey(authzModifier.getValue())) map.put("PATH_VARIABLE", m1.get(authzModifier.getValue()));
-                if (m2 != null && m2.containsKey(authzModifier.getValue())) map.put("REQUEST_PARAM", m2.get(authzModifier.getValue()));
+                Map<String, ParamMetadata> m1  = meta.getParamPermissionsMetadata().get(PATH_VARIABLE);
+                Map<String, ParamMetadata> m2  = meta.getParamPermissionsMetadata().get(REQUEST_PARAM);
+                if (m1 != null && m1.containsKey(authzModifier.getValue())) map.put(PATH_VARIABLE.getVal(), m1.get(authzModifier.getValue()));
+                if (m2 != null && m2.containsKey(authzModifier.getValue())) map.put(REQUEST_PARAM.getVal(), m2.get(authzModifier.getValue()));
                 return map;
             }
 
@@ -370,9 +367,9 @@ public class PermissionDict implements AuthzModifiable {
                     if (authzModifier.getIndex() != null) metaList.remove(metaList.get(authzModifier.getIndex()));
                     else {
                         if (target == AuthzModifier.Target.PATH) {
-                            meta.getParamPermissionsMetadata().get(ParamMetadata.ParamType.PATH_VARIABLE).remove(authzModifier.getValue());
+                            meta.getParamPermissionsMetadata().get(PATH_VARIABLE).remove(authzModifier.getValue());
                         } else {
-                            meta.getParamPermissionsMetadata().get(ParamMetadata.ParamType.REQUEST_PARAM).remove(authzModifier.getValue());
+                            meta.getParamPermissionsMetadata().get(REQUEST_PARAM).remove(authzModifier.getValue());
                         }
                     }
                     return meta;
@@ -423,33 +420,33 @@ public class PermissionDict implements AuthzModifiable {
         if (meta == null) {
             if (isAdd) {
 
-                Map<ParamMetadata.ParamType, Map<String, Class<?>>> paramTypeMapMap = rawMap.get(authzModifier.getMethod()).get(authzModifier.getApi());
+                Map<ParamMetadata.ParamType, Map<String, Class<?>>> paramTypeMapMap = rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod());
 
                 switch (authzModifier.getTarget().i) {
                     case 2:
                     case 3:
-                        Class<?> aClass1 = paramTypeMapMap.get(ParamMetadata.ParamType.PATH_VARIABLE).get(authzModifier.getValue());
+                        Class<?> aClass1 = paramTypeMapMap.get(PATH_VARIABLE).get(authzModifier.getValue());
                         if (aClass1 != null) {
-                            meta = authzMetadata.computeIfAbsent(authzModifier.getMethod(), r -> new HashMap<>())
-                                    .computeIfAbsent(authzModifier.getApi(), r -> new PermRolesMeta());
+                            meta = authzMetadata.computeIfAbsent(authzModifier.getApi(), r -> new HashMap<>())
+                                    .computeIfAbsent(authzModifier.getMethod(), r -> new PermRolesMeta());
                             ParamMetadata pmd = new ParamMetadata();
-                            meta.put(ParamMetadata.ParamType.PATH_VARIABLE,
-                                    authzModifier.getValue(),
-                                    pmd.setParamType(aClass1));
+                            meta.put(PATH_VARIABLE,
+                                     authzModifier.getValue(),
+                                     pmd.setParamType(aClass1));
                         } else {
                             return null;
                         }
                         break;
                     case 4:
                     case 5:
-                        Class<?> aClass2 = paramTypeMapMap.get(ParamMetadata.ParamType.REQUEST_PARAM).get(authzModifier.getValue());
+                        Class<?> aClass2 = paramTypeMapMap.get(REQUEST_PARAM).get(authzModifier.getValue());
                         if (aClass2 != null) {
-                            meta = authzMetadata.computeIfAbsent(authzModifier.getMethod(), r -> new HashMap<>())
-                                    .computeIfAbsent(authzModifier.getApi(), r -> new PermRolesMeta());
+                            meta = authzMetadata.computeIfAbsent(authzModifier.getApi(), r -> new HashMap<>())
+                                    .computeIfAbsent(authzModifier.getMethod(), r -> new PermRolesMeta());
                             ParamMetadata pmd = new ParamMetadata();
-                            meta.put(ParamMetadata.ParamType.REQUEST_PARAM,
-                                    authzModifier.getValue(),
-                                    pmd.setParamType(aClass2));
+                            meta.put(REQUEST_PARAM,
+                                     authzModifier.getValue(),
+                                     pmd.setParamType(aClass2));
                         } else {
                             return null;
                         }
@@ -463,9 +460,9 @@ public class PermissionDict implements AuthzModifiable {
         }
         switch (authzModifier.getTarget().i) {
             case 2:
-                paramMetadata = meta.getParamPermissionsMetadata().get(ParamMetadata.ParamType.PATH_VARIABLE)
+                paramMetadata = meta.getParamPermissionsMetadata().get(PATH_VARIABLE)
                         .computeIfAbsent(authzModifier.getValue(),
-                                r -> new ParamMetadata().setParamType(rawMap.get(authzModifier.getMethod()).get(authzModifier.getApi()).get(ParamMetadata.ParamType.PATH_VARIABLE).get(authzModifier.getValue())));
+                                         r -> new ParamMetadata().setParamType(rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod()).get(PATH_VARIABLE).get(authzModifier.getValue())));
                 if (paramMetadata != null) {
                     List<PermRolesMeta.Meta> rolesMetaList = paramMetadata.getRolesMetaList();
                     if (rolesMetaList == null && isAdd) {
@@ -475,7 +472,7 @@ public class PermissionDict implements AuthzModifiable {
                     return new Object[]{paramMetadata, paramMetadata.getRolesMetaList()};
                 } else {
                     if (isAdd) {
-                        paramMetadata = meta.getParamPermissionsMetadata().get(ParamMetadata.ParamType.PATH_VARIABLE).computeIfAbsent(authzModifier.getValue(), r -> new ParamMetadata());
+                        paramMetadata = meta.getParamPermissionsMetadata().get(PATH_VARIABLE).computeIfAbsent(authzModifier.getValue(), r -> new ParamMetadata());
                         paramMetadata.setRolesMetaList(new ArrayList<>());
                         return new Object[]{paramMetadata, paramMetadata.getRolesMetaList()};
                     } else {
@@ -483,9 +480,8 @@ public class PermissionDict implements AuthzModifiable {
                     }
                 }
             case 3:
-                paramMetadata = meta.getParamPermissionsMetadata().get(ParamMetadata.ParamType.PATH_VARIABLE).computeIfAbsent(authzModifier.getValue(),
-                        r -> new ParamMetadata().setParamType(rawMap.get(authzModifier.getMethod()).get(authzModifier.getApi()).get(ParamMetadata.ParamType.PATH_VARIABLE).get(authzModifier.getValue())));
-
+                paramMetadata = meta.getParamPermissionsMetadata().get(PATH_VARIABLE).computeIfAbsent(authzModifier.getValue(),
+                                                                                                      r -> new ParamMetadata().setParamType(rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod()).get(PATH_VARIABLE).get(authzModifier.getValue())));
                 if (paramMetadata != null) {
                     List<PermRolesMeta.Meta> permissionsMetaList = paramMetadata.getPermissionsMetaList();
                     if (permissionsMetaList == null && isAdd) {
@@ -495,7 +491,7 @@ public class PermissionDict implements AuthzModifiable {
                     return new Object[]{paramMetadata, paramMetadata.getPermissionsMetaList()};
                 } else {
                     if (isAdd) {
-                        paramMetadata = meta.getParamPermissionsMetadata().get(ParamMetadata.ParamType.PATH_VARIABLE).computeIfAbsent(authzModifier.getValue(), r -> new ParamMetadata());
+                        paramMetadata = meta.getParamPermissionsMetadata().get(PATH_VARIABLE).computeIfAbsent(authzModifier.getValue(), r -> new ParamMetadata());
                         paramMetadata.setPermissionsMetaList(new ArrayList<>());
                         return new Object[]{paramMetadata, paramMetadata.getPermissionsMetaList()};
 
@@ -504,9 +500,8 @@ public class PermissionDict implements AuthzModifiable {
                     }
                 }
             case 4:
-                paramMetadata = meta.getParamPermissionsMetadata().get(ParamMetadata.ParamType.REQUEST_PARAM).computeIfAbsent(authzModifier.getValue(),
-                        r -> new ParamMetadata().setParamType(rawMap.get(authzModifier.getMethod()).get(authzModifier.getApi()).get(ParamMetadata.ParamType.REQUEST_PARAM).get(authzModifier.getValue())));
-
+                paramMetadata = meta.getParamPermissionsMetadata().get(REQUEST_PARAM).computeIfAbsent(authzModifier.getValue(),
+                                                                                                      r -> new ParamMetadata().setParamType(rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod()).get(REQUEST_PARAM).get(authzModifier.getValue())));
                 if (paramMetadata != null) {
                     List<PermRolesMeta.Meta> rolesMetaList = paramMetadata.getRolesMetaList();
                     if (rolesMetaList == null && isAdd) {
@@ -516,7 +511,7 @@ public class PermissionDict implements AuthzModifiable {
                     return new Object[]{paramMetadata, paramMetadata.getRolesMetaList()};
                 } else {
                     if (isAdd) {
-                        paramMetadata = meta.getParamPermissionsMetadata().get(ParamMetadata.ParamType.REQUEST_PARAM).computeIfAbsent(authzModifier.getValue(), r -> new ParamMetadata());
+                        paramMetadata = meta.getParamPermissionsMetadata().get(REQUEST_PARAM).computeIfAbsent(authzModifier.getValue(), r -> new ParamMetadata());
                         paramMetadata.setRolesMetaList(new ArrayList<>());
                         return new Object[]{paramMetadata, paramMetadata.getRolesMetaList()};
                     } else {
@@ -524,9 +519,8 @@ public class PermissionDict implements AuthzModifiable {
                     }
                 }
             case 5:
-                paramMetadata = meta.getParamPermissionsMetadata().get(ParamMetadata.ParamType.REQUEST_PARAM).computeIfAbsent(authzModifier.getValue(),
-                        r -> new ParamMetadata().setParamType(rawMap.get(authzModifier.getMethod()).get(authzModifier.getApi()).get(ParamMetadata.ParamType.REQUEST_PARAM).get(authzModifier.getValue())));
-
+                paramMetadata = meta.getParamPermissionsMetadata().get(REQUEST_PARAM).computeIfAbsent(authzModifier.getValue(),
+                                                                                                      r -> new ParamMetadata().setParamType(rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod()).get(REQUEST_PARAM).get(authzModifier.getValue())));
                 if (paramMetadata != null) {
                     List<PermRolesMeta.Meta> permissionsMetaList = paramMetadata.getPermissionsMetaList();
                     if (permissionsMetaList == null && isAdd) {
@@ -537,7 +531,7 @@ public class PermissionDict implements AuthzModifiable {
 
                 } else {
                     if (isAdd) {
-                        paramMetadata = meta.getParamPermissionsMetadata().get(ParamMetadata.ParamType.REQUEST_PARAM).computeIfAbsent(authzModifier.getValue(), r -> new ParamMetadata());
+                        paramMetadata = meta.getParamPermissionsMetadata().get(REQUEST_PARAM).computeIfAbsent(authzModifier.getValue(), r -> new ParamMetadata());
                         paramMetadata.setPermissionsMetaList(new ArrayList<>());
                         return new Object[]{paramMetadata, paramMetadata.getPermissionsMetaList()};
 
@@ -720,7 +714,7 @@ public class PermissionDict implements AuthzModifiable {
 
     public static void initArgs(Map<String, ArgsMeta> argsMetadata) {
         if (PermissionDict.argsMetadata != null) {
-            AuInit.log.error("authzMetadata 已经初始化");
+            AuInit.log.error("argsMetadata 已经初始化");
             return;
         }
         PermissionDict.argsMetadata = argsMetadata;

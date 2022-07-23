@@ -1,5 +1,7 @@
 package cn.omisheep.authz.annotation;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -7,12 +9,6 @@ import java.lang.annotation.Target;
 
 /**
  * RateLimit 的注解配置，也可以使用json配置来完成对于某个api的配置或者对全局进行配置
- * json 配置如下：
- * <pre>
- *     {
- *         "zxc": "admin"
- *     }
- * </pre>
  * <p>
  * 【注：网关上的配置一样生效】
  *
@@ -86,8 +82,19 @@ public @interface RateLimit {
     String[] associatedPatterns() default {};
 
     enum CheckType {
-        IP,
-        USER_ID;
+        IP("ip"),
+        USER_ID("userId");
+
+        private final String val;
+
+        CheckType(String val) {
+            this.val = val;
+        }
+
+        @JsonValue
+        public String getVal() {
+            return val;
+        }
     }
 
 }

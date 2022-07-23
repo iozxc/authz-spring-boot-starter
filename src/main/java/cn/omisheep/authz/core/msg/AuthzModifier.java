@@ -79,7 +79,7 @@ public class AuthzModifier {
         private String time;
 
         public enum OP {
-            ADD, CHANGE, REMOVE
+            ADD, CHANGE, REMOVE, READ
         }
 
         public enum TYPE {

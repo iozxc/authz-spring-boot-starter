@@ -6,13 +6,12 @@ import cn.omisheep.authz.core.auth.rpd.DataPermMeta;
 import cn.omisheep.authz.core.auth.rpd.FieldData;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
+import cn.omisheep.authz.core.util.ScanUtils;
 import cn.omisheep.commons.util.ClassUtils;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import cn.omisheep.commons.util.CollectionUtils;
 import org.springframework.context.annotation.ImportSelector;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.core.type.AnnotationMetadata;
-import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.lang.NonNull;
 
 import java.lang.reflect.Field;
@@ -84,10 +83,7 @@ public class AuthzResourcesInit implements ImportSelector {
         Map<String, Object> annotationAttributes = annotationMetadata.getAnnotationAttributes(AuthzResourcesScan.class.getName());
         String[]            entityBasePackages   = new String[0];
         if (annotationAttributes != null) entityBasePackages = (String[]) annotationAttributes.get("entity");
-        ClassPathScanningCandidateComponentProvider scannerEntity = new ClassPathScanningCandidateComponentProvider(false);
-        scannerEntity.addIncludeFilter(new AssignableTypeFilter(Object.class));
-        Set<String> entityClasses = new HashSet<>();
-        Arrays.stream(entityBasePackages).forEach(basePackage -> scannerEntity.findCandidateComponents(basePackage).stream().map(BeanDefinition::getBeanClassName).forEach(entityClasses::add));
+        Set<String> entityClasses = CollectionUtils.newSet(ScanUtils.scan(Object.class, entityBasePackages));
         PermissionDict.addAuthzResourcesNames(entityClasses);
         PermissionDict.initFieldMetadata(ge(entityClasses));
 
@@ -114,7 +110,6 @@ public class AuthzResourcesInit implements ImportSelector {
         argMap.put("token", PermissionDict.ArgsMeta.of(HttpMeta.class, "currentToken"));
         argMap.put("userId", PermissionDict.ArgsMeta.of(HttpMeta.class, "currentUserId"));
         PermissionDict.initArgs(argMap);
-
 
         return new String[0];
     }

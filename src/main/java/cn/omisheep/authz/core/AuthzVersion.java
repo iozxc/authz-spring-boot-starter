@@ -12,5 +12,4 @@ public class AuthzVersion {
         Package pkg = AuthzVersion.class.getPackage();
         return (pkg != null ? pkg.getImplementationVersion() : null);
     }
-
 }

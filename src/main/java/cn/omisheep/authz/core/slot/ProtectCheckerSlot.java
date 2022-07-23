@@ -29,15 +29,15 @@ public class ProtectCheckerSlot implements Slot {
     }
 
     private boolean requireProtect(HttpMeta httpMeta) {
-        Map<String, PermRolesMeta> map = permissionDict.getRolePermission().get(httpMeta.getMethod());
+        Map<String, PermRolesMeta> map = permissionDict.getRolePermission().get(httpMeta.getApi());
         if (map == null) return false;
-        return map.get(httpMeta.getApi()) != null;
+        return map.get(httpMeta.getMethod()) != null;
     }
 
     private boolean requireLogin(HttpMeta httpMeta) {
-        Set<String> list = permissionDict.getCertificatedMetadata().get(httpMeta.getMethod());
-        if (list == null) return httpMeta.isRequireProtect();
-        return list.contains(httpMeta.getApi()) || httpMeta.isRequireProtect();
+        Set<String> list = permissionDict.getCertificatedMetadata().get(httpMeta.getApi());
+        if (list == null || list.isEmpty()) return httpMeta.isRequireProtect();
+        return list.contains(httpMeta.getMethod()) || httpMeta.isRequireProtect();
     }
 
 }

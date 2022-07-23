@@ -14,7 +14,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static cn.omisheep.commons.util.Utils.castValue;
+import static cn.omisheep.commons.util.ClassUtils.castValue;
 
 
 /**

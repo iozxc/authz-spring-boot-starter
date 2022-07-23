@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core.auth.rpd;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -30,8 +31,19 @@ public class ParamMetadata {
     }
 
     public enum ParamType {
-        PATH_VARIABLE,
-        REQUEST_PARAM
+        PATH_VARIABLE("pathVariable"),
+        REQUEST_PARAM("requestParam");
+
+        @JsonValue
+        private final String val;
+
+        ParamType(String val) {
+            this.val = val;
+        }
+
+        public String getVal() {
+            return val;
+        }
     }
 
 }

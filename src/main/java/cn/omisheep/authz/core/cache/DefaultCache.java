@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.cache;
 
 import cn.omisheep.commons.util.TimeUtils;
-import cn.omisheep.commons.util.Utils;
+import cn.omisheep.commons.util.KeyMatchUtils;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Scheduler;
@@ -12,8 +12,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static cn.omisheep.commons.util.Utils.castValue;
-
+import static cn.omisheep.commons.util.ClassUtils.castValue;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -51,7 +50,7 @@ public class DefaultCache implements cn.omisheep.authz.core.cache.Cache {
     public Set<String> keys(@NonNull String pattern) {
         if (pattern.equals(EMPTY)) return new HashSet<>();
         if (pattern.equals(ALL)) return cache.asMap().keySet();
-        return cache.asMap().keySet().stream().filter(key -> Utils.stringMatch(pattern, key, true)).collect(Collectors.toSet());
+        return cache.asMap().keySet().stream().filter(key -> KeyMatchUtils.stringMatch(pattern, key, true)).collect(Collectors.toSet());
     }
 
     @Override

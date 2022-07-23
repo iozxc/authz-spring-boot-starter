@@ -3,8 +3,8 @@ package cn.omisheep.authz.core.util;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.msg.Message;
 import cn.omisheep.commons.util.Assert;
+import cn.omisheep.commons.util.ClassUtils;
 import cn.omisheep.commons.util.TimeUtils;
-import cn.omisheep.commons.util.Utils;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
@@ -22,7 +22,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static cn.omisheep.commons.util.Utils.castValue;
+import static cn.omisheep.commons.util.ClassUtils.castValue;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -122,7 +122,7 @@ public abstract class RedisUtils {
         }
 
         public static <E> E get(String key, Class<E> requiredType) {
-            return Utils.castValue(redisTemplate.opsForValue().get(key), requiredType);
+            return ClassUtils.castValue(redisTemplate.opsForValue().get(key), requiredType);
         }
 
         public static List get(List<String> key) {

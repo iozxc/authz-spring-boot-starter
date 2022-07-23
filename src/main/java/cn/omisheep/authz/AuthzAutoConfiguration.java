@@ -29,7 +29,10 @@ import cn.omisheep.authz.core.resolver.AuthzHandlerRegister;
 import cn.omisheep.authz.core.resolver.DecryptRequestBodyAdvice;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.authz.core.util.Utils;
+import cn.omisheep.authz.support.entity.Docs;
+import cn.omisheep.authz.support.entity.Info;
 import cn.omisheep.authz.support.http.SupportServlet;
+import cn.omisheep.authz.support.http.annotation.ApiSupportScan;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -86,7 +89,7 @@ public class AuthzAutoConfiguration {
         CacheMessage.CHANNEL   = "AU:" + properties.getApp() + ":CACHE_DATA_UPDATE";
         RequestMessage.CHANNEL = "AU:" + properties.getApp() + ":CONTEXT_CLOUD_APP_ID:" + applicationName;
         LogUtils.debug("Version channel: 【 {} 】, Cache channel: 【 {} 】, Request channel: 【 {} 】",
-                VersionMessage.CHANNEL, CacheMessage.CHANNEL, RequestMessage.CHANNEL);
+                       VersionMessage.CHANNEL, CacheMessage.CHANNEL, RequestMessage.CHANNEL);
 
         String host;
         try {
@@ -298,25 +301,42 @@ public class AuthzAutoConfiguration {
         }
     }
 
+
     // dashboard
-    @Bean
     @ConditionalOnProperty(name = "authz.dashboard.enabled", havingValue = "true")
-    public ServletRegistrationBean DashboardServlet(AuthzProperties properties) {
-        AuthzProperties.DashboardConfig         dashboard = properties.getDashboard();
-        ServletRegistrationBean<SupportServlet> bean      = new ServletRegistrationBean<>(new SupportServlet("support/http/resources", dashboard.getMappings()), dashboard.getMappings());
+    @ApiSupportScan("cn.omisheep.authz.support.http.api")
+    public static class AuthzDashboardAutoConfiguration {
 
-        HashMap<String, String> initParameters = new HashMap<>();
+        @Bean
+        @ConditionalOnMissingBean
+        private Info info() {
+            return new Info()
+                    .setDescription("Authz Documentation")
+                    .setTitle("Authz Documentation")
+                    .setVersion("1.0");
+        }
 
-        initParameters.put("username", dashboard.getUsername());
-        initParameters.put("password", dashboard.getPassword());
-        initParameters.put("allow", dashboard.getAllow());
-        initParameters.put("deny", dashboard.getDeny());
-        initParameters.put("remoteAddress", dashboard.getRemoteAddress());
-        initParameters.entrySet().removeIf(e -> e.getValue() == null);
+        @Bean
+        private Docs docs(Info info, Httpd httpd, PermissionDict permissionDict) {
+            return new Docs(info, httpd, permissionDict);
+        }
 
-        // 后台需要有人登录
-        bean.setInitParameters(initParameters);
-        return bean;
+        @Bean
+        public ServletRegistrationBean DashboardServlet(AuthzProperties properties) {
+            AuthzProperties.DashboardConfig dashboard = properties.getDashboard();
+            ServletRegistrationBean<SupportServlet> bean =
+                    new ServletRegistrationBean<>(new SupportServlet(dashboard), dashboard.getMappings());
+
+            HashMap<String, String> initParameters = new HashMap<>();
+
+            initParameters.put("allow", dashboard.getAllow());
+            initParameters.put("deny", dashboard.getDeny());
+            initParameters.entrySet().removeIf(e -> e.getValue() == null);
+
+            // 后台需要有人登录
+            bean.setInitParameters(initParameters);
+            return bean;
+        }
     }
 
 

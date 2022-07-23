@@ -8,6 +8,8 @@ import cn.omisheep.authz.support.util.IPRange;
 import cn.omisheep.commons.util.TimeUtils;
 import cn.omisheep.web.entity.Result;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import orestes.bloomfilter.CountingBloomFilter;
 import orestes.bloomfilter.FilterBuilder;
@@ -50,8 +52,10 @@ public class Blacklist {
     public static class User {
         final Object   userId;
         @Nullable
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         final String   deviceType;
         @Nullable
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         final String   deviceId;
         final TimeMeta timeMeta;
 
@@ -149,8 +153,8 @@ public class Blacklist {
 
     @Data
     public static class IP {
-        final String   ip;
-        final TimeMeta timeMeta;
+        private final String   ip;
+        private final TimeMeta timeMeta;
 
         public IP(String ip, TimeMeta timeMeta) {
             this.ip       = ip;
@@ -228,12 +232,13 @@ public class Blacklist {
 
     @Data
     public static class IPRangeDeny {
-        final String   _value;
-        final IPRange  ipRange;
-        final TimeMeta timeMeta;
+        @JsonIgnore
+        private final String   value;
+        private final IPRange  ipRange;
+        private final TimeMeta timeMeta;
 
         public IPRangeDeny(String ipRange, TimeMeta timeMeta) {
-            this._value   = ipRange;
+            this.value    = ipRange;
             this.ipRange  = new IPRange(ipRange);
             this.timeMeta = timeMeta;
         }
@@ -250,7 +255,7 @@ public class Blacklist {
         }
 
         private static void _change(String ipRange, String time) {
-            Optional<IPRangeDeny> v = ipRangeBlacklist.stream().filter(o -> o._value.equals(ipRange)).findFirst();
+            Optional<IPRangeDeny> v = ipRangeBlacklist.stream().filter(o -> o.value.equals(ipRange)).findFirst();
             if (v.isPresent()) {
                 IPRangeDeny i = v.get();
                 i.timeMeta.changeTime(time);
@@ -264,7 +269,7 @@ public class Blacklist {
         }
 
         private static void _remove(String ipRange) {
-            ipRangeBlacklist.removeIf(o -> o._value.equals(ipRange));
+            ipRangeBlacklist.removeIf(o -> o.value.equals(ipRange));
         }
 
         public static void remove(String ipRange) {
@@ -291,9 +296,9 @@ public class Blacklist {
     }
 
     public static class TimeMeta {
-        final long start;
-        long time;
-        long end;
+        private final long start;
+        private       long end;
+        private       long time;
 
         @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
         public Date getStart() {
@@ -329,6 +334,14 @@ public class Blacklist {
         }
     }
 
+    public static Map<String, Object> readAll() {
+        HashMap<String, Object> map = new HashMap<>();
+        map.put("ipBlacklist", ipBlacklist);
+        map.put("userBlacklist", userBlacklist);
+        map.put("ipRangeBlacklist", ipRangeBlacklist);
+        return Collections.unmodifiableMap(map);
+    }
+
     public static Object modify(AuthzModifier modifier) {
         AuthzModifier.BlacklistInfo blacklistInfo = modifier.getBlacklistInfo();
         String                      time          = blacklistInfo.getTime();
@@ -346,6 +359,8 @@ public class Blacklist {
                     case REMOVE:
                         IP.remove(ip);
                         break;
+                    case READ:
+                        return Result.SUCCESS.data(ipBlacklist);
                 }
                 break;
             case IP_RANGE:
@@ -360,6 +375,8 @@ public class Blacklist {
                     case REMOVE:
                         IPRangeDeny.remove(ipRange);
                         break;
+                    case READ:
+                        return Result.SUCCESS.data(ipRangeBlacklist);
                 }
                 break;
             case USER:
@@ -376,6 +393,8 @@ public class Blacklist {
                     case REMOVE:
                         User._remove(userId, deviceType, deviceId);
                         break;
+                    case READ:
+                        return Result.SUCCESS.data(userBlacklist);
                 }
                 break;
         }

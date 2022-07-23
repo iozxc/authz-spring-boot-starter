@@ -1,5 +1,11 @@
 # 更新日记【Authz】
 
+## Version 1.1.10 - 2022.7.23
+
+### Added
+
+- 在开启dashboard情况下新增api-docs
+
 ## Version 1.1.9 - 2022.7.16
 
 ### Added

@@ -60,8 +60,8 @@ public class RateLimitSlot implements Slot {
 
         RateLimit.CheckType checkType = limitMeta.getCheckType();
 
-        Httpd.RequestPool ipRequestPool     = httpd.getIpRequestPools().get(method).get(api);
-        Httpd.RequestPool userIdRequestPool = httpd.getUserIdRequestPools().get(method).get(api);
+        Httpd.RequestPool ipRequestPool     = httpd.getIpRequestPools().get(api).get(method);
+        Httpd.RequestPool userIdRequestPool = httpd.getUserIdRequestPools().get(api).get(method);
 
         if (checkType.equals(USER_ID) && userId == null) {
             httpMeta.log("「普通访问」 \t api: [{}] ,  method: [{}] , ip : [{}] , userId : [{}] , deviceType: [{}] , deviceId: [{}] , path: [{}]  ", api, method, ip, userId, deviceType, deviceId, path);

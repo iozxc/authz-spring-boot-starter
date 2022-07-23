@@ -64,9 +64,9 @@ public class Httpd implements AuthzModifiable {
     }
 
     public LimitMeta getLimitMetadata(String method, String api) {
-        Map<String, LimitMeta> limitMetaMap = rateLimitMetadata.get(method);
+        Map<String, LimitMeta> limitMetaMap = rateLimitMetadata.get(api);
         if (limitMetaMap == null) return null;
-        return limitMetaMap.get(api);
+        return limitMetaMap.get(method);
     }
 
     public void setPathPattern(String pattern) {
@@ -89,13 +89,11 @@ public class Httpd implements AuthzModifiable {
     }
 
     public String getPattern(String method, String path) {
-        if (ipRequestPools.get(method) == null) {
-            return null;
-        }
         for (Map.Entry<String, PathPattern> entry : pathMatcherMap.entrySet()) {
             if (entry.getValue().matches(PathContainer.parsePath(path))) {
-                RequestPool requestPool = ipRequestPools.get(method).get(entry.getKey());
-                if (requestPool == null) return null;
+                ConcurrentHashMap<String, RequestPool> map = ipRequestPools.get(entry.getKey());
+                if (map == null || map.isEmpty()) return null;
+                if (map.get(method) == null) return null;
                 return entry.getKey();
             }
         }
@@ -113,8 +111,8 @@ public class Httpd implements AuthzModifiable {
         try {
             RateLimit.CheckType checkType = limitMeta.getCheckType();
             if (checkType.equals(USER_ID) && userId == null) return;
-            Httpd.RequestPool ipRequestPool     = ipRequestPools.get(method).get(api);
-            Httpd.RequestPool userIdRequestPool = userIdRequestPools.get(method).get(api);
+            Httpd.RequestPool ipRequestPool     = ipRequestPools.get(api).get(method);
+            Httpd.RequestPool userIdRequestPool = userIdRequestPools.get(api).get(method);
             RequestMeta       requestMeta       = checkType.equals(IP) ? ipRequestPool.get(ip) : userIdRequestPool.get(userId.toString());
             if (requestMeta == null) {
                 if (checkType.equals(IP)) {
@@ -135,16 +133,13 @@ public class Httpd implements AuthzModifiable {
         List<Httpd.RequestPool> rps = associatedIpPoolsCache.get(limitMeta);
         if (rps != null) return rps;
 
-        List<LimitMeta.AssociatedPattern> associatedPatterns = limitMeta.getAssociatedPatterns();
+        List<LimitMeta.AssociatedPattern> associatedPatterns = limitMeta._getAssociatedPatterns();
         RateLimit.CheckType               checkType          = limitMeta.getCheckType();
         List<Httpd.RequestPool>           oIpPools           = new ArrayList<>();
         if (associatedPatterns != null) {
             associatedPatterns.forEach(associatedPattern -> associatedPattern.getMethods().forEach(meth -> {
-                RequestPools                                 requestPools = checkType.equals(IP) ? ipRequestPools : userIdRequestPools;
-                ConcurrentHashMap<String, Httpd.RequestPool> map          = requestPools.get(meth);
-                if (map != null) {
-                    map.keySet().stream().filter(path -> match(associatedPattern.getPattern(), path)).forEach(path -> oIpPools.add(map.get(path)));
-                }
+                RequestPools requestPools = checkType.equals(IP) ? ipRequestPools : userIdRequestPools;
+                requestPools.keySet().stream().filter(path -> match(associatedPattern.getPattern(), path)).forEach(path -> oIpPools.add(requestPools.get(path).get(meth)));
             }));
         }
 
@@ -180,14 +175,14 @@ public class Httpd implements AuthzModifiable {
                 case UPDATE:
                     AuthzModifier.RateLimitInfo rateLimit = authzModifier.getRateLimit();
                     LimitMeta limitMeta = new LimitMeta(rateLimit.getWindow(), rateLimit.getMaxRequests(), rateLimit.getPunishmentTime().toArray(new String[0]), rateLimit.getMinInterval(), rateLimit.getAssociatedPatterns().toArray(new String[0]), rateLimit.getCheckType());
-                    rateLimitMetadata.get(authzModifier.getMethod()).put(authzModifier.getApi(), limitMeta);
+                    rateLimitMetadata.get(authzModifier.getApi()).put(authzModifier.getMethod(), limitMeta);
                     return limitMeta;
                 case DEL:
                 case DELETE:
-                    return rateLimitMetadata.get(authzModifier.getMethod()).remove(authzModifier.getApi());
+                    return rateLimitMetadata.get(authzModifier.getApi()).remove(authzModifier.getMethod());
                 case READ:
                 case GET:
-                    return rateLimitMetadata.get(authzModifier.getMethod()).get(authzModifier.getApi());
+                    return rateLimitMetadata.get(authzModifier.getApi()).get(authzModifier.getMethod());
                 default:
                     return Result.FAIL;
             }
@@ -200,4 +195,5 @@ public class Httpd implements AuthzModifiable {
     public static void setRateLimitCallback(RateLimitCallback callback) {
         RequestMeta.setCallback(callback);
     }
+
 }

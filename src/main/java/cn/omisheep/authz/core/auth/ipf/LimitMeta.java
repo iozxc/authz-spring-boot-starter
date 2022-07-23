@@ -4,6 +4,7 @@ import cn.omisheep.authz.annotation.RateLimit;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.commons.util.TimeUtils;
+import com.fasterxml.jackson.annotation.*;
 import com.google.common.base.Objects;
 import lombok.Getter;
 
@@ -14,7 +15,7 @@ import java.util.stream.Collectors;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class LimitMeta {
     @Getter
     private final long                    window;
@@ -26,7 +27,6 @@ public class LimitMeta {
     private final RateLimit.CheckType     checkType;
     private final List<AssociatedPattern> associatedPatterns;
     private final List<Long>              punishmentTime = new ArrayList<>();
-
 
     public LimitMeta(String window,
                      int maxRequests,
@@ -54,9 +54,14 @@ public class LimitMeta {
         } else this.associatedPatterns = null;
     }
 
-    public List<AssociatedPattern> getAssociatedPatterns() {
+    public List<AssociatedPattern> _getAssociatedPatterns() {
         if (associatedPatterns == null) return null;
         return Collections.unmodifiableList(associatedPatterns);
+    }
+
+    public Set<String> getAssociatedPatterns() {
+        if (associatedPatterns == null) return null;
+        return associatedPatterns.stream().flatMap(a -> a.methods.stream().map(m -> m + " " + a.pattern)).collect(Collectors.toSet());
     }
 
     public List<Long> getPunishmentTime() {

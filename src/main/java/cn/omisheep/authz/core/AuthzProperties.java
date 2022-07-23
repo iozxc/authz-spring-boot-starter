@@ -242,19 +242,22 @@ public class AuthzProperties {
 
     @Data
     public static class DashboardConfig {
-        private boolean enabled = false;
-
-        private String username;
-        private String password;
-        private String allow;
-        private String deny;
-        private String remoteAddress;
-
-        private String mappings = "/authz-dashboard/*";
+        private boolean enabled  = false;
+        private String  username;
+        private String  password;
+        private String  allow;
+        private String  deny;
+        /**
+         * dashboard的映射地址
+         */
+        private String  mappings = "/authz-dashboard/*";
     }
 
     @Data
     public static class ResponseConfig {
+        /**
+         * 返回体状态码是否永远为200、不论是否出错（默认状态下）
+         */
         private boolean alwaysOk = false;
     }
 
