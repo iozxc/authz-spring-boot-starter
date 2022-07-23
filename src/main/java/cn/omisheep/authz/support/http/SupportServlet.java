@@ -73,54 +73,63 @@ public class SupportServlet extends HttpServlet {
         String contextPath = request.getContextPath();
         String servletPath = request.getServletPath();
         String requestURI  = request.getRequestURI();
-
-        response.setCharacterEncoding("utf-8");
-
-        if (contextPath == null) contextPath = ""; // root context
-
+        if (contextPath == null) contextPath = "";
         String uri  = contextPath + servletPath;
         String path = requestURI.substring(contextPath.length() + servletPath.length());
 
-        try {
-            if (!isPermittedRequest(request)) {
-                nopermit(response);
-                return;
-            }
-        } catch (Exception e) {
-            nopermit(response);
-            return;
-        }
+        response.setCharacterEncoding("utf-8");
 
-        if (path.startsWith("/v1")) {
-            process(request, response, path);
-            return;
-        }
-
-        if (gotoIndex(contextPath, path, response)) return;
+        if (!checkIp(request, response)) return; // 检查ip
+        if (gotoIndex(contextPath, path, response)) return; // 跳转匹配
+        if (process(request, response, path)) return; // v1 api匹配
 
         returnResourceFile(path, uri, response);
     }
 
-    private void process(HttpServletRequest request, HttpServletResponse response, String path) throws IOException {
+    private boolean checkIp(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        try {
+            if (!isPermittedRequest(request)) {
+                nopermit(response);
+                return false;
+            }
+        } catch (Exception e) {
+            nopermit(response);
+            return false;
+        }
+        return true;
+    }
+
+    private boolean gotoIndex(String contextPath, String path, HttpServletResponse response) throws IOException {
+        if ("".equals(path)) {
+            if (contextPath.equals("") || contextPath.equals("/")) {
+                response.sendRedirect("/" + baseMapping + "/index.html");
+            } else {
+                response.sendRedirect(baseMapping + "/index.html");
+            }
+            return true;
+        }
+        if ("/".equals(path)) {
+            response.sendRedirect("index.html");
+            return true;
+        }
+        return false;
+    }
+
+    private boolean process(HttpServletRequest request, HttpServletResponse response, String path) throws IOException {
+        if (!path.startsWith("/v1")) return false;
         webHandlers.stream().filter(v -> v.match(path)).forEach(v -> v.process(request, response, (HttpMeta) request.getAttribute(Constants.HTTP_META), path));
+        return true;
     }
 
-    private String getFilePath(String fileName) {
-        return resourcePath + fileName;
-    }
-
-    private void nopermit(HttpServletResponse response)
-            throws IOException {
+    private void nopermit(HttpServletResponse response) throws IOException {
         response.setContentType("text/html; charset=utf-8");
         String text = SupportUtils.readFromResource("support/http/nopermit.html");
         if (text == null) response.getWriter().write("");
         else response.getWriter().write(text);
     }
 
-    private void returnResourceFile(String fileName, String uri, HttpServletResponse response)
-            throws IOException {
-
-        String filePath = getFilePath(fileName);
+    private void returnResourceFile(String fileName, String uri, HttpServletResponse response) throws IOException {
+        String filePath = resourcePath + fileName;
 
         if (filePath.endsWith(".html")) {
             response.setContentType("text/html; charset=utf-8");
@@ -176,21 +185,4 @@ public class SupportServlet extends HttpServlet {
         return true;
     }
 
-    private boolean gotoIndex(String contextPath, String path, HttpServletResponse response) throws IOException {
-        if ("".equals(path)) {
-            if (contextPath.equals("") || contextPath.equals("/")) {
-                response.sendRedirect("/" + baseMapping + "/index.html");
-            } else {
-                response.sendRedirect(baseMapping + "/index.html");
-            }
-            return true;
-        }
-
-        if ("/".equals(path)) {
-            response.sendRedirect("index.html");
-            return true;
-        }
-
-        return false;
-    }
 }
