@@ -1,7 +1,9 @@
 package cn.omisheep.authz.support.util;
 
+import cn.omisheep.commons.util.web.JSONUtils;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 
@@ -94,6 +96,15 @@ public abstract class SupportUtils {
             x.close();
         } catch (Exception e) {
             log.debug("close error", e);
+        }
+    }
+
+    public static void toJSON(HttpServletResponse response, Object o) {
+        try {
+            response.setContentType("application/json;charset=utf-8");
+            response.getWriter().println(JSONUtils.toPrettyJSONString(o));
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

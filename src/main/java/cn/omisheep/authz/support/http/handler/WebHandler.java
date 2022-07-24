@@ -12,5 +12,10 @@ import javax.servlet.http.HttpServletResponse;
 public interface WebHandler {
     boolean match(String path);
 
-    void process(HttpServletRequest request, HttpServletResponse response, HttpMeta httpMeta, String path);
+    default boolean requireLogin() {
+        return true;
+    }
+
+    void process(HttpServletRequest request, HttpServletResponse response, HttpMeta httpMeta, String path, boolean auth);
+
 }

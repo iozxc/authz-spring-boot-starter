@@ -2,10 +2,14 @@ package cn.omisheep.authz.core;
 
 import cn.omisheep.authz.core.codec.Decryptor;
 import cn.omisheep.authz.core.codec.RSADecryptor;
+import cn.omisheep.authz.support.entity.User;
 import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.logging.LogLevel;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -242,15 +246,16 @@ public class AuthzProperties {
 
     @Data
     public static class DashboardConfig {
-        private boolean enabled  = false;
-        private String  username;
-        private String  password;
-        private String  allow;
-        private String  deny;
+        private boolean    enabled  = false;
+        private List<User> users    = new ArrayList<>();
+        private String     username;
+        private String     password;
+        private String     allow;
+        private String     deny;
         /**
          * dashboard的映射地址
          */
-        private String  mappings = "/authz-dashboard/*";
+        private String     mappings = "/authz-dashboard/*";
     }
 
     @Data

@@ -2,6 +2,7 @@ package cn.omisheep.authz.support.http;
 
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
+import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.util.IPUtils;
 import cn.omisheep.authz.core.util.ScanUtils;
@@ -31,18 +32,19 @@ import java.util.List;
 @Slf4j
 public class SupportServlet extends HttpServlet {
 
-    public static final  String                SESSION_USER_KEY = "authz-dashboard-user";
-    private static final String                resourcePath     = "support/http";
-    private final        List<IPRange>         allowList        = new ArrayList<>();
-    private final        List<IPRange>         denyList         = new ArrayList<>();
-    private final        ArrayList<WebHandler> webHandlers      = new ArrayList<>();
+    private static final String                resourcePath = "support/http/dist";
+    private final        List<IPRange>         allowList    = new ArrayList<>();
+    private final        List<IPRange>         denyList     = new ArrayList<>();
+    private final        ArrayList<WebHandler> webHandlers  = new ArrayList<>();
     private final        boolean               requireLogin;
     private final        String                baseMapping;
+    private final        Cache                 cache;
 
-    public SupportServlet(AuthzProperties.DashboardConfig dashboardConfig) {
+    public SupportServlet(AuthzProperties.DashboardConfig dashboardConfig, Cache cache) {
         String mappings = dashboardConfig.getMappings();
+        this.cache = cache;
 
-        this.requireLogin = !StringUtils.isEmpty(dashboardConfig.getUsername()) && !StringUtils.isEmpty(dashboardConfig.getPassword());
+        this.requireLogin = !StringUtils.isEmpty(dashboardConfig.getUsername()) && !StringUtils.isEmpty(dashboardConfig.getPassword()) || !dashboardConfig.getUsers().isEmpty();
 
         try {
             allowList.addAll(IPRangeMeta.parse(dashboardConfig.getAllow()));
@@ -82,10 +84,11 @@ public class SupportServlet extends HttpServlet {
         if (!checkIp(request, response)) return; // 检查ip
         if (gotoIndex(contextPath, path, response)) return; // 跳转匹配
 
-        if (!requireLogin || request.getSession().getAttribute(SESSION_USER_KEY) != null) {
-            if (process(request, response, path)) return; // v1 api匹配
-        } else {
-            nopermit(response);
+        if (path.startsWith("/v1")) {
+            String uuid1    = request.getHeader("uuid");
+            String uuid     = uuid1 != null ? uuid1 : request.getParameter("uuid");
+            Object username = cache.get(Constants.DASHBOARD_KEY_PREFIX.get() + uuid);
+            process(request, response, path, !requireLogin || username != null);
             return;
         }
 
@@ -121,17 +124,17 @@ public class SupportServlet extends HttpServlet {
         return false;
     }
 
-    private boolean process(HttpServletRequest request, HttpServletResponse response, String path) throws IOException {
-        if (!path.startsWith("/v1")) return false;
-        webHandlers.stream().filter(v -> v.match(path)).forEach(v -> v.process(request, response, (HttpMeta) request.getAttribute(Constants.HTTP_META), path));
-        return true;
+    private void process(HttpServletRequest request, HttpServletResponse response, String path, boolean auth) {
+        webHandlers.stream().filter(v -> v.requireLogin() && auth && v.match(path) || !v.requireLogin() && v.match(path)).forEach(v -> v.process(request, response, (HttpMeta) request.getAttribute(Constants.HTTP_META), path, auth));
     }
 
     private void nopermit(HttpServletResponse response) throws IOException {
         response.setContentType("text/html; charset=utf-8");
         String text = SupportUtils.readFromResource("support/http/nopermit.html");
-        if (text == null) response.getWriter().write("");
-        else response.getWriter().write(text);
+        if (text == null) {
+            response.getWriter().write("");
+            response.setStatus(404);
+        } else response.getWriter().write(text);
     }
 
     private void returnResourceFile(String fileName, String uri, HttpServletResponse response) throws IOException {
@@ -161,6 +164,7 @@ public class SupportServlet extends HttpServlet {
         } else if (fileName.endsWith(".svg")) {
             response.setContentType("image/svg+xml");
         }
+
         response.getWriter().write(text);
     }
 

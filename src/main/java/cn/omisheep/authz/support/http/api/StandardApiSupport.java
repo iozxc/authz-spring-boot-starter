@@ -1,18 +1,15 @@
 package cn.omisheep.authz.support.http.api;
 
-import cn.omisheep.authz.core.AuthzFactory;
+import cn.omisheep.authz.core.AuthzManager;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.AuthzVersion;
-import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.support.http.ApiSupport;
 import cn.omisheep.authz.support.http.annotation.Get;
+import cn.omisheep.authz.support.http.annotation.JSON;
+import cn.omisheep.authz.support.http.annotation.Param;
 import cn.omisheep.authz.support.http.annotation.Post;
-import cn.omisheep.commons.util.web.JSONUtils;
 import cn.omisheep.web.entity.Result;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author zhouxinchen
@@ -23,15 +20,19 @@ public class StandardApiSupport implements ApiSupport {
     public StandardApiSupport(AuthzProperties properties) {
     }
 
+    @Get(value = "/echo")
+    public Result version(@Param String msg) {
+        return Result.SUCCESS.data(msg);
+    }
+
     @Post(value = "/operate")
-    public Result login(HttpServletRequest request, HttpServletResponse response, HttpMeta httpMeta) {
-        AuthzModifier modifier = JSONUtils.parseJSON(httpMeta.getBody(), AuthzModifier.class);
+    public Result operate(@JSON AuthzModifier modifier) {
         if (modifier == null) return Result.FAIL.data();
-        return AuthzFactory.operate(modifier);
+        return AuthzManager.operate(modifier);
     }
 
     @Get(value = "/version")
-    public Result version(HttpServletRequest request, HttpServletResponse response, HttpMeta httpMeta) {
+    public Result version() {
         return Result.SUCCESS.data(AuthzVersion.getVersion());
     }
 

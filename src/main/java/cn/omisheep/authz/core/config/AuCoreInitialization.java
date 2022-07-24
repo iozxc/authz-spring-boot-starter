@@ -1,7 +1,8 @@
 package cn.omisheep.authz.core.config;
 
 import cn.omisheep.authz.annotation.*;
-import cn.omisheep.authz.core.*;
+import cn.omisheep.authz.core.AuthzProperties;
+import cn.omisheep.authz.core.AuthzVersion;
 import cn.omisheep.authz.core.auth.DefaultPermLibrary;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.DeviceConfig;
@@ -21,11 +22,11 @@ import cn.omisheep.authz.core.util.RedisUtils;
 import cn.omisheep.authz.core.util.ValueMatcher;
 import cn.omisheep.authz.support.util.IPRangeMeta;
 import cn.omisheep.commons.util.Async;
-import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.commons.util.TaskBuilder;
 import lombok.SneakyThrows;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController;
 import org.springframework.boot.system.ApplicationHome;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -38,10 +39,11 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.handler.AbstractHandlerMethodMapping;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 
-import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import static cn.omisheep.authz.core.util.MetaUtils.*;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -81,16 +83,9 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
     public void printBanner() {
         if (properties.isBanner()) {
-            System.out.println("               _    _          ");
-            System.out.println("   :)         | |  | |         ");
-            System.out.println("  __ _  _   _ | |_ | |__   ____");
-            System.out.println(" / _` || | | || __|| '_ \\ |_  /");
-            System.out.println("| (_| || |_| || |_ | | | | / / ");
-            System.out.println(" \\__,_| \\__,_| \\__||_| |_|/___|");
-            System.out.println("  \t\tAuthz  v" + AuthzVersion.getVersion());
+            AuthzVersion.printBanner();
         }
     }
-
 
     public void chechPermLibrary() {
         PermLibrary bean = ctx.getBean(PermLibrary.class);
@@ -165,44 +160,13 @@ public class AuCoreInitialization implements ApplicationContextAware {
         return null;
     }
 
-    private <A extends Annotation> A getAnnoatation(Object value, Class<A> clz) {
-        A annotation = AnnotatedElementUtils.getMergedAnnotation(value.getClass(), clz);
-        try {
-            if (annotation == null) {
-                return AnnotatedElementUtils.getMergedAnnotation(Class.forName(getTypeName(value)), clz);
-            } else return annotation;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private <A extends Annotation> Set<A> getAnnoatations(Object value, Class<A> clz) {
-        Set<A> annotations = AnnotatedElementUtils.getAllMergedAnnotations(value.getClass(), clz);
-        try {
-            if (annotations == null || annotations.isEmpty()) {
-                return AnnotatedElementUtils.getAllMergedAnnotations(Class.forName(getTypeName(value)), clz);
-            } else return annotations;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    public String getTypeName(Object value) {
-        String name = value.getClass().getTypeName();
-        int    i    = name.indexOf('$');
-        if (i != -1) {
-            return name.substring(0, name.indexOf("$"));
-        } else {
-            return name;
-        }
-    }
-
     private void initPermissionDict(ApplicationContext applicationContext, Map<RequestMappingInfo, HandlerMethod> mapRet) {
         PermissionDict.setPermSeparator(Constants.COMMA);
         Set<String>                                 toBeLoadedRoles      = new HashSet<>();
         HashMap<String, Map<String, PermRolesMeta>> authzMetadata        = new HashMap<>();
         HashMap<String, Map<String, IPRangeMeta>>   ipRangeMedata        = new HashMap<>();
         Map<String, Set<String>>                    certificatedMetadata = new HashMap<>();
+        Map<String, List<Map<String, String>>>      controllerMetadata   = new HashMap<>();
         Map<String, PermRolesMeta>                  pMap                 = new HashMap<>();
         Map<String, PermRolesMeta>                  rMap                 = new HashMap<>();
         Map<String, IPRangeMeta>                    iMap                 = new HashMap<>();
@@ -244,12 +208,25 @@ public class AuCoreInitialization implements ApplicationContextAware {
             PermRolesMeta rFc           = rMap.get(value.getBeanType().getName());
             PermRolesMeta permRolesMeta = generatePermRolesMeta(value.getMethodAnnotation(Perms.class), value.getMethodAnnotation(Roles.class));
             IPRangeMeta   ipRangeMeta   = new IPRangeMeta();
+            List<String>  mtds          = key.getMethodsCondition().getMethods().stream().map(k -> k.name()).collect(Collectors.toList());
+            Set<String>   patterns      = getPatterns(key);
+
+            if (!value.getBeanType().equals(BasicErrorController.class)) {
+                List<Map<String, String>> clm = controllerMetadata
+                        .computeIfAbsent(value.getBeanType().getSimpleName(), r -> new ArrayList<>());
+                patterns.forEach(p -> {
+                    mtds.forEach(m -> {
+                        HashMap<String, String> map = new HashMap<>();
+                        map.put("method", m);
+                        map.put("path", p);
+                        clm.add(map);
+                    });
+                });
+            }
 
             // 初始化Certifecated
             Certificated certificated = AnnotatedElementUtils.getMergedAnnotation(value.getMethod(), Certificated.class);
             if (cList.contains(value.getBeanType().getTypeName()) || certificated != null) {
-                Set<String>  patterns = getPatterns(key);
-                List<String> mtds     = key.getMethodsCondition().getMethods().stream().map(k -> k.name()).collect(Collectors.toList());
                 patterns.forEach(p -> certificatedMetadata.computeIfAbsent(p, r -> new HashSet<>()).addAll(mtds));
             }
 
@@ -297,8 +274,8 @@ public class AuCoreInitialization implements ApplicationContextAware {
                 if (excludeRoles != null) excludeRoles.forEach(toBeLoadedRoles::addAll);
 
                 PermRolesMeta finalPermRolesMeta = permRolesMeta;
-                key.getMethodsCondition().getMethods().forEach(method -> {
-                    getPatterns(key).forEach(patternValue -> authzMetadata.computeIfAbsent(patternValue, r -> new HashMap<>())
+                mtds.forEach(method -> {
+                    patterns.forEach(patternValue -> authzMetadata.computeIfAbsent(patternValue, r -> new HashMap<>())
                             .put(method.toString(), finalPermRolesMeta)
                     );
                 });
@@ -318,15 +295,14 @@ public class AuCoreInitialization implements ApplicationContextAware {
                 }
             }
             if (ipRangeMeta.getDeny() != null && !ipRangeMeta.getDeny().isEmpty() || ipRangeMeta.getAllow() != null && !ipRangeMeta.getAllow().isEmpty()) {
-                key.getMethodsCondition().getMethods().forEach(method -> {
-                    getPatterns(key).forEach(patternValue -> ipRangeMedata.computeIfAbsent(patternValue, r -> new HashMap<>()).put(method.toString(), ipRangeMeta));
+                mtds.forEach(method -> {
+                    patterns.forEach(patternValue -> ipRangeMedata.computeIfAbsent(patternValue, r -> new HashMap<>()).put(method.toString(), ipRangeMeta));
                 });
             }
 
-
             // ------------- 初始化参数权限 --------------- //
-            key.getMethodsCondition().getMethods().forEach(method -> {
-                getPatterns(key).forEach(patternValue -> {
+            mtds.forEach(method -> {
+                patterns.forEach(patternValue -> {
                     Map<ParamMetadata.ParamType, Map<String, Class<?>>> rawParamTypeMapMap =
                             permissionDict.getRawMap().computeIfAbsent(patternValue, r -> new HashMap<>())
                                     .computeIfAbsent(method.toString(), r -> new HashMap<>());
@@ -405,6 +381,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
             permissionDict.initGlobalAllow(IPRangeMeta.parse(properties.getGlobalIpRange().getAllow()));
             permissionDict.initGlobalDeny(IPRangeMeta.parse(properties.getGlobalIpRange().getDeny()));
             permissionDict.setSupportNative(properties.getGlobalIpRange().isSupportNative());
+            permissionDict.initControllerMetadata(controllerMetadata);
         } catch (Exception e) {
             LogUtils.error("init permissionDict error", e);
         }
@@ -427,72 +404,6 @@ public class AuCoreInitialization implements ApplicationContextAware {
                 });
             });
         }
-    }
-
-    public static PermRolesMeta.Meta generatePermMeta(Perms p) {
-        if (p == null) return null;
-        PermRolesMeta.Meta permsMeta = new PermRolesMeta.Meta();
-        boolean            flag      = false;
-        if (p.require() != null && p.require().length != 0) {
-            permsMeta.setRequire(CollectionUtils.splitStrValsToSets(Constants.COMMA, p.require()));
-            flag = true;
-        }
-        if (p.exclude() != null && p.exclude().length != 0) {
-            permsMeta.setExclude(CollectionUtils.splitStrValsToSets(Constants.COMMA, p.exclude()));
-            flag = true;
-        }
-        if (p.paramResources().length != 0) {
-            permsMeta.setResources(CollectionUtils.ofSet(p.paramResources()));
-        }
-        if (p.paramRange().length != 0) {
-            permsMeta.setRange(CollectionUtils.ofSet(p.paramRange()));
-        }
-        return flag ? permsMeta : null;
-    }
-
-    public static PermRolesMeta.Meta generateRolesMeta(Roles r) {
-        if (r == null) return null;
-        PermRolesMeta.Meta rolesMeta = new PermRolesMeta.Meta();
-        boolean            flag      = false;
-        if (r.require() != null && r.require().length != 0) {
-            rolesMeta.setRequire(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.require()));
-            flag = true;
-        }
-        if (r.exclude() != null && r.exclude().length != 0) {
-            rolesMeta.setExclude(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.exclude()));
-            flag = true;
-        }
-        if (r.paramResources().length != 0) {
-            rolesMeta.setResources(CollectionUtils.ofSet(r.paramResources()));
-        }
-        if (r.paramRange().length != 0) {
-            rolesMeta.setRange(CollectionUtils.ofSet(r.paramRange()));
-        }
-        return flag ? rolesMeta : null;
-    }
-
-    public static PermRolesMeta generatePermRolesMeta(Perms p, Roles r) {
-        PermRolesMeta prm  = new PermRolesMeta();
-        boolean       flag = false;
-        if (p != null) {
-            if (p.require() != null && p.require().length != 0) {
-                prm.setRequirePermissions(CollectionUtils.splitStrValsToSets(Constants.COMMA, p.require()));
-            }
-            if (p.exclude() != null && p.exclude().length != 0) {
-                prm.setExcludePermissions(CollectionUtils.splitStrValsToSets(Constants.COMMA, p.exclude()));
-            }
-            flag = true;
-        }
-        if (r != null) {
-            if (r.require() != null && r.require().length != 0) {
-                prm.setRequireRoles(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.require()));
-            }
-            if (r.exclude() != null && r.exclude().length != 0) {
-                prm.setExcludeRoles(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.exclude()));
-            }
-            flag = true;
-        }
-        return flag ? prm : null;
     }
 
     private void initHttpd(ApplicationContext applicationContext, Map<RequestMappingInfo, HandlerMethod> mapRet) {

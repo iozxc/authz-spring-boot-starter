@@ -45,6 +45,8 @@ public class PermissionDict implements AuthzModifiable {
     @Setter
     private static boolean supportNative;
 
+    private static Map<String, List<Map<String, String>>> controllerMetadata;
+
     private static Map<String, Map<String, PermRolesMeta>> authzMetadata; // api权限和api的参数权限
 
     private static Map<String, Set<String>> certificatedMetadata; // certificatedMetadata 哪些接口需要登录-若有role和perms，则同同理
@@ -77,6 +79,7 @@ public class PermissionDict implements AuthzModifiable {
     private static       Map<String, Set<String>>                                                      m8;
     private static       Set<IPRange>                                                                  m9;
     private static       Set<IPRange>                                                                  m10;
+    private static       Map<String, List<Map<String, String>>>                                        m11;
 
     public boolean isSupportNative() {
         return PermissionDict.supportNative;
@@ -118,7 +121,9 @@ public class PermissionDict implements AuthzModifiable {
         return m9;
     }
 
-    public Set<IPRange> getGlobalDeny() {return m10;}
+    public Set<IPRange> getGlobalDeny()                                   {return m10;}
+
+    public Map<String, List<Map<String, String>>> getControllerMetadata() {return m11;}
 
     @Getter
     public static class ArgsMeta {
@@ -756,6 +761,15 @@ public class PermissionDict implements AuthzModifiable {
         }
         PermissionDict.globalDeny = deny;
         m10                       = Collections.unmodifiableSet(globalDeny);
+    }
+
+    public static void initControllerMetadata(Map<String, List<Map<String, String>>> controllerMetadata) {
+        if (PermissionDict.controllerMetadata != null) {
+            AuInit.log.error("controllerMetadata 已经初始化");
+            return;
+        }
+        PermissionDict.controllerMetadata = controllerMetadata;
+        m11                               = Collections.unmodifiableMap(controllerMetadata);
     }
 
     public static void setPermSeparator(String permSeparator) {

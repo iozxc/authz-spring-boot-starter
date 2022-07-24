@@ -46,10 +46,11 @@ public class TokenHelper {
     private static final AuthzProperties.TokenConfig.Mode mode;
     private static final int                              tokenIdBits;
     private static final String                           prefix;
-    private static final String[]                         USER_ID     = {"uid", "uid", "userId",};
-    private static final String[]                         DEVICE_ID   = {"did", "did", "deviceId"};
-    private static final String[]                         DEVICE_TYPE = {"dtp", "dtp", "deviceType"};
-    private static final String[]                         TOKEN_TYPE  = {"tpe", "tpe", "type"};
+    private static final String[]                         USER_ID         = {"uid", "uid", "userId",};
+    private static final String[]                         DEVICE_ID       = {"did", "did", "deviceId"};
+    private static final String[]                         DEVICE_TYPE     = {"dtp", "dtp", "deviceType"};
+    private static final String[]                         TOKEN_TYPE      = {"tpe", "tpe", "type"};
+    private static final String                           DASHBOARD_TOKEN = "";
 
 
     private TokenHelper() {
@@ -166,10 +167,8 @@ public class TokenHelper {
 
         String tokenId = UUIDBits.getUUIDBits(tokenIdBits);
 
-        JwtBuilder jwtBuilder = Jwts.builder()
-                .setClaims(claims) // 设置 claims
-                .setId(tokenId)
-                .setIssuedAt(from) // 发行时间
+        JwtBuilder jwtBuilder = Jwts.builder().setClaims(claims) // 设置 claims
+                .setId(tokenId).setIssuedAt(from) // 发行时间
                 .setExpiration(to);
         if (secretKey != null) {
             jwtBuilder.signWith(secretKey, alg);
@@ -207,11 +206,7 @@ public class TokenHelper {
         if (refreshToken == null || !refreshToken.getType().equals(Token.Type.REFRESH)) {
             return null;
         }
-        Token accessToken = createToken(refreshToken.getUserId(),
-                refreshToken.getDeviceType(), refreshToken.getDeviceId(), Token.Type.ACCESS,
-                TimeUtils.now(),
-                Date.from(LocalDateTime.now().plus(accessTime, ChronoUnit.MILLIS).atZone(ZoneId.systemDefault()).toInstant())
-        );
+        Token accessToken = createToken(refreshToken.getUserId(), refreshToken.getDeviceType(), refreshToken.getDeviceId(), Token.Type.ACCESS, TimeUtils.now(), Date.from(LocalDateTime.now().plus(accessTime, ChronoUnit.MILLIS).atZone(ZoneId.systemDefault()).toInstant()));
         return new TokenPair(accessToken, refreshToken);
     }
 
@@ -263,17 +258,8 @@ public class TokenHelper {
             tv       = tokenVal;
             tokenVal = prefix + tokenVal;
         }
-        Claims claims = Jwts.parserBuilder().setSigningKey(secretKey)
-                .build()
-                .parseClaimsJws(tokenVal).getBody();
-        return new Token(tv != null ? tv : tokenVal,
-                claims.get(USER_ID[mode.ordinal()]),
-                claims.getId(),
-                claims.getIssuedAt(),
-                claims.getExpiration(),
-                claims.get(DEVICE_TYPE[mode.ordinal()], String.class),
-                claims.get(DEVICE_ID[mode.ordinal()], String.class),
-                Token.Type.fromValue((String) claims.get(TOKEN_TYPE[mode.ordinal()]))
-        );
+        Claims claims = Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(tokenVal).getBody();
+        return new Token(tv != null ? tv : tokenVal, claims.get(USER_ID[mode.ordinal()]), claims.getId(), claims.getIssuedAt(), claims.getExpiration(), claims.get(DEVICE_TYPE[mode.ordinal()], String.class), claims.get(DEVICE_ID[mode.ordinal()], String.class), Token.Type.fromValue((String) claims.get(TOKEN_TYPE[mode.ordinal()])));
     }
+
 }

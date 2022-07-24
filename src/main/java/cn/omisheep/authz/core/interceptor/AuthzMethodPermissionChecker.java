@@ -9,7 +9,6 @@ import cn.omisheep.authz.core.PermissionException;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
-import cn.omisheep.authz.core.config.AuCoreInitialization;
 import cn.omisheep.commons.util.CollectionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
@@ -24,6 +23,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+
+import static cn.omisheep.authz.core.util.MetaUtils.generatePermRolesMeta;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -65,7 +66,7 @@ public class AuthzMethodPermissionChecker {
             Certificated    mergedAnnotation = AnnotatedElementUtils.getMergedAnnotation(method, Certificated.class);
             Perms           perms            = AnnotatedElementUtils.getMergedAnnotation(method, Perms.class);
             Roles           roles            = AnnotatedElementUtils.getMergedAnnotation(method, Roles.class);
-            PermRolesMeta   permRolesMeta    = meta.computeIfAbsent(joinPoint.getSignature().toLongString(), r -> AuCoreInitialization.generatePermRolesMeta(perms, roles));
+            PermRolesMeta   permRolesMeta    = meta.computeIfAbsent(joinPoint.getSignature().toLongString(), r -> generatePermRolesMeta(perms, roles));
             HttpMeta        httpMeta         = AuHelper.getHttpMeta();
             if (mergedAnnotation != null || roles != null || perms != null) {
                 if (!AuHelper.isLogin()) {

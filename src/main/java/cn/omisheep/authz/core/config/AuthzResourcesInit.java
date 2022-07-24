@@ -19,6 +19,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static cn.omisheep.authz.core.util.MetaUtils.generatePermMeta;
+import static cn.omisheep.authz.core.util.MetaUtils.generateRolesMeta;
+
 /**
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
@@ -33,7 +36,7 @@ public class AuthzResourcesInit implements ImportSelector {
             String[] resourceArgs = arg.args();
             dataPermMeta.addArg(resource, resourceArgs);
         }
-        dataPermMeta.setPermissions(AuCoreInitialization.generatePermMeta(perms).setResources(null));
+        dataPermMeta.setPermissions(generatePermMeta(perms).setResources(null));
         return dataPermMeta;
     }
 
@@ -45,7 +48,7 @@ public class AuthzResourcesInit implements ImportSelector {
             String[] resourceArgs = arg.args();
             dataPermMeta.addArg(resource, resourceArgs);
         }
-        dataPermMeta.setRoles(AuCoreInitialization.generateRolesMeta(roles).setResources(null));
+        dataPermMeta.setRoles(generateRolesMeta(roles).setResources(null));
         return dataPermMeta;
     }
 
@@ -126,8 +129,8 @@ public class AuthzResourcesInit implements ImportSelector {
                     Roles roles = AnnotationUtils.getAnnotation(field, Roles.class);
                     Perms perms = AnnotationUtils.getAnnotation(field, Perms.class);
                     if (roles == null && perms == null) continue;
-                    PermRolesMeta.Meta rm = AuCoreInitialization.generateRolesMeta(roles);
-                    PermRolesMeta.Meta pm = AuCoreInitialization.generatePermMeta(perms);
+                    PermRolesMeta.Meta rm = generateRolesMeta(roles);
+                    PermRolesMeta.Meta pm = generatePermMeta(perms);
                     fmap.put(field.getName(), new FieldData(field.getType().getTypeName(), rm, pm));
                 }
 

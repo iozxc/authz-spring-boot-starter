@@ -11,6 +11,7 @@ import lombok.experimental.Accessors;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -37,6 +38,11 @@ public class Docs {
     }
 
     @JsonProperty(index = 3)
+    public Map<String, List<Map<String, String>>> getControllers() {
+        return permissionDict.getControllerMetadata();
+    }
+
+    @JsonProperty(index = 4)
     public Map<String, Map<String, Map<String, Object>>> getPaths() {
         HashMap<String, Map<String, Map<String, Object>>> map = new HashMap<>();
         permissionDict.getRawParamMap().forEach((k, v) -> {
@@ -62,22 +68,22 @@ public class Docs {
         return map;
     }
 
-    @JsonProperty(index = 4)
+    @JsonProperty(index = 5)
     public Map<String, Object> getBlacklist() {
         return Blacklist.readAll();
     }
 
-    @JsonProperty(index = 5)
+    @JsonProperty(index = 6)
     public Map<String, Map<String, LimitMeta>> getRateLimit() {
         return Collections.unmodifiableMap(httpd.getRateLimitMetadata());
     }
 
-    @JsonProperty(index = 6)
+    @JsonProperty(index = 7)
     public Map<String, PermissionDict.ArgsMeta> getArgResource() {
         return permissionDict.getArgs();
     }
 
-    @JsonProperty(index = 7)
+    @JsonProperty(index = 8)
     public String[] getIgnoreSuffix() {
         return httpd.getIgnoreSuffix().clone();
     }

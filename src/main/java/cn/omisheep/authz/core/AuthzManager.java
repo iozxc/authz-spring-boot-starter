@@ -18,16 +18,15 @@ import org.springframework.lang.Nullable;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-public class AuthzFactory {
+public class AuthzManager {
 
-    public static final PermissionDict permissionDict;
-
+    public static final PermissionDict  permissionDict;
     public static final UserDevicesDict userDevicesDict;
     public static final Cache           cache;
     public static final Httpd           httpd;
 
     static {
-        permissionDict = PermissionDict.self();
+        permissionDict  = PermissionDict.self();
         userDevicesDict = AUtils.getBean(UserDevicesDict.class);
         cache           = AUtils.getBean(Cache.class);
         httpd           = AUtils.getBean(Httpd.class);

@@ -24,6 +24,7 @@ public interface Constants {
     Supplier<String> DEVICE_REQUEST_INFO_KEY_PREFIX = () -> AuthzAppVersion.values.get("DEVICE_REQUEST_INFO_KEY_PREFIX");
     Supplier<String> PERMISSIONS_BY_ROLE_KEY_PREFIX = () -> AuthzAppVersion.values.get("PERMISSIONS_BY_ROLE_KEY_PREFIX");
     Supplier<String> USER_ROLES_KEY_PREFIX          = () -> AuthzAppVersion.values.get("USER_ROLES_KEY_PREFIX");
+    Supplier<String> DASHBOARD_KEY_PREFIX           = () -> AuthzAppVersion.values.get("DASHBOARD_KEY_PREFIX");
 
     String[] METHODS = {"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE"};
 }

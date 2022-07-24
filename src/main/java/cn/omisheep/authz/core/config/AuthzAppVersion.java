@@ -1,6 +1,6 @@
 package cn.omisheep.authz.core.config;
 
-import cn.omisheep.authz.core.AuthzFactory;
+import cn.omisheep.authz.core.AuthzManager;
 import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.msg.VersionMessage;
 import cn.omisheep.authz.core.util.MD5Utils;
@@ -33,6 +33,7 @@ public class AuthzAppVersion {
         _values.put("DEVICE_REQUEST_INFO_KEY_PREFIX", "au:" + app + ":requestInfo:");
         _values.put("PERMISSIONS_BY_ROLE_KEY_PREFIX", "au:" + app + ":permissionsByRole:");
         _values.put("USER_ROLES_KEY_PREFIX", "au:" + app + ":userRoles:");
+        _values.put("DASHBOARD_KEY_PREFIX", "au:" + app + ":dashboard:");
     }
 
     private static String  md5;
@@ -136,7 +137,7 @@ public class AuthzAppVersion {
     public static void receiveCut(AuthzModifier authzModifier) {
         AuthzModifier.Operate operate = authzModifier.getOperate();
         if (AuthzModifier.Operate.READ != operate && AuthzModifier.Operate.GET != operate) {
-            AuthzFactory.op(authzModifier);
+            AuthzManager.op(authzModifier);
         }
     }
 

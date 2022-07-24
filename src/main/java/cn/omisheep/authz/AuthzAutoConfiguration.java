@@ -189,6 +189,8 @@ public class AuthzAutoConfiguration {
                 throw new IllegalStateException("redis异常，检查redis配置是否有效");
             }
             RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+            container.setMaxSubscriptionRegistrationWaitingTime(6000L);
+            container.setRecoveryInterval(15000L);
             container.setConnectionFactory(connectionFactory);
             container.addMessageListener(listenerAdapter1, new PatternTopic(CacheMessage.CHANNEL));
             container.addMessageListener(listenerAdapter2, new PatternTopic(RequestMessage.CHANNEL)); //  request 同步
@@ -322,10 +324,10 @@ public class AuthzAutoConfiguration {
         }
 
         @Bean
-        public ServletRegistrationBean DashboardServlet(AuthzProperties properties) {
+        public ServletRegistrationBean DashboardServlet(AuthzProperties properties, Cache cache) {
             AuthzProperties.DashboardConfig dashboard = properties.getDashboard();
             ServletRegistrationBean<SupportServlet> bean =
-                    new ServletRegistrationBean<>(new SupportServlet(dashboard), dashboard.getMappings());
+                    new ServletRegistrationBean<>(new SupportServlet(dashboard, cache), dashboard.getMappings());
 
             HashMap<String, String> initParameters = new HashMap<>();
 

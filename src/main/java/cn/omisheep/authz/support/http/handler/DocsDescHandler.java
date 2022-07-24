@@ -1,6 +1,7 @@
 package cn.omisheep.authz.support.http.handler;
 
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
+import cn.omisheep.authz.support.util.SupportUtils;
 import cn.omisheep.commons.util.web.JSONUtils;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -32,8 +33,7 @@ public class DocsDescHandler implements WebHandler {
 
     @SneakyThrows
     @Override
-    public void process(HttpServletRequest request, HttpServletResponse response, HttpMeta httpMeta, String path) {
-        response.setContentType("application/json;charset=utf-8");
-        response.getWriter().println(_info);
+    public void process(HttpServletRequest request, HttpServletResponse response, HttpMeta httpMeta, String path, boolean auth) {
+        SupportUtils.toJSON(response, _info);
     }
 }
