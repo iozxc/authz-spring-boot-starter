@@ -1,19 +1,16 @@
 package cn.omisheep.authz.support.http;
 
 import cn.omisheep.authz.core.AuthzProperties;
-import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.util.IPUtils;
-import cn.omisheep.authz.core.util.ScanUtils;
 import cn.omisheep.authz.core.util.Utils;
 import cn.omisheep.authz.support.entity.User;
-import cn.omisheep.authz.support.http.handler.WebHandler;
+import cn.omisheep.authz.support.http.handler.ApiHandler;
 import cn.omisheep.authz.support.util.IPAddress;
 import cn.omisheep.authz.support.util.IPRange;
 import cn.omisheep.authz.support.util.IPRangeMeta;
 import cn.omisheep.authz.support.util.SupportUtils;
-import io.jsonwebtoken.lang.Classes;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 
@@ -32,13 +29,13 @@ import java.util.*;
 @Slf4j
 public class SupportServlet extends HttpServlet {
 
-    private static final String                resourcePath = "support/http/dist";
-    private final        List<IPRange>         allowList    = new ArrayList<>();
-    private final        List<IPRange>         denyList     = new ArrayList<>();
-    private final        ArrayList<WebHandler> webHandlers  = new ArrayList<>();
-    private final        boolean               requireLogin;
-    private final        String                baseMapping;
-    private final        Cache                 cache;
+    private static final String        resourceRootPath = "support/http/dist";
+    private static final String        resourcePath     = "support/http/dist/authz-dashboard";
+    private final        List<IPRange> allowList        = new ArrayList<>();
+    private final        List<IPRange> denyList         = new ArrayList<>();
+    private final        ApiHandler    apiHandler       = new ApiHandler();
+    private final        boolean       requireLogin;
+    private final        Cache         cache;
 
     private final static Set<User> users = new HashSet<>();
 
@@ -47,7 +44,6 @@ public class SupportServlet extends HttpServlet {
     }
 
     public SupportServlet(AuthzProperties.DashboardConfig dashboardConfig, Cache cache) {
-        String mappingPrefix = dashboardConfig.getMappingPrefix();
         this.cache = cache;
 
         this.requireLogin = !StringUtils.isEmpty(dashboardConfig.getUsername()) && !StringUtils.isEmpty(dashboardConfig.getPassword()) || !dashboardConfig.getUsers().isEmpty();
@@ -62,16 +58,6 @@ public class SupportServlet extends HttpServlet {
             denyList.addAll(IPRangeMeta.parse(dashboardConfig.getDeny()));
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-        }
-
-        if (!mappingPrefix.startsWith("/")) {
-            baseMapping = mappingPrefix;
-        } else {
-            baseMapping = mappingPrefix.substring(1);
-        }
-
-        for (String name : ScanUtils.scan(WebHandler.class, "cn.omisheep.authz.support.http")) {
-            webHandlers.add(Classes.newInstance(name));
         }
 
         users.addAll(dashboardConfig.getUsers());
@@ -110,20 +96,25 @@ public class SupportServlet extends HttpServlet {
         String servletPath = request.getServletPath();
         String requestURI  = request.getRequestURI();
         if (contextPath == null) contextPath = "";
-        String uri  = contextPath + servletPath;
-        String path = requestURI.substring(contextPath.length() + servletPath.length());
+        String uri = contextPath + servletPath;
+        String path;
+        if (Objects.equals(servletPath, "/authz.html")) {
+            path = servletPath;
+        } else {
+            path = requestURI.substring(contextPath.length() + servletPath.length());
+        }
 
         response.setCharacterEncoding("utf-8");
 
         if (!checkIp(request, response)) return; // 检查ip
-        if (gotoIndex(contextPath, path, response)) return; // 跳转匹配
+        if (gotoIndex(contextPath, path, request, response)) return; // 跳转匹配
 
-        if (path.startsWith("/v1")) {
-            process(request, response, path, !requireLogin || auth(request, cache) != null);
+        if ("/authz-api".equals(servletPath) && path.startsWith("/v1")) {
+            apiHandler.process(request, response, path, !requireLogin || auth(request, cache) != null);
             return;
         }
 
-        returnResourceFile(path, uri, response);
+        returnResourceFile(path, uri, request, response);
     }
 
     private boolean checkIp(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -139,24 +130,20 @@ public class SupportServlet extends HttpServlet {
         return true;
     }
 
-    private boolean gotoIndex(String contextPath, String path, HttpServletResponse response) throws IOException {
+    private boolean gotoIndex(String contextPath, String path, HttpServletRequest request, HttpServletResponse response) throws IOException {
         if ("".equals(path)) {
             if (contextPath.equals("") || contextPath.equals("/")) {
-                response.sendRedirect("/" + baseMapping + "/index.html");
+                sendRedirect(request, response, "/authz.html");
             } else {
-                response.sendRedirect(baseMapping + "/index.html");
+                sendRedirect(request, response, "/authz.html");
             }
             return true;
         }
         if ("/".equals(path)) {
-            response.sendRedirect("index.html");
+            sendRedirect(request, response, "authz.html");
             return true;
         }
         return false;
-    }
-
-    private void process(HttpServletRequest request, HttpServletResponse response, String path, boolean auth) {
-        webHandlers.stream().filter(v -> v.requireLogin() && auth && v.match(path) || !v.requireLogin() && v.match(path)).forEach(v -> v.process(request, response, (HttpMeta) request.getAttribute(Constants.HTTP_META), path, auth));
     }
 
     private void nopermit(HttpServletResponse response) throws IOException {
@@ -168,8 +155,16 @@ public class SupportServlet extends HttpServlet {
         } else response.getWriter().write(text);
     }
 
-    private void returnResourceFile(String fileName, String uri, HttpServletResponse response) throws IOException {
-        String filePath = resourcePath + fileName;
+    private void returnResourceFile(String fileName, String uri, HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String filePath;
+        if (Objects.equals(fileName, "/authz.html")) {
+            filePath = resourceRootPath + "/index.html";
+        } else if (Objects.equals(fileName, "/favicon.ico")) {
+            filePath = resourceRootPath + "/favicon.ico";
+        } else {
+            filePath = resourcePath + fileName;
+        }
+
 
         if (filePath.endsWith(".html")) {
             response.setContentType("text/html; charset=utf-8");
@@ -185,7 +180,7 @@ public class SupportServlet extends HttpServlet {
 
         String text = SupportUtils.readFromResource(filePath);
         if (text == null) {
-            response.sendRedirect(uri + "/index.html");
+            sendRedirect(request, response, uri + "/authz.html");
             return;
         }
         if (fileName.endsWith(".css")) {
@@ -226,4 +221,21 @@ public class SupportServlet extends HttpServlet {
         return true;
     }
 
+    private void sendRedirect(HttpServletRequest request, HttpServletResponse response, String path) throws IOException {
+        Map<String, String[]> parameterMap = request.getParameterMap();
+        if (parameterMap.isEmpty()) {
+            response.sendRedirect(path);
+            return;
+        }
+        StringBuilder                         builder  = new StringBuilder(path).append("?");
+        Iterator<Map.Entry<String, String[]>> iterator = parameterMap.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, String[]> next = iterator.next();
+            builder.append(next.getKey()).append("=").append(next.getValue()[0]);
+            if (iterator.hasNext()) {
+                builder.append("&");
+            }
+        }
+        response.sendRedirect(builder.toString());
+    }
 }

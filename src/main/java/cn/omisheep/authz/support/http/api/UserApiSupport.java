@@ -25,7 +25,7 @@ public class UserApiSupport implements ApiSupport {
         this.cache = cache;
     }
 
-    @Post(value = "/login", requireLogin = false)
+    @Post(value = "/login", requireLogin = false, desc = "登录")
     public Result login(@JSON User user) {
         if (user != null) {
             User loginUser = SupportServlet.login(user.getUsername(), user.getPassword());
@@ -38,8 +38,8 @@ public class UserApiSupport implements ApiSupport {
         }
     }
 
-    @Get(value = "/check-login", requireLogin = false)
-    public Result checkLogin(HttpServletRequest request, @Header("uuid") String uuid1, @Param("uuid") String uuid2) {
+    @Get(value = "/check-login", requireLogin = false, desc = "登录检查")
+    public Result checkLogin(HttpServletRequest request) {
         if (!SupportServlet.requireLogin()) return Result.SUCCESS.data();
         User auth = SupportServlet.auth(request, cache);
         if (auth != null) {

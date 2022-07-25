@@ -40,13 +40,23 @@ public class AuthzAppVersion {
     public static        String                   port;
     public static        String                   contextPath;
     public static        String                   baseUrl;
-    public static        String                   dashboardMappingPrefix;
     public static        boolean                  supportCloud;
     public static        ConnectInfo              connectInfo;
     public static final  String                   CONNECT_INFO_WITH_SAME_APPLICATION = "connectInfoWithSameApplication";
     public static final  String                   CONNECT_INFO_WITH_SAME_APP_NAME    = "connectInfoWithSameAppName";
     public static final  String                   ALL                                = "all";
     public static final  String                   LOCAL                              = "local";
+
+    @Data
+    public static class ConnectInfo {
+        private String url;
+        private String host;
+        private String port;
+        private String contextPath;
+        private String appName;
+        private String application;
+        private String dashboard;
+    }
 
     public static void init(String app) {
         Assert.state(!_values.containsKey("APP"), "APP已初始化");
@@ -95,15 +105,8 @@ public class AuthzAppVersion {
         v.put("port", port);
         v.put("contextPath", contextPath);
         v.put("baseUrl", baseUrl);
-        v.put("dashboardMappingPrefix", dashboardMappingPrefix);
-        String basePath;
-        if (dashboardMappingPrefix.endsWith("/")) {
-            basePath = baseUrl + dashboardMappingPrefix + Docs.VERSION;
-        } else {
-            basePath = baseUrl + dashboardMappingPrefix + "/" + Docs.VERSION;
-        }
-        v.put("dashboardApiHelper", basePath);
-        v.put("dashboardDocs", basePath + "/docs");
+        v.put("dashboardApiHelper", baseUrl + "/authz-api/" + Docs.VERSION);
+        v.put("dashboardDocs", baseUrl + "/authz-api/" + Docs.VERSION + "/docs");
         v.put("supportCloud", supportCloud);
         return v;
     }
@@ -196,13 +199,4 @@ public class AuthzAppVersion {
         Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(changeLog, AuthzAppVersion.version.get(), AuthzAppVersion.md5).setTag(true)));
     }
 
-    @Data
-    public static class ConnectInfo {
-        private String url;
-        private String host;
-        private String port;
-        private String contextPath;
-        private String appName;
-        private String application;
-    }
 }

@@ -21,4 +21,6 @@ public @interface Mapping {
     String value() default "";
 
     boolean requireLogin() default true;
+
+    String desc() default "";
 }

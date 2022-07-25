@@ -21,4 +21,7 @@ public @interface Post {
 
     @AliasFor(annotation = Mapping.class)
     boolean requireLogin() default true;
+
+    @AliasFor(annotation = Mapping.class)
+    String desc() default "";
 }

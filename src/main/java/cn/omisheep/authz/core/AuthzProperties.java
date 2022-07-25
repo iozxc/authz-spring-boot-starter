@@ -252,10 +252,6 @@ public class AuthzProperties {
         private String     password;
         private String     allow;
         private String     deny;
-        /**
-         * dashboard的映射地址
-         */
-        private String     mappingPrefix = "/authz-dashboard";
     }
 
     @Data

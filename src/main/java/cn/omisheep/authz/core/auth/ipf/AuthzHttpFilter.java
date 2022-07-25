@@ -28,12 +28,10 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
 
     private final Httpd   httpd;
     private final boolean isDashboard;
-    private final String  mappingPrefix;
 
-    public AuthzHttpFilter(Httpd httpd, boolean isDashboard, String mappingPrefix) {
+    public AuthzHttpFilter(Httpd httpd, boolean isDashboard) {
         this.httpd       = httpd;
         this.isDashboard = isDashboard;
-        this.mappingPrefix = mappingPrefix;
     }
 
     @Override
@@ -56,14 +54,15 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
 
         HttpUtils.request.set(request);
 
-        if (isIgnoreSuffix(uri, httpd.getIgnoreSuffix()) || (isDashboard && servletPath.startsWith(mappingPrefix))) {
+        if (isIgnoreSuffix(uri, httpd.getIgnoreSuffix())
+                || (isDashboard && (servletPath.equals("/authz-dashboard-favicon.ico") ||servletPath.startsWith("/authz-api") || servletPath.startsWith("/authz-dashboard") || servletPath.startsWith("authz.html")))) {
             HttpMeta httpMeta = new HttpMeta(
                     request,
-                    ip, uri, servletPath, method, new Date());
+                    ip, uri, null, method, new Date());
             httpMeta.setIgnore(true);
             request.setAttribute(HTTP_META, httpMeta);
             httpMeta.setServletPath(servletPath);
-            httpMeta.setPath(servletPath);
+            httpMeta.setPath(uri);
             filterChain.doFilter(request, response);
             return;
         }

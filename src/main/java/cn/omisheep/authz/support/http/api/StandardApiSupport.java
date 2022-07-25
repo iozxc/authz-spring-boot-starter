@@ -20,20 +20,20 @@ public class StandardApiSupport implements ApiSupport {
     public StandardApiSupport(AuthzProperties properties) {
     }
 
-    @Get(value = "/echo")
-    public Result version(@Param String msg) {
+    @Get(value = "/echo", desc = "echo")
+    public Result echo(@Param String msg) {
         return Result.SUCCESS.data(msg);
     }
 
-    @Post(value = "/operate")
+    @Post(value = "/operate", desc = "权限操作通用接口")
     public Result operate(@JSON AuthzModifier modifier) {
         if (modifier == null) return Result.FAIL.data();
         return AuthzManager.operate(modifier);
     }
 
-    @Get(value = "/version")
-    public Result version() {
-        return Result.SUCCESS.data(AuthzVersion.getVersion());
+    @Get(value = "/version",desc= "版本号")
+    public String version() {
+        return AuthzVersion.getVersion();
     }
 
 }

@@ -103,22 +103,26 @@ public class AuthzAutoConfiguration {
         if (!StringUtils.hasText(contextPath)) {
             contextPath = "";
         }
-        String baseUrl = Utils.format("http://{}:{}{}", host, port, contextPath);
+        String baseUrl = Utils.format("{}:{}{}", host, port, contextPath);
 
-        AuthzAppVersion.host                   = host;
-        AuthzAppVersion.port                   = port;
-        AuthzAppVersion.contextPath            = contextPath;
-        AuthzAppVersion.baseUrl                = baseUrl;
-        AuthzAppVersion.dashboardMappingPrefix = properties.getDashboard().getMappingPrefix();
-        AuthzAppVersion.supportCloud           = properties.getCache().isEnableRedis();
+        AuthzAppVersion.host         = host;
+        AuthzAppVersion.port         = port;
+        AuthzAppVersion.contextPath  = contextPath;
+        AuthzAppVersion.baseUrl      = baseUrl;
+        AuthzAppVersion.supportCloud = properties.getCache().isEnableRedis();
 
         AuthzAppVersion.ConnectInfo connectInfo = new AuthzAppVersion.ConnectInfo();
         connectInfo.setApplication(AuthzAppVersion.APPLICATION_NAME);
         connectInfo.setAppName(AuthzAppVersion.APP_NAME);
         connectInfo.setContextPath(AuthzAppVersion.contextPath);
-        connectInfo.setUrl(Utils.format("http://{}:{}", host, port));
+        connectInfo.setUrl(Utils.format("{}:{}", host, port));
         connectInfo.setHost(host);
         connectInfo.setPort(port);
+        if (properties.getDashboard().isEnabled()) {
+            String u = baseUrl;
+            if (!baseUrl.endsWith("/")) u = u + "/";
+            connectInfo.setDashboard(u + "authz.html");
+        }
         AuthzAppVersion.connectInfo = connectInfo;
     }
 
@@ -287,7 +291,7 @@ public class AuthzAutoConfiguration {
     @Bean("AuthzHttpFilter")
     public FilterRegistrationBean<AuthzHttpFilter> filterRegistrationBean(Httpd httpd, AuthzProperties properties) {
         FilterRegistrationBean<AuthzHttpFilter> registration = new FilterRegistrationBean<>();
-        registration.setFilter(new AuthzHttpFilter(httpd, properties.getDashboard().isEnabled(), properties.getDashboard().getMappingPrefix()));
+        registration.setFilter(new AuthzHttpFilter(httpd, properties.getDashboard().isEnabled()));
         registration.addUrlPatterns("/*");
         registration.setName("authzFilter");
         registration.setOrder(1);
@@ -345,7 +349,7 @@ public class AuthzAutoConfiguration {
         public ServletRegistrationBean DashboardServlet(AuthzProperties properties, Cache cache) {
             AuthzProperties.DashboardConfig dashboard = properties.getDashboard();
             ServletRegistrationBean<SupportServlet> bean =
-                    new ServletRegistrationBean<>(new SupportServlet(dashboard, cache), dashboard.getMappingPrefix().endsWith("/") ? dashboard.getMappingPrefix() + "*" : dashboard.getMappingPrefix() + "/*");
+                    new ServletRegistrationBean<>(new SupportServlet(dashboard, cache), "/authz-api/*", "/authz-dashboard/*", "/authz.html", "/authz-dashboard-favicon.ico");
 
             HashMap<String, String> initParameters = new HashMap<>();
 

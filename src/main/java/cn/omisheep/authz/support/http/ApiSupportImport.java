@@ -41,7 +41,7 @@ public class ApiSupportImport implements ImportSelector {
                                     if (mMapping == null) return;
                                     path += mMapping.path();
                                     rel = rel || mMapping.requireLogin();
-                                    ApiHandler.getApi().put(path, new ApiHandler.ApiInfo().setRequireLogin(rel).setInvoke(method).setMethod(mMapping.type()));
+                                    ApiHandler.getApi().put(path, new ApiHandler.ApiInfo().setRequireLogin(rel).setDesc(mMapping.desc()).setInvoke(method).setMethod(mMapping.type()));
                                 })
                         )
                 );

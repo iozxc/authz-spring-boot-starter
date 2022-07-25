@@ -1,12 +1,16 @@
 package cn.omisheep.authz.support.http.handler;
 
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
+import cn.omisheep.authz.core.auth.rpd.PermissionDict;
+import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.support.http.annotation.Header;
 import cn.omisheep.authz.support.http.annotation.JSON;
 import cn.omisheep.authz.support.http.annotation.Param;
 import cn.omisheep.authz.support.util.SupportUtils;
 import cn.omisheep.commons.util.web.JSONUtils;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -19,41 +23,42 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.2.0
  */
-public class ApiHandler implements WebHandler {
+public class ApiHandler {
 
     @Getter
     private static final HashMap<String, ApiInfo> api = new HashMap<>();
 
-    private static final String PREFIX = "/v1/api";
-
     @Data
     @Accessors(chain = true)
     public static class ApiInfo {
+        @JsonProperty(index = 2)
         private String  method;
+        @JsonProperty(index = 1)
         private boolean requireLogin;
+        @JsonIgnore
         private Method  invoke;
+        @JsonProperty(index = 3)
+        private String  desc;
+
+        @JsonProperty(index = 4)
+        public Object getReturn() {
+            Map<String, String> map = PermissionDict.parseTypeForTemplate(invoke.getReturnType().getTypeName());
+            if (map.isEmpty()) return invoke.getReturnType().getTypeName();
+            return map;
+        }
     }
 
-    @Override
-    public boolean requireLogin() {
-        return false;
-    }
-
-    @Override
-    public boolean match(String path) {
-        return path.startsWith(PREFIX);
-    }
-
-    @Override
-    public void process(HttpServletRequest request, HttpServletResponse response, HttpMeta httpMeta, String path, boolean auth) {
-        String  apiPath = path.substring(PREFIX.length());
-        ApiInfo apiInfo = api.get(apiPath);
+    public void process(HttpServletRequest request, HttpServletResponse response, String path, boolean auth) {
+        HttpMeta httpMeta = (HttpMeta) request.getAttribute(Constants.HTTP_META);
+        String   apiPath  = path.substring("/v1".length());
+        ApiInfo  apiInfo  = api.get(apiPath);
         if (apiInfo == null || !apiInfo.getMethod().equals(httpMeta.getMethod())) {
             return;
         }
