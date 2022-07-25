@@ -48,7 +48,6 @@ public class AuthzAppVersion {
     public static final  String                   ALL                                = "all";
     public static final  String                   LOCAL                              = "local";
 
-
     public static void init(String app) {
         Assert.state(!_values.containsKey("APP"), "APP已初始化");
         _values.put("APP", app);
@@ -77,16 +76,6 @@ public class AuthzAppVersion {
         if (md5check) {
             compute();
         }
-    }
-
-    @Data
-    public static class ConnectInfo {
-        private String url;
-        private String host;
-        private String port;
-        private String contextPath;
-        private String appName;
-        private String application;
     }
 
     public static String getMd5() {
@@ -207,4 +196,13 @@ public class AuthzAppVersion {
         Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(changeLog, AuthzAppVersion.version.get(), AuthzAppVersion.md5).setTag(true)));
     }
 
+    @Data
+    public static class ConnectInfo {
+        private String url;
+        private String host;
+        private String port;
+        private String contextPath;
+        private String appName;
+        private String application;
+    }
 }
