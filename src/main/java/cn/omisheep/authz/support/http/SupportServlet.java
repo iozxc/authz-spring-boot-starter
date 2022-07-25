@@ -7,6 +7,7 @@ import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.util.IPUtils;
 import cn.omisheep.authz.core.util.ScanUtils;
 import cn.omisheep.authz.core.util.Utils;
+import cn.omisheep.authz.support.entity.User;
 import cn.omisheep.authz.support.http.handler.WebHandler;
 import cn.omisheep.authz.support.util.IPAddress;
 import cn.omisheep.authz.support.util.IPRange;
@@ -21,8 +22,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -40,8 +40,14 @@ public class SupportServlet extends HttpServlet {
     private final        String                baseMapping;
     private final        Cache                 cache;
 
+    private final static Set<User> users = new HashSet<>();
+
+    public static boolean requireLogin() {
+        return !users.isEmpty();
+    }
+
     public SupportServlet(AuthzProperties.DashboardConfig dashboardConfig, Cache cache) {
-        String mappings = dashboardConfig.getMappings();
+        String mappingPrefix = dashboardConfig.getMappingPrefix();
         this.cache = cache;
 
         this.requireLogin = !StringUtils.isEmpty(dashboardConfig.getUsername()) && !StringUtils.isEmpty(dashboardConfig.getPassword()) || !dashboardConfig.getUsers().isEmpty();
@@ -58,15 +64,43 @@ public class SupportServlet extends HttpServlet {
             log.error(e.getMessage(), e);
         }
 
-        String val = mappings.substring(0, mappings.indexOf("/*"));
-        if (!mappings.startsWith("/")) {
-            baseMapping = val;
+        if (!mappingPrefix.startsWith("/")) {
+            baseMapping = mappingPrefix;
         } else {
-            baseMapping = val.substring(1);
+            baseMapping = mappingPrefix.substring(1);
         }
 
         for (String name : ScanUtils.scan(WebHandler.class, "cn.omisheep.authz.support.http")) {
             webHandlers.add(Classes.newInstance(name));
+        }
+
+        users.addAll(dashboardConfig.getUsers());
+        String username = dashboardConfig.getUsername();
+        String password = dashboardConfig.getPassword();
+        if (!StringUtils.isEmpty(username) && !StringUtils.isEmpty(password)) {
+            users.add(new User().setUsername(username).setPassword(password).setPermissions(Collections.singletonList("*")));
+        }
+    }
+
+    public static User login(String username, String password) {
+        if (users.isEmpty()) return null;
+        if (username == null || password == null) return null;
+        if (users.stream().anyMatch(u -> StringUtils.equals(u.getUsername(), username) && StringUtils.equals(u.getPassword(), password))) {
+            return new User().setUsername(username).setPassword(password);
+        }
+        return null;
+    }
+
+    public static User auth(HttpServletRequest request, Cache cache) {
+        String uuid1    = request.getHeader("uuid");
+        String uuid     = uuid1 != null ? uuid1 : request.getParameter("uuid");
+        Object username = cache.get(Constants.DASHBOARD_KEY_PREFIX.get() + uuid);
+        if (username == null) {
+            String username1 = request.getParameter("username");
+            String password1 = request.getParameter("password");
+            return login(username1, password1);
+        } else {
+            return new User().setUsername((String) username).setUuid(uuid);
         }
     }
 
@@ -85,10 +119,7 @@ public class SupportServlet extends HttpServlet {
         if (gotoIndex(contextPath, path, response)) return; // 跳转匹配
 
         if (path.startsWith("/v1")) {
-            String uuid1    = request.getHeader("uuid");
-            String uuid     = uuid1 != null ? uuid1 : request.getParameter("uuid");
-            Object username = cache.get(Constants.DASHBOARD_KEY_PREFIX.get() + uuid);
-            process(request, response, path, !requireLogin || username != null);
+            process(request, response, path, !requireLogin || auth(request, cache) != null);
             return;
         }
 

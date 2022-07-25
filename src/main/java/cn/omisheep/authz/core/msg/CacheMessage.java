@@ -56,6 +56,6 @@ public class CacheMessage implements Message {
 
     public enum Type {
         WRITE,
-        DELETE,
+        DELETE
     }
 }

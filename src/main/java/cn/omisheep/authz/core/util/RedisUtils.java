@@ -125,13 +125,13 @@ public abstract class RedisUtils {
             return ClassUtils.castValue(redisTemplate.opsForValue().get(key), requiredType);
         }
 
-        public static List get(List<String> key) {
+        public static List get(Collection<String> key) {
             List objects = redisTemplate.opsForValue().multiGet(key);
             if (objects == null) return new ArrayList<>();
             return objects;
         }
 
-        public static Map<String, Object> getToMap(List<String> key) {
+        public static Map<String, Object> getToMap(Collection<String> key) {
             List<?> objects = redisTemplate.opsForValue().multiGet(key);
             if (objects == null) return new HashMap<>();
             HashMap<String, Object> map      = new HashMap<>();
@@ -142,7 +142,7 @@ public abstract class RedisUtils {
             return map;
         }
 
-        public static <E> Map<String, E> getToMap(List<String> key, Class<E> requiredType) {
+        public static <E> Map<String, E> getToMap(Collection<String> key, Class<E> requiredType) {
             List<?> objects = redisTemplate.opsForValue().multiGet(key);
             if (objects == null) return new HashMap<>();
             HashMap<String, E> map      = new HashMap<>();

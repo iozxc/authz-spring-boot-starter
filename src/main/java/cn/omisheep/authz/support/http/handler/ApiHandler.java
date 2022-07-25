@@ -2,6 +2,7 @@ package cn.omisheep.authz.support.http.handler;
 
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.util.AUtils;
+import cn.omisheep.authz.support.http.annotation.Header;
 import cn.omisheep.authz.support.http.annotation.JSON;
 import cn.omisheep.authz.support.http.annotation.Param;
 import cn.omisheep.authz.support.util.SupportUtils;
@@ -18,6 +19,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -69,6 +71,32 @@ public class ApiHandler implements WebHandler {
             ArrayList<Object> objects = new ArrayList<>();
             for (Parameter parameter : parameters) {
                 Class<?> type = parameter.getType();
+
+                if (AnnotationUtils.getAnnotation(parameter, JSON.class) != null) {
+                    objects.add(JSONUtils.parseJSON(httpMeta.getBody(), type));
+                    continue;
+                }
+                Param param = AnnotationUtils.getAnnotation(parameter, Param.class);
+                if (param != null) {
+                    try {
+                        String requestParameter = request.getParameter(!Objects.equals(param.name(), "") ? param.name() : parameter.getName());
+                        objects.add(type.getConstructor(String.class).newInstance(requestParameter));
+                    } catch (Exception e) {
+                        objects.add(null);
+                    }
+                    continue;
+                }
+                Header header = AnnotationUtils.getAnnotation(parameter, Header.class);
+                if (header != null) {
+                    try {
+                        String val = request.getHeader(!Objects.equals(header.name(), "") ? header.name() : parameter.getName());
+                        objects.add(type.getConstructor(String.class).newInstance(val));
+                    } catch (Exception e) {
+                        objects.add(null);
+                    }
+                    continue;
+                }
+
                 if (HttpServletRequest.class.equals(type)) {
                     objects.add(request);
                 } else if (HttpServletResponse.class.equals(type)) {
@@ -78,22 +106,7 @@ public class ApiHandler implements WebHandler {
                 } else if (HttpMeta.class.equals(type)) {
                     objects.add(httpMeta);
                 } else {
-                    if (AnnotationUtils.getAnnotation(parameter, JSON.class) != null) {
-                        objects.add(JSONUtils.parseJSON(httpMeta.getBody(), type));
-                    } else {
-                        Param param = AnnotationUtils.getAnnotation(parameter, Param.class);
-                        if (param != null) {
-                            try {
-                                String requestParameter = request.getParameter(parameter.getName());
-                                if (requestParameter == null || requestParameter.equals("")) requestParameter = param.defaultValue();
-                                objects.add(type.getConstructor(String.class).newInstance(requestParameter));
-                            } catch (Exception e) {
-                                objects.add(null);
-                            }
-                        } else {
-                            objects.add(AUtils.getBean(type));
-                        }
-                    }
+                    objects.add(AUtils.getBean(type));
                 }
             }
             SupportUtils.toJSON(response, invoke.invoke(AUtils.getBean(invoke.getDeclaringClass()), objects.toArray()));

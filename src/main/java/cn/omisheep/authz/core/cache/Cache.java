@@ -298,4 +298,5 @@ public interface Cache {
     default void reload(@NonNull Collection<String>... keys) {
         reload(Arrays.stream(keys).toArray(String[]::new));
     }
+
 }

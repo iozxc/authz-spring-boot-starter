@@ -15,8 +15,6 @@ public interface Constants {
     String EMPTY     = "";
 
     String HTTP_META    = "AU_HTTP_META";
-    String DEBUG_PREFIX = "[DEBUG]  ";
-    String WARN_PREFIX  = "[WARN]  ";
     String OPTIONS      = "OPTIONS";
 
     Supplier<String> ACCESS_INFO_KEY_PREFIX         = () -> AuthzAppVersion.values.get("ACCESS_INFO_KEY_PREFIX");
@@ -26,5 +24,7 @@ public interface Constants {
     Supplier<String> USER_ROLES_KEY_PREFIX          = () -> AuthzAppVersion.values.get("USER_ROLES_KEY_PREFIX");
     Supplier<String> DASHBOARD_KEY_PREFIX           = () -> AuthzAppVersion.values.get("DASHBOARD_KEY_PREFIX");
 
-    String[] METHODS = {"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE"};
+    String   CONNECT_PREFIX = "authz:v1:connect:";
+
+    String[] METHODS        = {"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE"};
 }

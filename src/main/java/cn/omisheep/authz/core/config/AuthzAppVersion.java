@@ -2,15 +2,22 @@ package cn.omisheep.authz.core.config;
 
 import cn.omisheep.authz.core.AuthzManager;
 import cn.omisheep.authz.core.msg.AuthzModifier;
+import cn.omisheep.authz.core.msg.Message;
 import cn.omisheep.authz.core.msg.VersionMessage;
 import cn.omisheep.authz.core.util.MD5Utils;
 import cn.omisheep.authz.core.util.RedisUtils;
+import cn.omisheep.authz.support.entity.Docs;
 import cn.omisheep.commons.util.Assert;
 import cn.omisheep.commons.util.Async;
 import cn.omisheep.commons.util.TaskBuilder;
+import lombok.Data;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import static cn.omisheep.authz.core.config.Constants.CONNECT_PREFIX;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -18,12 +25,29 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class AuthzAppVersion {
 
-    public static final AtomicInteger            version   = new AtomicInteger(0);
-    public static final ArrayList<AuthzModifier> changeLog = new ArrayList<>();
-    public static final ArrayList<AuthzModifier> cache     = new ArrayList<>();
+    public static final  AtomicInteger            version                            = new AtomicInteger(0);
+    public static final  ArrayList<AuthzModifier> changeLog                          = new ArrayList<>();
+    public static final  ArrayList<AuthzModifier> cache                              = new ArrayList<>();
+    private static final Map<String, String>      _values                            = new HashMap<>();
+    public static final  Map<String, String>      values                             = Collections.unmodifiableMap(_values);
+    private static       String                   md5;
+    private static       boolean                  md5check                           = false;
+    private static       String                   projectPath                        = null;
+    public static        String                   APPLICATION_NAME;
+    public static        String                   APP_NAME;
+    private static       boolean                  loading                            = false;
+    public static        String                   host;
+    public static        String                   port;
+    public static        String                   contextPath;
+    public static        String                   baseUrl;
+    public static        String                   dashboardMappingPrefix;
+    public static        boolean                  supportCloud;
+    public static        ConnectInfo              connectInfo;
+    public static final  String                   CONNECT_INFO_WITH_SAME_APPLICATION = "connectInfoWithSameApplication";
+    public static final  String                   CONNECT_INFO_WITH_SAME_APP_NAME    = "connectInfoWithSameAppName";
+    public static final  String                   ALL                                = "all";
+    public static final  String                   LOCAL                              = "local";
 
-    private static final Map<String, String> _values = new HashMap<>();
-    public static final  Map<String, String> values  = Collections.unmodifiableMap(_values);
 
     public static void init(String app) {
         Assert.state(!_values.containsKey("APP"), "APP已初始化");
@@ -35,10 +59,6 @@ public class AuthzAppVersion {
         _values.put("USER_ROLES_KEY_PREFIX", "au:" + app + ":userRoles:");
         _values.put("DASHBOARD_KEY_PREFIX", "au:" + app + ":dashboard:");
     }
-
-    private static String  md5;
-    private static boolean md5check    = false;
-    private static String  projectPath = null;
 
     public static String getProjectPath() {
         return projectPath;
@@ -59,14 +79,15 @@ public class AuthzAppVersion {
         }
     }
 
-    public static  String  APPLICATION_NAME;
-    public static  String  APP_NAME;
-    private static boolean loading = false;
-
-    public static String host;
-    public static String port;
-    public static String path;
-    public static String prefix;
+    @Data
+    public static class ConnectInfo {
+        private String url;
+        private String host;
+        private String port;
+        private String contextPath;
+        private String appName;
+        private String application;
+    }
 
     public static String getMd5() {
         return md5;
@@ -76,16 +97,45 @@ public class AuthzAppVersion {
         md5 = MD5Utils.compute(projectPath);
     }
 
-    public static HashMap<String, String> getVersion() {
-        HashMap<String, String> v = new HashMap<>();
+    public static HashMap<String, Object> getVersion() {
+        HashMap<String, Object> v = new HashMap<>();
         v.put("version", version + "");
-        v.put("name", APP_NAME);
+        v.put("appName", APP_NAME);
         v.put("application", APPLICATION_NAME);
         v.put("host", host);
         v.put("port", port);
-        v.put("path", path);
-        v.put("prefix", prefix);
+        v.put("contextPath", contextPath);
+        v.put("baseUrl", baseUrl);
+        v.put("dashboardMappingPrefix", dashboardMappingPrefix);
+        String basePath;
+        if (dashboardMappingPrefix.endsWith("/")) {
+            basePath = baseUrl + dashboardMappingPrefix + Docs.VERSION;
+        } else {
+            basePath = baseUrl + dashboardMappingPrefix + "/" + Docs.VERSION;
+        }
+        v.put("dashboardApiHelper", basePath);
+        v.put("dashboardDocs", basePath + "/docs");
+        v.put("supportCloud", supportCloud);
         return v;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static List<ConnectInfo> listAllConnectInfo() {
+        Set<String> scan = RedisUtils.scan(CONNECT_PREFIX + "*");
+        return RedisUtils.Obj.get(scan);
+    }
+
+    public static Map<String, List<ConnectInfo>> getConnectInfo() {
+        List<ConnectInfo>                  connectInfo                    = listAllConnectInfo();
+        List<ConnectInfo>                  connectInfoWithSameApplication = connectInfo.stream().filter(c -> c.application.equals(APPLICATION_NAME)).collect(Collectors.toList());
+        List<ConnectInfo>                  connectInfoWithSameAppName     = connectInfo.stream().filter(c -> c.appName.equals(APP_NAME)).collect(Collectors.toList());
+        List<ConnectInfo>                  local                          = connectInfo.stream().filter(c -> c.appName.equals(APP_NAME) && c.application.equals(APPLICATION_NAME)).collect(Collectors.toList());
+        HashMap<String, List<ConnectInfo>> map                            = new HashMap<>();
+        map.put(CONNECT_INFO_WITH_SAME_APPLICATION, connectInfoWithSameApplication);
+        map.put(CONNECT_INFO_WITH_SAME_APP_NAME, connectInfoWithSameAppName);
+        map.put(LOCAL, local);
+        map.put(ALL, connectInfo);
+        return map;
     }
 
     public static void receive(VersionMessage versionMessage) {
@@ -126,7 +176,7 @@ public class AuthzAppVersion {
     public static Runnable task() {
         return () -> {
             if (loading) {
-                TaskBuilder.schedule(task(), "10s");
+                TaskBuilder.scheduleOnceDelay(task(), "10s");
             } else {
                 cache.forEach(AuthzAppVersion::receiveCut);
                 cache.clear();
@@ -143,6 +193,8 @@ public class AuthzAppVersion {
 
     public static void born() {
         Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(-1, AuthzAppVersion.md5)));
+        // authz:v1:connect:{MessageId} 30秒后过期  25秒ping一次
+        TaskBuilder.schedule(() -> RedisUtils.Obj.set(CONNECT_PREFIX + Message.uuid, connectInfo, 30), 25, TimeUnit.SECONDS);
     }
 
     public static void send(AuthzModifier authzModifier) {
@@ -154,4 +206,5 @@ public class AuthzAppVersion {
     public static void send() {
         Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(changeLog, AuthzAppVersion.version.get(), AuthzAppVersion.md5).setTag(true)));
     }
+
 }

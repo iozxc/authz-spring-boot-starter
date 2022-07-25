@@ -1,10 +1,10 @@
 package cn.omisheep.authz.support.entity;
 
 import cn.omisheep.authz.core.AuthzVersion;
-import cn.omisheep.authz.core.auth.ipf.Blacklist;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.ipf.LimitMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
+import cn.omisheep.authz.core.config.AuthzAppVersion;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -22,14 +22,15 @@ import java.util.Map;
  */
 @Accessors(chain = true)
 public class Docs {
+    public static final String         VERSION = "v1";
     @Getter
     @JsonProperty(index = 1)
-    private final String         authz = AuthzVersion.getVersion();
+    private final       String         authz   = AuthzVersion.getVersion();
     @Getter
     @JsonProperty(index = 2)
-    private final Info           info;
-    private final Httpd          httpd;
-    private final PermissionDict permissionDict;
+    private final       Info           info;
+    private final       Httpd          httpd;
+    private final       PermissionDict permissionDict;
 
     public Docs(Info info, Httpd httpd, PermissionDict permissionDict) {
         this.info           = info;
@@ -38,11 +39,16 @@ public class Docs {
     }
 
     @JsonProperty(index = 3)
+    public Map<String, Object> getAppVersionInfo() {
+        return AuthzAppVersion.getVersion();
+    }
+
+    @JsonProperty(index = 4)
     public Map<String, List<Map<String, String>>> getControllers() {
         return permissionDict.getControllerMetadata();
     }
 
-    @JsonProperty(index = 4)
+    @JsonProperty(index = 5)
     public Map<String, Map<String, Map<String, Object>>> getPaths() {
         HashMap<String, Map<String, Map<String, Object>>> map = new HashMap<>();
         permissionDict.getRawParamMap().forEach((k, v) -> {
@@ -68,11 +74,6 @@ public class Docs {
         return map;
     }
 
-    @JsonProperty(index = 5)
-    public Map<String, Object> getBlacklist() {
-        return Blacklist.readAll();
-    }
-
     @JsonProperty(index = 6)
     public Map<String, Map<String, LimitMeta>> getRateLimit() {
         return Collections.unmodifiableMap(httpd.getRateLimitMetadata());
@@ -84,7 +85,17 @@ public class Docs {
     }
 
     @JsonProperty(index = 8)
-    public String[] getIgnoreSuffix() {
-        return httpd.getIgnoreSuffix().clone();
+    public List<AuthzAppVersion.ConnectInfo> conns() { // 实例
+        return AuthzAppVersion.getConnectInfo().get(AuthzAppVersion.LOCAL);
     }
+
+//    @JsonProperty(index = 6)
+//    public Map<String, Object> getBlacklist() {
+//        return Blacklist.readAll();
+//    }
+
+//    @JsonProperty(index = 9)
+//    public String[] getIgnoreSuffix() {
+//        return httpd.getIgnoreSuffix().clone();
+//    }
 }

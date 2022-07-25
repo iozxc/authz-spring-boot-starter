@@ -16,6 +16,7 @@ public class User {
     private String       username;
     private String       password;
     private List<String> permissions;
+    private String       uuid;
 
     @Override
     public boolean equals(Object o) {

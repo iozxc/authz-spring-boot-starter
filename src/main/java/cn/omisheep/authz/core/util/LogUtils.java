@@ -46,9 +46,7 @@ public abstract class LogUtils {
     }
 
     public static void debug(String msg, Object... args) {
-        if (logLevel.ordinal() <= LogLevel.DEBUG.ordinal() && log.isDebugEnabled(MARKER)) {
-            log.debug(MARKER, Constants.DEBUG_PREFIX + msg, args);
-        }
+        if (logLevel.ordinal() <= LogLevel.DEBUG.ordinal() && log.isDebugEnabled(MARKER)) log.debug(MARKER, msg, args);
     }
 
     public static void push(String formatMsg, Object... args) {

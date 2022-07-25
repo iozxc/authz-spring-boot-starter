@@ -29,6 +29,7 @@ import cn.omisheep.authz.core.resolver.AuthzHandlerRegister;
 import cn.omisheep.authz.core.resolver.DecryptRequestBodyAdvice;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.authz.core.util.Utils;
+import cn.omisheep.authz.support.entity.Cloud;
 import cn.omisheep.authz.support.entity.Docs;
 import cn.omisheep.authz.support.entity.Info;
 import cn.omisheep.authz.support.http.SupportServlet;
@@ -97,17 +98,28 @@ public class AuthzAutoConfiguration {
         } catch (UnknownHostException e) {
             host = "localhost";
         }
-        String port = environment.getProperty("server.port");
-        String path = environment.getProperty("server.servlet.context-path");
-        if (!StringUtils.hasText(path)) {
-            path = "";
+        String port        = environment.getProperty("server.port");
+        String contextPath = environment.getProperty("server.servlet.context-path");
+        if (!StringUtils.hasText(contextPath)) {
+            contextPath = "";
         }
-        String prefix = Utils.format("http://{}:{}{}", host, port, path);
+        String baseUrl = Utils.format("http://{}:{}{}", host, port, contextPath);
 
-        AuthzAppVersion.host   = host;
-        AuthzAppVersion.port   = port;
-        AuthzAppVersion.path   = path;
-        AuthzAppVersion.prefix = prefix;
+        AuthzAppVersion.host                   = host;
+        AuthzAppVersion.port                   = port;
+        AuthzAppVersion.contextPath            = contextPath;
+        AuthzAppVersion.baseUrl                = baseUrl;
+        AuthzAppVersion.dashboardMappingPrefix = properties.getDashboard().getMappingPrefix();
+        AuthzAppVersion.supportCloud           = properties.getCache().isEnableRedis();
+
+        AuthzAppVersion.ConnectInfo connectInfo = new AuthzAppVersion.ConnectInfo();
+        connectInfo.setApplication(AuthzAppVersion.APPLICATION_NAME);
+        connectInfo.setAppName(AuthzAppVersion.APP_NAME);
+        connectInfo.setContextPath(AuthzAppVersion.contextPath);
+        connectInfo.setUrl(Utils.format("http://{}:{}", host, port));
+        connectInfo.setHost(host);
+        connectInfo.setPort(port);
+        AuthzAppVersion.connectInfo = connectInfo;
     }
 
     @Bean("authzCache")
@@ -275,7 +287,7 @@ public class AuthzAutoConfiguration {
     @Bean("AuthzHttpFilter")
     public FilterRegistrationBean<AuthzHttpFilter> filterRegistrationBean(Httpd httpd, AuthzProperties properties) {
         FilterRegistrationBean<AuthzHttpFilter> registration = new FilterRegistrationBean<>();
-        registration.setFilter(new AuthzHttpFilter(httpd, properties.getDashboard().isEnabled(), properties.getDashboard().getMappings()));
+        registration.setFilter(new AuthzHttpFilter(httpd, properties.getDashboard().isEnabled(), properties.getDashboard().getMappingPrefix()));
         registration.addUrlPatterns("/*");
         registration.setName("authzFilter");
         registration.setOrder(1);
@@ -319,16 +331,21 @@ public class AuthzAutoConfiguration {
                     .setVersion("1.0");
         }
 
-        @Bean
+        @Bean("authz-docs")
         private Docs docs(Info info, Httpd httpd, PermissionDict permissionDict) {
             return new Docs(info, httpd, permissionDict);
+        }
+
+        @Bean("authz-cloud")
+        private Cloud cloud() {
+            return new Cloud();
         }
 
         @Bean
         public ServletRegistrationBean DashboardServlet(AuthzProperties properties, Cache cache) {
             AuthzProperties.DashboardConfig dashboard = properties.getDashboard();
             ServletRegistrationBean<SupportServlet> bean =
-                    new ServletRegistrationBean<>(new SupportServlet(dashboard, cache), dashboard.getMappings());
+                    new ServletRegistrationBean<>(new SupportServlet(dashboard, cache), dashboard.getMappingPrefix().endsWith("/") ? dashboard.getMappingPrefix() + "*" : dashboard.getMappingPrefix() + "/*");
 
             HashMap<String, String> initParameters = new HashMap<>();
 

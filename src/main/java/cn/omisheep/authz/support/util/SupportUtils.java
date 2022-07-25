@@ -102,7 +102,8 @@ public abstract class SupportUtils {
     public static void toJSON(HttpServletResponse response, Object o) {
         try {
             response.setContentType("application/json;charset=utf-8");
-            response.getWriter().println(JSONUtils.toPrettyJSONString(o));
+            if (o instanceof String) response.getWriter().println(o);
+            else response.getWriter().println(JSONUtils.toJSONString(o));
         } catch (IOException e) {
             e.printStackTrace();
         }
