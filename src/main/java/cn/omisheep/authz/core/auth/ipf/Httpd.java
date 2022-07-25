@@ -30,6 +30,8 @@ public class Httpd implements AuthzModifiable {
 
     private static final HashMap<String, PathPattern> pathMatcherMap = new HashMap<>();
 
+    private static final PathPatternParser pathPatternParser = new PathPatternParser();
+
     @Getter
     @Setter
     private String[] ignoreSuffix;
@@ -70,7 +72,7 @@ public class Httpd implements AuthzModifiable {
     }
 
     public void setPathPattern(String pattern) {
-        pathMatcherMap.put(pattern, PathPatternParser.defaultInstance.parse(pattern));
+        pathMatcherMap.put(pattern, pathPatternParser.parse(pattern));
     }
 
     public boolean match(String pattern, String path) {

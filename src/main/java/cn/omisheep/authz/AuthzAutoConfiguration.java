@@ -129,7 +129,8 @@ public class AuthzAutoConfiguration {
 
         static {
             jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer(Object.class);
-            jackson2JsonRedisSerializer.setObjectMapper(new ObjectMapper().setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY).activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL));
+            jackson2JsonRedisSerializer.setObjectMapper(new ObjectMapper().setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY)
+                                                                .activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL));
         }
 
         @Bean(name = "redisHealthIndicator")

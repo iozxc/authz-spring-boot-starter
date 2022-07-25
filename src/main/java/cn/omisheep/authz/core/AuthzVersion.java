@@ -16,16 +16,15 @@ public class AuthzVersion {
     }
 
     public static void printBanner() {
-        Color.WHITE_BOLD.println("               _    _          ");
-        Color.WHITE_BOLD.print("      ");
+        Color.RESET.println("               _    _          ");
+        Color.RESET.print("      ");
         Color.RAND.print(":)");
-        Color.WHITE_BOLD.println("      | |  | |         ");
-        Color.WHITE_BOLD.println("  __ _  _   _ | |_ | |__   ____");
-        Color.WHITE_BOLD.println(" / _` || | | || __|| '_ \\ |_  /");
-        Color.WHITE_BOLD.println("| (_| || |_| || |_ | | | | / / ");
-        Color.WHITE_BOLD.println(" \\__,_| \\__,_| \\__||_| |_|/___|");
-        Color.GREEN_BOLD_BRIGHT.print("  \t\tAuthz  ");
-        Color.RESET.print("v" + getVersion());
-        Color.RESET.println();
+        Color.RESET.println("      | |  | |         ");
+        Color.RESET.println("  __ _  _   _ | |_ | |__   ____");
+        Color.RESET.println(" / _` || | | || __|| '_ \\ |_  /");
+        Color.RESET.println("| (_| || |_| || |_ | | | | / / ");
+        Color.RESET.println(" \\__,_| \\__,_| \\__||_| |_|/___|");
+        Color.RESET.println("  \t\t Authz  v" + getVersion());
     }
+
 }
