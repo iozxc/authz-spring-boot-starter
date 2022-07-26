@@ -89,6 +89,15 @@ public class AuthzProperties {
         private String key;
 
         /**
+         * oauth配置
+         *
+         * @since 1.2.0
+         */
+        private OpenAuthConfig oauth = new OpenAuthConfig();
+
+        private String defaultScope = "basic";
+
+        /**
          * Token字符串表示模式。默认为标准模式。
          */
         private Mode mode = Mode.STANDARD;
@@ -103,6 +112,9 @@ public class AuthzProperties {
          */
         private Compress compress = Compress.NONE;
 
+        /**
+         * tokenId的长度
+         */
         private int tokenIdBits = 8;
 
         /**
@@ -116,25 +128,25 @@ public class AuthzProperties {
         private String headerName = "Authorization";
 
         /**
-         * prefix 例如："Bearer <token>"
+         * prefix 例如：headerPrefix = 'Bearer' -> "Bearer <token>"
+         * headerPrefix不需要在最后空格，但是在请求时需要空一格
          */
         private String headerPrefix = "Bearer";
 
         /**
-         * 存活时间 access token有效时间，默认 7d ，单位 ms|s|m|h|d
+         * access token有效时间，默认 7d ，单位 ms|s|m|h|d
          */
         private String accessTime = "7d";
 
         /**
-         * 刷新时间 refresh token有效时间，默认 30d ，单位 ms|s|m|h|d
+         * refresh token有效时间，默认 30d ，单位 ms|s|m|h|d
          */
         private String refreshTime = "30d";
 
         /**
-         * issuer
+         * issuer 发行用户
          */
         private String issuer;
-
 
         public enum Mode {
             STANDARD,
@@ -148,7 +160,35 @@ public class AuthzProperties {
             NONE
         }
 
+        @Data
+        public static class OpenAuthConfig {
+            /**
+             * 授权码过期时间
+             */
+            private String authorizationCodeTime = "10m";
+
+            /**
+             * 授权码签名算法
+             */
+            private AuthorizationCodeAlgorithm algorithm = AuthorizationCodeAlgorithm.SHA1;
+
+            public enum AuthorizationCodeAlgorithm {
+                SHA_256("SHA-256"), SHA1("SHA1"), MD5("MD5");
+
+                private final String value;
+
+                AuthorizationCodeAlgorithm(String value) {
+                    this.value = value;
+                }
+
+                public String getValue() {
+                    return value;
+                }
+            }
+        }
+
     }
+
 
     @Data
     public static class UserConfig {
@@ -246,8 +286,8 @@ public class AuthzProperties {
 
     @Data
     public static class DashboardConfig {
-        private boolean    enabled  = false;
-        private List<User> users    = new ArrayList<>();
+        private boolean    enabled = false;
+        private List<User> users   = new ArrayList<>();
         private String     username;
         private String     password;
         private String     allow;

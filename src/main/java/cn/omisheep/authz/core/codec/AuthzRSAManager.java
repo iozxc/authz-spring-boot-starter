@@ -24,7 +24,6 @@ public class AuthzRSAManager {
 
     private static String time;
 
-
     private AuthzRSAManager() {
     }
 

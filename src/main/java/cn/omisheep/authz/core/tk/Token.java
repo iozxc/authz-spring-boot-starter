@@ -2,6 +2,7 @@ package cn.omisheep.authz.core.tk;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import lombok.ToString;
 
@@ -15,6 +16,7 @@ import java.util.List;
  */
 @Getter
 @ToString
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Token {
 
     /**
@@ -55,6 +57,20 @@ public class Token {
     private final String deviceId;
 
     /**
+     * 客户端id，没有则为null
+     *
+     * @since 1.2.0
+     */
+    private final String clientId;
+
+    /**
+     * 授权范围
+     *
+     * @since 1.2.0
+     */
+    private final String scope;
+
+    /**
      * token 类型
      */
     private final Type type;
@@ -82,7 +98,8 @@ public class Token {
         }
     }
 
-    public Token(String tokenVal, Object userId, String tokenId, Date issueTime, Date expiredTime, String deviceType, String deviceId, Type type) {
+    public Token(String tokenVal, Object userId, String tokenId, Date issueTime, Date expiredTime, String deviceType,
+                 String deviceId, String clientId, String scope, Type type) {
         this.tokenVal    = tokenVal;
         this.userId      = userId;
         this.tokenId     = tokenId;
@@ -90,6 +107,8 @@ public class Token {
         this.expiredTime = expiredTime;
         this.deviceType  = deviceType;
         this.deviceId    = deviceId;
+        this.clientId    = clientId;
+        this.scope       = scope;
         this.type        = type;
     }
 }

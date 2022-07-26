@@ -37,7 +37,10 @@ public class L2Cache implements Cache {
     private final ConcurrentSkipListSet<String> keyPatterns = new ConcurrentSkipListSet<>();
 
     public L2Cache(AuthzProperties properties) {
-        Caffeine<String, CacheItem> caffeine         = Caffeine.newBuilder().scheduler(Scheduler.systemScheduler()).expireAfter(new CacheExpiry(TimeUtils.parseTimeValue(properties.getCache().getExpireAfterReadOrUpdateTime()), TimeUnit.MILLISECONDS));
+        Caffeine<String, CacheItem> caffeine         = Caffeine.newBuilder().scheduler(
+                Scheduler.systemScheduler()).expireAfter(
+                new CacheExpiry(TimeUtils.parseTimeValue(properties.getCache().getExpireAfterReadOrUpdateTime()),
+                                TimeUnit.MILLISECONDS));
         Long                        cacheMaximumSize = properties.getCache().getCacheMaximumSize();
         if (cacheMaximumSize != null) caffeine.maximumSize(cacheMaximumSize);
         cache = caffeine.build(new CacheLoader<String, CacheItem>() {
@@ -46,7 +49,8 @@ public class L2Cache implements Cache {
                 Object  o   = RedisUtils.Obj.get(key); // cache中没有，加载redis
                 long    ttl = RedisUtils.ttl(key);
                 boolean b   = ttl != -2;
-                if (key.startsWith(Constants.USER_ROLES_KEY_PREFIX.get()) || key.startsWith(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get())) {
+                if (key.startsWith(Constants.USER_ROLES_KEY_PREFIX.get()) || key.startsWith(
+                        Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get())) {
                     ttl = INFINITE;
                 }
                 if (o != null) { // redis中有 且值不为空
@@ -59,7 +63,8 @@ public class L2Cache implements Cache {
             }
 
             @Override
-            public @NonNull Map<@NonNull String, @NonNull CacheItem> loadAll(@NonNull Iterable<? extends @NonNull String> keys) {
+            public @NonNull Map<@NonNull String, @NonNull CacheItem> loadAll(
+                    @NonNull Iterable<? extends @NonNull String> keys) {
                 List<String> list = new ArrayList<>();
                 keys.forEach(list::add);
                 List                                objects  = RedisUtils.Obj.get(list);
@@ -69,7 +74,8 @@ public class L2Cache implements Cache {
                     String  key = iterator.next();
                     long    ttl = RedisUtils.ttl(key);
                     boolean b   = ttl != -2;
-                    if (key.startsWith(Constants.USER_ROLES_KEY_PREFIX.get()) || key.startsWith(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get())) {
+                    if (key.startsWith(Constants.USER_ROLES_KEY_PREFIX.get()) || key.startsWith(
+                            Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get())) {
                         ttl = INFINITE;
                     }
                     if (o != null) { // redis中有 且值不为空
@@ -125,7 +131,8 @@ public class L2Cache implements Cache {
     public <E> void set(@NonNull String key, @Nullable E element, long ttl) {
         if (cache.asMap().get(key) == null) {
             Async.run(() -> {
-                List<String> collect = keyPatterns.stream().filter(k -> KeyMatchUtils.stringMatch(k, key, false)).collect(Collectors.toList());
+                List<String> collect = keyPatterns.stream().filter(
+                        k -> KeyMatchUtils.stringMatch(k, key, false)).collect(Collectors.toList());
                 cache.invalidateAll(collect);
             });
         }
@@ -191,7 +198,8 @@ public class L2Cache implements Cache {
         Async.run(() -> {
             RedisUtils.Obj.del(key);
             RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.delete(key));
-            List<String> collect = keyPatterns.stream().filter(k -> KeyMatchUtils.stringMatch(k, key, false)).collect(Collectors.toList());
+            List<String> collect = keyPatterns.stream().filter(k -> KeyMatchUtils.stringMatch(k, key, false)).collect(
+                    Collectors.toList());
             cache.invalidateAll(collect);
         });
     }
@@ -202,7 +210,9 @@ public class L2Cache implements Cache {
         Async.run(() -> {
             RedisUtils.Obj.del(keys);
             RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.delete(keys));
-            List<String> collect = keyPatterns.stream().filter(k -> keys.stream().anyMatch(key -> KeyMatchUtils.stringMatch(k, key, false))).collect(Collectors.toList());
+            List<String> collect = keyPatterns.stream().filter(
+                    k -> keys.stream().anyMatch(key -> KeyMatchUtils.stringMatch(k, key, false))).collect(
+                    Collectors.toList());
             cache.invalidateAll(collect);
         });
     }
@@ -227,7 +237,8 @@ public class L2Cache implements Cache {
             long   ttl = RedisUtils.ttl(key);
             if (ttl != -2) {
                 if (cache.asMap().get(key) == null) {
-                    List<String> collect = keyPatterns.stream().filter(k -> KeyMatchUtils.stringMatch(k, key, false)).collect(Collectors.toList());
+                    List<String> collect = keyPatterns.stream().filter(
+                            k -> KeyMatchUtils.stringMatch(k, key, false)).collect(Collectors.toList());
                     cache.invalidateAll(collect);
                 }
                 cache.put(key, new CacheItem(ttl, o));
@@ -237,7 +248,9 @@ public class L2Cache implements Cache {
 
     private void delSync(Set<String> keys) {
         if (keys == null || keys.isEmpty()) return;
-        List<String> collect = keyPatterns.stream().filter(k -> keys.stream().anyMatch(key -> KeyMatchUtils.stringMatch(k, key, false))).collect(Collectors.toList());
+        List<String> collect = keyPatterns.stream().filter(
+                k -> keys.stream().anyMatch(key -> KeyMatchUtils.stringMatch(k, key, false))).collect(
+                Collectors.toList());
         cache.invalidateAll(collect);
         cache.invalidateAll(keys);
     }

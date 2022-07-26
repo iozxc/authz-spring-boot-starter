@@ -48,7 +48,7 @@ public class AuthzDefender {
      * @param userId     用户id
      * @param deviceType 设备系统类型
      * @param deviceId   设备id
-     * @return 授权后的tokenPair(accessToken以及refreshToken)
+     * @return 授权后的tokenPair( accessToken, refreshToken )
      */
     public static TokenPair grant(Object userId, String deviceType, String deviceId) {
         TokenPair           tokenPair = TokenHelper.createTokenPair(userId, deviceType, deviceId);

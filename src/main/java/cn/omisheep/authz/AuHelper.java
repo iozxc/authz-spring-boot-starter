@@ -3,7 +3,7 @@ package cn.omisheep.authz;
 /*
                  _    _
     /\          | |  | |
-   /  \   _   _ | |_ | |__   ____
+   /  \   _   _ | |_ | |__  _authz
   / /\ \ | | | || __|| '_ \ |_  /
  / ____ \| |_| || |_ | | | | / /
 /_/    \_\\__,_| \__||_| |_|/___|
@@ -11,14 +11,17 @@ package cn.omisheep.authz;
 
 import cn.omisheep.authz.core.NotLoginException;
 import cn.omisheep.authz.core.ThreadWebEnvironmentException;
-import cn.omisheep.authz.core.msg.AuthzModifier;
-import cn.omisheep.authz.core.auth.ipf.Blacklist;
 import cn.omisheep.authz.core.auth.deviced.Device;
+import cn.omisheep.authz.core.auth.ipf.Blacklist;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
 import cn.omisheep.authz.core.callback.RateLimitCallback;
 import cn.omisheep.authz.core.codec.AuthzRSAManager;
+import cn.omisheep.authz.core.msg.AuthzModifier;
+import cn.omisheep.authz.core.oauth.AuthorizationException;
+import cn.omisheep.authz.core.oauth.ClientDetails;
+import cn.omisheep.authz.core.oauth.OpenAuthHelper;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.tk.TokenPair;
 import cn.omisheep.authz.core.util.AUtils;
@@ -27,6 +30,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static cn.omisheep.authz.core.AuthzManager.*;
@@ -73,6 +77,21 @@ public class AuHelper {
     @Nullable
     public static TokenPair login(@NonNull Object userId, @NonNull String deviceType, @Nullable String deviceId) {
         return AuthzDefender.grant(userId, deviceType, deviceId);
+    }
+
+    /**
+     * access过期刷新接口。
+     * <p>
+     * 如果使用单token，则直接使用accessToken即可，在accessToken过期时再重新登录。
+     * <p>
+     * 使用双token时，accessToken过期时，可以利用refreshToken在此接口中刷新获得一个新的accessToken。
+     *
+     * @param refreshToken 与accessToken一起授予的refreshToken
+     * @return 刷新成功（true）/ 失败（false）返回 [空] 则登录失败
+     */
+    @Nullable
+    public static TokenPair refreshToken(@NonNull String refreshToken) {
+        return AuthzDefender.refreshToken(refreshToken);
     }
 
     /**
@@ -139,18 +158,209 @@ public class AuHelper {
     }
 
     /**
-     * access过期刷新接口。
-     * <p>
-     * 如果使用单token，则直接使用accessToken即可，在accessToken过期时再重新登录。
-     * <p>
-     * 使用双token时，accessToken过期时，可以利用refreshToken在此接口中刷新获得一个新的accessToken。
+     * <li>1.注册客户端 -> 返回客户端信息（客户端id，客户端name，客户端密钥，重定向url）</li>
+     * <li>2.客户端id+登录用户 -> 获得登录用户的授权码（客户端id和所需要的权限范围）</li>
+     * <li>3.授权码 -> 利用授权码去获得TokenPair</li>
      *
-     * @param refreshToken 与accessToken一起授予的refreshToken
-     * @return 刷新成功（true）/ 失败（false）返回 [空] 则登录失败
+     * @since 1.2.0
      */
-    @Nullable
-    public static TokenPair refreshToken(@NonNull String refreshToken) {
-        return AuthzDefender.refreshToken(refreshToken);
+    public static class OpenAuth {
+
+        /**
+         * 验证授权码是否有效，成功返回token
+         *
+         * @param clientId          客户端id
+         * @param clientSecret      客户端密钥
+         * @param authorizationCode 授权码
+         * @return 授权后的tokenPair(accessToken以及refreshToken)
+         * @throws AuthorizationException 验证失败，客户端密码错误 或者 授权码失效(过期 或者 已使用)
+         */
+        @NonNull
+        public static TokenPair authorize(String clientId, String clientSecret,
+                                          String authorizationCode) throws AuthorizationException {
+            return OpenAuthHelper.authorize(clientId, clientSecret, authorizationCode);
+        }
+
+        /**
+         * 指定(客户端, 授权范围-默认权限) -> 获得登录用户的授权码
+         * 获取授权码 <br>
+         *
+         * @param clientId 客户端id
+         * @return Authorization Code 授权码
+         * @throws AuthorizationException 授权失败
+         */
+        @NonNull
+        public static String createDefaultScopeAuthorizationCode(
+                @NonNull String clientId) throws AuthorizationException {
+            String deviceType;
+            try {
+                deviceType = getHttpMeta().getUserAgent();
+            } catch (ThreadWebEnvironmentException e) {
+                deviceType = "unknown";
+            }
+            return createAuthorizationCode(clientId, "DefaultScope", deviceType, null);
+        }
+
+        /**
+         * 指定(客户端, 授权范围-默认权限) & 登录设备 -> 获得登录用户的授权码
+         * 获取授权码 <br>
+         *
+         * @param clientId   客户端id
+         * @param deviceType 设备类型
+         * @return Authorization Code 授权码
+         * @throws AuthorizationException 授权失败
+         */
+        @NonNull
+        public static String createDefaultScopeAuthorizationCode(@NonNull String clientId,
+                                                                 @NonNull String deviceType) throws AuthorizationException {
+            return createAuthorizationCode(clientId, "DefaultScope", deviceType, null);
+        }
+
+        /**
+         * 指定(客户端, 授权范围-默认权限) & 登录设备 -> 获得登录用户的授权码
+         * 获取授权码 <br>
+         *
+         * @param clientId   客户端id
+         * @param deviceType 设备类型
+         * @param deviceId   设备id
+         * @return Authorization Code 授权码
+         * @throws AuthorizationException 授权失败
+         */
+        @NonNull
+        public static String createDefaultScopeAuthorizationCode(@NonNull String clientId, @NonNull String deviceType,
+                                                                 @Nullable String deviceId) throws AuthorizationException {
+            return createAuthorizationCode(clientId, "DefaultScope", deviceType, deviceId);
+        }
+
+        /**
+         * 指定(客户端, 授权范围) & 登录设备 -> 获得登录用户的授权码
+         * 获取授权码 <br>
+         *
+         * @param clientId 客户端id
+         * @param scope    授予的权限范围
+         * @return Authorization Code 授权码
+         * @throws AuthorizationException 授权失败
+         */
+        @NonNull
+        public static String createAuthorizationCode(@NonNull String clientId,
+                                                     @NonNull String scope) throws AuthorizationException {
+            String deviceType;
+            try {
+                deviceType = getHttpMeta().getUserAgent();
+            } catch (ThreadWebEnvironmentException e) {
+                deviceType = "unknown";
+            }
+            return createAuthorizationCode(clientId, scope, deviceType, null);
+        }
+
+        /**
+         * 指定(客户端, 授权范围) & 登录设备 -> 获得登录用户的授权码
+         * 获取授权码 <br>
+         *
+         * @param clientId   客户端id
+         * @param scope      授予的权限范围
+         * @param deviceType 设备类型
+         * @return Authorization Code 授权码
+         * @throws AuthorizationException 授权失败
+         */
+        @NonNull
+        public static String createAuthorizationCode(@NonNull String clientId, @NonNull String scope,
+                                                     @NonNull String deviceType) throws AuthorizationException {
+            return createAuthorizationCode(clientId, scope, deviceType, null);
+        }
+
+        /**
+         * 指定(客户端, 授权范围) & 登录设备 -> 获得登录用户的授权码
+         * 获取授权码 <br>
+         *
+         * @param clientId   客户端id
+         * @param scope      授予的权限范围
+         * @param deviceType 设备类型
+         * @param deviceId   设备id
+         * @return Authorization Code 授权码
+         * @throws AuthorizationException 授权失败
+         */
+        @NonNull
+        public static String createAuthorizationCode(@NonNull String clientId, @NonNull String scope,
+                                                     @NonNull String deviceType,
+                                                     @Nullable String deviceId) throws AuthorizationException {
+            if (isLogin() && agreeAuthorize(clientId)) {
+                return OpenAuthHelper.createAuthorizationCode(clientId, scope, getUserId(), deviceType, deviceId);
+            }
+            throw AuthorizationException.privilegeGrantFailed();
+        }
+
+        /**
+         * 是否能够授权
+         *
+         * @param clientId 客户端id
+         * @return 是否能够授权
+         */
+        public static boolean agreeAuthorize(@NonNull String clientId) {
+            if (AuHelper.isLogin()) {
+                return OpenAuthHelper.findClient(clientId) != null;
+            }
+            return false;
+        }
+
+        /**
+         * 根据clientId获取注册client的详细信息
+         *
+         * @param clientId 客户端id
+         * @return 客户端的详细信息（客户端id，客户端name，客户端密钥，重定向url）
+         */
+        public static ClientDetails findClient(@NonNull String clientId) {
+            return OpenAuthHelper.findClient(clientId);
+        }
+
+        /**
+         * 注册一个客户端
+         *
+         * @return 客户端的详细信息（客户端id，客户端name，客户端密钥，重定向url）
+         */
+        public static ClientDetails clientRegister() {
+            return OpenAuthHelper.clientRegister("DefaultClientName", null);
+        }
+
+        /**
+         * 注册一个客户端
+         *
+         * @param clientName  客户端名
+         * @param redirectUrl 回调地址
+         * @return 客户端的详细信息（客户端id，客户端name，客户端密钥，重定向url）
+         */
+        public static ClientDetails clientRegister(@NonNull String clientName, @NonNull String redirectUrl) {
+            return OpenAuthHelper.clientRegister(clientName, redirectUrl);
+        }
+
+        /**
+         * 注册一个客户端
+         *
+         * @param clientId    客户端id
+         * @param clientName  客户端名
+         * @param redirectUrl 回调地址
+         * @return 客户端的详细信息（客户端id，客户端name，客户端密钥，重定向url）
+         */
+        public static ClientDetails clientRegister(@NonNull String clientId, @NonNull String clientName,
+                                                   @NonNull String redirectUrl) {
+            return OpenAuthHelper.clientRegister(clientId, clientName, redirectUrl);
+        }
+
+        /**
+         * 注册一个客户端
+         *
+         * @param clientId     客户端id
+         * @param clientSecret 客户端密钥
+         * @param clientName   客户端名
+         * @param redirectUrl  回调地址
+         * @return 客户端的详细信息（客户端id，客户端name，客户端密钥，重定向url）
+         */
+        public static ClientDetails clientRegister(@NonNull String clientId, @NonNull String clientSecret,
+                                                   @NonNull String clientName,
+                                                   @NonNull String redirectUrl) {
+            return OpenAuthHelper.clientRegister(clientId, clientSecret, clientName, redirectUrl);
+        }
+
     }
 
     /**
@@ -159,9 +369,9 @@ public class AuHelper {
      * @return 一个map userId->设备信息列表
      */
     @NonNull
-    public static Map<Object, List<Device>> queryAllUsersDevices() {
+    public static Map<Object, List<Device>> getAllUsersDevices() {
         HashMap<Object, List<Device>> map = new HashMap<>();
-        AuHelper.queryAllUserId().forEach(userId -> map.put(userId, AuHelper.queryAllDeviceByUserId(userId)));
+        AuHelper.getAllUserId().forEach(userId -> map.put(userId, AuHelper.getAllDeviceByUserId(userId)));
         return map;
     }
 
@@ -172,7 +382,8 @@ public class AuHelper {
      * @return 所有设备信息
      */
     @Nullable
-    public static Device queryDeviceByUserIdAndDeviceTypeAndDeviceId(@NonNull Object userId, @NonNull String deviceType, @Nullable String deviceId) {
+    public static Device getDeviceByUserIdAndDeviceTypeAndDeviceId(@NonNull Object userId, @NonNull String deviceType,
+                                                                   @Nullable String deviceId) {
         return userDevicesDict.getDevice(userId, deviceType, deviceId);
     }
 
@@ -182,7 +393,7 @@ public class AuHelper {
      * @return 所有设备列表
      */
     @NonNull
-    public static List<Device> queryAllDeviceFromCurrentUser() {
+    public static List<Device> getAllDeviceFromCurrentUser() {
         return userDevicesDict.listDevicesForCurrentUser();
     }
 
@@ -190,7 +401,7 @@ public class AuHelper {
      * @return 所有当前有效登录用户的用户id, 当开启redis缓存时，userId返回为String数组
      */
     @NonNull
-    public static List<Object> queryAllUserId() {
+    public static List<Object> getAllUserId() {
         return userDevicesDict.listUserId();
     }
 
@@ -201,7 +412,7 @@ public class AuHelper {
      * @return 所有设备信息
      */
     @NonNull
-    public static List<Device> queryAllDeviceByUserId(@NonNull Object userId) {
+    public static List<Device> getAllDeviceByUserId(@NonNull Object userId) {
         return userDevicesDict.listDevicesByUserId(userId);
     }
 
@@ -212,8 +423,9 @@ public class AuHelper {
      * @return 所有设备信息
      */
     @NonNull
-    public static List<Device> queryAllDeviceByUserIdAndDeviceType(@NonNull Object userId, @NonNull String deviceType) {
-        return userDevicesDict.listDevicesByUserId(userId).stream().filter(device -> device.getType().equals(deviceType)).collect(Collectors.toList());
+    public static List<Device> getAllDeviceByUserIdAndDeviceType(@NonNull Object userId, @NonNull String deviceType) {
+        return userDevicesDict.listDevicesByUserId(userId).stream().filter(
+                device -> device.getType().equals(deviceType)).collect(Collectors.toList());
     }
 
     // **************************************     状态管理      ************************************** //
@@ -342,7 +554,7 @@ public class AuHelper {
      *
      * @return 用户id数组
      */
-    public static int queryNumberOfActiveUsers() {
+    public static int getNumberOfActiveUsers() {
         return userDevicesDict.listActiveUsers(60000L).size();
     }
 
@@ -352,7 +564,7 @@ public class AuHelper {
      * @param time 时间间隔
      * @return 用户id数组
      */
-    public static int queryNumberOfActiveUsers(@NonNull String time) {
+    public static int getNumberOfActiveUsers(@NonNull String time) {
         return userDevicesDict.listActiveUsers(TimeUtils.parseTimeValue(time)).size();
     }
 
@@ -362,7 +574,7 @@ public class AuHelper {
      * @param ms 时间间隔(ms)
      * @return 用户id数组
      */
-    public static int queryNumberOfActiveUsers(long ms) {
+    public static int getNumberOfActiveUsers(long ms) {
         return userDevicesDict.listActiveUsers(ms).size();
     }
 
@@ -372,7 +584,7 @@ public class AuHelper {
      * @return 用户id数组
      */
     @NonNull
-    public static List<Object> queryActiveUsers() {
+    public static List<Object> getActiveUsers() {
         return userDevicesDict.listActiveUsers(60000L);
     }
 
@@ -383,7 +595,7 @@ public class AuHelper {
      * @return 用户id数组
      */
     @NonNull
-    public static List<Object> queryActiveUsers(@NonNull String time) {
+    public static List<Object> getActiveUsers(@NonNull String time) {
         return userDevicesDict.listActiveUsers(TimeUtils.parseTimeValue(time));
     }
 
@@ -394,7 +606,7 @@ public class AuHelper {
      * @return 用户id数组
      */
     @NonNull
-    public static List<Object> queryActiveUsers(long ms) {
+    public static List<Object> getActiveUsers(long ms) {
         return userDevicesDict.listActiveUsers(ms);
     }
 
@@ -491,7 +703,8 @@ public class AuHelper {
      * @param deviceId   封禁的设备id
      * @param time       时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
      */
-    public static void denyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId, @NonNull String time) {
+    public static void denyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId,
+                                @NonNull String time) {
         Blacklist.User.add(userId, deviceType, deviceId, time);
     }
 
@@ -503,7 +716,8 @@ public class AuHelper {
      * @param deviceId   封禁的设备id
      * @param ms         毫秒
      */
-    public static void denyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId, @NonNull long ms) {
+    public static void denyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId,
+                                @NonNull long ms) {
         denyUser(userId, deviceType, deviceId, TimeUtils.parseTime(ms));
     }
 
@@ -547,7 +761,8 @@ public class AuHelper {
      * @return 封禁信息
      */
     @Nullable
-    public static Blacklist.User getDenyUserInfo(@NonNull Object userId, @Nullable String deviceType, @Nullable String deviceId) {
+    public static Blacklist.User getDenyUserInfo(@NonNull Object userId, @Nullable String deviceType,
+                                                 @Nullable String deviceId) {
         return Blacklist.User.get(userId, deviceType, deviceId);
     }
 
@@ -642,7 +857,8 @@ public class AuHelper {
      * @param deviceId   封禁的设备id
      * @param time       时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
      */
-    public static void changeDenyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId, @NonNull String time) {
+    public static void changeDenyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId,
+                                      @NonNull String time) {
         Blacklist.User.change(userId, deviceType, deviceId, time);
     }
 
@@ -654,7 +870,8 @@ public class AuHelper {
      * @param deviceId   封禁的设备id
      * @param ms         毫秒
      */
-    public static void changeDenyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId, @NonNull long ms) {
+    public static void changeDenyUser(@NonNull Object userId, @NonNull String deviceType, @NonNull String deviceId,
+                                      @NonNull long ms) {
         changeDenyUser(userId, deviceType, deviceId, TimeUtils.parseTime(ms));
     }
 
@@ -710,249 +927,131 @@ public class AuHelper {
     // **************************************     RSA      ************************************** //
 
     /**
-     * @return RSA 公钥
+     * @since 1.2.0
      */
-    @NonNull
-    public static String getRSAPublicKey() {
-        return AuthzRSAManager.getPublicKeyString();
-    }
+    public static class RSA {
 
-    /**
-     * @return RSA 私钥
-     */
-    @NonNull
-    public static String getRSAPrivateKey() {
-        return AuthzRSAManager.getPrivateKeyString();
-    }
+        private RSA() {}
 
-    public static String encrypt(String plaintext) {
-        return AuthzRSAManager.encrypt(plaintext);
-    }
+        /**
+         * @return RSA 公钥
+         */
+        @NonNull
+        public static String getRSAPublicKey() {
+            return AuthzRSAManager.getPublicKeyString();
+        }
 
-    public static String decrypt(String encryptText) {
-        return AuthzRSAManager.decrypt(encryptText);
-    }
+        /**
+         * @return RSA 私钥
+         */
+        @NonNull
+        public static String getRSAPrivateKey() {
+            return AuthzRSAManager.getPrivateKeyString();
+        }
 
-    /**
-     * 打开自动刷新RSA，会将自定义的RSA关闭
-     */
-    public static void openAutoRefresh() {
-        AuthzRSAManager.setAuto(true);
-    }
+        public static String encrypt(String plaintext) {
+            return AuthzRSAManager.encrypt(plaintext);
+        }
 
-    /**
-     * 关闭自动刷新RSA，需要额外指定公钥私钥对
-     */
-    public static void closeAutoRefreshAndSetup(String publicKey, String privateKey) {
-        AuthzRSAManager.setAuKeyPair(publicKey, privateKey);
+        public static String decrypt(String encryptText) {
+            return AuthzRSAManager.decrypt(encryptText);
+        }
+
+        /**
+         * 打开自动刷新RSA，会将自定义的RSA关闭
+         */
+        public static void rsaAutoRefresh() {
+            AuthzRSAManager.setAuto(true);
+        }
+
+        /**
+         * 关闭自动刷新RSA，需要额外指定公钥私钥对
+         */
+        public static void closeRSAAutoRefreshAndSetup(String publicKey, String privateKey) {
+            AuthzRSAManager.setAuKeyPair(publicKey, privateKey);
+        }
+
     }
 
     // **************************************     缓存      ************************************** //
 
     /**
-     * 重新加载所有缓存
-     */
-    public static void reloadCache() {
-        cache.reload();
-    }
-
-    /**
-     * 重新加载所有缓存
-     */
-    public static void reloadCache(String... keys) {
-        cache.reload(keys);
-    }
-
-    /**
-     * 重新加载指定的缓存
-     */
-    @SafeVarargs
-    public static void reloadCache(Collection<String>... keys) {
-        cache.reload(keys);
-    }
-
-    // *************************************     api权限、数据权限、rate-limit 动态修改      ************************************* //
-
-    /**
-     * 动态修改api权限和api的参数权限
-     * 更多操作看Dashboard
-     * 可使用{@link org.springframework.web.bind.annotation.RequestBody}获得，或者{@code new AuthzModifier();}
-     * <p>
-     * <p>
-     * 共的13个字段：{@code 1.operate 2.target 3.method, 4.api 5.value 6.index 7.range 8.resources 9.className 10.condition 11.argsMap 12.role 13.permission }
-     * <p>
-     * operate 支持四种操作:
-     * <li>ADD</li>
-     * <li>DELETE(DEL)</li>
-     * <li>MODIFY(UPDATE)</li>
-     * <li>GET(READ)</li>
-     * <br>
-     * target 有3种类型 api，路径参数，请求参数 <br>
-     * 其中值一共有5钟:
-     * <li>API</li>
-     * <li>PATH_VARIABLE_ROLE(PATH_VARIABLE_ROLE)</li>
-     * <li>PATH_VARIABLE_PERMISSION(PATH_VAR_PERMISSION)</li>
-     * <li>REQUEST_PARAM_ROLE(PARAM_ROLE)</li>
-     * <li>REQUEST_PARAM_PERMISSION(PARAM_PERMISSION)</li>
-     * <p>
-     * example 对于api的相关操作:
-     * <p>
-     * 对于api的添加操作：
-     * <pre>
-     * {
-     *     "operate": "add",
-     *     "target": "api",
-     *     "method": "get",
-     *     "api": "/test/role-ada"
-     *     "role": {
-     *         "require": ["admin","zxc"],
-     *         "exclude": ["small-black,dog", "cat","apple"]
-     *     },
-     *     "permission": {
-     *         ...
-     *     }
-     * }
-     * </pre>
-     * 对于api的删除操作：
-     * <pre>
-     * {
-     *     "operate": "del",
-     *     "target": "api",
-     *     "method": "get",
-     *     "api": "/test/role-ada"
-     * }
-     * </pre>
-     * 对于api的修改操作：(缺失为不修改)
-     * <pre>
-     * {
-     *     "operate": "modify",
-     *     "target": "api",
-     *     "method": "get",
-     *     "api": "/test/role-ada",
-     *     "role": {
-     *         "require": ["admin","zxc"],
-     *         "exclude": ["small-black,dog", "cat","apple"]
-     *     },
-     *     "permission": {
-     *         ...
-     *     }
-     * }
-     * </pre>
-     * 对于api的查看操作：
-     * <pre>
-     * {
-     *     "operate": "get",
-     *     "target": "api",
-     *     "method": "get",
-     *     "api": "/test/role-ada"
-     * }
-     * </pre>
-     * <p>
-     * example 对于参数的相关操作:
-     * <p>
-     * 对于参数的添加操作：
-     * <pre>
-     * 1、在/test/role-ada接口上参数名为id添加限制权限限制。
-     * user用户使用参数id访问接口时值只能在1-100内，否则权限错误
-     * {
-     *     "operate": "add",
-     *     "target": "request_param_role",
-     *     "method": "get",
-     *     "api": "/test/role-ada",
-     *     "value": "id",
-     *     "role": {
-     *         "require":["user"]
-     *     },
-     *     "range": ["1-100"]
-     * }
-     * 2、在/test/role-ada接口上参数名为id添加限制权限限制。
-     * 用户访问接口时如果id的值在1-200内，如果没有dog权限，将出现权限错误，被拦截
-     * {
-     *     "operate": "add",
-     *     "target": "param_permission",
-     *     "method": "get",
-     *     "api": "/test/role-ada",
-     *     "value": "id",
-     *     "role: {
-     *         "require":["dog"]
-     *     },
-     *     "resources": ["1-100"]
-     * }
-     * 3、在/test/role-ada/{name}接口上路径参数名为name添加限制权限限制。
-     * 用户'小学生'只能访问路径为/test/role-ada/apple或者/test/role-ada/good-apple，如果为/test/role-ada/bad-apple将报错
-     * {
-     *     "operate": "add",
-     *     "target": "path_variable_role",
-     *     "method": "get",
-     *     "api": "/test/role-ada/{name}",
-     *     "value": "name",
-     *     "role: {
-     *         "require":["小学生"]
-     *     },
-     *     "range": ["apple","good-apple"]
-     * }
-     * </pre>
-     * 对参数权限进行查看、修改、删除
-     * <pre>
-     * 1、删除/test/role-ada/{name}接口上路径参数名为name的限制。
-     * 用户'小学生'能够自由访问任意/test/role-ada/apple或者/test/role-ada/good-apple或者/test/role-ada/bad-apple
-     * {
-     *     "operate": "del",
-     *     "target": "path_variable_role",
-     *     "method": "get",
-     *     "api": "/test/role-ada/{name}",
-     *     "value": "name"
-     * }
-     * 2、如果在某个接口上添加了很多个限制条件，可以先查看，然后确认自己想具体删除哪个或者修改哪个，再附带index来指定修改的参数权限
-     * 查看
-     * {
-     *     "operate": "get",
-     *     "target": "path_variable_role",
-     *     "method": "get",
-     *     "api": "/test/role-ada/{name}",
-     *     "value": "name"
-     * }
-     * 3、删除第2个,index从0开始
-     * {
-     *     "operate": "del",
-     *     "target": "path",
-     *     "method": "get",
-     *     "api": "/test/role-ada/{name}",
-     *     "value": "name",
-     *     "index": 1
-     * }
-     * 3、修改第2个,index从0开始
-     * 让'小学生'可以查看坏苹果
-     * {
-     *     "operate": "modify",
-     *     "target": "path_variable_role",
-     *     "method": "get",
-     *     "api": "/test/role-ada/{name}",
-     *     "value": "name",
-     *     "index": 1,
-     *     "role: {
-     *         "require":["小学生"]
-     *     },
-     *     "range": ["apple","bad-apple","good-apple"]
-     * }
-     * </pre>
-     * <p>
-     * <p>
-     * <p>
-     * 删除只能删除一整个，不能做到单独删除其中的requireRoles但是其他的保持不动，只能通过覆盖来操作
+     * <li>1、在开启Redis时为L2Cache(二级缓存)，默认情况下为普通的带时间策略的缓存</li>
+     * <li>
+     * 2、缓存策略：
+     * <ul>2.1、若没有指定时间，默认为永久</ul>
+     * <ul>2.2、在指定时间后，过期会删除key</ul>
+     * <ul>2.3、若指定时间，L2环境下，本地时间会小于redis所存留的时间，在每次访问时，本地时间会重新计时，且成为热点key，加载速度更快</ul>
+     * <ul>2.4、若指定时间，则会在redis里存一份，本地存一份，若其他实例修改，则会同步修改（默认实现为redis的消息队列）</ul>
+     * </li>
+     * <li>3.L2Cache开启时会默认创建缓存消息通道，在修改其中</li>
      *
-     * @param authzModifier authzModifier
-     * @return 操作之后的结果
-     * {@link cn.omisheep.authz.core.auth.rpd.PermRolesMeta} \
-     * {@link cn.omisheep.authz.core.auth.rpd.ParamMetadata} \
-     * {@link cn.omisheep.authz.core.auth.rpd.PermRolesMeta.Meta}
+     * @since 1.2.0
      */
-    @Nullable
-    public static Object authzModify(@NonNull AuthzModifier authzModifier) {
-        return modify(authzModifier);
+    public static class Cache {
+
+        private Cache() {}
+
+        public <E> void set(String key, E element) {
+            cache.set(key, element);
+        }
+
+        public <E> void set(String key, E element, long time, TimeUnit unit) {
+            cache.set(key, element, time, unit);
+        }
+
+        public <E> void set(String key, E element, String time) {
+            cache.set(key, element, time);
+        }
+
+        public void delete(String... keys) {
+            cache.del(keys);
+        }
+
+        public void delete(Collection<String> keys) {
+            if (keys instanceof Set) cache.del((Set<String>) keys);
+            else delete(new HashSet<>(keys));
+        }
+
+        public Map<String, Object> get(Collection<String> keys) {
+            if (keys instanceof Set) return cache.get((Set<String>) keys);
+            else return cache.get(new HashSet<>(keys));
+        }
+
+        public Object get(String key) {
+            return cache.get(key);
+        }
+
+        /**
+         * 重新加载所有缓存
+         */
+        public static void reloadCache() {
+            cache.reload();
+        }
+
+        /**
+         * 重新加载所有缓存
+         */
+        public static void reloadCache(String... keys) {
+            cache.reload(keys);
+        }
+
+        /**
+         * 重新加载指定的缓存
+         */
+        @SafeVarargs
+        public static void reloadCache(Collection<String>... keys) {
+            cache.reload(keys);
+        }
+
     }
+
+    // *************************************     回调函数      ************************************* //
 
     public static class Callback {
+
+        private Callback() {}
+
         /**
          * 设置封禁和解封时的回调函数 「或者」 继承{@link RateLimitCallback} 将其注册入Spring容器中
          *
@@ -961,6 +1060,13 @@ public class AuHelper {
         public static void setRateLimitCallback(RateLimitCallback rateLimitCallback) {
             Httpd.setRateLimitCallback(rateLimitCallback);
         }
+    }
+
+    // *************************************     api权限、数据权限、rate-limit 动态修改      ************************************* //
+
+    @Nullable
+    public static Object authzModify(@NonNull AuthzModifier authzModifier) {
+        return modify(authzModifier);
     }
 
     private AuHelper() {

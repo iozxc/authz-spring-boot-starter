@@ -61,12 +61,12 @@ public class AuthzAppVersion {
     public static void init(String app) {
         Assert.state(!_values.containsKey("APP"), "APP已初始化");
         _values.put("APP", app);
-        _values.put("ACCESS_INFO_KEY_PREFIX", "au:" + app + ":usersAccessInfo:");
-        _values.put("REFRESH_INFO_KEY_PREFIX", "au:" + app + ":usersRefreshInfo:");
-        _values.put("DEVICE_REQUEST_INFO_KEY_PREFIX", "au:" + app + ":requestInfo:");
-        _values.put("PERMISSIONS_BY_ROLE_KEY_PREFIX", "au:" + app + ":permissionsByRole:");
-        _values.put("USER_ROLES_KEY_PREFIX", "au:" + app + ":userRoles:");
-        _values.put("DASHBOARD_KEY_PREFIX", "au:" + app + ":dashboard:");
+        _values.put("ACCESS_INFO_KEY_PREFIX", "authz:" + app + ":usersAccessInfo:");
+        _values.put("REFRESH_INFO_KEY_PREFIX", "authz:" + app + ":usersRefreshInfo:");
+        _values.put("DEVICE_REQUEST_INFO_KEY_PREFIX", "authz:" + app + ":requestInfo:");
+        _values.put("PERMISSIONS_BY_ROLE_KEY_PREFIX", "authz:" + app + ":permissionsByRole:");
+        _values.put("USER_ROLES_KEY_PREFIX", "authz:" + app + ":userRoles:");
+        _values.put("DASHBOARD_KEY_PREFIX", "authz:" + app + ":dashboard:");
     }
 
     public static String getProjectPath() {

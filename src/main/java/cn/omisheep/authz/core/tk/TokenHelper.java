@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core.tk;
 
 import cn.omisheep.authz.core.AuthzProperties;
+import cn.omisheep.authz.core.oauth.AuthorizationInfo;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.TimeUtils;
@@ -11,7 +12,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Encoders;
 import io.jsonwebtoken.security.Keys;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.crypto.SecretKey;
@@ -33,7 +33,6 @@ import static io.jsonwebtoken.CompressionCodecs.GZIP;
 @Slf4j
 public class TokenHelper {
 
-    @Getter
     private static final Long      accessTime; // 存活时间,单位 ms
     private static final Long      refreshTime; // 存活时间,单位 ms
     private static final String    issuer;
@@ -46,22 +45,23 @@ public class TokenHelper {
     private static final AuthzProperties.TokenConfig.Mode mode;
     private static final int                              tokenIdBits;
     private static final String                           prefix;
-    private static final String[]                         USER_ID         = {"uid", "uid", "userId",};
-    private static final String[]                         DEVICE_ID       = {"did", "did", "deviceId"};
-    private static final String[]                         DEVICE_TYPE     = {"dtp", "dtp", "deviceType"};
-    private static final String[]                         TOKEN_TYPE      = {"tpe", "tpe", "type"};
-    private static final String                           DASHBOARD_TOKEN = "";
-
+    private static final String[]                         USER_ID     = {"uid", "uid", "userId",};
+    private static final String[]                         DEVICE_ID   = {"did", "did", "deviceId"};
+    private static final String[]                         DEVICE_TYPE = {"dtp", "dtp", "deviceType"};
+    private static final String[]                         TOKEN_TYPE  = {"tpe", "tpe", "type"};
+    private static final String                           CLIENT_ID   = "cid";
+    private static final String                           SCOPE       = "cop";
+    private static final String                           defaultScope;
 
     private TokenHelper() {
     }
 
     static {
-        String                      prefix1;
         AuthzProperties             properties = AUtils.getBean(AuthzProperties.class);
         AuthzProperties.TokenConfig token      = properties.getToken();
-        String                      key        = token.getKey();
-        SignatureAlgorithm          algorithm  = token.getAlgorithm();
+        defaultScope = token.getDefaultScope();
+        String             key       = token.getKey();
+        SignatureAlgorithm algorithm = token.getAlgorithm();
         tokenIdBits = token.getTokenIdBits();
         if (key == null || key.equals("") || algorithm == null || algorithm == SignatureAlgorithm.NONE) {
             alg       = SignatureAlgorithm.NONE;
@@ -88,6 +88,7 @@ public class TokenHelper {
         AuthzProperties.TokenConfig.Mode m = token.getMode();
         if (m == null) mode = AuthzProperties.TokenConfig.Mode.STANDARD;
         else mode = m;
+        String prefix1;
         if (mode == AuthzProperties.TokenConfig.Mode.BRIEF) {
             JwsHeader jwsHeader = Jwts.jwsHeader();
             if (alg != SignatureAlgorithm.NONE) jwsHeader.setAlgorithm(alg.getValue());
@@ -121,18 +122,32 @@ public class TokenHelper {
      * @param tokenType  token类型 accessToken和refreshToken
      * @return claims
      */
-    private static Claims generateClaims(Object userId, String deviceType, String deviceId, Token.Type tokenType) {
-        // 设置token里的数据
+    private static Claims generateClaims(Object userId, String deviceType, String deviceId, String clientId,
+                                         String scope, Token.Type tokenType) {
         Claims claims = Jwts.claims();
         claims.put(USER_ID[mode.ordinal()], userId);
         claims.put(DEVICE_ID[mode.ordinal()], deviceId);
         claims.put(DEVICE_TYPE[mode.ordinal()], deviceType);
         claims.put(TOKEN_TYPE[mode.ordinal()], tokenType.names.get(0));
+        claims.put(CLIENT_ID, clientId);
+        if (scope == null) claims.put(SCOPE, defaultScope);
+        else claims.put(SCOPE, scope);
         return claims;
     }
 
     /**
-     * 创建一个 TokenPair（accessToken和refreshToken）
+     * 创建一个 TokenPair（ accessToken，refreshToken ）
+     *
+     * @param info AuthorizationInfo
+     * @return TokenPair
+     */
+    public static TokenPair createTokenPair(AuthorizationInfo info) {
+        return createTokenPair(info.getUserId(), info.getDeviceType(), info.getDeviceId(), info.getClientId(),
+                               info.getScope());
+    }
+
+    /**
+     * 创建一个 TokenPair（ accessToken，refreshToken ）
      *
      * @param userId     用户id
      * @param deviceId   设备Id
@@ -140,19 +155,36 @@ public class TokenHelper {
      * @return TokenPair
      */
     public static TokenPair createTokenPair(Object userId, String deviceType, String deviceId) {
+        return createTokenPair(userId, deviceType, deviceId, null, null);
+    }
+
+    /**
+     * 创建一个 TokenPair（ accessToken，refreshToken ）
+     *
+     * @param userId     用户id
+     * @param deviceId   设备Id
+     * @param deviceType 设备系统类型
+     * @return TokenPair
+     */
+    public static TokenPair createTokenPair(Object userId, String deviceType, String deviceId, String clientId,
+                                            String scope) {
         Date fromNow = Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant());
         Date toAccessExpiredTime = // accessToken失效时间
-                Date.from(LocalDateTime.now().plus(accessTime, ChronoUnit.MILLIS).atZone(ZoneId.systemDefault()).toInstant());
+                Date.from(LocalDateTime.now().plus(accessTime, ChronoUnit.MILLIS).atZone(
+                        ZoneId.systemDefault()).toInstant());
         Date toRefreshExpiredTime = // refreshToken失效时间
-                Date.from(LocalDateTime.now().plus(refreshTime, ChronoUnit.MILLIS).atZone(ZoneId.systemDefault()).toInstant());
+                Date.from(LocalDateTime.now().plus(refreshTime, ChronoUnit.MILLIS).atZone(
+                        ZoneId.systemDefault()).toInstant());
 
-        Token refreshToken = createToken(userId, deviceType, deviceId, Token.Type.REFRESH, fromNow, toRefreshExpiredTime);
-        Token accessToken  = createToken(userId, deviceType, deviceId, Token.Type.ACCESS, fromNow, toAccessExpiredTime);
+        Token refreshToken = createToken(userId, deviceType, deviceId, Token.Type.REFRESH, fromNow,
+                                         toRefreshExpiredTime, clientId, scope);
+        Token accessToken = createToken(userId, deviceType, deviceId, Token.Type.ACCESS, fromNow, toAccessExpiredTime,
+                                        clientId, scope);
         return new TokenPair(accessToken, refreshToken);
     }
 
     /**
-     * 创建Token，此方法中builder为静态成员，所以需要加锁，
+     * 创建Token
      *
      * @param userId     用户id
      * @param deviceId   设备Id
@@ -160,10 +192,13 @@ public class TokenHelper {
      * @param type       token类型 accessToken和refreshToken
      * @param from       从多久开始
      * @param to         到多久结束
+     * @param clientId   客户端id
+     * @param scope      授权范围
      * @return Token
      */
-    public static Token createToken(Object userId, String deviceType, String deviceId, Token.Type type, Date from, Date to) {
-        Claims claims = generateClaims(userId, deviceType, deviceId, type);
+    private static Token createToken(Object userId, String deviceType, String deviceId, Token.Type type, Date from,
+                                     Date to, String clientId, String scope) {
+        Claims claims = generateClaims(userId, deviceType, deviceId, clientId, scope, type);
 
         String tokenId = UUIDBits.getUUIDBits(tokenIdBits);
 
@@ -183,11 +218,11 @@ public class TokenHelper {
         if (mode == AuthzProperties.TokenConfig.Mode.BRIEF) {
             tokenVal = tokenVal.substring(tokenVal.indexOf(".") + 1);
         }
-        return new Token(tokenVal, userId, tokenId, from, to, deviceType, deviceId, type);
+        return new Token(tokenVal, userId, tokenId, from, to, deviceType, deviceId, clientId, scope, type);
     }
 
     /**
-     * 利用tokenVal刷新，获得新到accessToken
+     * 利用RefreshTokenVal刷新，获得新到accessToken
      *
      * @param refreshTokenVal refreshTokenVal
      * @return TokenPair
@@ -206,7 +241,11 @@ public class TokenHelper {
         if (refreshToken == null || !refreshToken.getType().equals(Token.Type.REFRESH)) {
             return null;
         }
-        Token accessToken = createToken(refreshToken.getUserId(), refreshToken.getDeviceType(), refreshToken.getDeviceId(), Token.Type.ACCESS, TimeUtils.now(), Date.from(LocalDateTime.now().plus(accessTime, ChronoUnit.MILLIS).atZone(ZoneId.systemDefault()).toInstant()));
+        Token accessToken = createToken(refreshToken.getUserId(), refreshToken.getDeviceType(),
+                                        refreshToken.getDeviceId(), Token.Type.ACCESS, TimeUtils.now(), Date.from(
+                        LocalDateTime.now().plus(accessTime, ChronoUnit.MILLIS).atZone(
+                                ZoneId.systemDefault()).toInstant()), refreshToken.getClientId(),
+                                        refreshToken.getScope());
         return new TokenPair(accessToken, refreshToken);
     }
 
@@ -259,7 +298,12 @@ public class TokenHelper {
             tokenVal = prefix + tokenVal;
         }
         Claims claims = Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(tokenVal).getBody();
-        return new Token(tv != null ? tv : tokenVal, claims.get(USER_ID[mode.ordinal()]), claims.getId(), claims.getIssuedAt(), claims.getExpiration(), claims.get(DEVICE_TYPE[mode.ordinal()], String.class), claims.get(DEVICE_ID[mode.ordinal()], String.class), Token.Type.fromValue((String) claims.get(TOKEN_TYPE[mode.ordinal()])));
+        return new Token(tv != null ? tv : tokenVal, claims.get(USER_ID[mode.ordinal()]), claims.getId(),
+                         claims.getIssuedAt(), claims.getExpiration(),
+                         claims.get(DEVICE_TYPE[mode.ordinal()], String.class),
+                         claims.get(DEVICE_ID[mode.ordinal()], String.class), claims.get(CLIENT_ID, String.class),
+                         claims.get(SCOPE, String.class),
+                         Token.Type.fromValue((String) claims.get(TOKEN_TYPE[mode.ordinal()])));
     }
 
 }

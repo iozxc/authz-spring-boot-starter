@@ -131,7 +131,8 @@ public class AuthzAutoConfiguration {
         if (properties.getCache().isEnableRedis()) {
             return new L2Cache(properties);
         } else {
-            return new DefaultCache(properties.getCache().getCacheMaximumSize(), properties.getCache().getExpireAfterReadOrUpdateTime());
+            return new DefaultCache(properties.getCache().getCacheMaximumSize(),
+                                    properties.getCache().getExpireAfterReadOrUpdateTime());
         }
     }
 
@@ -145,8 +146,10 @@ public class AuthzAutoConfiguration {
 
         static {
             jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer(Object.class);
-            jackson2JsonRedisSerializer.setObjectMapper(new ObjectMapper().setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY)
-                                                                .activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL));
+            jackson2JsonRedisSerializer.setObjectMapper(
+                    new ObjectMapper().setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY)
+                            .activateDefaultTyping(LaissezFaireSubTypeValidator.instance,
+                                                   ObjectMapper.DefaultTyping.NON_FINAL));
         }
 
         @Bean(name = "redisHealthIndicator")
@@ -177,19 +180,22 @@ public class AuthzAutoConfiguration {
 
         @Bean("authzCacheMessageListenerAdapter")
         @ConditionalOnBean(value = MessageReceive.class, name = "authzCacheMessageReceive")
-        public MessageListenerAdapter authzCacheMessageListenerAdapter(@Qualifier("authzCacheMessageReceive") MessageReceive receiver) {
+        public MessageListenerAdapter authzCacheMessageListenerAdapter(
+                @Qualifier("authzCacheMessageReceive") MessageReceive receiver) {
             return new MessageListenerAdapter(receiver);
         }
 
         @Bean("authzRequestCacheMessageListenerAdapter")
         @ConditionalOnBean(value = MessageReceive.class, name = "authzCacheMessageReceive")
-        public MessageListenerAdapter authzRequestCacheMessageListenerAdapter(@Qualifier("authzCacheMessageReceive") MessageReceive receiver) {
+        public MessageListenerAdapter authzRequestCacheMessageListenerAdapter(
+                @Qualifier("authzCacheMessageReceive") MessageReceive receiver) {
             return new MessageListenerAdapter(receiver);
         }
 
         @Bean("authzVersionMessageListenerAdapter")
         @ConditionalOnBean(value = MessageReceive.class, name = "authzCacheMessageReceive")
-        public MessageListenerAdapter authzVersionMessageListenerAdapter(@Qualifier("authzCacheMessageReceive") MessageReceive receiver) {
+        public MessageListenerAdapter authzVersionMessageListenerAdapter(
+                @Qualifier("authzCacheMessageReceive") MessageReceive receiver) {
             return new MessageListenerAdapter(receiver);
         }
 
@@ -284,7 +290,8 @@ public class AuthzAutoConfiguration {
     }
 
     @Bean
-    public AuthzHandlerRegister authzHandlerRegister(AuthzExceptionHandler authzExceptionHandler, DecryptHandler decryptHandler) {
+    public AuthzHandlerRegister authzHandlerRegister(AuthzExceptionHandler authzExceptionHandler,
+                                                     DecryptHandler decryptHandler) {
         return new AuthzHandlerRegister(authzExceptionHandler, decryptHandler);
     }
 
@@ -299,7 +306,9 @@ public class AuthzAutoConfiguration {
     }
 
     @Bean
-    public AuCoreInitialization auCoreInitialization(AuthzProperties properties, Httpd httpd, UserDevicesDict userDevicesDict, PermissionDict permissionDict, PermLibrary permLibrary, Cache cache) {
+    public AuCoreInitialization auCoreInitialization(AuthzProperties properties, Httpd httpd,
+                                                     UserDevicesDict userDevicesDict, PermissionDict permissionDict,
+                                                     PermLibrary permLibrary, Cache cache) {
         return new AuCoreInitialization(properties, httpd, userDevicesDict, permissionDict, permLibrary, cache);
     }
 
@@ -349,7 +358,8 @@ public class AuthzAutoConfiguration {
         public ServletRegistrationBean DashboardServlet(AuthzProperties properties, Cache cache) {
             AuthzProperties.DashboardConfig dashboard = properties.getDashboard();
             ServletRegistrationBean<SupportServlet> bean =
-                    new ServletRegistrationBean<>(new SupportServlet(dashboard, cache), "/authz-api/*", "/authz-dashboard/*", "/authz.html", "/authz-dashboard-favicon.ico");
+                    new ServletRegistrationBean<>(new SupportServlet(dashboard, cache), "/authz-api/*",
+                                                  "/authz-dashboard/*", "/authz.html", "/authz-dashboard-favicon.ico");
 
             HashMap<String, String> initParameters = new HashMap<>();
 

@@ -165,7 +165,6 @@ public class UserDevicesDictByCache implements UserDevicesDict {
             cache.get().del(rfKey(userId, Constants.WILDCARD));
         });
 
-
         return Async.joinAndCheck(
                 Async.combine(
                         () -> cache.get().set(acKey(userId, tokenPair), accessInfo, properties.getToken().getAccessTime()),
