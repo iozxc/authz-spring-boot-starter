@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core.auth.deviced;
 
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
+import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.tk.TokenPair;
 
 import java.util.List;
@@ -11,21 +12,18 @@ import java.util.List;
  */
 public interface UserDevicesDict {
 
-    short SUCCESS              = 0;
-    short ACCESS_TOKEN_OVERDUE = 1;
-    short REQUIRE_LOGIN        = 2;
-    short LOGIN_EXCEPTION      = 3;
+    byte SUCCESS              = 0;
+    byte ACCESS_TOKEN_OVERDUE = 1;
+    byte REQUIRE_LOGIN        = 2;
+    byte LOGIN_EXCEPTION      = 3;
 
     /**
-     * 用户设备状态判断，以及第二次惰性删除
+     * 用户设备状态判断，以及L1Cache下的第二次惰性删除
      *
-     * @param userId        用户id
-     * @param deviceType    设备系统类型
-     * @param deviceId      设备id
-     * @param accessTokenId accessTokenId
+     * @param accessToken token
      * @return 0：正常  1：accessToken过期  2：需要重新登录  3：在别处登录
      */
-    int userStatus(Object userId, String deviceType, String deviceId, String accessTokenId);
+    int userStatus(Token accessToken);
 
     // =========================   登入   ========================= //
 

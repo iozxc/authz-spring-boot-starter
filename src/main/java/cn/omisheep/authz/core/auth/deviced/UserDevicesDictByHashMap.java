@@ -35,7 +35,13 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
     }
 
     @Override
-    public int userStatus(Object userId, String deviceType, String deviceId, String accessTokenId) {
+    public int userStatus(Token accessToken) {
+        Object userId     = accessToken.getUserId();
+        String deviceId   = accessToken.getDeviceId();
+        String deviceType = accessToken.getDeviceType();
+        String tokenId    = accessToken.getTokenId();
+        String clientId   = accessToken.getClientId();
+        if (clientId == null) clientId = "";
         inertDeletion(userId);
 
         // 1） 验证userId 若不存在则需重新登录 此时token正确，但是系统不存在，意味着系统重启了，或者redis重启了）
@@ -46,8 +52,8 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
         if (refreshInfoHeap != null) {
             hasTargetDeviceInfo = refreshInfoHeap.entrySet().stream().anyMatch(entry -> {
                 Device device = entry.getValue();
-                return (StringUtils.equals(deviceId, device.getId())
-                        && StringUtils.equals(deviceType, device.getType()));
+                return (StringUtils.equals(deviceId, device.getDeviceId())
+                        && StringUtils.equals(deviceType, device.getDeviceType()));
             });
         }
 
@@ -62,8 +68,8 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
                     String refreshTokenId = entry.getValue().getRefreshTokenId();
                     if (refreshInfoHeap != null) {
                         Device device = refreshInfoHeap.get(refreshTokenId);
-                        return (StringUtils.equals(deviceId, device.getId())
-                                && StringUtils.equals(deviceType, device.getType()));
+                        return (StringUtils.equals(deviceId, device.getDeviceId())
+                                && StringUtils.equals(deviceType, device.getDeviceType()));
                     }
                     return false;
                 }).findFirst().orElse(null);
@@ -77,7 +83,7 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
         }
 
         // 3）如果设备存在，但是tokenId不是自己的，则在别处登录
-        if (!StringUtils.equals(d.getKey(), accessTokenId)) {
+        if (!StringUtils.equals(d.getKey(), tokenId)) {
             return LOGIN_EXCEPTION;
         }
         return SUCCESS;
@@ -86,38 +92,52 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
     @Override
     public boolean addUser(Object userId, TokenPair tokenPair, String deviceType, String deviceId, HttpMeta httpMeta) {
         inertDeletion(userId);
-        Map<String, AccessInfo>  accessInfoHeap  = usersAccessInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
-        Map<String, RefreshInfo> refreshInfoHeap = usersRefreshInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
-        DefaultDevice            device          = new DefaultDevice();
-        device.setType(deviceType).setId(deviceId).setLastRequestTime(TimeUtils.now()).setIp(httpMeta.getIp());
+        Map<String, AccessInfo> accessInfoHeap = usersAccessInfoHeap.computeIfAbsent(userId,
+                                                                                     k -> new ConcurrentHashMap<>());
+        Map<String, RefreshInfo> refreshInfoHeap = usersRefreshInfoHeap.computeIfAbsent(userId,
+                                                                                        k -> new ConcurrentHashMap<>());
+        DefaultDevice device = new DefaultDevice();
+        device.setDeviceType(deviceType).setDeviceId(deviceId).setLastRequestTime(TimeUtils.now()).setIp(
+                httpMeta.getIp());
 
         if (!isSupportMultiDevice) {
             accessInfoHeap.clear();
             refreshInfoHeap.clear();
         } else {
             if (!isSupportMultiUserForSameDeviceType) {
-                accessInfoHeap.entrySet().removeIf(entry -> StringUtils.equals(getRefreshInfo(refreshInfoHeap, entry.getValue()).getType(), device.getType()));
-                refreshInfoHeap.entrySet().removeIf(entry -> StringUtils.equals(entry.getValue().getType(), device.getType()));
+                accessInfoHeap.entrySet().removeIf(
+                        entry -> StringUtils.equals(getRefreshInfo(refreshInfoHeap, entry.getValue()).getDeviceType(),
+                                                    device.getDeviceType()));
+                refreshInfoHeap.entrySet().removeIf(
+                        entry -> StringUtils.equals(entry.getValue().getDeviceType(), device.getDeviceType()));
             }
 
-            accessInfoHeap.entrySet().removeIf(entry -> StringUtils.equals(getRefreshInfo(refreshInfoHeap, entry.getValue()).getId(), device.getId()));
-            refreshInfoHeap.entrySet().removeIf(entry -> StringUtils.equals(entry.getValue().getId(), device.getId()));
+            accessInfoHeap.entrySet().removeIf(
+                    entry -> StringUtils.equals(getRefreshInfo(refreshInfoHeap, entry.getValue()).getDeviceId(),
+                                                device.getDeviceId()));
+            refreshInfoHeap.entrySet().removeIf(
+                    entry -> StringUtils.equals(entry.getValue().getDeviceId(), device.getDeviceId()));
         }
 
         Token accessToken  = tokenPair.getAccessToken();
         Token refreshToken = tokenPair.getRefreshToken();
 
         accessInfoHeap.put(accessToken.getTokenId(),
-                new AccessInfo().setRefreshTokenId(refreshToken.getTokenId()).setExpiration(accessToken.getExpiredTime()));
+                           new AccessInfo().setRefreshTokenId(refreshToken.getTokenId()).setExpiration(
+                                   accessToken.getExpiredTime()));
         refreshInfoHeap.put(refreshToken.getTokenId(),
-                new RefreshInfo().setDevice(device).setExpiration(TimeUtils.datePlus(refreshToken.getExpiredTime(), properties.getToken().getAccessTime())));
+                            new RefreshInfo().setDevice(device).setExpiration(
+                                    TimeUtils.datePlus(refreshToken.getExpiredTime(),
+                                                       properties.getToken().getAccessTime())));
         return true;
     }
 
     @Override
     public boolean refreshUser(TokenPair tokenPair) {
         if (tokenPair == null) return false;
-        Token accessToken = tokenPair.getAccessToken();
+        Token  accessToken = tokenPair.getAccessToken();
+        String clientId    = accessToken.getClientId();
+        if (clientId == null) clientId = "";
         inertDeletion(accessToken.getUserId());
 
         Token                    refreshToken    = tokenPair.getRefreshToken();
@@ -132,11 +152,12 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
         Map.Entry<String, AccessInfo> d = accessInfoHeap.entrySet().stream().filter(
                 entry -> {
                     Device device = refreshInfoHeap.get(entry.getValue().getRefreshTokenId());
-                    return (StringUtils.equals(accessToken.getDeviceId(), device.getId())
-                            && StringUtils.equals(accessToken.getDeviceType(), device.getType()));
+                    return (StringUtils.equals(accessToken.getDeviceId(), device.getDeviceId())
+                            && StringUtils.equals(accessToken.getDeviceType(), device.getDeviceType()));
                 }).findFirst().orElse(null);
 
-        HttpMeta httpMeta = (HttpMeta) ((ServletRequestAttributes) (RequestContextHolder.currentRequestAttributes())).getRequest().getAttribute("AU_HTTP_META");
+        HttpMeta httpMeta = (HttpMeta) ((ServletRequestAttributes) (RequestContextHolder.currentRequestAttributes())).getRequest().getAttribute(
+                "AU_HTTP_META");
 
         RefreshInfo refreshInfo = refreshInfoHeap.get(tokenPair.getRefreshToken().getTokenId());
         if (refreshInfo != null) {
@@ -146,7 +167,9 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
         if (d != null) {
             accessInfoHeap.remove(d.getKey());
         }
-        accessInfoHeap.put(accessToken.getTokenId(), new AccessInfo().setExpiration(accessToken.getExpiredTime()).setRefreshTokenId(refreshToken.getTokenId()));
+        accessInfoHeap.put(accessToken.getTokenId(),
+                           new AccessInfo().setExpiration(accessToken.getExpiredTime()).setRefreshTokenId(
+                                   refreshToken.getTokenId()));
         return true;
     }
 
@@ -212,8 +235,11 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
         Map<String, RefreshInfo> refreshInfoHeap = usersRefreshInfoHeap.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
 
         if (deviceType != null) {
-            accessInfoHeap.entrySet().removeIf(entry -> StringUtils.equals(getRefreshInfo(refreshInfoHeap, entry.getValue()).getType(), deviceType));
-            refreshInfoHeap.entrySet().removeIf(entry -> StringUtils.equals(entry.getValue().getType(), deviceType));
+            accessInfoHeap.entrySet().removeIf(
+                    entry -> StringUtils.equals(getRefreshInfo(refreshInfoHeap, entry.getValue()).getDeviceType(),
+                                                deviceType));
+            refreshInfoHeap.entrySet().removeIf(
+                    entry -> StringUtils.equals(entry.getValue().getDeviceType(), deviceType));
         }
 
         inertDeletion(userId);
@@ -225,10 +251,15 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
 
         if (deviceType != null) {
             accessInfoHeap.entrySet().removeIf(entry ->
-                    StringUtils.equals(getRefreshInfo(refreshInfoHeap, entry.getValue()).getType(), deviceType) &&
-                            StringUtils.equals(getRefreshInfo(refreshInfoHeap, entry.getValue()).getId(), deviceId));
-            refreshInfoHeap.entrySet().removeIf(entry -> StringUtils.equals(entry.getValue().getType(), deviceType)
-                    && StringUtils.equals(entry.getValue().getId(), deviceId));
+                                                       StringUtils.equals(getRefreshInfo(refreshInfoHeap,
+                                                                                         entry.getValue()).getDeviceType(),
+                                                                          deviceType) &&
+                                                               StringUtils.equals(getRefreshInfo(refreshInfoHeap,
+                                                                                                 entry.getValue()).getDeviceId(),
+                                                                                  deviceId));
+            refreshInfoHeap.entrySet().removeIf(
+                    entry -> StringUtils.equals(entry.getValue().getDeviceType(), deviceType)
+                            && StringUtils.equals(entry.getValue().getDeviceId(), deviceId));
         }
 
         inertDeletion(userId);
@@ -242,8 +273,8 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
         Map.Entry<String, AccessInfo> d = accessInfoHeap.entrySet().stream().filter(
                 entry -> {
                     Device device = getRefreshInfo(refreshInfoHeap, entry.getValue());
-                    return (StringUtils.equals(deviceId, device.getId())
-                            && StringUtils.equals(deviceType, device.getType()));
+                    return (StringUtils.equals(deviceId, device.getDeviceId())
+                            && StringUtils.equals(deviceType, device.getDeviceType()));
                 }).findFirst().orElse(null);
         if (d != null) return getRefreshInfo(refreshInfoHeap, d.getValue());
         return null;
@@ -277,7 +308,8 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
 
         return usersRefreshInfoHeap.keySet().stream()
                 .filter(userId ->
-                        usersRefreshInfoHeap.get(userId).values().stream().anyMatch(device -> (now - device.getLastRequestTime().getTime()) < ms)
+                                usersRefreshInfoHeap.get(userId).values().stream().anyMatch(
+                                        device -> (now - device.getLastRequestTime().getTime()) < ms)
                 ).collect(Collectors.toList());
     }
 
@@ -300,7 +332,8 @@ public class UserDevicesDictByHashMap extends DeviceConfig implements UserDevice
             HttpMeta   currentHttpMeta = AUtils.getCurrentHttpMeta();
             Token      token           = currentHttpMeta.getToken();
             AccessInfo accessInfo      = usersAccessInfoHeap.get(token.getUserId()).get(token.getTokenId());
-            Device     device          = usersRefreshInfoHeap.get(token.getUserId()).get(accessInfo.getRefreshTokenId());
+            Device device = usersRefreshInfoHeap.get(token.getUserId()).get(
+                    accessInfo.getRefreshTokenId());
             if (device != null) {
                 device.setLastRequestTime(TimeUtils.now());
                 device.setIp(currentHttpMeta.getIp());

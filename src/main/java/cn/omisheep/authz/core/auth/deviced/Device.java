@@ -9,24 +9,19 @@ import java.util.Map;
  */
 public interface Device extends Map<Object, Object>, java.io.Serializable {
 
-    String TYPE              = "type";
-    String ID                = "id";
-    String LAST_REQUEST_TIME = "lrt";
-    String IP                = "ip";
+    String getDeviceType();
 
-    String getType();
-
-    String getId();
+    String getDeviceId();
 
     Date getLastRequestTime();
 
     String getIp();
 
-    Device setType(String type);
+    Device setDeviceType(String type);
 
     Device setLastRequestTime(Date lastRequestTime);
 
-    Device setId(String id);
+    Device setDeviceId(String id);
 
     Device setIp(String ip);
 }

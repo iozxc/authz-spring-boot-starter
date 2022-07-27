@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core.oauth;
 
 import cn.omisheep.authz.core.AuthzProperties;
+import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
 import cn.omisheep.authz.core.callback.CreateAuthorizationInfoCallback;
 import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.tk.TokenHelper;
@@ -19,7 +20,6 @@ import java.util.Date;
 
 import static cn.omisheep.authz.core.AuthzManager.cache;
 import static cn.omisheep.authz.core.config.Constants.AUTHORIZE_CODE_PREFIX;
-import static cn.omisheep.authz.core.config.Constants.CLINT_PREFIX;
 
 /**
  * @author zhouxinchen
@@ -39,7 +39,7 @@ public class OpenAuthHelper {
 
     public static TokenPair authorize(String clientId, String clientSecret,
                                       String authorizationCode) throws AuthorizationException {
-        ClientDetails clientDetails = cache.get(CLINT_PREFIX + clientId, ClientDetails.class);
+        ClientDetails clientDetails = openAuthLibrary.getClientById(clientId);
 
         if (clientDetails == null || !StringUtils.equals(clientDetails.getClientSecret(), clientSecret)) {
             // 密钥错误
@@ -55,7 +55,9 @@ public class OpenAuthHelper {
             throw AuthorizationException.authorizationCodeExpiredOrNotExist();
         }
 
-        return TokenHelper.createTokenPair(authorizationInfo);
+        TokenPair tokenPair = TokenHelper.createTokenPair(authorizationInfo);
+        if (AuthzDefender.grant(tokenPair)) return null;
+        return tokenPair;
     }
 
     public static String createAuthorizationCode(String clientId, String scope, String redirectUrl,
@@ -63,7 +65,7 @@ public class OpenAuthHelper {
                                                  String deviceId) throws AuthorizationException {
         ClientDetails client = findClient(clientId);
 
-        if (client == null || StringUtils.equals(client.getRedirectUrl(), redirectUrl)) {
+        if (client == null || !StringUtils.equals(client.getRedirectUrl(), redirectUrl)) {
             throw AuthorizationException.clientNotExist();
         }
 
@@ -94,17 +96,23 @@ public class OpenAuthHelper {
     }
 
     public static ClientDetails clientRegister(String clientName, String redirectUrl) {
-        String clientId = UUIDBits.getUUIDBits(24, k -> cache.notKey(CLINT_PREFIX + k), 20);
+        String clientId = UUIDBits.getUUIDBits(oauthConfig.getClientIdLength(),
+                                               k -> openAuthLibrary.getClientById(k) == null,
+                                               20);
         if (clientId == null) return null; // 重复id，重试
-        return clientRegister(clientId, UUIDBits.getUUIDBits(30), clientName, redirectUrl);
+        return clientRegister(clientId, UUIDBits.getUUIDBits(oauthConfig.getClientSecretLength()), clientName,
+                              redirectUrl);
     }
 
     public static ClientDetails clientRegister(String clientId, String clientName, String redirectUrl) {
-        return clientRegister(clientId, UUIDBits.getUUIDBits(30), clientName, redirectUrl);
+        if (clientId == null) return null;
+        return clientRegister(clientId, UUIDBits.getUUIDBits(oauthConfig.getClientSecretLength()), clientName,
+                              redirectUrl);
     }
 
     public static ClientDetails clientRegister(String clientId, String clientSecret, String clientName,
                                                String redirectUrl) {
+        if (clientId == null || clientSecret == null) return null;
         ClientDetails clientDetails = new ClientDetails().setClientId(clientId).setClientSecret(clientSecret).setName(
                 clientName).setRedirectUrl(redirectUrl);
         openAuthLibrary.registerClient(clientDetails);
@@ -112,10 +120,12 @@ public class OpenAuthHelper {
     }
 
     public static ClientDetails findClient(String clientId) {
+        if (clientId == null) return null;
         return openAuthLibrary.getClientById(clientId);
     }
 
     public static void deleteClient(String clientId) {
+        if (clientId == null) return;
         openAuthLibrary.deleteClientById(clientId);
     }
 

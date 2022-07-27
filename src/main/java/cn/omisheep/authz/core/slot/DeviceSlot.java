@@ -3,7 +3,6 @@ package cn.omisheep.authz.core.slot;
 import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.authz.core.tk.Token;
 import org.springframework.web.method.HandlerMethod;
 
 import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.*;
@@ -33,10 +32,7 @@ public class DeviceSlot implements Slot {
             return;
         }
 
-        Token accessToken = httpMeta.getToken();
-
-        switch (userDevicesDict.userStatus(accessToken.getUserId(), accessToken.getDeviceType(),
-                                           accessToken.getDeviceId(), accessToken.getTokenId())) {
+        switch (userDevicesDict.userStatus(httpMeta.getToken())) {
             case ACCESS_TOKEN_OVERDUE:
                 // accessToken过期
                 logs("Forbid : expired token exception", httpMeta);
@@ -54,4 +50,5 @@ public class DeviceSlot implements Slot {
                 return;
         }
     }
+
 }

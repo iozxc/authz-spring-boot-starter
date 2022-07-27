@@ -2,30 +2,31 @@ package cn.omisheep.authz.core.auth.deviced;
 
 import java.util.Date;
 
+import static cn.omisheep.authz.core.config.Constants.ACCESS_TOKEN_EXPIRATION;
+import static cn.omisheep.authz.core.config.Constants.REFRESH_TOKEN_ID;
+
+
 /**
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
 public class AccessInfo extends AuMap {
 
-    public static final String EXPIRATION       = "aex";
-    public static final String REFRESH_TOKEN_ID = "rtid";
-
     public AccessInfo() {
         super();
     }
 
     public AccessInfo setExpiration(Date expirationDate) {
-        setDate(EXPIRATION, expirationDate);
+        setDate(ACCESS_TOKEN_EXPIRATION, expirationDate);
         return this;
     }
 
     public Date getExpiration() {
-        return getDate(EXPIRATION);
+        return getDate(ACCESS_TOKEN_EXPIRATION);
     }
 
     public long getExpirationVal() {
-        return Long.parseLong((String) get(EXPIRATION));
+        return Long.parseLong((String) get(ACCESS_TOKEN_EXPIRATION));
     }
 
     public AccessInfo setRefreshTokenId(String refreshTokenId) {

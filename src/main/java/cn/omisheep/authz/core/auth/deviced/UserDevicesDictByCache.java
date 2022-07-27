@@ -44,9 +44,15 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     @Override
-    public int userStatus(Object userId, String deviceType, String deviceId, String accessTokenId) {
-        CompletableFuture<Set<String>> acSupply        = Async.supply(() -> cache.get().keysAndLoad(acKey(userId, Constants.WILDCARD)));
-        Set<String>                    refreshInfoKeys = cache.get().keysAndLoad(rfKey(userId, Constants.WILDCARD));
+    public int userStatus(Token accessToken) {
+        Object userId        = accessToken.getUserId();
+        String deviceType    = accessToken.getDeviceType();
+        String deviceId      = accessToken.getDeviceId();
+        String accessTokenId = accessToken.getTokenId();
+        String clientId      = accessToken.getClientId();
+        CompletableFuture<Set<String>> acSupply = Async.supply(
+                () -> cache.get().keysAndLoad(acKey(userId, Constants.WILDCARD)));
+        Set<String> refreshInfoKeys = cache.get().keysAndLoad(rfKey(userId, Constants.WILDCARD));
 
         boolean hasTargetDeviceInfo = false;
         if (!refreshInfoKeys.isEmpty()) {
@@ -70,7 +76,9 @@ public class UserDevicesDictByCache implements UserDevicesDict {
                 .filter(key -> {
                     AccessInfo accessInfo = (AccessInfo) cache.get().get(key);
                     if (accessInfo == null) return true;
-                    return equalsDeviceByTypeAndId((Device) cache.get().get(rfKey(userId, accessInfo.getRefreshTokenId())), deviceType, deviceId);
+                    return equalsDeviceByTypeAndId(
+                            (Device) cache.get().get(rfKey(userId, accessInfo.getRefreshTokenId())), deviceType,
+                            deviceId);
                 }).findFirst().orElse(null);
 
         if (acKey == null) { // 如果没有这个设备
@@ -93,7 +101,8 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         Set<String>   accessInfoKeys  = new HashSet<>();
         Set<String>   refreshInfoKeys = new HashSet<>();
         DefaultDevice device          = new DefaultDevice();
-        device.setType(deviceType).setId(deviceId);
+        device.setDeviceType(deviceType).setDeviceId(deviceId);
+        String clientId = tokenPair.getAccessToken().getClientId();
 
         Async.combine(
                 () -> accessInfoKeys.addAll(cache.get().keysAndLoad(acKey(userId, Constants.WILDCARD))),
@@ -158,7 +167,8 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         RefreshInfo refreshInfo = new RefreshInfo().setDevice(device);
         refreshInfo.setIp(httpMeta.getIp()).setLastRequestTime(httpMeta.getNow());
 
-        long rfLiveTime = TimeUtils.parseTimeValueTotal(properties.getToken().getAccessTime(), properties.getToken().getRefreshTime(), "10s");
+        long rfLiveTime = TimeUtils.parseTimeValueTotal(properties.getToken().getAccessTime(),
+                                                        properties.getToken().getRefreshTime(), "10s");
 
         Async.run(() -> {
             cache.get().del(acKey(userId, Constants.WILDCARD));
@@ -167,7 +177,8 @@ public class UserDevicesDictByCache implements UserDevicesDict {
 
         return Async.joinAndCheck(
                 Async.combine(
-                        () -> cache.get().set(acKey(userId, tokenPair), accessInfo, properties.getToken().getAccessTime()),
+                        () -> cache.get().set(acKey(userId, tokenPair), accessInfo,
+                                              properties.getToken().getAccessTime()),
                         () -> cache.get().set(rfKey(userId, tokenPair), refreshInfo, rfLiveTime, TimeUnit.MILLISECONDS)
                 )
         );
@@ -185,8 +196,8 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         for (String key : cache.get().keysAndLoad(acKey(userId, Constants.WILDCARD))) {
             Device deviceInfo = getDeviceOe(userId, key);
             if (deviceInfo == null) continue;
-            if (StringUtils.equals(accessToken.getDeviceType(), deviceInfo.getType())
-                    && StringUtils.equals(accessToken.getDeviceId(), deviceInfo.getId())) {
+            if (StringUtils.equals(accessToken.getDeviceType(), deviceInfo.getDeviceType())
+                    && StringUtils.equals(accessToken.getDeviceId(), deviceInfo.getDeviceId())) {
                 k = key;
                 break;
             }
@@ -429,7 +440,8 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     private String requestKey(Object userId, String rfKey) {
-        return Constants.DEVICE_REQUEST_INFO_KEY_PREFIX.get() + userId + Constants.SEPARATOR + rfKey.split(Constants.SEPARATOR)[3];
+        return Constants.DEVICE_REQUEST_INFO_KEY_PREFIX.get() + userId + Constants.SEPARATOR + rfKey.split(
+                Constants.SEPARATOR)[3];
     }
 
     private String acKey(Object userId, String tokenId) {
@@ -450,29 +462,30 @@ public class UserDevicesDictByCache implements UserDevicesDict {
 
     private boolean equalsDeviceByTypeOrId(Device device, Device otherDevice) {
         if (device == null) return false;
-        return StringUtils.equals(device.getType(), otherDevice.getType())
-                || (device.getId() != null && StringUtils.equals(device.getId(), otherDevice.getId())); // null时不参与匹配
+        return StringUtils.equals(device.getDeviceType(), otherDevice.getDeviceType()) ||
+                (device.getDeviceId() != null &&
+                        StringUtils.equals(device.getDeviceId(), otherDevice.getDeviceId())); // null时不参与匹配
     }
 
     private boolean equalsDeviceByTypeAndId(Device device, String deviceType, String deviceId) {
         if (device == null) return false;
-        return StringUtils.equals(device.getType(), deviceType)
-                && StringUtils.equals(device.getId(), deviceId);
+        return StringUtils.equals(device.getDeviceType(), deviceType)
+                && StringUtils.equals(device.getDeviceId(), deviceId);
     }
 
     private boolean equalsDeviceById(Device device, Device otherDevice) {
         if (device == null) return false;
-        return equalsDeviceById(device, otherDevice.getId());
+        return equalsDeviceById(device, otherDevice.getDeviceId());
     }
 
     private boolean equalsDeviceById(Device device, String deviceId) {
         if (device == null) return false;
-        return device.getId() != null && StringUtils.equals(device.getId(), deviceId);
+        return device.getDeviceId() != null && StringUtils.equals(device.getDeviceId(), deviceId);
     }
 
     private boolean equalsDeviceByType(Device device, String deviceType) {
         if (device == null) return false;
-        return StringUtils.equals(device.getType(), deviceType);
+        return StringUtils.equals(device.getDeviceType(), deviceType);
     }
 
 }

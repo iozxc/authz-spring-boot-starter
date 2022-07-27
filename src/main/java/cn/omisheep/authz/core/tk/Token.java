@@ -57,7 +57,7 @@ public class Token {
     private final String deviceId;
 
     /**
-     * 客户端id，没有则为null
+     * 客户端id，没有则为null，有则为oauth
      *
      * @since 1.2.0
      */

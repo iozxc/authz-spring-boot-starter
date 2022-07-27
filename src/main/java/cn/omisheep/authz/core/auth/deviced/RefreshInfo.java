@@ -2,6 +2,8 @@ package cn.omisheep.authz.core.auth.deviced;
 
 import java.util.Date;
 
+import static cn.omisheep.authz.core.config.Constants.REFRESH_TOKEN_EXPIRATION;
+
 /**
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
@@ -9,7 +11,6 @@ import java.util.Date;
 public class RefreshInfo extends DefaultDevice {
     private static final long serialVersionUID = 630388187461710252L;
 
-    public static final String EXPIRATION = "rex";
 
     public RefreshInfo() {
         super();
@@ -25,16 +26,16 @@ public class RefreshInfo extends DefaultDevice {
     }
 
     public RefreshInfo setExpiration(Date expirationDate) {
-        setDate(EXPIRATION, expirationDate);
+        setDate(REFRESH_TOKEN_EXPIRATION, expirationDate);
         return this;
     }
 
     public Date getExpiration() {
-        return getDate(EXPIRATION);
+        return getDate(REFRESH_TOKEN_EXPIRATION);
     }
 
     public long getExpirationVal() {
-        return Long.parseLong((String) get(EXPIRATION));
+        return Long.parseLong((String) get(REFRESH_TOKEN_EXPIRATION));
     }
 
 }

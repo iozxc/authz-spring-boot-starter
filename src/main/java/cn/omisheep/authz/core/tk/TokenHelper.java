@@ -23,6 +23,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
+import static cn.omisheep.authz.core.config.Constants.*;
 import static io.jsonwebtoken.CompressionCodecs.DEFLATE;
 import static io.jsonwebtoken.CompressionCodecs.GZIP;
 
@@ -45,14 +46,7 @@ public class TokenHelper {
     private static final AuthzProperties.TokenConfig.Mode mode;
     private static final int                              tokenIdBits;
     private static final String                           prefix;
-    private static final String[]                         USER_ID     = {"uid", "uid", "userId",};
-    private static final String[]                         DEVICE_ID   = {"did", "did", "deviceId"};
-    private static final String[]                         DEVICE_TYPE = {"dtp", "dtp", "deviceType"};
-    private static final String[]                         TOKEN_TYPE  = {"tpe", "tpe", "type"};
-    private static final String                           CLIENT_ID   = "cid";
-    private static final String                           SCOPE       = "cop";
     private static final String                           defaultScope;
-    private static final String                           defaultOAuthScope;
 
     private TokenHelper() {
     }
@@ -60,8 +54,7 @@ public class TokenHelper {
     static {
         AuthzProperties             properties = AUtils.getBean(AuthzProperties.class);
         AuthzProperties.TokenConfig token      = properties.getToken();
-        defaultScope      = token.getScope();
-        defaultOAuthScope = token.getOauth().getOauthDefaultScope();
+        defaultScope = token.getOauth().getDefaultScope();
         String             key       = token.getKey();
         SignatureAlgorithm algorithm = token.getAlgorithm();
         tokenIdBits = token.getTokenIdBits();
@@ -127,14 +120,15 @@ public class TokenHelper {
     private static Claims generateClaims(Object userId, String deviceType, String deviceId, String clientId,
                                          String scope, Token.Type tokenType) {
         Claims claims = Jwts.claims();
-        claims.put(USER_ID[mode.ordinal()], userId);
-        claims.put(DEVICE_ID[mode.ordinal()], deviceId);
-        claims.put(DEVICE_TYPE[mode.ordinal()], deviceType);
-        claims.put(TOKEN_TYPE[mode.ordinal()], tokenType.names.get(0));
-        claims.put(CLIENT_ID, clientId);
-        if (scope == null && clientId == null) claims.put(SCOPE, defaultScope);
-        else if (scope == null) claims.put(SCOPE, defaultOAuthScope);
-        else claims.put(SCOPE, scope);
+        claims.put(USER_ID, userId);
+        claims.put(DEVICE_ID, deviceId);
+        claims.put(DEVICE_TYPE, deviceType);
+        claims.put(TOKEN_TYPE, tokenType.names.get(0));
+        if (clientId != null) { // oauth
+            if (scope == null) claims.put(SCOPE, defaultScope);
+            else claims.put(SCOPE, scope);
+            claims.put(CLIENT_ID, clientId);
+        }
         return claims;
     }
 
@@ -171,8 +165,8 @@ public class TokenHelper {
      */
     public static TokenPair createTokenPair(Object userId, String deviceType, String deviceId, String clientId,
                                             String scope) {
-        LocalDateTime now = LocalDateTime.now();
-        Date fromNow = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
+        LocalDateTime now     = LocalDateTime.now();
+        Date          fromNow = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
         Date toAccessExpiredTime = // accessToken失效时间
                 Date.from(now.plus(accessTime, ChronoUnit.MILLIS).atZone(
                         ZoneId.systemDefault()).toInstant());
@@ -260,6 +254,7 @@ public class TokenHelper {
      * @return Cookie
      */
     public static Cookie generateCookie(Token token) {
+        if (token == null) return null;
         Cookie cookie = new Cookie(cookieName, token.getTokenVal());
         cookie.setPath("/");
         cookie.setHttpOnly(true);
@@ -302,12 +297,12 @@ public class TokenHelper {
             tokenVal = prefix + tokenVal;
         }
         Claims claims = Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(tokenVal).getBody();
-        return new Token(tv != null ? tv : tokenVal, claims.get(USER_ID[mode.ordinal()]), claims.getId(),
+        return new Token(tv != null ? tv : tokenVal, claims.get(USER_ID), claims.getId(),
                          claims.getIssuedAt(), claims.getExpiration(),
-                         claims.get(DEVICE_TYPE[mode.ordinal()], String.class),
-                         claims.get(DEVICE_ID[mode.ordinal()], String.class), claims.get(CLIENT_ID, String.class),
+                         claims.get(DEVICE_TYPE, String.class),
+                         claims.get(DEVICE_ID, String.class), claims.get(CLIENT_ID, String.class),
                          claims.get(SCOPE, String.class),
-                         Token.Type.fromValue((String) claims.get(TOKEN_TYPE[mode.ordinal()])));
+                         Token.Type.fromValue((String) claims.get(TOKEN_TYPE)));
     }
 
 }

@@ -44,9 +44,8 @@ public class APIPermSlot implements Slot {
         if (!e1 || !e2) {
             roles = permLibrary.getRolesByUserId(accessToken.getUserId());
             httpMeta.setRoles(roles);
-            if (!e1 && !CollectionUtils.containsSub(permRolesMeta.getRequireRoles(),
-                                                    roles) || !e2 && CollectionUtils.containsSub(
-                    permRolesMeta.getExcludeRoles(), roles)) {
+            if (!e1 && !CollectionUtils.containsSub(permRolesMeta.getRequireRoles(), roles)
+                    || !e2 && CollectionUtils.containsSub(permRolesMeta.getExcludeRoles(), roles)) {
                 logs("Forbid : permissions exception", httpMeta, permRolesMeta);
                 error.error(ExceptionStatus.PERM_EXCEPTION);
                 return;
