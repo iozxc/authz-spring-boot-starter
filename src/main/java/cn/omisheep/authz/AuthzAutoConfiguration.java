@@ -6,7 +6,6 @@ import cn.omisheep.authz.core.auth.DefaultPermLibrary;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDictByCache;
-import cn.omisheep.authz.core.auth.deviced.UserDevicesDictByHashMap;
 import cn.omisheep.authz.core.auth.ipf.AuthzHttpFilter;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.cache.DefaultCache;
@@ -267,12 +266,13 @@ public class AuthzAutoConfiguration {
     }
 
     @Bean
-    public UserDevicesDict userDevicesDict(AuthzProperties properties) {
-        if (properties.getCache().isEnableRedis()) {
-            return new UserDevicesDictByCache(properties);
-        } else {
-            return new UserDevicesDictByHashMap(properties);
-        }
+    public UserDevicesDict userDevicesDict(AuthzProperties properties, Cache cache) {
+        return new UserDevicesDictByCache(properties, cache);
+//        if (properties.getCache().isEnableRedis()) {
+//            return new UserDevicesDictByCache(properties, cache);
+//        } else {
+//            return new UserDevicesDictByHashMap(properties);
+//        }
     }
 
     @Bean

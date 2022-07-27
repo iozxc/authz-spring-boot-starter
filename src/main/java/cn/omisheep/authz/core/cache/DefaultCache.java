@@ -91,11 +91,15 @@ public class DefaultCache implements cn.omisheep.authz.core.cache.Cache {
 
     @Override
     public @NonNull <T> Map<String, T> get(@NonNull Set<String> keys, @NonNull Class<T> requiredType) {
-        Map<String, CacheItem> items = cache.getAllPresent(keys);
         HashMap<String, T>     map   = new HashMap<>();
-        for (Map.Entry<String, CacheItem> entry : items.entrySet()) {
-            map.put(entry.getKey(), castValue(entry.getValue(), requiredType));
-        }
+        Map<String, CacheItem> items = cache.getAllPresent(keys);
+        items.forEach((k, v) -> {
+            if (v.value == null) {
+                map.put(k, null);
+            } else {
+                map.put(k, castValue(v.value, requiredType));
+            }
+        });
         return map;
     }
 
@@ -109,4 +113,18 @@ public class DefaultCache implements cn.omisheep.authz.core.cache.Cache {
         cache.invalidateAll(keys);
     }
 
+    @Override
+    @NonNull
+    public Map<String, Object> asMap() {
+        HashMap<String, Object> map = new HashMap<>();
+        for (Map.Entry<String, CacheItem> e : cache.asMap().entrySet()) {
+            map.put(e.getKey(), e.getValue().value);
+        }
+        return Collections.unmodifiableMap(map);
+    }
+
+    @Override
+    public @NonNull Map<String, CacheItem> asRawMap() {
+        return Collections.unmodifiableMap(cache.asMap());
+    }
 }

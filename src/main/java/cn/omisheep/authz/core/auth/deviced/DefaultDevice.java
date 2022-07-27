@@ -38,10 +38,14 @@ public class DefaultDevice extends AuMap implements Device {
         return this;
     }
 
-
     @Override
     public Date getLastRequestTime() {
         return getDate(LAST_REQUEST_TIME);
+    }
+
+    @Override
+    public Long getLastRequestTimeLong() {
+        return getLong(LAST_REQUEST_TIME);
     }
 
     @Override

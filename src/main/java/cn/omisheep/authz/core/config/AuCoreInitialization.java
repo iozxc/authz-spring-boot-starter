@@ -4,7 +4,6 @@ import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.AuthzVersion;
 import cn.omisheep.authz.core.auth.DefaultPermLibrary;
 import cn.omisheep.authz.core.auth.PermLibrary;
-import cn.omisheep.authz.core.auth.deviced.DeviceConfig;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
@@ -16,7 +15,6 @@ import cn.omisheep.authz.core.oauth.OpenAuthDict;
 import cn.omisheep.authz.core.oauth.OpenAuthLibrary;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
-import cn.omisheep.commons.util.TaskBuilder;
 import lombok.SneakyThrows;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.system.ApplicationHome;
@@ -95,10 +93,6 @@ public class AuCoreInitialization implements ApplicationContextAware {
         Httpd.init(properties, ctx, mapRet);
         LogUtils.debug("Httpd init success \n");
 
-        // init UserDevicesDict
-        initUserDevicesDict();
-        LogUtils.debug("UserDevicesDict init success");
-
         AuthzDefender.init(userDevicesDict, permLibrary);
 
         // init Jobs
@@ -111,10 +105,10 @@ public class AuCoreInitialization implements ApplicationContextAware {
             AuthzRSAManager.setAuKeyPair(rsaConfig.getCustomPublicKey(), rsaConfig.getCustomPrivateKey());
         }
 
-        if (!properties.getCache().isEnableRedis()) {
-            TaskBuilder.schedule(Pelcron::activeExpireCycle, properties.getUserBufferRefreshWithPeriod());
-        }
-        TaskBuilder.schedule(Pelcron::GC, properties.getGcPeriod());
+//        if (!properties.getCache().isEnableRedis()) {
+//            TaskBuilder.schedule(Pelcron::activeExpireCycle, properties.getUserBufferRefreshWithPeriod());
+//        }
+//        TaskBuilder.schedule(Pelcron::GC, properties.getGcPeriod());
 
         openAuthLibrary.init();
 
@@ -146,11 +140,6 @@ public class AuCoreInitialization implements ApplicationContextAware {
             return home.getSource().getAbsolutePath();
         }
         return null;
-    }
-
-    private void initUserDevicesDict() {
-        DeviceConfig.isSupportMultiDevice                = properties.getUser().isSupportMultiDevice();
-        DeviceConfig.isSupportMultiUserForSameDeviceType = properties.getUser().isSupportMultiUserForSameDeviceType();
     }
 
 }

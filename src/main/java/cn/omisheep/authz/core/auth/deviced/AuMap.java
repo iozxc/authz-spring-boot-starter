@@ -37,6 +37,10 @@ public class AuMap implements Map<Object, Object> {
         return new Date(millis);
     }
 
+    protected Long getLong(String name) {
+        return Long.parseLong((String) map.get(name));
+    }
+
     protected void setDate(String name, Date d) {
         if (d == null) {
             map.remove(name);

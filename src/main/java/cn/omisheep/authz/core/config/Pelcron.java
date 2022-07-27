@@ -1,7 +1,6 @@
 package cn.omisheep.authz.core.config;
 
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
-import cn.omisheep.authz.core.auth.deviced.UserDevicesDictByHashMap;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
 
@@ -26,12 +25,12 @@ public class Pelcron {
     /**
      * 删除过期的用户信息，
      */
-    public static void activeExpireCycle() {
-        if (userDevicesDict instanceof UserDevicesDictByHashMap) {
-            UserDevicesDictByHashMap userDevicesDictByHashMap = (UserDevicesDictByHashMap) userDevicesDict;
-            userDevicesDictByHashMap.cleanCycle();
-        }
-    }
+//    public static void activeExpireCycle() {
+//        if (userDevicesDict instanceof UserDevicesDictByHashMap) {
+//            UserDevicesDictByHashMap userDevicesDictByHashMap = (UserDevicesDictByHashMap) userDevicesDict;
+//            userDevicesDictByHashMap.cleanCycle();
+//        }
+//    }
 
     public static void GC() {
         System.gc();

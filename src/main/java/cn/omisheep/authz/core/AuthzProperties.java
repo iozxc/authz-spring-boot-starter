@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core;
 
+import cn.omisheep.authz.core.auth.deviced.DeviceCountInfo;
 import cn.omisheep.authz.core.codec.Decryptor;
 import cn.omisheep.authz.core.codec.RSADecryptor;
 import cn.omisheep.authz.support.entity.User;
@@ -185,7 +186,7 @@ public class AuthzProperties {
             /**
              * 客户端Id长度 默认24
              */
-            private int clientIdLength     = 24;
+            private int clientIdLength = 24;
 
             /**
              * 客户端密钥长度 默认30位
@@ -219,14 +220,31 @@ public class AuthzProperties {
     public static class UserConfig {
 
         /**
-         * 是否支持多设备登录(type不同，id不同)
+         * 登录设备总数默不做限制【-1为不做限制，最小为1】，超出会挤出最长时间未访问的设备。
          */
-        private boolean supportMultiDevice = true;
+        private int maximumTotalDevice = -1;
+
+        public int getMaximumTotalDevice() {
+            if (maximumTotalDevice == 0) return 1;
+            if (maximumTotalDevice < 0) return -1;
+            return maximumTotalDevice;
+        }
 
         /**
-         * 是否支持同类型设备多登录（type相同，id不同）
+         * 同类型设备最大登录数 默认 1个【-1为不做限制，最小为1】，超出会挤出最长时间未访问的设备。
          */
-        private boolean supportMultiUserForSameDeviceType = false;
+        private int maximumSameTypeDeviceCount = 1;
+
+        public int getMaximumSameTypeDeviceCount() {
+            if (maximumSameTypeDeviceCount == 0) return 1;
+            if (maximumSameTypeDeviceCount < 0) return -1;
+            return maximumSameTypeDeviceCount;
+        }
+
+        /**
+         * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
+         */
+        private List<DeviceCountInfo> typesTotal = new ArrayList<>();
 
     }
 

@@ -33,11 +33,6 @@ public class DeviceSlot implements Slot {
         }
 
         switch (userDevicesDict.userStatus(httpMeta.getToken())) {
-            case ACCESS_TOKEN_OVERDUE:
-                // accessToken过期
-                logs("Forbid : expired token exception", httpMeta);
-                error.error(ExceptionStatus.ACCESS_TOKEN_OVERDUE);
-                return;
             case REQUIRE_LOGIN:
                 // 需要重新登录
                 logs("Require Login", httpMeta);

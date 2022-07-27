@@ -8,7 +8,8 @@ import org.springframework.web.method.HandlerMethod;
  * <p>
  * <p>
  * (0)        FilterSlot               <br>
- * (1)        CookieAndRequestSlot     <br>
+ * (1)       ProtectCheckerSlot       <br>
+ * (2)        CookieAndRequestSlot     <br>
  * (2)        RateLimitSlot            <br>
  * (5)        BlacklistSlot            <br>
  * (30)       IPRangeSlot              <br>

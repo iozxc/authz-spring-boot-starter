@@ -1,9 +1,10 @@
 package cn.omisheep.authz.core.auth.deviced;
 
+import cn.omisheep.authz.AuHelper;
 import cn.omisheep.authz.core.AuthzProperties;
-import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.cache.Cache;
+import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.tk.TokenPair;
 import cn.omisheep.authz.core.util.AUtils;
@@ -13,17 +14,11 @@ import cn.omisheep.commons.util.TimeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import static cn.omisheep.authz.core.auth.deviced.DeviceConfig.isSupportMultiDevice;
-import static cn.omisheep.authz.core.auth.deviced.DeviceConfig.isSupportMultiUserForSameDeviceType;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -33,14 +28,11 @@ import static cn.omisheep.authz.core.auth.deviced.DeviceConfig.isSupportMultiUse
 public class UserDevicesDictByCache implements UserDevicesDict {
 
     private final AuthzProperties properties;
-    private       Cache           _cache;
-    private final Supplier<Cache> cache = () -> {
-        if (_cache == null) _cache = AUtils.getBean(Cache.class);
-        return _cache;
-    };
+    private final Cache           cache;
 
-    public UserDevicesDictByCache(AuthzProperties properties) {
+    public UserDevicesDictByCache(AuthzProperties properties, Cache cache) {
         this.properties = properties;
+        this.cache      = cache;
     }
 
     @Override
@@ -50,145 +42,126 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         String deviceId      = accessToken.getDeviceId();
         String accessTokenId = accessToken.getTokenId();
         String clientId      = accessToken.getClientId();
-        CompletableFuture<Set<String>> acSupply = Async.supply(
-                () -> cache.get().keysAndLoad(acKey(userId, Constants.WILDCARD)));
-        Set<String> refreshInfoKeys = cache.get().keysAndLoad(rfKey(userId, Constants.WILDCARD));
+
+        Set<String> refreshInfoKeys = cache.keysAndLoad(rfKey(userId, Constants.WILDCARD));
+
+        CompletableFuture<AccessInfo> acSupply = Async.supply(
+                () -> cache.get(acKey(userId, accessTokenId), AccessInfo.class));
 
         boolean hasTargetDeviceInfo = false;
         if (!refreshInfoKeys.isEmpty()) {
-            hasTargetDeviceInfo = refreshInfoKeys.stream()
-                    .anyMatch(rfKey -> {
-                        Device deviceInfo = (Device) cache.get().get(rfKey);
-                        return equalsDeviceByTypeAndId(deviceInfo, deviceType, deviceId);
-                    });
-        }
+            Map<String, RefreshInfo> refreshInfoMap = cache.get(refreshInfoKeys, RefreshInfo.class);
+            hasTargetDeviceInfo = refreshInfoMap.entrySet().stream()
+                    .anyMatch(e -> equalsDeviceByTypeAndId(e.getValue().getDevice(), deviceType, deviceId));
 
+        }
         if (!hasTargetDeviceInfo) return REQUIRE_LOGIN;
 
-        Set<String> accessInfoKeys = acSupply.join();
-        if (accessInfoKeys.isEmpty()) {
-            if (refreshInfoKeys.isEmpty()) return REQUIRE_LOGIN;
-            return ACCESS_TOKEN_OVERDUE;
-        }
+        AccessInfo accessInfo = acSupply.join();
+        if (accessInfo == null) return LOGIN_EXCEPTION;
 
-        // 于登录设备同类型，同ID的设备acID
-        String acKey = accessInfoKeys.stream()
-                .filter(key -> {
-                    AccessInfo accessInfo = (AccessInfo) cache.get().get(key);
-                    if (accessInfo == null) return true;
-                    return equalsDeviceByTypeAndId(
-                            (Device) cache.get().get(rfKey(userId, accessInfo.getRefreshTokenId())), deviceType,
-                            deviceId);
-                }).findFirst().orElse(null);
-
-        if (acKey == null) { // 如果没有这个设备
-            if (!isSupportMultiDevice) { // 如果不允许多设备登录，说明现在存在其他设备。
-                return LOGIN_EXCEPTION;
-            } else {
-                return ACCESS_TOKEN_OVERDUE;
-            }
-        }
-
-        // 3）如果设备存在，但是tokenId不是自己的，则在别处登录
-        if (!StringUtils.equals(acKey, acKey(userId, accessTokenId))) {
-            return LOGIN_EXCEPTION;
-        }
         return SUCCESS;
     }
 
     @Override
     public boolean addUser(TokenPair tokenPair, HttpMeta httpMeta) {
-        Set<String>   accessInfoKeys  = new HashSet<>();
-        Set<String>   refreshInfoKeys = new HashSet<>();
-        DefaultDevice device          = new DefaultDevice();
         if (tokenPair == null || tokenPair.getAccessToken() == null || tokenPair.getRefreshToken() == null)
             return false;
-        Token accessToken = tokenPair.getAccessToken();
-        Object userId    = accessToken.getUserId();
-        String deviceType = accessToken.getDeviceType();
-        String deviceId   = accessToken.getDeviceId();
 
-        device.setDeviceType(deviceType).setDeviceId(deviceId);
-        String clientId = tokenPair.getAccessToken().getClientId();
+        Token                      accessToken = tokenPair.getAccessToken();
+        Object                     userId      = accessToken.getUserId();
+        String                     deviceType  = accessToken.getDeviceType();
+        String                     deviceId    = accessToken.getDeviceId();
+        String                     clientId    = tokenPair.getAccessToken().getClientId();
+        AuthzProperties.UserConfig userConfig  = usersConfig.getOrDefault(userId, properties.getUser());
 
-        Async.combine(
-                () -> accessInfoKeys.addAll(cache.get().keysAndLoad(acKey(userId, Constants.WILDCARD))),
-                () -> refreshInfoKeys.addAll(cache.get().keysAndLoad(rfKey(userId, Constants.WILDCARD)))
-        ).join();
-
-        Set<String> delKeys = new HashSet<>();
-        if (!isSupportMultiDevice) {
-            delKeys.addAll(accessInfoKeys);
-            delKeys.addAll(refreshInfoKeys);
-        } else {
-            if (!isSupportMultiUserForSameDeviceType) {
-                accessInfoKeys.removeIf(key -> {
-                    AccessInfo accessInfo = (AccessInfo) cache.get().get(key);
-                    if (accessInfo == null) return true;
-                    String rtid = accessInfo.getRefreshTokenId();
-                    if (rtid == null) return false;
-                    String rfKey      = rfKey(userId, rtid);
-                    Device deviceInfo = (Device) cache.get().get(rfKey);
-                    if (deviceInfo != null && !equalsDeviceByTypeOrId(deviceInfo, device)) return false;
-                    delKeys.add(key);
-                    delKeys.add(rfKey);
-                    refreshInfoKeys.remove(rfKey);
-                    return true;
-                });
-
-                refreshInfoKeys.removeIf(key -> {
-                    Device deviceInfo = (Device) cache.get().get(key);
-                    if (deviceInfo != null && !equalsDeviceByTypeOrId(deviceInfo, device)) return false;
-                    delKeys.add(key);
-                    delKeys.add(requestKey(userId, key));
-                    return true;
-                });
-            } else {
-                accessInfoKeys.removeIf(key -> {
-                    AccessInfo accessInfo = (AccessInfo) cache.get().get(key);
-                    if (accessInfo == null) return true;
-                    String rtid = accessInfo.getRefreshTokenId();
-                    if (rtid == null) return false;
-                    String rfKey      = rfKey(userId, rtid);
-                    Device deviceInfo = (Device) cache.get().get(rfKey);
-                    if (deviceInfo != null && !equalsDeviceById(deviceInfo, device)) return false;
-                    delKeys.add(key);
-                    delKeys.add(rfKey);
-                    refreshInfoKeys.remove(rfKey);
-                    return true;
-                });
-
-                refreshInfoKeys.removeIf(key -> {
-                    Device deviceInfo = (Device) cache.get().get(key);
-                    if (deviceInfo != null && !equalsDeviceById(deviceInfo, device)) return false;
-                    delKeys.add(key);
-                    delKeys.add(requestKey(userId, key));
-                    return true;
-                });
-            }
-        }
-
-        if (!delKeys.isEmpty()) Async.run(() -> cache.get().del(delKeys));
-
+        Device      device      = new DefaultDevice().setDeviceType(deviceType).setDeviceId(deviceId);
         AccessInfo  accessInfo  = new AccessInfo().setRefreshTokenId(tokenPair.getRefreshToken().getTokenId());
         RefreshInfo refreshInfo = new RefreshInfo().setDevice(device);
         refreshInfo.setIp(httpMeta.getIp()).setLastRequestTime(httpMeta.getNow());
 
         long rfLiveTime = TimeUtils.parseTimeValueTotal(properties.getToken().getAccessTime(),
                                                         properties.getToken().getRefreshTime(), "10s");
+        String acKey = acKey(userId, tokenPair);
+        String rfKey = rfKey(userId, tokenPair);
+        boolean b = Async.joinAndCheck(Async.combine(
+                () -> cache.set(acKey, accessInfo, properties.getToken().getAccessTime()),
+                () -> cache.set(rfKey, refreshInfo, rfLiveTime, TimeUnit.MILLISECONDS)));
 
-        Async.run(() -> {
-            cache.get().del(acKey(userId, Constants.WILDCARD));
-            cache.get().del(rfKey(userId, Constants.WILDCARD));
+        if (!b) return false;
+
+        Async.run(() -> { // @since 1.2.0 优化了登录逻辑，略微提速
+
+            Set<String> delKeys         = new HashSet<>();
+            Set<String> accessInfoKeys  = new HashSet<>();
+            Set<String> refreshInfoKeys = new HashSet<>();
+            Async.combine(() -> accessInfoKeys.addAll(cache.keysAndLoad(acKey(userId, Constants.WILDCARD))),
+                          () -> refreshInfoKeys.addAll(cache.keysAndLoad(rfKey(userId, Constants.WILDCARD))))
+                    .join(); // 获得所有的key access和refresh
+
+            Map<String, RefreshInfo> refreshInfoMap = cache.get(refreshInfoKeys, RefreshInfo.class);
+            Map<String, AccessInfo>  accessInfoMap  = cache.get(accessInfoKeys, AccessInfo.class);
+
+            // 删除同type同id
+            d(Integer.MIN_VALUE, refreshInfoMap, accessInfoMap, delKeys,
+              e -> StringUtils.equals(deviceType, e.getValue().getDeviceType())
+                      && StringUtils.equals(deviceId, e.getValue().getDeviceId()));
+
+            // 登录设备总数
+            if (userConfig.getMaximumTotalDevice() != -1 && userConfig.getMaximumTotalDevice() > 0 && refreshInfoKeys.size() > userConfig.getMaximumTotalDevice()) {
+                d(userConfig.getMaximumTotalDevice(), refreshInfoMap, accessInfoMap, delKeys, e -> true);
+            }
+
+            // 同类型设备最大登录数量
+            if (userConfig.getMaximumSameTypeDeviceCount() != -1) {
+                d(userConfig.getMaximumSameTypeDeviceCount(), refreshInfoMap, accessInfoMap, delKeys,
+                  e -> StringUtils.equals(e.getValue().getDevice().getDeviceType(), deviceType));
+            }
+
+            List<DeviceCountInfo> typesTotal = userConfig.getTypesTotal();
+            // 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1）
+            if (typesTotal != null && !typesTotal.isEmpty()) {
+                for (DeviceCountInfo deviceCountInfo : typesTotal) {
+                    if (deviceCountInfo.getTypes().isEmpty()) continue;
+                    d(deviceCountInfo.getTotal(), refreshInfoMap, accessInfoMap, delKeys,
+                      e -> deviceCountInfo.getTypes().contains(e.getValue().getDeviceType()));
+                }
+            }
+
+            if (!delKeys.isEmpty()) {
+                delKeys.remove(rfKey);
+                delKeys.remove(acKey);
+                cache.del(delKeys);
+                cache.del(acKey(userId, Constants.WILDCARD));
+                cache.del(rfKey(userId, Constants.WILDCARD));
+            }
         });
 
-        return Async.joinAndCheck(
-                Async.combine(
-                        () -> cache.get().set(acKey(userId, tokenPair), accessInfo,
-                                              properties.getToken().getAccessTime()),
-                        () -> cache.get().set(rfKey(userId, tokenPair), refreshInfo, rfLiveTime, TimeUnit.MILLISECONDS)
-                )
-        );
+        return true;
+    }
+
+
+    private void d(int max, Map<String, RefreshInfo> refreshInfoMap, Map<String, AccessInfo> accessInfoMap,
+                   Set<String> delKeys, Predicate<? super Map.Entry<String, RefreshInfo>> predicate) {
+        HashSet<String> _del = new HashSet<>();
+        List<Map.Entry<String, RefreshInfo>> arr1 = refreshInfoMap.entrySet().stream().filter(predicate).sorted(
+                (v1, v2) -> Math.toIntExact(
+                        v1.getValue().getLastRequestTimeLong() - v2.getValue().getLastRequestTimeLong())).collect(
+                Collectors.toList());
+        int deleteCount = arr1.size() - max;
+        if (deleteCount <= 0) return;
+
+        for (Map.Entry<String, RefreshInfo> v : arr1.subList(0, Math.min(deleteCount, arr1.size()))) {
+            refreshInfoMap.remove(v.getKey());
+            delKeys.add(v.getKey());
+            _del.add(v.getKey().substring(v.getKey().lastIndexOf(":") + 1));
+        }
+
+        accessInfoMap.entrySet().removeIf(e -> {
+            boolean b = _del.stream().anyMatch(v -> v.equals(e.getValue().getRefreshTokenId()));
+            if (b) delKeys.add(e.getKey());
+            return b;
+        });
     }
 
     @Override
@@ -197,43 +170,43 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         Token  accessToken = tokenPair.getAccessToken();
         Object userId      = accessToken.getUserId();
         String rfKey       = rfKey(userId, tokenPair);
-        if (cache.get().notKey(rfKey)) return false;
+        if (cache.notKey(rfKey)) return false;
 
         String k = null;
-        for (String key : cache.get().keysAndLoad(acKey(userId, Constants.WILDCARD))) {
+        for (String key : cache.keysAndLoad(acKey(userId, Constants.WILDCARD))) {
             Device deviceInfo = getDeviceOe(userId, key);
             if (deviceInfo == null) continue;
-            if (StringUtils.equals(accessToken.getDeviceType(), deviceInfo.getDeviceType())
-                    && StringUtils.equals(accessToken.getDeviceId(), deviceInfo.getDeviceId())) {
+            if (StringUtils.equals(accessToken.getDeviceType(), deviceInfo.getDeviceType()) && StringUtils.equals(
+                    accessToken.getDeviceId(), deviceInfo.getDeviceId())) {
                 k = key;
                 break;
             }
         }
 
-        if (k != null) cache.get().del(k);
+        if (k != null) cache.del(k);
 
         AccessInfo accessInfo = new AccessInfo().setRefreshTokenId(tokenPair.getRefreshToken().getTokenId());
         Async.run(() -> {
-            cache.get().del(acKey(userId, Constants.WILDCARD));
-            cache.get().del(rfKey(userId, Constants.WILDCARD));
+            cache.del(acKey(userId, Constants.WILDCARD));
+            cache.del(rfKey(userId, Constants.WILDCARD));
         });
-        cache.get().set(acKey(userId, tokenPair), accessInfo, properties.getToken().getAccessTime());
+        cache.set(acKey(userId, tokenPair), accessInfo, properties.getToken().getAccessTime());
         return true;
     }
 
     @Override
     public void removeDeviceByUserIdAndAccessTokenId(Object userId, String accessTokenId) {
-        cache.get().del(acKey(userId, accessTokenId), acKey(userId, Constants.WILDCARD));
+        cache.del(acKey(userId, accessTokenId), acKey(userId, Constants.WILDCARD));
     }
 
     @Override
     public void removeAllDeviceByUserId(Object userId) {
         HashSet<String> keys = new HashSet<>();
-        keys.addAll(cache.get().keys(acKey(userId, Constants.WILDCARD)));
-        keys.addAll(cache.get().keys(rfKey(userId, Constants.WILDCARD)));
+        keys.addAll(cache.keys(acKey(userId, Constants.WILDCARD)));
+        keys.addAll(cache.keys(rfKey(userId, Constants.WILDCARD)));
         keys.add(acKey(userId, Constants.WILDCARD));
         keys.add(rfKey(userId, Constants.WILDCARD));
-        cache.get().del(keys);
+        cache.del(keys);
     }
 
     @Override
@@ -280,8 +253,8 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     private void removeDevice(Object userId, String deviceType) {
-        Set<String>     acKeys = cache.get().keysAndLoad(acKey(userId, Constants.WILDCARD));
-        Set<String>     rfKeys = cache.get().keysAndLoad(rfKey(userId, Constants.WILDCARD));
+        Set<String>     acKeys = cache.keysAndLoad(acKey(userId, Constants.WILDCARD));
+        Set<String>     rfKeys = cache.keysAndLoad(rfKey(userId, Constants.WILDCARD));
         HashSet<String> keys   = new HashSet<>();
         keys.add(acKey(userId, Constants.WILDCARD));
         keys.add(rfKey(userId, Constants.WILDCARD));
@@ -300,7 +273,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
                 return true;
             });
             rfKeys.removeIf(rfKey -> {
-                Device device = (Device) cache.get().get(rfKey);
+                Device device = (Device) cache.get(rfKey);
                 if (device == null || !device.isEmpty()) {
                     if (equalsDeviceByType(device, deviceType)) {
                         keys.add(rfKey);
@@ -313,12 +286,12 @@ public class UserDevicesDictByCache implements UserDevicesDict {
             });
         }
 
-        cache.get().del(keys);
+        cache.del(keys);
     }
 
     private void removeDevice(Object userId, String deviceType, String deviceId) {
-        Set<String>     acKeys = cache.get().keysAndLoad(acKey(userId, Constants.WILDCARD));
-        Set<String>     rfKeys = cache.get().keysAndLoad(rfKey(userId, Constants.WILDCARD));
+        Set<String>     acKeys = cache.keysAndLoad(acKey(userId, Constants.WILDCARD));
+        Set<String>     rfKeys = cache.keysAndLoad(rfKey(userId, Constants.WILDCARD));
         HashSet<String> keys   = new HashSet<>();
         keys.add(acKey(userId, Constants.WILDCARD));
         keys.add(rfKey(userId, Constants.WILDCARD));
@@ -337,7 +310,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
                 return true;
             });
             rfKeys.removeIf(rfKey -> {
-                Device device = (Device) cache.get().get(rfKey);
+                Device device = (Device) cache.get(rfKey);
                 if (device == null || !device.isEmpty()) {
                     if (equalsDeviceByTypeAndId(device, deviceType, deviceId)) {
                         keys.add(rfKey);
@@ -350,23 +323,23 @@ public class UserDevicesDictByCache implements UserDevicesDict {
             });
         }
 
-        cache.get().del(keys);
+        cache.del(keys);
     }
 
     private Device getDeviceOe(Object userId, String acKey) {
-        AccessInfo accessInfo = (AccessInfo) cache.get().get(acKey);
+        AccessInfo accessInfo = (AccessInfo) cache.get(acKey);
         if (accessInfo == null) return null;
         String rtid = accessInfo.getRefreshTokenId();
         if (rtid != null) {
             String rfKey = rfKey(userId, rtid);
-            return (Device) cache.get().get(rfKey);
+            return (Device) cache.get(rfKey);
         }
         return null;
     }
 
     @Override
     public Device getDevice(Object userId, String deviceType, String deviceId) {
-        Set<String> acKeys = cache.get().keysAndLoad(acKey(userId, Constants.WILDCARD));
+        Set<String> acKeys = cache.keysAndLoad(acKey(userId, Constants.WILDCARD));
 
         if (CollectionUtils.isNotEmpty(acKeys)) {
             for (String acKey : acKeys) {
@@ -383,13 +356,13 @@ public class UserDevicesDictByCache implements UserDevicesDict {
 
     @Override
     public List<Object> listUserId() {
-        Set<String> keys = cache.get().keys(acKey(Constants.WILDCARD, Constants.WILDCARD));
+        Set<String> keys = cache.keys(acKey(Constants.WILDCARD, Constants.WILDCARD));
         return keys.stream().map(key -> key.split(Constants.SEPARATOR)[2]).distinct().collect(Collectors.toList());
     }
 
     @Override
     public List<Device> listDevicesByUserId(Object userId) {
-        Set<String> keys = cache.get().keysAndLoad(acKey(userId, Constants.WILDCARD));
+        Set<String> keys = cache.keysAndLoad(acKey(userId, Constants.WILDCARD));
         return keys.stream().map(key -> getDeviceOe(userId, key)).collect(Collectors.toList());
     }
 
@@ -405,9 +378,9 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     @Override
     public List<Object> listActiveUsers(long ms) {
         long        now    = TimeUtils.nowTime();
-        Set<String> rfKeys = cache.get().keysAndLoad(rfKey(Constants.WILDCARD, Constants.WILDCARD));
+        Set<String> rfKeys = cache.keysAndLoad(rfKey(Constants.WILDCARD, Constants.WILDCARD));
         return rfKeys.stream().filter(rfKey -> {
-            Device device = (Device) cache.get().get(rfKey);
+            Device device = (Device) cache.get(rfKey);
             if (device != null) return (now - device.getLastRequestTime().getTime()) < ms;
             return false;
         }).map(key -> key.split(Constants.SEPARATOR)[2]).distinct().collect(Collectors.toList());
@@ -416,10 +389,10 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     @Override
     public List<Device> listActiveUserDevices(Object userId, long ms) {
         long        now    = TimeUtils.nowTime();
-        Set<String> rfKeys = cache.get().keysAndLoad(rfKey(userId, Constants.WILDCARD));
-        return rfKeys.stream().map(rfKey -> (Device) cache.get().get(rfKey))
-                .filter(device -> device != null && ((now - device.getLastRequestTime().getTime()) < ms))
-                .collect(Collectors.toList());
+        Set<String> rfKeys = cache.keysAndLoad(rfKey(userId, Constants.WILDCARD));
+        return rfKeys.stream().map(rfKey -> (Device) cache.get(rfKey)).filter(
+                device -> device != null && ((now - device.getLastRequestTime().getTime()) < ms)).collect(
+                Collectors.toList());
     }
 
     @Override
@@ -428,22 +401,96 @@ public class UserDevicesDictByCache implements UserDevicesDict {
             HttpMeta currentHttpMeta = AUtils.getCurrentHttpMeta();
             Token    token           = currentHttpMeta.getToken();
             String   acKey           = acKey(token.getUserId(), token.getTokenId());
-            Object   o               = cache.get().get(acKey);
+            Object   o               = cache.get(acKey);
             if (o == null) return;
             String rtid = ((AccessInfo) o).getRefreshTokenId();
             if (rtid != null) {
                 Async.run(() -> {
                     String rfKey = rfKey(token.getUserId(), rtid);
-                    Device d     = (Device) cache.get().get(rfKey);
+                    Device d     = (Device) cache.get(rfKey);
                     if (d != null) {
                         d.setLastRequestTime(currentHttpMeta.getNow());
                         d.setIp(currentHttpMeta.getIp());
-                        cache.get().set(rfKey, d);
+                        cache.set(rfKey, d);
                     }
                 });
             }
         } catch (Exception ignored) {
         }
+    }
+
+    @Override
+    public void deviceClean(Object userId) {
+        String  retainAcKey = null;
+        String  retainRfKey = null;
+        boolean ok          = false;
+        if (AuHelper.isLogin()) {
+            Token      token      = AuHelper.getToken();
+            String     acKey      = acKey(userId, token.getTokenId());
+            AccessInfo accessInfo = cache.get(acKey, AccessInfo.class);
+            if (accessInfo != null) {
+                retainAcKey = acKey;
+                retainRfKey = rfKey(userId, accessInfo.getRefreshTokenId());
+                ok          = true;
+            }
+        }
+        boolean finalOk          = ok;
+        String  finalRetainAcKey = retainAcKey;
+        String  finalRetainRfKey = retainRfKey;
+        Async.run(() -> {
+            AuthzProperties.UserConfig userConfig = usersConfig.getOrDefault(userId, properties.getUser());
+
+            Set<String> delKeys         = new HashSet<>();
+            Set<String> accessInfoKeys  = new HashSet<>();
+            Set<String> refreshInfoKeys = new HashSet<>();
+            Async.combine(() -> accessInfoKeys.addAll(cache.keysAndLoad(acKey(userId, Constants.WILDCARD))),
+                          () -> refreshInfoKeys.addAll(cache.keysAndLoad(rfKey(userId, Constants.WILDCARD))))
+                    .join(); // 获得所有的key access和refresh
+
+            if (finalOk) {
+                accessInfoKeys.remove(finalRetainAcKey);
+                refreshInfoKeys.remove(finalRetainRfKey);
+            }
+            Map<String, RefreshInfo> refreshInfoMap = cache.get(refreshInfoKeys, RefreshInfo.class);
+            Map<String, AccessInfo>  accessInfoMap  = cache.get(accessInfoKeys, AccessInfo.class);
+
+            List<String> deviceTypes = refreshInfoMap.values().stream().map(DefaultDevice::getDeviceType).collect(
+                    Collectors.toList());
+            // 登录设备总数
+            if (userConfig.getMaximumTotalDevice() != -1 && userConfig.getMaximumTotalDevice() > 0 && refreshInfoKeys.size() > userConfig.getMaximumTotalDevice()) {
+                int max = userConfig.getMaximumTotalDevice();
+                if (finalOk) max--;
+                d(max, refreshInfoMap, accessInfoMap, delKeys, e -> true);
+            }
+
+            // 同类型设备最大登录数量
+            if (userConfig.getMaximumSameTypeDeviceCount() != -1) {
+                int max = userConfig.getMaximumSameTypeDeviceCount();
+                if (finalOk) max--;
+                for (String deviceType : deviceTypes) {
+                    d(max, refreshInfoMap, accessInfoMap, delKeys,
+                      e -> StringUtils.equals(e.getValue().getDevice().getDeviceType(), deviceType));
+                }
+            }
+
+            List<DeviceCountInfo> typesTotal = userConfig.getTypesTotal();
+            // 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1）
+            if (typesTotal != null && !typesTotal.isEmpty()) {
+                for (DeviceCountInfo deviceCountInfo : typesTotal) {
+                    if (deviceCountInfo.getTypes().isEmpty()) continue;
+                    int max = deviceCountInfo.getTotal();
+                    if (finalOk) max--;
+                    d(max, refreshInfoMap, accessInfoMap, delKeys,
+                      e -> deviceCountInfo.getTypes().contains(e.getValue().getDeviceType()));
+                }
+            }
+
+            if (!delKeys.isEmpty()) {
+                cache.del(delKeys);
+                cache.del(acKey(userId, Constants.WILDCARD));
+                cache.del(rfKey(userId, Constants.WILDCARD));
+            }
+        });
     }
 
     private String requestKey(Object userId, String rfKey) {
@@ -469,15 +516,15 @@ public class UserDevicesDictByCache implements UserDevicesDict {
 
     private boolean equalsDeviceByTypeOrId(Device device, Device otherDevice) {
         if (device == null) return false;
-        return StringUtils.equals(device.getDeviceType(), otherDevice.getDeviceType()) ||
-                (device.getDeviceId() != null &&
-                        StringUtils.equals(device.getDeviceId(), otherDevice.getDeviceId())); // null时不参与匹配
+        return StringUtils.equals(device.getDeviceType(),
+                                  otherDevice.getDeviceType()) || (device.getDeviceId() != null && StringUtils.equals(
+                device.getDeviceId(), otherDevice.getDeviceId())); // null时不参与匹配
     }
 
     private boolean equalsDeviceByTypeAndId(Device device, String deviceType, String deviceId) {
         if (device == null) return false;
-        return StringUtils.equals(device.getDeviceType(), deviceType)
-                && StringUtils.equals(device.getDeviceId(), deviceId);
+        return StringUtils.equals(device.getDeviceType(), deviceType) && StringUtils.equals(device.getDeviceId(),
+                                                                                            deviceId);
     }
 
     private boolean equalsDeviceById(Device device, Device otherDevice) {

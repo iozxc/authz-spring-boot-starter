@@ -279,7 +279,16 @@ public class L2Cache implements Cache {
 
     @Override
     @NonNull
-    public Map<String, CacheItem> asMap() {
+    public Map<String, Object> asMap() {
+        HashMap<String, Object> map = new HashMap<>();
+        for (Map.Entry<String, CacheItem> e : cache.asMap().entrySet()) {
+            map.put(e.getKey(), e.getValue().value);
+        }
+        return Collections.unmodifiableMap(map);
+    }
+
+    @Override
+    public @NonNull Map<String, CacheItem> asRawMap() {
         return Collections.unmodifiableMap(cache.asMap());
     }
 

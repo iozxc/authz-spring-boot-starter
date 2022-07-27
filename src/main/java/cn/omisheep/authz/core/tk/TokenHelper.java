@@ -174,10 +174,11 @@ public class TokenHelper {
                 Date.from(now.plus(refreshTime, ChronoUnit.MILLIS).atZone(
                         ZoneId.systemDefault()).toInstant());
 
+        Token accessToken = createToken(userId, deviceType, deviceId, Token.Type.ACCESS, fromNow,
+                                        toAccessExpiredTime, clientId, scope);
         Token refreshToken = createToken(userId, deviceType, deviceId, Token.Type.REFRESH, fromNow,
                                          toRefreshExpiredTime, clientId, scope);
-        Token accessToken = createToken(userId, deviceType, deviceId, Token.Type.ACCESS, fromNow, toAccessExpiredTime,
-                                        clientId, scope);
+
         return new TokenPair(accessToken, refreshToken);
     }
 
@@ -187,7 +188,6 @@ public class TokenHelper {
      * @param userId     用户id
      * @param deviceId   设备Id
      * @param deviceType 设备系统类型
-     * @param type       token类型 accessToken和refreshToken
      * @param from       从多久开始
      * @param to         到多久结束
      * @param clientId   客户端id

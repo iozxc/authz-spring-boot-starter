@@ -172,7 +172,6 @@ public class AuthzDefender {
             Token    accessToken     = currentHttpMeta.getToken();
             if (accessToken == null) return false;
             switch (userDevicesDict.userStatus(accessToken)) {
-                case ACCESS_TOKEN_OVERDUE:
                 case REQUIRE_LOGIN:
                 case LOGIN_EXCEPTION:
                     return false;

@@ -1,10 +1,17 @@
 # 更新日记【Authz】
 
-## Version 1.1.10 - 2022.7.23
+## Version 1.2.0 - 2022.7.28
 
 ### Added
 
-- 在开启dashboard情况下新增api-docs
+- 提供了OpenAuth的支持
+- 用vue重写了dashboard，界面更好看了
+- 新增了用户登录数量限制的一些配置接口
+
+### Fixed
+
+- 优化了登录逻辑，速度更快了
+- 
 
 ## Version 1.1.9 - 2022.7.16
 

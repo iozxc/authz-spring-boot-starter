@@ -291,9 +291,10 @@ public interface Cache {
     }
 
     @NonNull
-    default Map<String, CacheItem> asMap() {
-        return new HashMap<>();
-    }
+    Map<String, CacheItem> asRawMap();
+
+    @NonNull
+    Map<String, Object> asMap();
 
     default void receive(@NonNull CacheMessage message) {
     }

@@ -13,7 +13,7 @@ import java.util.Set;
  * @since 1.0.0
  */
 @SuppressWarnings("all")
-@Order(10)
+@Order(1)
 public class ProtectCheckerSlot implements Slot {
 
     @Override

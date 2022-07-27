@@ -15,6 +15,8 @@ public interface Device extends Map<Object, Object>, java.io.Serializable {
 
     Date getLastRequestTime();
 
+    Long getLastRequestTimeLong();
+
     String getIp();
 
     Device setDeviceType(String type);

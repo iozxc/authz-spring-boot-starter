@@ -1,10 +1,15 @@
 package cn.omisheep.authz.core.auth.deviced;
 
+import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.tk.TokenPair;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -12,10 +17,17 @@ import java.util.List;
  */
 public interface UserDevicesDict {
 
-    byte SUCCESS              = 0;
-    byte ACCESS_TOKEN_OVERDUE = 1;
-    byte REQUIRE_LOGIN        = 2;
-    byte LOGIN_EXCEPTION      = 3;
+    /**
+     * 可以单独为每一名用户设置登录状态管理方案
+     * 若为空，则使用默认的
+     *
+     * @since 1.2.0
+     */
+    Map<Object, AuthzProperties.UserConfig> usersConfig = new ConcurrentHashMap<>();
+
+    byte SUCCESS         = 0;
+    byte REQUIRE_LOGIN   = 1;
+    byte LOGIN_EXCEPTION = 2;
 
     /**
      * 用户设备状态判断，以及L1Cache下的第二次惰性删除
@@ -84,4 +96,29 @@ public interface UserDevicesDict {
 
     void request();
 
+    void deviceClean(Object userId);
+
+    default void addMaximumSameTypeDeviceCount(Object userId, int count) {
+        AuthzProperties.UserConfig userConfig = UserDevicesDict.usersConfig
+                .computeIfAbsent(userId, r -> new AuthzProperties.UserConfig());
+        userConfig.setMaximumSameTypeDeviceCount(count);
+        deviceClean(userId);
+    }
+
+    default void addMaximumTotalDevice(Object userId, int count) {
+        AuthzProperties.UserConfig userConfig = UserDevicesDict.usersConfig
+                .computeIfAbsent(userId, r -> new AuthzProperties.UserConfig());
+        userConfig.setMaximumTotalDevice(count);
+        deviceClean(userId);
+    }
+
+    default void addDeviceTypesTotalLimit(Object userId,
+                                          Collection<String> types,
+                                          int total) {
+        DeviceCountInfo deviceCountInfo = new DeviceCountInfo().setTypes(new HashSet<String>(types)).setTotal(total);
+        AuthzProperties.UserConfig userConfig = UserDevicesDict.usersConfig
+                .computeIfAbsent(userId, r -> new AuthzProperties.UserConfig());
+        userConfig.getTypesTotal().add(deviceCountInfo);
+        deviceClean(userId);
+    }
 }

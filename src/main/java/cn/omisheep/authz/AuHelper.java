@@ -160,6 +160,77 @@ public class AuHelper {
     }
 
     /**
+     * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1 or count = -1
+     *
+     * @param userId 用户id
+     * @param types  deviceType
+     * @param total  数量
+     */
+    public static void addDeviceTypesTotalLimit(
+            Collection<String> types, int total) throws NotLoginException {
+        addDeviceTypesTotalLimit(AuHelper.getUserId(), types, total);
+    }
+
+    /**
+     * 同类型设备最多登录数 默认 1个【count最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param userId 用户id
+     * @param count  数量
+     */
+    public static void addMaximumTotalDevice(int count) throws NotLoginException {
+        addMaximumTotalDevice(AuHelper.getUserId(), count);
+    }
+
+    /**
+     * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param userId 用户id
+     * @param count  数量
+     */
+    public static void addMaximumSameTypeDeviceCount(int count) throws NotLoginException {
+        addMaximumSameTypeDeviceCount(AuHelper.getUserId(), count);
+    }
+
+    /**
+     * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1 or count = -1
+     *
+     * @param userId 用户id
+     * @param types  deviceType
+     * @param total  数量
+     */
+    public static void addDeviceTypesTotalLimit(Object userId,
+                                                Collection<String> types,
+                                                int total) {
+        userDevicesDict.addDeviceTypesTotalLimit(userId, types, total);
+    }
+
+    /**
+     * 同类型设备最多登录数 默认 1个【count最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param userId 用户id
+     * @param count  数量
+     */
+    public static void addMaximumTotalDevice(Object userId, int count) {
+        userDevicesDict.addMaximumTotalDevice(userId, count);
+    }
+
+    /**
+     * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param userId 用户id
+     * @param count  数量
+     */
+    public static void addMaximumSameTypeDeviceCount(Object userId, int count) {
+        userDevicesDict.addMaximumSameTypeDeviceCount(userId, count);
+    }
+
+    /**
      * <li>1.注册客户端 {@link #clientRegister(String, String)} -> 返回客户端信息（客户端id，客户端name，客户端密钥，重定向url）</li>
      * <li>2.获取授权码 {@link #createAuthorizationCode(String, String, String)} -> 客户端id+登录用户+权限范围 、获得登录用户的授权码</li>
      * <li>3.验证授权码 {@link #authorize(String, String, String)}-> 利用授权码去获得TokenPair</li>
