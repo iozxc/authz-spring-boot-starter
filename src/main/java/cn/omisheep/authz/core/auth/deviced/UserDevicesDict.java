@@ -27,7 +27,7 @@ public interface UserDevicesDict {
 
     // =========================   登入   ========================= //
 
-    boolean addUser(Object userId, TokenPair tokenPair, String deviceType, String deviceId, HttpMeta httpMeta);
+    boolean addUser(TokenPair tokenPair, HttpMeta httpMeta);
 
     // =========================   刷新   ========================= //
 

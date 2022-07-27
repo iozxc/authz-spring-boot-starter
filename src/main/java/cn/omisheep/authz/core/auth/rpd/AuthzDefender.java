@@ -69,8 +69,7 @@ public class AuthzDefender {
             if (response != null) {
                 response.addCookie(TokenHelper.generateCookie(accessToken));
             }
-            if (userDevicesDict.addUser(accessToken.getUserId(), tokenPair, accessToken.getDeviceType(),
-                                        accessToken.getDeviceId(), httpMeta)) return true;
+            if (userDevicesDict.addUser(tokenPair, httpMeta)) return true;
             else return false;
         } catch (Exception e) {
             return false;

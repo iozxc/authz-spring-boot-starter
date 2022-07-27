@@ -97,10 +97,17 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     @Override
-    public boolean addUser(Object userId, TokenPair tokenPair, String deviceType, String deviceId, HttpMeta httpMeta) {
+    public boolean addUser(TokenPair tokenPair, HttpMeta httpMeta) {
         Set<String>   accessInfoKeys  = new HashSet<>();
         Set<String>   refreshInfoKeys = new HashSet<>();
         DefaultDevice device          = new DefaultDevice();
+        if (tokenPair == null || tokenPair.getAccessToken() == null || tokenPair.getRefreshToken() == null)
+            return false;
+        Token accessToken = tokenPair.getAccessToken();
+        Object userId    = accessToken.getUserId();
+        String deviceType = accessToken.getDeviceType();
+        String deviceId   = accessToken.getDeviceId();
+
         device.setDeviceType(deviceType).setDeviceId(deviceId);
         String clientId = tokenPair.getAccessToken().getClientId();
 
