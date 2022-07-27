@@ -19,14 +19,13 @@ public class AuthorizationInfo { //授权信息
     private final String deviceType;
     private final String deviceId;
     /**
+     * 颁布时间
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private final Date   issueTime;
+    /**
      * 过期时间
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private final Date   expiredTime;
-
-    /**
-     * 颁布时间
-     */
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private final Date issueTime;
 }

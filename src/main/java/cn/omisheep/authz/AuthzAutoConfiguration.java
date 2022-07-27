@@ -11,6 +11,7 @@ import cn.omisheep.authz.core.auth.ipf.AuthzHttpFilter;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.cache.DefaultCache;
 import cn.omisheep.authz.core.cache.L2Cache;
+import cn.omisheep.authz.core.cache.library.OpenAuthLibraryCache;
 import cn.omisheep.authz.core.cache.library.PermLibraryCache;
 import cn.omisheep.authz.core.codec.DecryptHandler;
 import cn.omisheep.authz.core.codec.RSADecryptor;
@@ -255,8 +256,14 @@ public class AuthzAutoConfiguration {
     }
 
     @Bean
-    public AuthzMethodPermissionChecker authzMethodPermissionChecker(PermLibrary permLibrary) {
-        return new AuthzMethodPermissionChecker(permLibrary);
+    public OpenAuthLibraryCache openAuthLibraryCache(Cache cache) {
+        return new OpenAuthLibraryCache(cache);
+    }
+
+    @Bean
+    public AuthzMethodPermissionChecker authzMethodPermissionChecker(PermLibrary permLibrary,
+                                                                     AuthzProperties properties) {
+        return new AuthzMethodPermissionChecker(permLibrary, properties);
     }
 
     @Bean

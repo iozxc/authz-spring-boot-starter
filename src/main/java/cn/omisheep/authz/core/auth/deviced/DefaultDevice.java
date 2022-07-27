@@ -3,6 +3,8 @@ package cn.omisheep.authz.core.auth.deviced;
 
 import java.util.Date;
 
+import static cn.omisheep.authz.core.config.Constants.*;
+
 /**
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
@@ -15,24 +17,24 @@ public class DefaultDevice extends AuMap implements Device {
     }
 
     @Override
-    public String getType() {
-        return getString(TYPE);
+    public String getDeviceType() {
+        return getString(DEVICE_TYPE);
     }
 
     @Override
-    public Device setType(String type) {
-        setValue(TYPE, type);
+    public Device setDeviceType(String type) {
+        setValue(DEVICE_TYPE, type);
         return this;
     }
 
     @Override
-    public String getId() {
-        return getString(ID);
+    public String getDeviceId() {
+        return getString(DEVICE_ID);
     }
 
     @Override
-    public Device setId(String id) {
-        setValue(ID, id);
+    public Device setDeviceId(String id) {
+        setValue(DEVICE_ID, id);
         return this;
     }
 

@@ -48,20 +48,32 @@ public class AuthzDefender {
      * @param userId     用户id
      * @param deviceType 设备系统类型
      * @param deviceId   设备id
-     * @return 授权后的tokenPair( accessToken, refreshToken )
+     * @return 授权后的tokenPair(accessToken, refreshToken)
      */
     public static TokenPair grant(Object userId, String deviceType, String deviceId) {
-        TokenPair           tokenPair = TokenHelper.createTokenPair(userId, deviceType, deviceId);
-        HttpServletResponse response  = HttpUtils.getCurrentResponse();
+        TokenPair tokenPair = TokenHelper.createTokenPair(userId, deviceType, deviceId);
+        if (grant(tokenPair)) return tokenPair;
+        return null;
+    }
+
+    /**
+     * @param tokenPair tokenPair 某种途径生成的tokenPair
+     * @return 登录是否成功
+     */
+    public static boolean grant(TokenPair tokenPair) {
+        if (tokenPair == null) return false;
+        HttpServletResponse response = HttpUtils.getCurrentResponse();
         try {
-            HttpMeta httpMeta = AUtils.getCurrentHttpMeta();
+            HttpMeta httpMeta    = AUtils.getCurrentHttpMeta();
+            Token    accessToken = tokenPair.getAccessToken();
             if (response != null) {
-                response.addCookie(TokenHelper.generateCookie(tokenPair.getAccessToken()));
+                response.addCookie(TokenHelper.generateCookie(accessToken));
             }
-            if (userDevicesDict.addUser(userId, tokenPair, deviceType, deviceId, httpMeta)) return tokenPair;
-            else return null;
+            if (userDevicesDict.addUser(accessToken.getUserId(), tokenPair, accessToken.getDeviceType(),
+                                        accessToken.getDeviceId(), httpMeta)) return true;
+            else return false;
         } catch (Exception e) {
-            return null;
+            return false;
         }
     }
 
@@ -107,14 +119,17 @@ public class AuthzDefender {
         Token token = AUtils.getCurrentToken();
         if (token == null) return;
         if (userId == null) userId = token.getUserId();
-        if (ObjectUtils.equals(token.getUserId(), userId) && StringUtils.equals(token.getDeviceType(), deviceType)) clearCookie(userId);
+        if (ObjectUtils.equals(token.getUserId(), userId) && StringUtils.equals(token.getDeviceType(),
+                                                                                deviceType)) clearCookie(userId);
     }
 
     public static void clearCookie(Object userId, String deviceType, String deviceId) {
         Token token = AUtils.getCurrentToken();
         if (token == null) return;
         if (userId == null) userId = token.getUserId();
-        if (ObjectUtils.equals(token.getUserId(), userId) && StringUtils.equals(token.getDeviceType(), deviceType) && StringUtils.equals(token.getDeviceId(), deviceId)) clearCookie();
+        if (ObjectUtils.equals(token.getUserId(), userId) && StringUtils.equals(token.getDeviceType(),
+                                                                                deviceType) && StringUtils.equals(
+                token.getDeviceId(), deviceId)) clearCookie();
     }
 
     public static void logout() {
@@ -156,7 +171,8 @@ public class AuthzDefender {
         try {
             HttpMeta currentHttpMeta = AUtils.getCurrentHttpMeta();
             Token    accessToken     = currentHttpMeta.getToken();
-            switch (userDevicesDict.userStatus(accessToken.getUserId(), accessToken.getDeviceType(), accessToken.getDeviceId(), accessToken.getTokenId())) {
+            if (accessToken == null) return false;
+            switch (userDevicesDict.userStatus(accessToken)) {
                 case ACCESS_TOKEN_OVERDUE:
                 case REQUIRE_LOGIN:
                 case LOGIN_EXCEPTION:
@@ -187,10 +203,11 @@ public class AuthzDefender {
         Set<String> p = null;
         try {
             HttpMeta httpMeta = AUtils.getCurrentHttpMeta();
-             p = Optional.ofNullable(httpMeta.getPermissions()).orElseGet(() -> {
+            p = Optional.ofNullable(httpMeta.getPermissions()).orElseGet(() -> {
                 HashSet<String> perms = new HashSet<>();
-                 Set<String> r = Optional.ofNullable(httpMeta.getRoles()).orElse(permLibrary.getRolesByUserId(httpMeta.getUserId()));
-                 r.forEach(role -> perms.addAll(permLibrary.getPermissionsByRole(role)));
+                Set<String> r = Optional.ofNullable(httpMeta.getRoles()).orElse(
+                        permLibrary.getRolesByUserId(httpMeta.getUserId()));
+                r.forEach(role -> perms.addAll(permLibrary.getPermissionsByRole(role)));
                 return perms;
             });
         } catch (ThreadWebEnvironmentException e) {
@@ -206,7 +223,7 @@ public class AuthzDefender {
             httpMeta.log("「{}」\t{}", status, meta);
         } else {
             httpMeta.log("「{}」\t\t{}\t, userId: [{}]\t, deviceType = [{}]\t, deviceId = [{}]",
-                    status, meta, token.getUserId(), token.getDeviceType(), token.getDeviceId());
+                         status, meta, token.getUserId(), token.getDeviceType(), token.getDeviceId());
         }
     }
 
@@ -216,7 +233,7 @@ public class AuthzDefender {
             httpMeta.log("「{}」", status);
         } else {
             httpMeta.log("「{}」\t, userId: [{}]\t, deviceType = [{}]\t, deviceId = [{}]",
-                    status, token.getUserId(), token.getDeviceType(), token.getDeviceId());
+                         status, token.getUserId(), token.getDeviceType(), token.getDeviceId());
         }
     }
 

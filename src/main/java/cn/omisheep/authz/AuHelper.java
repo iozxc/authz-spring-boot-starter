@@ -40,6 +40,7 @@ import static cn.omisheep.authz.core.AuthzManager.*;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
+@SuppressWarnings("all")
 public class AuHelper {
 
     // **************************************     登录 & 用户设备      ************************************** //
@@ -159,16 +160,17 @@ public class AuHelper {
     }
 
     /**
-     * <li>1.注册客户端 -> 返回客户端信息（客户端id，客户端name，客户端密钥，重定向url）</li>
-     * <li>2.客户端id+登录用户+权限范围 -> 获得登录用户的授权码</li>
-     * <li>3.授权码 -> 利用授权码去获得TokenPair</li>
+     * <li>1.注册客户端 {@link #clientRegister(String, String)} -> 返回客户端信息（客户端id，客户端name，客户端密钥，重定向url）</li>
+     * <li>2.获取授权码 {@link #createAuthorizationCode(String, String, String)} -> 客户端id+登录用户+权限范围 、获得登录用户的授权码</li>
+     * <li>3.验证授权码 {@link #authorize(String, String, String)}-> 利用授权码去获得TokenPair</li>
      *
      * @since 1.2.0
      */
     public static class OpenAuth {
 
         /**
-         * 验证授权码是否有效，成功返回token
+         * 不需要登录 <br>
+         * 验证授权码是否有效，成功返回TokenPair
          *
          * @param clientId          客户端id
          * @param clientSecret      客户端密钥
@@ -183,6 +185,7 @@ public class AuHelper {
         }
 
         /**
+         * 若未登录，抛出 {@link  AuthorizationException } 授权失败
          * 指定(客户端, 授权范围) & 登录设备 -> 获得登录用户的授权码
          * 获取授权码 <br>
          * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
@@ -207,6 +210,7 @@ public class AuHelper {
         }
 
         /**
+         * 若未登录，抛出 {@link  AuthorizationException } 授权失败
          * 指定(客户端, 授权范围) & 登录设备 -> 获得登录用户的授权码
          * 获取授权码 <br>
          * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
@@ -227,6 +231,7 @@ public class AuHelper {
         }
 
         /**
+         * 若未登录，抛出 {@link  AuthorizationException } 授权失败
          * 指定(客户端, 授权范围) & 登录设备 -> 获得登录用户的授权码
          * 获取授权码 <br>
          * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
@@ -253,6 +258,7 @@ public class AuHelper {
         }
 
         /**
+         * 若未登录，抛出 {@link  AuthorizationException } 授权失败
          * 指定(客户端, 授权范围-默认权限) -> 获得登录用户的授权码
          * 获取授权码 <br>
          * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
@@ -275,6 +281,7 @@ public class AuHelper {
         }
 
         /**
+         * 若未登录，抛出 {@link  AuthorizationException } 授权失败
          * 指定(客户端, 授权范围-默认权限) & 登录设备 -> 获得登录用户的授权码
          * 获取授权码 <br>
          * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
@@ -292,6 +299,7 @@ public class AuHelper {
         }
 
         /**
+         * 若未登录，抛出 {@link  AuthorizationException } 授权失败
          * 指定(客户端, 授权范围-默认权限) & 登录设备 -> 获得登录用户的授权码
          * 获取授权码 <br>
          * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
@@ -464,7 +472,7 @@ public class AuHelper {
     @NonNull
     public static List<Device> getAllDeviceByUserIdAndDeviceType(@NonNull Object userId, @NonNull String deviceType) {
         return userDevicesDict.listDevicesByUserId(userId).stream().filter(
-                device -> device.getType().equals(deviceType)).collect(Collectors.toList());
+                device -> device.getDeviceType().equals(deviceType)).collect(Collectors.toList());
     }
 
     // **************************************     状态管理      ************************************** //

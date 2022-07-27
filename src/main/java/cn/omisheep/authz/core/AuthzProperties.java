@@ -183,6 +183,16 @@ public class AuthzProperties {
             private String defaultScope = "basic";
 
             /**
+             * 客户端Id长度 默认24
+             */
+            private int clientIdLength     = 24;
+
+            /**
+             * 客户端密钥长度 默认30位
+             */
+            private int clientSecretLength = 30;
+
+            /**
              * 授权码签名算法
              */
             private AuthorizationCodeAlgorithm algorithm = AuthorizationCodeAlgorithm.SHA1;

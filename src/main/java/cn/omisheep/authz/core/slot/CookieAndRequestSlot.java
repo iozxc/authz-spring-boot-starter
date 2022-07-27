@@ -16,6 +16,8 @@ import org.springframework.web.method.HandlerMethod;
 import javax.servlet.http.Cookie;
 import java.util.Locale;
 
+import static cn.omisheep.authz.core.config.Constants.USER_ID;
+
 /**
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
@@ -66,7 +68,7 @@ public class CookieAndRequestSlot implements Slot {
                         TokenHelper.clearCookie();
                         if (e instanceof ExpiredJwtException) {
                             Claims claims = ((ExpiredJwtException) e).getClaims();
-                            userDevicesDict.removeDeviceByUserIdAndAccessTokenId(claims.get("userId"), claims.getId());
+                            userDevicesDict.removeDeviceByUserIdAndAccessTokenId(claims.get(USER_ID), claims.getId());
                         }
                     } catch (Exception ee) {
                         // skip
