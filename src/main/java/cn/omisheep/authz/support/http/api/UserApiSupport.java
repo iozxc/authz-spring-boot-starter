@@ -31,7 +31,8 @@ public class UserApiSupport implements ApiSupport {
             User loginUser = SupportServlet.login(user.getUsername(), user.getPassword());
             if (loginUser == null) return Result.FAIL.data();
             loginUser.setUuid(UUIDBits.getUUIDBits(16));
-            cache.set(Constants.DASHBOARD_KEY_PREFIX.get() + loginUser.getUuid(), user.getUsername(), 1, TimeUnit.HOURS);
+            cache.set(Constants.DASHBOARD_KEY_PREFIX.get() + loginUser.getUuid(), user.getUsername(), 1,
+                      TimeUnit.HOURS);
             return Result.SUCCESS.data("username", user.getUsername()).data("uuid", loginUser.getUuid());
         } else {
             return Result.FAIL.data();

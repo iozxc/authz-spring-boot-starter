@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core.config;
 
 import cn.omisheep.authz.core.AuthzManager;
+import cn.omisheep.authz.core.AuthzVersion;
 import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.msg.Message;
 import cn.omisheep.authz.core.msg.VersionMessage;
@@ -12,6 +13,7 @@ import cn.omisheep.commons.util.Async;
 import cn.omisheep.commons.util.TaskBuilder;
 import lombok.Data;
 
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,27 +27,39 @@ import static cn.omisheep.authz.core.config.Constants.CONNECT_PREFIX;
  */
 public class AuthzAppVersion {
 
-    public static final  AtomicInteger            version                            = new AtomicInteger(0);
-    public static final  ArrayList<AuthzModifier> changeLog                          = new ArrayList<>();
-    public static final  ArrayList<AuthzModifier> cache                              = new ArrayList<>();
-    private static final Map<String, String>      _values                            = new HashMap<>();
-    public static final  Map<String, String>      values                             = Collections.unmodifiableMap(_values);
-    private static       String                   md5;
-    private static       boolean                  md5check                           = false;
-    private static       String                   projectPath                        = null;
-    public static        String                   APPLICATION_NAME;
-    public static        String                   APP_NAME;
-    private static       boolean                  loading                            = false;
-    public static        String                   host;
-    public static        String                   port;
-    public static        String                   contextPath;
-    public static        String                   baseUrl;
-    public static        boolean                  supportCloud;
-    public static        ConnectInfo              connectInfo;
-    public static final  String                   CONNECT_INFO_WITH_SAME_APPLICATION = "connectInfoWithSameApplication";
-    public static final  String                   CONNECT_INFO_WITH_SAME_APP_NAME    = "connectInfoWithSameAppName";
-    public static final  String                   ALL                                = "all";
-    public static final  String                   LOCAL                              = "local";
+    public static final  AtomicInteger            version   = new AtomicInteger(0);
+    public static final  ArrayList<AuthzModifier> changeLog = new ArrayList<>();
+    public static final  ArrayList<AuthzModifier> cache     = new ArrayList<>();
+    private static final Map<String, String>      _values   = new HashMap<>();
+    public static final  Map<String, String>      values    = Collections.unmodifiableMap(
+            _values);
+
+    private static boolean md5check    = false;
+    private static String  projectPath = null;
+
+    private static       boolean     loading   = false;
+    public static        String      host;
+    public static        String      port;
+    public static        String      contextPath;
+    public static        String      baseUrl;
+    public static        boolean     supportCloud;
+    public static        ConnectInfo connectInfo;
+    public static final  String      srcFolder = new File(
+            Objects.requireNonNull(AuthzVersion.class.getClassLoader().getResource("")).getPath()).toString();
+    private static final String      osName    = System.getProperty(
+            "os.name").toLowerCase();
+    public static final  boolean     isMac     = osName.contains("mac");
+    public static final  boolean     isWindows = osName.contains("window");
+    public static final  boolean     isLinux   = osName.contains("linux");
+    public static        long        authorizationCodeTime;
+
+    private static      String MD5;
+    public static       String APPLICATION_NAME;
+    public static       String APP_NAME;
+    public static final String CONNECT_INFO_WITH_SAME_APPLICATION = "connectInfoWithSameApplication";
+    public static final String CONNECT_INFO_WITH_SAME_APP_NAME    = "connectInfoWithSameAppName";
+    public static final String ALL_CONNECT                        = "all";
+    public static final String LOCAL_CONNECT                      = "local";
 
     @Data
     public static class ConnectInfo {
@@ -89,11 +103,11 @@ public class AuthzAppVersion {
     }
 
     public static String getMd5() {
-        return md5;
+        return MD5;
     }
 
     public static void compute() {
-        md5 = MD5Utils.compute(projectPath);
+        MD5 = MD5Utils.compute(projectPath);
     }
 
     public static HashMap<String, Object> getVersion() {
@@ -118,15 +132,18 @@ public class AuthzAppVersion {
     }
 
     public static Map<String, List<ConnectInfo>> getConnectInfo() {
-        List<ConnectInfo>                  connectInfo                    = listAllConnectInfo();
-        List<ConnectInfo>                  connectInfoWithSameApplication = connectInfo.stream().filter(c -> c.application.equals(APPLICATION_NAME)).collect(Collectors.toList());
-        List<ConnectInfo>                  connectInfoWithSameAppName     = connectInfo.stream().filter(c -> c.appName.equals(APP_NAME)).collect(Collectors.toList());
-        List<ConnectInfo>                  local                          = connectInfo.stream().filter(c -> c.appName.equals(APP_NAME) && c.application.equals(APPLICATION_NAME)).collect(Collectors.toList());
-        HashMap<String, List<ConnectInfo>> map                            = new HashMap<>();
+        List<ConnectInfo> connectInfo = listAllConnectInfo();
+        List<ConnectInfo> connectInfoWithSameApplication = connectInfo.stream().filter(
+                c -> c.application.equals(APPLICATION_NAME)).collect(Collectors.toList());
+        List<ConnectInfo> connectInfoWithSameAppName = connectInfo.stream().filter(
+                c -> c.appName.equals(APP_NAME)).collect(Collectors.toList());
+        List<ConnectInfo> local = connectInfo.stream().filter(
+                c -> c.appName.equals(APP_NAME) && c.application.equals(APPLICATION_NAME)).collect(Collectors.toList());
+        HashMap<String, List<ConnectInfo>> map = new HashMap<>();
         map.put(CONNECT_INFO_WITH_SAME_APPLICATION, connectInfoWithSameApplication);
         map.put(CONNECT_INFO_WITH_SAME_APP_NAME, connectInfoWithSameAppName);
-        map.put(LOCAL, local);
-        map.put(ALL, connectInfo);
+        map.put(LOCAL_CONNECT, local);
+        map.put(ALL_CONNECT, connectInfo);
         return map;
     }
 
@@ -184,19 +201,23 @@ public class AuthzAppVersion {
     }
 
     public static void born() {
-        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(-1, AuthzAppVersion.md5)));
+        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(-1, AuthzAppVersion.MD5)));
         // authz:v1:connect:{MessageId} 30秒后过期  25秒ping一次
-        TaskBuilder.schedule(() -> RedisUtils.Obj.set(CONNECT_PREFIX + Message.uuid, connectInfo, 30), 25, TimeUnit.SECONDS);
+        TaskBuilder.schedule(() -> RedisUtils.Obj.set(CONNECT_PREFIX + Message.uuid, connectInfo, 30), 25,
+                             TimeUnit.SECONDS);
     }
 
     public static void send(AuthzModifier authzModifier) {
         AuthzAppVersion.changeLog.add(authzModifier);
         int v = AuthzAppVersion.version.incrementAndGet();
-        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(authzModifier, v, AuthzAppVersion.md5)));
+        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL,
+                                           new VersionMessage(authzModifier, v, AuthzAppVersion.MD5)));
     }
 
     public static void send() {
-        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(changeLog, AuthzAppVersion.version.get(), AuthzAppVersion.md5).setTag(true)));
+        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL,
+                                           new VersionMessage(changeLog, AuthzAppVersion.version.get(),
+                                                              AuthzAppVersion.MD5).setTag(true)));
     }
 
 }

@@ -1,6 +1,5 @@
 package cn.omisheep.authz.core.config;
 
-import cn.omisheep.authz.annotation.*;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.AuthzVersion;
 import cn.omisheep.authz.core.auth.DefaultPermLibrary;
@@ -8,42 +7,26 @@ import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.DeviceConfig;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
-import cn.omisheep.authz.core.auth.ipf.LimitMeta;
 import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
-import cn.omisheep.authz.core.auth.rpd.ParamMetadata;
-import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.codec.AuthzRSAManager;
 import cn.omisheep.authz.core.msg.Message;
+import cn.omisheep.authz.core.oauth.OpenAuthDict;
+import cn.omisheep.authz.core.oauth.OpenAuthLibrary;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
-import cn.omisheep.authz.core.util.RedisUtils;
-import cn.omisheep.authz.core.util.ValueMatcher;
-import cn.omisheep.authz.support.util.IPRangeMeta;
-import cn.omisheep.commons.util.Async;
 import cn.omisheep.commons.util.TaskBuilder;
 import lombok.SneakyThrows;
-import org.springframework.aop.support.AopUtils;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController;
 import org.springframework.boot.system.ApplicationHome;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.core.MethodParameter;
-import org.springframework.core.annotation.AnnotatedElementUtils;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.handler.AbstractHandlerMethodMapping;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
-import static cn.omisheep.authz.core.util.MetaUtils.*;
+import java.util.Map;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -54,21 +37,19 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
     private       ApplicationContext ctx;
     private final AuthzProperties    properties;
-    private final Httpd              httpd;
     private final UserDevicesDict    userDevicesDict;
-    private final PermissionDict     permissionDict;
     private final PermLibrary        permLibrary;
     private final Cache              cache;
+    private final OpenAuthLibrary    openAuthLibrary;
 
-    public AuCoreInitialization(AuthzProperties properties, Httpd httpd,
-                                UserDevicesDict userDevicesDict, PermissionDict permissionDict,
-                                PermLibrary permLibrary, Cache cache) {
+    public AuCoreInitialization(AuthzProperties properties,
+                                UserDevicesDict userDevicesDict,
+                                PermLibrary permLibrary, OpenAuthLibrary openAuthLibrary, Cache cache) {
         this.properties      = properties;
-        this.httpd           = httpd;
         this.userDevicesDict = userDevicesDict;
-        this.permissionDict  = permissionDict;
         this.cache           = cache;
         this.permLibrary     = permLibrary;
+        this.openAuthLibrary = openAuthLibrary;
     }
 
     @Override
@@ -90,7 +71,8 @@ public class AuCoreInitialization implements ApplicationContextAware {
     public void chechPermLibrary() {
         PermLibrary bean = ctx.getBean(PermLibrary.class);
         if (bean == null || bean instanceof DefaultPermLibrary) {
-            AuInit.log.warn("not configured PermLibrary，Possible error in permission acquisition. Please implements cn.omisheep.authz.core.auth.PermLibrary");
+            AuInit.log.warn(
+                    "not configured PermLibrary，Possible error in permission acquisition. Please implements cn.omisheep.authz.core.auth.PermLibrary");
         }
     }
 
@@ -102,11 +84,15 @@ public class AuCoreInitialization implements ApplicationContextAware {
         Map<RequestMappingInfo, HandlerMethod> mapRet = methodMapping.getHandlerMethods();
 
         // init PermissionDict
-        initPermissionDict(ctx, mapRet);
+        PermissionDict.init(properties, ctx, permLibrary, cache, mapRet);
         LogUtils.debug("PermissionDict init success \n");
 
+        OpenAuthDict.init(properties, ctx, permLibrary, cache, mapRet);
+        LogUtils.debug("OpenAuthDict init success \n");
+//        initOpenAuthDict(ctx, mapRet);
+
         // init Httpd
-        initHttpd(ctx, mapRet);
+        Httpd.init(properties, ctx, mapRet);
         LogUtils.debug("Httpd init success \n");
 
         // init UserDevicesDict
@@ -129,6 +115,8 @@ public class AuCoreInitialization implements ApplicationContextAware {
             TaskBuilder.schedule(Pelcron::activeExpireCycle, properties.getUserBufferRefreshWithPeriod());
         }
         TaskBuilder.schedule(Pelcron::GC, properties.getGcPeriod());
+
+        openAuthLibrary.init();
 
         AuInit.log.info("Started Authz Message id: {}", Message.uuid);
 
@@ -160,327 +148,9 @@ public class AuCoreInitialization implements ApplicationContextAware {
         return null;
     }
 
-    private void initPermissionDict(ApplicationContext applicationContext, Map<RequestMappingInfo, HandlerMethod> mapRet) {
-        PermissionDict.setPermSeparator(Constants.COMMA);
-        Set<String>                                 toBeLoadedRoles      = new HashSet<>();
-        HashMap<String, Map<String, PermRolesMeta>> authzMetadata        = new HashMap<>();
-        HashMap<String, Map<String, IPRangeMeta>>   ipRangeMedata        = new HashMap<>();
-        Map<String, Set<String>>                    certificatedMetadata = new HashMap<>();
-        Map<String, List<Map<String, String>>>      controllerMetadata   = new HashMap<>();
-        Map<String, PermRolesMeta>                  pMap                 = new HashMap<>();
-        Map<String, PermRolesMeta>                  rMap                 = new HashMap<>();
-        Map<String, IPRangeMeta>                    iMap                 = new HashMap<>();
-        LinkedList<String>                          cList                = new LinkedList<>();
-
-        applicationContext.getBeansWithAnnotation(Roles.class).forEach((key, value) -> {
-            String name  = getTypeName(value);
-            Roles  roles = getAnnoatation(value, Roles.class);
-            if (roles != null) {
-                cList.add(getTypeName(value));
-                rMap.put(name, generatePermRolesMeta(null, roles));
-            }
-        });
-
-        applicationContext.getBeansWithAnnotation(Perms.class).forEach((key, value) -> {
-            String name  = getTypeName(value);
-            Perms  perms = getAnnoatation(value, Perms.class);
-            if (perms != null) {
-                cList.add(getTypeName(value));
-                pMap.put(name, generatePermRolesMeta(perms, null));
-            }
-        });
-
-        applicationContext.getBeansWithAnnotation(Certificated.class).forEach((key, value) -> {
-            Certificated certificated = getAnnoatation(value, Certificated.class);
-            if (certificated != null) {
-                cList.add(getTypeName(value));
-            }
-        });
-
-        applicationContext.getBeansWithAnnotation(IPRangeLimit.class).forEach((key, value) -> {
-            IPRangeLimit ipRangeLimit = getAnnoatation(value, IPRangeLimit.class);
-            iMap.put(getTypeName(value), new IPRangeMeta().setAllow(ipRangeLimit.allow()).setDeny(ipRangeLimit.deny()));
-        });
-
-        mapRet.forEach((key, value) -> {
-            IPRangeMeta   iFc           = iMap.get(value.getBeanType().getName());
-            PermRolesMeta pFc           = pMap.get(value.getBeanType().getName());
-            PermRolesMeta rFc           = rMap.get(value.getBeanType().getName());
-            PermRolesMeta permRolesMeta = generatePermRolesMeta(value.getMethodAnnotation(Perms.class), value.getMethodAnnotation(Roles.class));
-            IPRangeMeta   ipRangeMeta   = new IPRangeMeta();
-            List<String>  mtds          = key.getMethodsCondition().getMethods().stream().map(k -> k.name()).collect(Collectors.toList());
-            Set<String>   patterns      = getPatterns(key);
-
-            if (!value.getBeanType().equals(BasicErrorController.class)) {
-                List<Map<String, String>> clm = controllerMetadata
-                        .computeIfAbsent(value.getBeanType().getSimpleName(), r -> new ArrayList<>());
-                patterns.forEach(p -> {
-                    mtds.forEach(m -> {
-                        HashMap<String, String> map = new HashMap<>();
-                        map.put("method", m);
-                        map.put("path", p);
-                        clm.add(map);
-                    });
-                });
-            }
-
-            // 初始化Certifecated
-            Certificated certificated = AnnotatedElementUtils.getMergedAnnotation(value.getMethod(), Certificated.class);
-            if (cList.contains(value.getBeanType().getTypeName()) || certificated != null) {
-                patterns.forEach(p -> certificatedMetadata.computeIfAbsent(p, r -> new HashSet<>()).addAll(mtds));
-            }
-
-            // 初始化API权限
-            if (rFc != null) {
-                if (permRolesMeta == null) permRolesMeta = new PermRolesMeta();
-                if (rFc.getRequireRoles() != null) {
-                    if (permRolesMeta.getRequireRoles() != null) {
-                        permRolesMeta.getRequireRoles().addAll(rFc.getRequireRoles());
-                    } else {
-                        permRolesMeta.setRequireRoles(rFc.getRequireRoles());
-                    }
-                }
-                if (rFc.getExcludeRoles() != null) {
-                    if (permRolesMeta.getExcludeRoles() != null) {
-                        permRolesMeta.getExcludeRoles().addAll(rFc.getExcludeRoles());
-                    } else {
-                        permRolesMeta.setExcludeRoles(rFc.getExcludeRoles());
-                    }
-                }
-            }
-            if (pFc != null) {
-                if (permRolesMeta == null) permRolesMeta = new PermRolesMeta();
-                Set<Set<String>> requirePermissions = pFc.getRequirePermissions();
-                if (requirePermissions != null) {
-                    if (permRolesMeta.getRequirePermissions() != null) {
-                        permRolesMeta.getRequirePermissions().addAll(requirePermissions);
-                    } else {
-                        permRolesMeta.setRequirePermissions(requirePermissions);
-                    }
-                }
-                if (pFc.getExcludePermissions() != null) {
-                    Set<Set<String>> excludePermissions = pFc.getExcludePermissions();
-                    if (permRolesMeta.getExcludePermissions() != null) {
-                        permRolesMeta.getExcludePermissions().addAll(excludePermissions);
-                    } else {
-                        permRolesMeta.setExcludePermissions(excludePermissions);
-                    }
-                }
-            }
-            if (permRolesMeta != null) {
-                Set<Set<String>> requireRoles = permRolesMeta.getRequireRoles();
-                Set<Set<String>> excludeRoles = permRolesMeta.getExcludeRoles();
-                if (requireRoles != null) requireRoles.forEach(toBeLoadedRoles::addAll);
-                if (excludeRoles != null) excludeRoles.forEach(toBeLoadedRoles::addAll);
-
-                PermRolesMeta finalPermRolesMeta = permRolesMeta;
-                mtds.forEach(method -> {
-                    patterns.forEach(patternValue -> authzMetadata.computeIfAbsent(patternValue, r -> new HashMap<>())
-                            .put(method.toString(), finalPermRolesMeta)
-                    );
-                });
-            }
-
-            // 初始化IPRange权限
-            if (iFc != null) {
-                ipRangeMeta.setAllow(iFc.getAllow());
-                ipRangeMeta.setDeny(iFc.getDeny());
-            }
-            IPRangeLimit ipRangeLimit = value.getMethodAnnotation(IPRangeLimit.class);
-            if (ipRangeLimit != null) {
-                ipRangeMeta.setAllow(ipRangeLimit.allow()).setDeny(ipRangeLimit.deny());
-                if (iFc != null) {
-                    ipRangeMeta.getAllow().addAll(iFc.getAllow());
-                    ipRangeMeta.getDeny().addAll(iFc.getDeny());
-                }
-            }
-            if (ipRangeMeta.getDeny() != null && !ipRangeMeta.getDeny().isEmpty() || ipRangeMeta.getAllow() != null && !ipRangeMeta.getAllow().isEmpty()) {
-                mtds.forEach(method -> {
-                    patterns.forEach(patternValue -> ipRangeMedata.computeIfAbsent(patternValue, r -> new HashMap<>()).put(method.toString(), ipRangeMeta));
-                });
-            }
-
-            // ------------- 初始化参数权限 --------------- //
-            mtds.forEach(method -> {
-                patterns.forEach(patternValue -> {
-                    Map<ParamMetadata.ParamType, Map<String, Class<?>>> rawParamTypeMapMap =
-                            permissionDict.getRawMap().computeIfAbsent(patternValue, r -> new HashMap<>())
-                                    .computeIfAbsent(method.toString(), r -> new HashMap<>());
-                    for (MethodParameter param : value.getMethodParameters()) {
-                        Class<?> paramType = param.getParameter().getType();
-                        if (ValueMatcher.checkType(paramType).isOther()) {
-                            continue;
-                        }
-
-                        RequestParam requestParam = param.getParameterAnnotation(RequestParam.class);
-                        PathVariable pathVariable = param.getParameterAnnotation(PathVariable.class);
-                        String       paramName    = param.getParameter().getName();
-
-                        ParamMetadata.ParamType type = null;
-                        if (pathVariable != null) {
-                            type = ParamMetadata.ParamType.PATH_VARIABLE;
-                            if (!pathVariable.name().equals("")) paramName = pathVariable.name();
-                        } else if (requestParam != null) {
-                            type = ParamMetadata.ParamType.REQUEST_PARAM;
-                            if (!requestParam.name().equals("")) paramName = requestParam.name();
-                        } else {
-                            continue;
-                        }
-
-                        Map<String, Class<?>> rawParamMap = rawParamTypeMapMap.computeIfAbsent(type, r -> new HashMap<>());
-                        rawParamMap.put(paramName, paramType);
-
-                        Roles          rolesByParam   = param.getParameterAnnotation(Roles.class);
-                        Perms          permsByParam   = param.getParameterAnnotation(Perms.class);
-                        BatchAuthority batchAuthority = param.getParameterAnnotation(BatchAuthority.class);
-
-                        if (rolesByParam != null || permsByParam != null || batchAuthority != null) {
-                            ArrayList<PermRolesMeta.Meta> rolesMetaList = new ArrayList<>();
-                            ArrayList<PermRolesMeta.Meta> permsMetaList = new ArrayList<>();
-                            PermRolesMeta.Meta            vr            = generateRolesMeta(rolesByParam);
-                            PermRolesMeta.Meta            vp            = generatePermMeta(permsByParam);
-                            if (vr != null) rolesMetaList.add(vr);
-                            if (vp != null) permsMetaList.add(vp);
-
-                            if (batchAuthority != null) {
-                                Roles[] rs = batchAuthority.roles();
-                                for (Roles r : rs) {
-                                    PermRolesMeta.Meta v = generateRolesMeta(r);
-                                    if (v != null) {
-                                        rolesMetaList.add(v);
-                                        if (v.getRequire() != null) v.getRequire().forEach(toBeLoadedRoles::addAll);
-                                        if (v.getExclude() != null) v.getExclude().forEach(toBeLoadedRoles::addAll);
-                                    }
-                                }
-                                Perms[] ps = batchAuthority.perms();
-                                for (Perms p : ps) {
-                                    PermRolesMeta.Meta v = generatePermMeta(p);
-                                    if (v != null) permsMetaList.add(v);
-                                }
-                            }
-
-                            if (type != null) {
-                                PermRolesMeta meta = authzMetadata.computeIfAbsent(patternValue, r -> new HashMap<>())
-                                        .computeIfAbsent(method.toString(), r -> new PermRolesMeta());
-                                meta.put(type, paramName,
-                                         new ParamMetadata(paramType, rolesMetaList, permsMetaList)
-                                );
-                            }
-                        }
-
-                    }
-                });
-            });
-
-        });
-
-        try {
-            permissionDict.initAuthzMetadata(authzMetadata);
-            permissionDict.initIPRangeMeta(ipRangeMedata);
-            permissionDict.initCertificatedMetadata(certificatedMetadata);
-            permissionDict.initGlobalAllow(IPRangeMeta.parse(properties.getGlobalIpRange().getAllow()));
-            permissionDict.initGlobalDeny(IPRangeMeta.parse(properties.getGlobalIpRange().getDeny()));
-            permissionDict.setSupportNative(properties.getGlobalIpRange().isSupportNative());
-            permissionDict.initControllerMetadata(controllerMetadata);
-        } catch (Exception e) {
-            LogUtils.error("init permissionDict error", e);
-        }
-        PermissionDict.init(permissionDict);
-
-        if (properties.getCache().isEnableRedis()) {
-            Async.run(() -> {
-                List<String> collect = toBeLoadedRoles.stream().collect(Collectors.toList());
-                List<Set<String>> rolesPerms = RedisUtils.Obj.get(
-                        collect.stream()
-                                .map(role -> Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role)
-                                .collect(Collectors.toList())
-                );
-                Iterator<String>             iterator = collect.iterator();
-                HashMap<String, Set<String>> map      = new HashMap<>();
-                rolesPerms.forEach(perms -> map.put(iterator.next(), perms));
-                map.forEach((role, v) -> {
-                    Set<String> permissions = permLibrary.getPermissionsByRole(role);
-                    cache.setSneaky(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role, permissions, Cache.INFINITE);
-                });
-            });
-        }
-    }
-
-    private void initHttpd(ApplicationContext applicationContext, Map<RequestMappingInfo, HandlerMethod> mapRet) {
-        Map<String, Map<String, LimitMeta>> httpdLimitedMetaMap = httpd.getRateLimitMetadata();
-        HashMap<String, LimitMeta>          cMap                = new HashMap<>();
-
-        applicationContext.getBeansWithAnnotation(RateLimit.class).forEach((key, value) -> {
-            Class<?>  aClass    = AopUtils.getTargetClass(value);
-            RateLimit rateLimit = aClass.getAnnotation(RateLimit.class);
-            if (rateLimit != null) {
-                cMap.put(aClass.getName(),
-                         new LimitMeta(rateLimit.window(),
-                                       rateLimit.maxRequests(),
-                                       rateLimit.punishmentTime(),
-                                       rateLimit.minInterval(),
-                                       rateLimit.associatedPatterns(),
-                                       rateLimit.checkType()));
-            }
-        });
-
-        mapRet.forEach((key, value) -> {
-            Set<RequestMethod> methods   = key.getMethodsCondition().getMethods();
-            RateLimit          rateLimit = value.getMethodAnnotation(RateLimit.class);
-            if (rateLimit != null) {
-                LimitMeta limitMeta = new LimitMeta(rateLimit.window(),
-                                                    rateLimit.maxRequests(),
-                                                    rateLimit.punishmentTime(),
-                                                    rateLimit.minInterval(),
-                                                    rateLimit.associatedPatterns(),
-                                                    rateLimit.checkType());
-                methods.forEach(
-                        method -> getPatterns(key).forEach(
-                                patternValue -> httpdLimitedMetaMap.computeIfAbsent(patternValue, r -> new HashMap<>()).put(method.toString(), limitMeta))
-                );
-            } else {
-                methods.forEach(
-                        method -> {
-                            getPatterns(key).forEach(
-                                    patternValue -> {
-                                        LimitMeta limitMeta = cMap.get(value.getBeanType().getName());
-                                        if (limitMeta != null)
-                                            httpdLimitedMetaMap
-                                                    .computeIfAbsent(patternValue, r -> new HashMap<>()).put(method.toString(), limitMeta);
-                                    });
-                        });
-            }
-
-            getPatterns(key).forEach(patternValue -> {
-                httpd.setPathPattern(patternValue);
-                HashMap<String, Httpd.RequestPool> userIdRequestPool = new HashMap<>();
-                HashMap<String, Httpd.RequestPool> ipRequestPool     = new HashMap<>();
-
-                key.getMethodsCondition().getMethods().forEach(method -> {
-                    userIdRequestPool.put(method.name(), new Httpd.RequestPool());
-                    ipRequestPool.put(method.name(), new Httpd.RequestPool());
-                });
-
-                httpd.getIpRequestPools().computeIfAbsent(patternValue, r -> new ConcurrentHashMap<>()).putAll(ipRequestPool);
-                httpd.getUserIdRequestPools().computeIfAbsent(patternValue, r -> new ConcurrentHashMap<>()).putAll(userIdRequestPool);
-            });
-        });
-
-        httpd.setIgnoreSuffix(properties.getIgnoreSuffix());
-    }
-
     private void initUserDevicesDict() {
         DeviceConfig.isSupportMultiDevice                = properties.getUser().isSupportMultiDevice();
         DeviceConfig.isSupportMultiUserForSameDeviceType = properties.getUser().isSupportMultiUserForSameDeviceType();
-    }
-
-    @SneakyThrows
-    private Set<String> getPatterns(RequestMappingInfo info) {
-        try {
-            return info.getPatternsCondition().getPatterns();
-        } catch (Exception e) {
-            return (Set<String>) RequestMappingInfo.class.getMethod("getPatternValues").invoke(info);
-        }
     }
 
 }

@@ -15,11 +15,9 @@ import cn.omisheep.commons.util.TimeUtils;
 public class MessageReceive {
 
     private final Cache cache;
-    private final Httpd httpd;
 
-    public MessageReceive(Cache cache, Httpd httpd) {
+    public MessageReceive(Cache cache) {
         this.cache = cache;
-        this.httpd = httpd;
     }
 
     public void handleMessage(String o) {
@@ -35,7 +33,7 @@ public class MessageReceive {
             RequestMessage message = (RequestMessage) oo;
             if (!RequestMessage.ignore(message)) {
                 LogUtils.debug("RequestMessage time: {} message: {}", TimeUtils.nowTime(), message);
-                httpd.receive(message);
+                Httpd.receive(message);
             }
         } else if (oo instanceof VersionMessage) {
             VersionMessage message = (VersionMessage) oo;

@@ -50,7 +50,8 @@ public class DefaultCache implements cn.omisheep.authz.core.cache.Cache {
     public Set<String> keys(@NonNull String pattern) {
         if (pattern.equals(EMPTY)) return new HashSet<>();
         if (pattern.equals(ALL)) return cache.asMap().keySet();
-        return cache.asMap().keySet().stream().filter(key -> KeyMatchUtils.stringMatch(pattern, key, true)).collect(Collectors.toSet());
+        return cache.asMap().keySet().stream().filter(key -> KeyMatchUtils.stringMatch(pattern, key, true)).collect(
+                Collectors.toSet());
     }
 
     @Override
@@ -68,6 +69,13 @@ public class DefaultCache implements cn.omisheep.authz.core.cache.Cache {
     @Override
     public <E> void set(@NonNull String key, @Nullable E element, long ttl) {
         cache.put(key, new CacheItem<>(ttl, element));
+    }
+
+    @Override
+    public void set(@NonNull Map<String, ?> elements) {
+        elements.forEach((k, v) -> {
+            cache.put(k, new CacheItem<>(v));
+        });
     }
 
     @Override

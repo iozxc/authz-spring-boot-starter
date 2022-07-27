@@ -12,6 +12,7 @@ import org.springframework.web.method.HandlerMethod;
  * (2)        RateLimitSlot            <br>
  * (5)        BlacklistSlot            <br>
  * (30)       IPRangeSlot              <br>
+ * (50)       OAuthSlot                <br>
  * (100)      DeviceSlot               <br>
  * (300)      APIPermSlot              <br>
  * (400)      ParameterPermSlot        <br>

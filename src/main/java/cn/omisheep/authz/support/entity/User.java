@@ -4,8 +4,6 @@ import com.google.common.base.Objects;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-import java.util.List;
-
 /**
  * @author zhouxinchen
  * @since 1.2.0
@@ -13,10 +11,9 @@ import java.util.List;
 @Data
 @Accessors(chain = true)
 public class User {
-    private String       username;
-    private String       password;
-    private List<String> permissions;
-    private String       uuid;
+    private String username;
+    private String password;
+    private String uuid;
 
     @Override
     public boolean equals(Object o) {

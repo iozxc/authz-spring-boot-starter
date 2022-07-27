@@ -28,18 +28,16 @@ import static cn.omisheep.authz.core.auth.rpd.AuthzDefender.logs;
 @SuppressWarnings("all")
 public class ParameterPermSlot implements Slot {
 
-    private final PermissionDict permissionDict;
     private final PermLibrary    permLibrary;
 
-    public ParameterPermSlot(PermissionDict permissionDict, PermLibrary permLibrary) {
-        this.permissionDict = permissionDict;
+    public ParameterPermSlot(PermLibrary permLibrary) {
         this.permLibrary    = permLibrary;
     }
 
     @Override
     public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
         if (!httpMeta.isRequireProtect()) return;
-        PermRolesMeta permRolesMeta = permissionDict.getRolePermission().get(httpMeta.getApi()).get(httpMeta.getMethod());
+        PermRolesMeta permRolesMeta = PermissionDict.getRolePermission().get(httpMeta.getApi()).get(httpMeta.getMethod());
         if (permRolesMeta.getParamPermissionsMetadata() == null) return;
         Set<String> roles       = null;
         Set<String> permissions = null;

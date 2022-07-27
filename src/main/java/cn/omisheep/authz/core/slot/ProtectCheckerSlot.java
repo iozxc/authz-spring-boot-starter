@@ -16,12 +16,6 @@ import java.util.Set;
 @Order(10)
 public class ProtectCheckerSlot implements Slot {
 
-    private final PermissionDict permissionDict;
-
-    public ProtectCheckerSlot(PermissionDict permissionDict) {
-        this.permissionDict = permissionDict;
-    }
-
     @Override
     public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
         httpMeta.setRequireProtect(requireProtect(httpMeta));
@@ -29,13 +23,13 @@ public class ProtectCheckerSlot implements Slot {
     }
 
     private boolean requireProtect(HttpMeta httpMeta) {
-        Map<String, PermRolesMeta> map = permissionDict.getRolePermission().get(httpMeta.getApi());
+        Map<String, PermRolesMeta> map = PermissionDict.getRolePermission().get(httpMeta.getApi());
         if (map == null) return false;
         return map.get(httpMeta.getMethod()) != null;
     }
 
     private boolean requireLogin(HttpMeta httpMeta) {
-        Set<String> list = permissionDict.getCertificatedMetadata().get(httpMeta.getApi());
+        Set<String> list = PermissionDict.getCertificatedMetadata().get(httpMeta.getApi());
         if (list == null || list.isEmpty()) return httpMeta.isRequireProtect();
         return list.contains(httpMeta.getMethod()) || httpMeta.isRequireProtect();
     }

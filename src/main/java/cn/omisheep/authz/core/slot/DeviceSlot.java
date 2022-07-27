@@ -3,7 +3,6 @@ package cn.omisheep.authz.core.slot;
 import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.tk.Token;
 import org.springframework.web.method.HandlerMethod;
 
@@ -18,11 +17,9 @@ import static cn.omisheep.authz.core.auth.rpd.AuthzDefender.logs;
 @Order(100)
 public class DeviceSlot implements Slot {
 
-    private final PermissionDict  permissionDict;
     private final UserDevicesDict userDevicesDict;
 
-    public DeviceSlot(PermissionDict permissionDict, UserDevicesDict userDevicesDict) {
-        this.permissionDict  = permissionDict;
+    public DeviceSlot(UserDevicesDict userDevicesDict) {
         this.userDevicesDict = userDevicesDict;
     }
 
@@ -38,7 +35,8 @@ public class DeviceSlot implements Slot {
 
         Token accessToken = httpMeta.getToken();
 
-        switch (userDevicesDict.userStatus(accessToken.getUserId(), accessToken.getDeviceType(), accessToken.getDeviceId(), accessToken.getTokenId())) {
+        switch (userDevicesDict.userStatus(accessToken.getUserId(), accessToken.getDeviceType(),
+                                           accessToken.getDeviceId(), accessToken.getTokenId())) {
             case ACCESS_TOKEN_OVERDUE:
                 // accessToken过期
                 logs("Forbid : expired token exception", httpMeta);

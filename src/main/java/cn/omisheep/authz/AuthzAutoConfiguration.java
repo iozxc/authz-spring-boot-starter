@@ -8,12 +8,10 @@ import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDictByCache;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDictByHashMap;
 import cn.omisheep.authz.core.auth.ipf.AuthzHttpFilter;
-import cn.omisheep.authz.core.auth.ipf.Httpd;
-import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.cache.DefaultCache;
 import cn.omisheep.authz.core.cache.L2Cache;
-import cn.omisheep.authz.core.cache.PermLibraryCache;
+import cn.omisheep.authz.core.cache.library.PermLibraryCache;
 import cn.omisheep.authz.core.codec.DecryptHandler;
 import cn.omisheep.authz.core.codec.RSADecryptor;
 import cn.omisheep.authz.core.config.AuCoreInitialization;
@@ -25,6 +23,8 @@ import cn.omisheep.authz.core.msg.CacheMessage;
 import cn.omisheep.authz.core.msg.MessageReceive;
 import cn.omisheep.authz.core.msg.RequestMessage;
 import cn.omisheep.authz.core.msg.VersionMessage;
+import cn.omisheep.authz.core.oauth.DefaultOpenAuthLibrary;
+import cn.omisheep.authz.core.oauth.OpenAuthLibrary;
 import cn.omisheep.authz.core.resolver.AuthzHandlerRegister;
 import cn.omisheep.authz.core.resolver.DecryptRequestBodyAdvice;
 import cn.omisheep.authz.core.util.LogUtils;
@@ -34,6 +34,7 @@ import cn.omisheep.authz.support.entity.Docs;
 import cn.omisheep.authz.support.entity.Info;
 import cn.omisheep.authz.support.http.SupportServlet;
 import cn.omisheep.authz.support.http.annotation.ApiSupportScan;
+import cn.omisheep.commons.util.TimeUtils;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -105,11 +106,13 @@ public class AuthzAutoConfiguration {
         }
         String baseUrl = Utils.format("{}:{}{}", host, port, contextPath);
 
-        AuthzAppVersion.host         = host;
-        AuthzAppVersion.port         = port;
-        AuthzAppVersion.contextPath  = contextPath;
-        AuthzAppVersion.baseUrl      = baseUrl;
-        AuthzAppVersion.supportCloud = properties.getCache().isEnableRedis();
+        AuthzAppVersion.host                  = host;
+        AuthzAppVersion.port                  = port;
+        AuthzAppVersion.contextPath           = contextPath;
+        AuthzAppVersion.baseUrl               = baseUrl;
+        AuthzAppVersion.supportCloud          = properties.getCache().isEnableRedis();
+        AuthzAppVersion.authorizationCodeTime = TimeUtils.parseTimeValue(
+                properties.getToken().getOauth().getAuthorizationCodeTime());
 
         AuthzAppVersion.ConnectInfo connectInfo = new AuthzAppVersion.ConnectInfo();
         connectInfo.setApplication(AuthzAppVersion.APPLICATION_NAME);
@@ -174,8 +177,8 @@ public class AuthzAutoConfiguration {
 
         @Bean("authzCacheMessageReceive")
         @ConditionalOnProperty(prefix = "authz.cache", name = "enable-redis", havingValue = "true")
-        public MessageReceive messageReceive(Cache cache, Httpd httpd) {
-            return new MessageReceive(cache, httpd);
+        public MessageReceive messageReceive(Cache cache) {
+            return new MessageReceive(cache);
         }
 
         @Bean("authzCacheMessageListenerAdapter")
@@ -273,6 +276,12 @@ public class AuthzAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    public OpenAuthLibrary openAuthLibrary() {
+        return new DefaultOpenAuthLibrary();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     public AuthzExceptionHandler authzExceptionHandler(AuthzProperties properties) {
         return new DefaultAuthzExceptionHandler(properties.getResponse());
     }
@@ -296,9 +305,9 @@ public class AuthzAutoConfiguration {
     }
 
     @Bean("AuthzHttpFilter")
-    public FilterRegistrationBean<AuthzHttpFilter> filterRegistrationBean(Httpd httpd, AuthzProperties properties) {
+    public FilterRegistrationBean<AuthzHttpFilter> filterRegistrationBean(AuthzProperties properties) {
         FilterRegistrationBean<AuthzHttpFilter> registration = new FilterRegistrationBean<>();
-        registration.setFilter(new AuthzHttpFilter(httpd, properties.getDashboard().isEnabled()));
+        registration.setFilter(new AuthzHttpFilter(properties.getDashboard().isEnabled()));
         registration.addUrlPatterns("/*");
         registration.setName("authzFilter");
         registration.setOrder(1);
@@ -306,10 +315,12 @@ public class AuthzAutoConfiguration {
     }
 
     @Bean
-    public AuCoreInitialization auCoreInitialization(AuthzProperties properties, Httpd httpd,
-                                                     UserDevicesDict userDevicesDict, PermissionDict permissionDict,
-                                                     PermLibrary permLibrary, Cache cache) {
-        return new AuCoreInitialization(properties, httpd, userDevicesDict, permissionDict, permLibrary, cache);
+    public AuCoreInitialization auCoreInitialization(AuthzProperties properties,
+                                                     UserDevicesDict userDevicesDict,
+                                                     PermLibrary permLibrary, OpenAuthLibrary openAuthLibrary,
+                                                     Cache cache) {
+        return new AuCoreInitialization(properties, userDevicesDict, permLibrary,
+                                        openAuthLibrary, cache);
     }
 
     @Configuration
@@ -329,8 +340,6 @@ public class AuthzAutoConfiguration {
         }
     }
 
-
-    // dashboard
     @ConditionalOnProperty(name = "authz.dashboard.enabled", havingValue = "true")
     @ApiSupportScan("cn.omisheep.authz.support.http.api")
     public static class AuthzDashboardAutoConfiguration {
@@ -345,8 +354,8 @@ public class AuthzAutoConfiguration {
         }
 
         @Bean("authz-docs")
-        private Docs docs(Info info, Httpd httpd, PermissionDict permissionDict) {
-            return new Docs(info, httpd, permissionDict);
+        private Docs docs(Info info) {
+            return new Docs(info);
         }
 
         @Bean("authz-cloud")

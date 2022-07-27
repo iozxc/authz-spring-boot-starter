@@ -20,11 +20,15 @@ import java.util.List;
 public class AuthzProperties {
 
     /**
+     * app名，避免在同一redis中启动多Authz服务导致的数据混乱
+     *
      * @since 1.1.0
      */
     private String app = "defaultApp";
 
     /**
+     * 是否打印banner
+     *
      * @since 1.1.2
      */
     private boolean banner = true;
@@ -40,6 +44,8 @@ public class AuthzProperties {
     private String userBufferRefreshWithPeriod = "10s";
 
     /**
+     * 使用`@Decrypt`时的默认的解密器
+     *
      * @since 1.0.11
      */
     private Class<? extends Decryptor> defaultDecryptor = RSADecryptor.class;
@@ -50,6 +56,9 @@ public class AuthzProperties {
      */
     private String gcPeriod;
 
+    /**
+     * 没啥用，可能以后会有用
+     */
     private boolean md5check = false;
 
     /**
@@ -60,7 +69,7 @@ public class AuthzProperties {
     private ORM orm;
 
     /**
-     * 过滤后缀名
+     * 过滤后缀名，对dashboard有点用
      */
     private String[] ignoreSuffix = new String[]{".css", ".js", ".html", ".png", ".jpg", ".gif", ".svg"};
 
@@ -94,8 +103,6 @@ public class AuthzProperties {
          * @since 1.2.0
          */
         private OpenAuthConfig oauth = new OpenAuthConfig();
-
-        private String defaultScope = "basic";
 
         /**
          * Token字符串表示模式。默认为标准模式。
@@ -162,10 +169,18 @@ public class AuthzProperties {
 
         @Data
         public static class OpenAuthConfig {
+
             /**
              * 授权码过期时间
              */
             private String authorizationCodeTime = "10m";
+
+            /**
+             * 默认授予的权限。
+             * 通过oauth授权登录的用户拥有的权限，`@OAuthScopeBasic`标识之后的额外scope
+             * 通过正常登录的用户不受scope的影响，能访问所有资源
+             */
+            private String defaultScope = "basic";
 
             /**
              * 授权码签名算法
@@ -281,16 +296,34 @@ public class AuthzProperties {
     }
 
     public enum ORM {
-        MYBATIS, JPA
+        MYBATIS
     }
 
     @Data
     public static class DashboardConfig {
+        /**
+         * 是否开启dashboard
+         */
         private boolean    enabled = false;
+        /**
+         * 登录用户，可与username，password共用
+         */
         private List<User> users   = new ArrayList<>();
+        /**
+         * 用户名
+         */
         private String     username;
+        /**
+         * 用户密码
+         */
         private String     password;
+        /**
+         * 【-只only-允许】的iprange
+         */
         private String     allow;
+        /**
+         * 拒绝的iprange
+         */
         private String     deny;
     }
 

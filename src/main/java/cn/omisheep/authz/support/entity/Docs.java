@@ -22,20 +22,16 @@ import java.util.Map;
  */
 @Accessors(chain = true)
 public class Docs {
-    public static final String         VERSION = "v1";
+    public static final String VERSION = "v1";
     @Getter
     @JsonProperty(index = 1)
-    private final       String         authz   = AuthzVersion.getVersion();
+    private final       String authz   = AuthzVersion.getVersion();
     @Getter
     @JsonProperty(index = 2)
-    private final       Info           info;
-    private final       Httpd          httpd;
-    private final       PermissionDict permissionDict;
+    private final       Info   info;
 
-    public Docs(Info info, Httpd httpd, PermissionDict permissionDict) {
-        this.info           = info;
-        this.httpd          = httpd;
-        this.permissionDict = permissionDict;
+    public Docs(Info info) {
+        this.info = info;
     }
 
     @JsonProperty(index = 3)
@@ -45,13 +41,13 @@ public class Docs {
 
     @JsonProperty(index = 4)
     public Map<String, List<Map<String, String>>> getControllers() {
-        return permissionDict.getControllerMetadata();
+        return PermissionDict.getControllerMetadata();
     }
 
     @JsonProperty(index = 5)
     public Map<String, Map<String, Map<String, Object>>> getPaths() {
         HashMap<String, Map<String, Map<String, Object>>> map = new HashMap<>();
-        permissionDict.getRawParamMap().forEach((k, v) -> {
+        PermissionDict.getRawParamMap().forEach((k, v) -> {
             Map<String, Map<String, Object>> m = map.computeIfAbsent(k, r -> new HashMap<>());
             v.forEach((_k, _v) -> {
                 Map<String, Object> mm = m.computeIfAbsent(_k, r -> new HashMap<>());
@@ -59,7 +55,7 @@ public class Docs {
                 mm.put("requireLogin", false);
             });
         });
-        permissionDict.getRolePermission().forEach((k, v) -> {
+        PermissionDict.getRolePermission().forEach((k, v) -> {
             Map<String, Map<String, Object>> m = map.computeIfAbsent(k, r -> new HashMap<>());
             v.forEach((_k, _v) -> {
                 Map<String, Object> mm = m.computeIfAbsent(_k, r -> new HashMap<>());
@@ -67,7 +63,7 @@ public class Docs {
                 mm.put("requireLogin", !_v.non());
             });
         });
-        permissionDict.getCertificatedMetadata().forEach((k, v) -> {
+        PermissionDict.getCertificatedMetadata().forEach((k, v) -> {
             Map<String, Map<String, Object>> m = map.computeIfAbsent(k, r -> new HashMap<>());
             v.forEach(meth -> m.computeIfAbsent(meth, r -> new HashMap<>()).put("requireLogin", true));
         });
@@ -76,17 +72,17 @@ public class Docs {
 
     @JsonProperty(index = 6)
     public Map<String, Map<String, LimitMeta>> getRateLimit() {
-        return Collections.unmodifiableMap(httpd.getRateLimitMetadata());
+        return Collections.unmodifiableMap(Httpd.getRateLimitMetadata());
     }
 
     @JsonProperty(index = 7)
     public Map<String, PermissionDict.ArgsMeta> getArgResource() {
-        return permissionDict.getArgs();
+        return PermissionDict.getArgs();
     }
 
     @JsonProperty(index = 8)
     public List<AuthzAppVersion.ConnectInfo> conns() { // 实例
-        return AuthzAppVersion.getConnectInfo().get(AuthzAppVersion.LOCAL);
+        return AuthzAppVersion.getConnectInfo().get(AuthzAppVersion.LOCAL_CONNECT);
     }
 
 //    @JsonProperty(index = 6)

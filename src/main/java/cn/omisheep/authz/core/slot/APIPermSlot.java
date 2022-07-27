@@ -23,18 +23,17 @@ import static cn.omisheep.authz.core.auth.rpd.AuthzDefender.logs;
 @Order(300)
 public class APIPermSlot implements Slot {
 
-    private final PermissionDict permissionDict;
-    private final PermLibrary    permLibrary;
+    private final PermLibrary permLibrary;
 
-    public APIPermSlot(PermissionDict permissionDict, PermLibrary permLibrary) {
-        this.permissionDict = permissionDict;
-        this.permLibrary    = permLibrary;
+    public APIPermSlot(PermLibrary permLibrary) {
+        this.permLibrary = permLibrary;
     }
 
     @Override
     public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
         if (!httpMeta.isRequireProtect()) return;
-        PermRolesMeta permRolesMeta = permissionDict.getRolePermission().get(httpMeta.getApi()).get(httpMeta.getMethod());
+        PermRolesMeta permRolesMeta = PermissionDict.getRolePermission().get(httpMeta.getApi()).get(
+                httpMeta.getMethod());
         if (permRolesMeta.non()) return;
 
         Token accessToken = httpMeta.getToken();
@@ -45,7 +44,9 @@ public class APIPermSlot implements Slot {
         if (!e1 || !e2) {
             roles = permLibrary.getRolesByUserId(accessToken.getUserId());
             httpMeta.setRoles(roles);
-            if (!e1 && !CollectionUtils.containsSub(permRolesMeta.getRequireRoles(), roles) || !e2 && CollectionUtils.containsSub(permRolesMeta.getExcludeRoles(), roles)) {
+            if (!e1 && !CollectionUtils.containsSub(permRolesMeta.getRequireRoles(),
+                                                    roles) || !e2 && CollectionUtils.containsSub(
+                    permRolesMeta.getExcludeRoles(), roles)) {
                 logs("Forbid : permissions exception", httpMeta, permRolesMeta);
                 error.error(ExceptionStatus.PERM_EXCEPTION);
                 return;

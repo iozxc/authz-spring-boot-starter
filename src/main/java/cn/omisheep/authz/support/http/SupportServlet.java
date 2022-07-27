@@ -46,7 +46,8 @@ public class SupportServlet extends HttpServlet {
     public SupportServlet(AuthzProperties.DashboardConfig dashboardConfig, Cache cache) {
         this.cache = cache;
 
-        this.requireLogin = !StringUtils.isEmpty(dashboardConfig.getUsername()) && !StringUtils.isEmpty(dashboardConfig.getPassword()) || !dashboardConfig.getUsers().isEmpty();
+        this.requireLogin = !StringUtils.isEmpty(dashboardConfig.getUsername()) && !StringUtils.isEmpty(
+                dashboardConfig.getPassword()) || !dashboardConfig.getUsers().isEmpty();
 
         try {
             allowList.addAll(IPRangeMeta.parse(dashboardConfig.getAllow()));
@@ -64,14 +65,15 @@ public class SupportServlet extends HttpServlet {
         String username = dashboardConfig.getUsername();
         String password = dashboardConfig.getPassword();
         if (!StringUtils.isEmpty(username) && !StringUtils.isEmpty(password)) {
-            users.add(new User().setUsername(username).setPassword(password).setPermissions(Collections.singletonList("*")));
+            users.add(new User().setUsername(username).setPassword(password));
         }
     }
 
     public static User login(String username, String password) {
         if (users.isEmpty()) return null;
         if (username == null || password == null) return null;
-        if (users.stream().anyMatch(u -> StringUtils.equals(u.getUsername(), username) && StringUtils.equals(u.getPassword(), password))) {
+        if (users.stream().anyMatch(
+                u -> StringUtils.equals(u.getUsername(), username) && StringUtils.equals(u.getPassword(), password))) {
             return new User().setUsername(username).setPassword(password);
         }
         return null;
@@ -130,7 +132,8 @@ public class SupportServlet extends HttpServlet {
         return true;
     }
 
-    private boolean gotoIndex(String contextPath, String path, HttpServletRequest request, HttpServletResponse response) throws IOException {
+    private boolean gotoIndex(String contextPath, String path, HttpServletRequest request,
+                              HttpServletResponse response) throws IOException {
         if ("".equals(path)) {
             if (contextPath.equals("") || contextPath.equals("/")) {
                 sendRedirect(request, response, "/authz.html");
@@ -155,7 +158,8 @@ public class SupportServlet extends HttpServlet {
         } else response.getWriter().write(text);
     }
 
-    private void returnResourceFile(String fileName, String uri, HttpServletRequest request, HttpServletResponse response) throws IOException {
+    private void returnResourceFile(String fileName, String uri, HttpServletRequest request,
+                                    HttpServletResponse response) throws IOException {
         String filePath;
         if (Objects.equals(fileName, "/authz.html")) {
             filePath = resourceRootPath + "/index.html";
@@ -221,7 +225,8 @@ public class SupportServlet extends HttpServlet {
         return true;
     }
 
-    private void sendRedirect(HttpServletRequest request, HttpServletResponse response, String path) throws IOException {
+    private void sendRedirect(HttpServletRequest request, HttpServletResponse response,
+                              String path) throws IOException {
         Map<String, String[]> parameterMap = request.getParameterMap();
         if (parameterMap.isEmpty()) {
             response.sendRedirect(path);

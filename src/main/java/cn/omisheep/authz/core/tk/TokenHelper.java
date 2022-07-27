@@ -52,6 +52,7 @@ public class TokenHelper {
     private static final String                           CLIENT_ID   = "cid";
     private static final String                           SCOPE       = "cop";
     private static final String                           defaultScope;
+    private static final String                           defaultOAuthScope;
 
     private TokenHelper() {
     }
@@ -59,7 +60,8 @@ public class TokenHelper {
     static {
         AuthzProperties             properties = AUtils.getBean(AuthzProperties.class);
         AuthzProperties.TokenConfig token      = properties.getToken();
-        defaultScope = token.getDefaultScope();
+        defaultScope      = token.getScope();
+        defaultOAuthScope = token.getOauth().getOauthDefaultScope();
         String             key       = token.getKey();
         SignatureAlgorithm algorithm = token.getAlgorithm();
         tokenIdBits = token.getTokenIdBits();
@@ -130,7 +132,8 @@ public class TokenHelper {
         claims.put(DEVICE_TYPE[mode.ordinal()], deviceType);
         claims.put(TOKEN_TYPE[mode.ordinal()], tokenType.names.get(0));
         claims.put(CLIENT_ID, clientId);
-        if (scope == null) claims.put(SCOPE, defaultScope);
+        if (scope == null && clientId == null) claims.put(SCOPE, defaultScope);
+        else if (scope == null) claims.put(SCOPE, defaultOAuthScope);
         else claims.put(SCOPE, scope);
         return claims;
     }
@@ -168,12 +171,13 @@ public class TokenHelper {
      */
     public static TokenPair createTokenPair(Object userId, String deviceType, String deviceId, String clientId,
                                             String scope) {
-        Date fromNow = Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant());
+        LocalDateTime now = LocalDateTime.now();
+        Date fromNow = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
         Date toAccessExpiredTime = // accessToken失效时间
-                Date.from(LocalDateTime.now().plus(accessTime, ChronoUnit.MILLIS).atZone(
+                Date.from(now.plus(accessTime, ChronoUnit.MILLIS).atZone(
                         ZoneId.systemDefault()).toInstant());
         Date toRefreshExpiredTime = // refreshToken失效时间
-                Date.from(LocalDateTime.now().plus(refreshTime, ChronoUnit.MILLIS).atZone(
+                Date.from(now.plus(refreshTime, ChronoUnit.MILLIS).atZone(
                         ZoneId.systemDefault()).toInstant());
 
         Token refreshToken = createToken(userId, deviceType, deviceId, Token.Type.REFRESH, fromNow,

@@ -69,8 +69,8 @@ public class AuthzResourcesInit implements ImportSelector {
 
             List<DataPermMeta> dataPermMetaList = Stream.concat(
                     rolesList.stream().filter(Objects::nonNull).map(this::generateDataRolesMeta),
-                    permsList.stream().filter(Objects::nonNull).map(this::generateDataPermMeta)
-            ).collect(Collectors.toList());
+                    permsList.stream().filter(Objects::nonNull).map(this::generateDataPermMeta)).collect(
+                    Collectors.toList());
             return new Object[]{className, dataPermMetaList};
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -83,36 +83,29 @@ public class AuthzResourcesInit implements ImportSelector {
     @Override
     @SuppressWarnings("all")
     public String[] selectImports(AnnotationMetadata annotationMetadata) {
-        Map<String, Object> annotationAttributes = annotationMetadata.getAnnotationAttributes(AuthzResourcesScan.class.getName());
-        String[]            entityBasePackages   = new String[0];
+        Map<String, Object> annotationAttributes = annotationMetadata.getAnnotationAttributes(
+                AuthzResourcesScan.class.getName());
+        String[] entityBasePackages = new String[0];
         if (annotationAttributes != null) entityBasePackages = (String[]) annotationAttributes.get("entity");
         Set<String> entityClasses = CollectionUtils.newSet(ScanUtils.scan(Object.class, entityBasePackages));
-        PermissionDict.addAuthzResourcesNames(entityClasses);
-        PermissionDict.initFieldMetadata(ge(entityClasses));
 
         HashMap<String, List<DataPermMeta>> map = new HashMap<>();
-        entityClasses.stream().map(this::dataPerm)
-                .filter(Objects::nonNull)
-                .forEach(o -> map.put((String) o[0], (List<DataPermMeta>) o[1]));
-        PermissionDict.initDataPerm(map);
+        entityClasses.stream().map(this::dataPerm).filter(Objects::nonNull).forEach(
+                o -> map.put((String) o[0], (List<DataPermMeta>) o[1]));
 
         String[] argsBasePackages = new String[0];
         if (annotationAttributes != null) argsBasePackages = (String[]) annotationAttributes.get("args");
         HashMap<String, PermissionDict.ArgsMeta> argMap = new HashMap<>();
-        Arrays.stream(argsBasePackages).forEach(basePackage ->
-                ClassUtils.getClassSet(basePackage).forEach(type ->
-                        Arrays.stream(type.getMethods())
-                                .filter(method -> method.isAnnotationPresent(ArgResource.class))
-                                .forEach(method -> {
-                                    String name = AnnotationUtils.getAnnotation(method, ArgResource.class).name();
-                                    if (Objects.equals(name, "")) name = method.getName();
-                                    argMap.put(name, PermissionDict.ArgsMeta.of(type, method));
-                                })
-                )
-        );
+        Arrays.stream(argsBasePackages).forEach(basePackage -> ClassUtils.getClassSet(basePackage).forEach(
+                type -> Arrays.stream(type.getMethods()).filter(
+                        method -> method.isAnnotationPresent(ArgResource.class)).forEach(method -> {
+                    String name = AnnotationUtils.getAnnotation(method, ArgResource.class).name();
+                    if (Objects.equals(name, "")) name = method.getName();
+                    argMap.put(name, PermissionDict.ArgsMeta.of(type, method));
+                })));
         argMap.put("token", PermissionDict.ArgsMeta.of(HttpMeta.class, "currentToken"));
         argMap.put("userId", PermissionDict.ArgsMeta.of(HttpMeta.class, "currentUserId"));
-        PermissionDict.initArgs(argMap);
+        PermissionDict.initArgs(entityClasses, ge(entityClasses), map, argMap);
 
         return new String[0];
     }

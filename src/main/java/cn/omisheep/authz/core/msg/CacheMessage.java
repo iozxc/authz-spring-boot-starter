@@ -25,6 +25,10 @@ public class CacheMessage implements Message {
         return single(key).setType(Type.WRITE);
     }
 
+    public static CacheMessage write(Collection<String> key) {
+        return collect(key).setType(Type.WRITE);
+    }
+
     public static CacheMessage write(String pattern, Collection<String> keys) {
         return collect(keys).setType(Type.WRITE).setPattern(pattern);
     }

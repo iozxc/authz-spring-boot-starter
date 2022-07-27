@@ -17,26 +17,21 @@ import java.util.Set;
 @Order(30)
 @SuppressWarnings("all")
 public class IPRangeSlot implements Slot {
-    private final PermissionDict permissionDict;
-
-    public IPRangeSlot(PermissionDict permissionDict) {
-        this.permissionDict = permissionDict;
-    }
 
     @Override
     public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
         try {
-            if (permissionDict.isSupportNative()) {
+            if (PermissionDict.isSupportNative()) {
                 if (httpMeta.getIp().equals("0:0:0:0:0:0:0:1") || httpMeta.getIp().equals("127.0.0.1")) {
                     //0:0:0:0:0:0:0:1  127.0.0.1
                     return;
                 }
             }
-            if (!isPermittedRequest(httpMeta.getIp(), permissionDict.getGlobalAllow(), permissionDict.getGlobalDeny())) {
+            if (!isPermittedRequest(httpMeta.getIp(), PermissionDict.getGlobalAllow(), PermissionDict.getGlobalDeny())) {
                 error.error(ExceptionStatus.PERM_EXCEPTION);
                 return;
             }
-            IPRangeMeta ipRangeMeta = permissionDict.getIPRange().get(httpMeta.getApi()).get(httpMeta.getMethod());
+            IPRangeMeta ipRangeMeta = PermissionDict.getIPRange().get(httpMeta.getApi()).get(httpMeta.getMethod());
             if (ipRangeMeta != null && !isPermittedRequest(httpMeta.getIp(), ipRangeMeta.getAllow(), ipRangeMeta.getDeny())) {
                 error.error(ExceptionStatus.PERM_EXCEPTION);
                 return;

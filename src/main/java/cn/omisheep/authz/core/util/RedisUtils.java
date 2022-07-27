@@ -117,6 +117,10 @@ public abstract class RedisUtils {
             redisTemplate.opsForValue().set(key, value, ttl, TimeUnit.SECONDS);
         }
 
+        public static void set(Map<String, ?> map) {
+            redisTemplate.opsForValue().multiSet(map);
+        }
+
         public static Object get(String key) {
             return redisTemplate.opsForValue().get(key);
         }

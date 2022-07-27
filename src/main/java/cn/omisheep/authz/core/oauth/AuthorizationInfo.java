@@ -1,7 +1,10 @@
 package cn.omisheep.authz.core.oauth;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.experimental.Accessors;
+
+import java.util.Date;
 
 /**
  * @author zhouxinchen
@@ -10,9 +13,20 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(chain = true)
 public class AuthorizationInfo { //授权信息
-    private String clientId;
-    private String scope;
-    private Object userId;
-    private String deviceType;
-    private String deviceId;
+    private final String clientId;
+    private final String scope;
+    private final Object userId;
+    private final String deviceType;
+    private final String deviceId;
+    /**
+     * 过期时间
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private final Date   expiredTime;
+
+    /**
+     * 颁布时间
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private final Date issueTime;
 }

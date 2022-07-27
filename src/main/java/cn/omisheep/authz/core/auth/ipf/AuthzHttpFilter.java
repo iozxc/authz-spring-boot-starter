@@ -26,11 +26,9 @@ import static cn.omisheep.authz.core.util.Utils.isIgnoreSuffix;
 @SuppressWarnings("all")
 public class AuthzHttpFilter extends OncePerRequestFilter {
 
-    private final Httpd   httpd;
     private final boolean isDashboard;
 
-    public AuthzHttpFilter(Httpd httpd, boolean isDashboard) {
-        this.httpd       = httpd;
+    public AuthzHttpFilter( boolean isDashboard) {
         this.isDashboard = isDashboard;
     }
 
@@ -54,7 +52,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
 
         HttpUtils.request.set(request);
 
-        if (isIgnoreSuffix(uri, httpd.getIgnoreSuffix())
+        if (isIgnoreSuffix(uri, Httpd.getIgnoreSuffix())
                 || (isDashboard && (servletPath.equals("/authz-dashboard-favicon.ico") ||servletPath.startsWith("/authz-api") || servletPath.startsWith("/authz-dashboard") || servletPath.startsWith("authz.html")))) {
             HttpMeta httpMeta = new HttpMeta(
                     request,
@@ -67,7 +65,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
             return;
         }
 
-        String api = httpd.getPattern(method, servletPath);
+        String api = Httpd.getPattern(method, servletPath);
         HttpMeta httpMeta = new HttpMeta(
                 request, ip, uri,
                 api == null ? servletPath : api, method, new Date());

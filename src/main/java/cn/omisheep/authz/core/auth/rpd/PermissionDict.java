@@ -1,20 +1,33 @@
 package cn.omisheep.authz.core.auth.rpd;
 
+import cn.omisheep.authz.annotation.*;
+import cn.omisheep.authz.core.AuthzProperties;
+import cn.omisheep.authz.core.auth.PermLibrary;
+import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.config.AuInit;
-import cn.omisheep.authz.core.msg.AuthzModifiable;
+import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
+import cn.omisheep.authz.core.util.RedisUtils;
+import cn.omisheep.authz.core.util.ValueMatcher;
 import cn.omisheep.authz.support.util.IPRange;
 import cn.omisheep.authz.support.util.IPRangeMeta;
+import cn.omisheep.commons.util.Async;
 import cn.omisheep.web.entity.Result;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.base.Objects;
 import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController;
+import org.springframework.context.ApplicationContext;
+import org.springframework.core.MethodParameter;
+import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -24,106 +37,77 @@ import java.util.stream.Collectors;
 
 import static cn.omisheep.authz.core.auth.rpd.ParamMetadata.ParamType.PATH_VARIABLE;
 import static cn.omisheep.authz.core.auth.rpd.ParamMetadata.ParamType.REQUEST_PARAM;
+import static cn.omisheep.authz.core.util.MetaUtils.*;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-@Slf4j
-public class PermissionDict implements AuthzModifiable {
+public class PermissionDict {
 
-    private static PermissionDict SELF;
+    private static final Map<String, List<Map<String, String>>> _controllerMetadata = new HashMap<>();
 
-    public static PermissionDict self() {
-        return SELF;
-    }
+    private static final Map<String, Map<String, PermRolesMeta>> _authzMetadata = new HashMap<>(); // api权限和api的参数权限
 
-    private static Set<IPRange> globalAllow;
+    private static final Map<String, Set<String>> _certificatedMetadata = new HashMap<>(); // certificatedMetadata 哪些接口需要登录-若有role和perms，则同同理
 
-    private static Set<IPRange> globalDeny;
+    private static final Map<String, ArgsMeta> _argsMetadata = new HashMap<>(); // args
 
-    @Setter
-    private static boolean supportNative;
+    private static final Map<String, List<DataPermMeta>> _dataPermMetadata = new HashMap<>(); // 数据行权限
 
-    private static Map<String, List<Map<String, String>>> controllerMetadata;
+    private static final Map<String, Map<String, FieldData>> _fieldMetadata = new HashMap<>(); // 数据列权限
 
-    private static Map<String, Map<String, PermRolesMeta>> authzMetadata; // api权限和api的参数权限
+    private static final Map<String, Map<String, IPRangeMeta>> _ipRangeMeta = new HashMap<>();
 
-    private static Map<String, Set<String>> certificatedMetadata; // certificatedMetadata 哪些接口需要登录-若有role和perms，则同同理
+    private static final Map<String, Map<String, String>> _authzResourcesNameAndTemplate = new HashMap<>();
 
-    private static Map<String, ArgsMeta> argsMetadata; // args
+    private static final Map<String, Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>>> _rawMap = new HashMap<>();
 
-    private static Map<String, List<DataPermMeta>> dataPermMetadata; // 数据行权限
+    private static boolean _supportNative;
 
-    private static Map<String, Map<String, FieldData>> fieldMetadata; // 数据列权限
+    private static final Set<IPRange> _globalAllow = new HashSet<>();
 
-    private static Map<String, Map<String, IPRangeMeta>> ipRangeMeta;
+    private static final Set<IPRange> _globalDeny = new HashSet<>();
 
-    private static final Map<String, Map<String, String>> authzResourcesNameAndTemplate = new HashMap<>();
+    // ----------------------------------------- unModify ----------------------------------------- //
 
-    // String String ParamType String Class
-    // method api ParamType paramName paramClass
     @Getter
-    private static final Map<String, Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>>> rawMap = new HashMap<>();
+    private static final Map<String, Map<String, PermRolesMeta>>                                       rolePermission           = Collections.unmodifiableMap(
+            _authzMetadata);
+    @Getter
+    private static final Map<String, Map<String, String>>                                              resourcesNameAndTemplate = Collections.unmodifiableMap(
+            _authzResourcesNameAndTemplate);
+    @Getter
+    private static final Map<String, List<DataPermMeta>>                                               dataPermission           = Collections.unmodifiableMap(
+            _dataPermMetadata);
+    @Getter
+    private static final Map<String, Map<String, FieldData>>                                           fieldsData               = Collections.unmodifiableMap(
+            _fieldMetadata);
+    @Getter
+    private static final Map<String, ArgsMeta>                                                         args                     = Collections.unmodifiableMap(
+            _argsMetadata);
+    @Getter
+    private static final Map<String, Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>>> rawParamMap              =
+            Collections.unmodifiableMap(_rawMap);
+    @Getter
+    private static final Map<String, Map<String, IPRangeMeta>>                                         iPRange                  = Collections.unmodifiableMap(
+            _ipRangeMeta);
+    @Getter
+    private static final Map<String, Set<String>>                                                      certificatedMetadata     = Collections.unmodifiableMap(
+            _certificatedMetadata);
+    @Getter
+    private static final Set<IPRange>                                                                  globalAllow              = Collections.unmodifiableSet(
+            _globalAllow);
+    @Getter
+    private static final Set<IPRange>                                                                  globalDeny               = Collections.unmodifiableSet(
+            _globalDeny);
+    @Getter
+    private static final Map<String, List<Map<String, String>>>                                        controllerMetadata       = Collections.unmodifiableMap(
+            _controllerMetadata);
 
-    // ----------------------------------------- json ----------------------------------------- //
-
-    private static       Map<String, Map<String, PermRolesMeta>>                                       m1;
-    private static       Map<String, Map<String, String>>                                              m2;
-    private static       Map<String, List<DataPermMeta>>                                               m3;
-    private static       Map<String, Map<String, FieldData>>                                           m4;
-    private static       Map<String, ArgsMeta>                                                         m5;
-    private static final Map<String, Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>>> m6 =
-            Collections.unmodifiableMap(rawMap);
-    private static       Map<String, Map<String, IPRangeMeta>>                                         m7;
-    private static       Map<String, Set<String>>                                                      m8;
-    private static       Set<IPRange>                                                                  m9;
-    private static       Set<IPRange>                                                                  m10;
-    private static       Map<String, List<Map<String, String>>>                                        m11;
-
-    public boolean isSupportNative() {
-        return PermissionDict.supportNative;
+    public static boolean isSupportNative() {
+        return PermissionDict._supportNative;
     }
-
-    public Map<String, Map<String, PermRolesMeta>> getRolePermission() {
-        return m1;
-    }
-
-    public Map<String, Map<String, String>> getResourcesNameAndTemplate() {
-        return m2;
-    }
-
-    public Map<String, List<DataPermMeta>> getDataPermission() {
-        return m3;
-    }
-
-    public Map<String, Map<String, FieldData>> getFieldsData() {
-        return m4;
-    }
-
-    public Map<String, ArgsMeta> getArgs() {
-        return m5;
-    }
-
-    public Map<String, Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>>> getRawParamMap() {
-        return m6;
-    }
-
-    public Map<String, Map<String, IPRangeMeta>> getIPRange() {
-        return m7;
-    }
-
-    public Map<String, Set<String>> getCertificatedMetadata() {
-        return m8;
-    }
-
-    public Set<IPRange> getGlobalAllow() {
-        return m9;
-    }
-
-    public Set<IPRange> getGlobalDeny()                                   {return m10;}
-
-    public Map<String, List<Map<String, String>>> getControllerMetadata() {return m11;}
 
     @Getter
     public static class ArgsMeta {
@@ -181,7 +165,7 @@ public class PermissionDict implements AuthzModifiable {
     // ----------------------------------------- func ----------------------------------------- //
 
     @Nullable
-    public Object modify(@NonNull AuthzModifier authzModifier) {
+    public static Object modify(@NonNull AuthzModifier authzModifier) {
         if (authzModifier.getTarget() == null) {
             return modifyParam(authzModifier);
         }
@@ -209,13 +193,13 @@ public class PermissionDict implements AuthzModifiable {
     }
 
     public static List<Class<?>> argType(String argsName) {
-        ArgsMeta meta = argsMetadata.get(argsName);
+        ArgsMeta meta = _argsMetadata.get(argsName);
         if (meta == null) return null;
         return meta.parameterList;
     }
 
     public static Object argsHandle(String argName, Object... otherArgs) {
-        ArgsMeta meta = argsMetadata.get(argName);
+        ArgsMeta meta = _argsMetadata.get(argName);
         if (meta == null) {
             LogUtils.error("arg {} is null", argName);
             return null;
@@ -230,13 +214,14 @@ public class PermissionDict implements AuthzModifiable {
                 } else {
                     int modifiers = meta.type.getModifiers();
                     if (Modifier.isAbstract(modifiers) || Modifier.isInterface(modifiers)) {
-                        log.error("{} bean 不存在 且不能实例化 ， 或者参数个数、类型不正确", meta.type);
+                        LogUtils.error("{} bean 不存在 且不能实例化 ， 或者参数个数、类型不正确", meta.type);
                         return null;
                     }
                     return meta.method.invoke(meta.type.newInstance(), otherArgs);
                 }
             } catch (Exception ex) {
-                log.error("{} 构造函数异常", meta.type);
+                LogUtils.error("{} 构造函数异常", meta.type);
+                LogUtils.error(e);
                 return null;
             }
         }
@@ -250,7 +235,9 @@ public class PermissionDict implements AuthzModifiable {
             for (Method method : clz.getMethods()) {
                 String name = method.getName();
                 if ((name.startsWith("get") || name.startsWith("is"))
-                        && Modifier.isPublic(method.getModifiers()) && !Modifier.isStatic(method.getModifiers()) && !Modifier.isAbstract(method.getModifiers()) && !Modifier.isNative(method.getModifiers()) && !Modifier.isFinal(method.getModifiers())) {
+                        && Modifier.isPublic(method.getModifiers()) && !Modifier.isStatic(
+                        method.getModifiers()) && !Modifier.isAbstract(method.getModifiers()) && !Modifier.isNative(
+                        method.getModifiers()) && !Modifier.isFinal(method.getModifiers())) {
                     String field;
                     if (name.startsWith("get")) {
                         field = name.substring(3, 4).toLowerCase(Locale.ROOT) + name.substring(4);
@@ -266,48 +253,53 @@ public class PermissionDict implements AuthzModifiable {
         return typeTemplate;
     }
 
-    private final ReentrantLock lock = new ReentrantLock();
+    private final static ReentrantLock lock = new ReentrantLock();
 
-    public Object modifyAPI(AuthzModifier authzModifier) {
+    public static Object modifyAPI(AuthzModifier authzModifier) {
         lock.lock();
         try {
             switch (authzModifier.getOperate()) {
                 case ADD: {
-                    Map<String, PermRolesMeta> target = authzMetadata.get(authzModifier.getApi());
+                    Map<String, PermRolesMeta> target = _authzMetadata.get(authzModifier.getApi());
                     PermRolesMeta              build  = authzModifier.build();
                     target.put(authzModifier.getMethod(), build);
-                    if (build.non()) certificatedMetadata.get(authzModifier.getApi()).remove(authzModifier.getMethod());
-                    else certificatedMetadata.get(authzModifier.getApi()).add(authzModifier.getMethod());
+                    if (build.non()) _certificatedMetadata.get(authzModifier.getApi()).remove(
+                            authzModifier.getMethod());
+                    else _certificatedMetadata.get(authzModifier.getApi()).add(authzModifier.getMethod());
                     return Result.SUCCESS;
                 }
                 case MODIFY:
                 case UPDATE: {
-                    authzMetadata.get(authzModifier.getApi())
+                    _authzMetadata.get(authzModifier.getApi())
                             .get(authzModifier.getMethod())
                             .merge(authzModifier.build());
-                    if (authzMetadata.get(authzModifier.getApi()).get(authzModifier.getMethod()).non()) {
-                        certificatedMetadata.get(authzModifier.getApi()).remove(authzModifier.getMethod());
+                    if (_authzMetadata.get(authzModifier.getApi()).get(authzModifier.getMethod()).non()) {
+                        _certificatedMetadata.get(authzModifier.getApi()).remove(authzModifier.getMethod());
                     } else {
-                        certificatedMetadata.get(authzModifier.getApi()).add(authzModifier.getMethod());
+                        _certificatedMetadata.get(authzModifier.getApi()).add(authzModifier.getMethod());
                     }
                     return Result.SUCCESS;
                 }
                 case DELETE:
                 case DEL: {
-                    authzMetadata.get(authzModifier.getApi())
+                    _authzMetadata.get(authzModifier.getApi())
                             .get(authzModifier.getMethod()).removeApi();
-                    certificatedMetadata.get(authzModifier.getApi()).remove(authzModifier.getMethod());
+                    _certificatedMetadata.get(authzModifier.getApi()).remove(authzModifier.getMethod());
                     return Result.SUCCESS;
                 }
                 case GET:
                 case READ:
-                    if (authzModifier.getApi() == null && authzModifier.getMethod() == null) return m1;
+                    if (authzModifier.getApi() == null && authzModifier.getMethod() == null) return rolePermission;
                     if (authzModifier.getApi() == null)
-                        return m1.values().stream().filter(stringPermRolesMetaMap -> stringPermRolesMetaMap.containsKey(authzModifier.getMethod())).map(stringPermRolesMetaMap -> stringPermRolesMetaMap.get(authzModifier.getMethod())).collect(Collectors.toList());
+                        return rolePermission.values().stream().filter(
+                                stringPermRolesMetaMap -> stringPermRolesMetaMap.containsKey(
+                                        authzModifier.getMethod())).map(
+                                stringPermRolesMetaMap -> stringPermRolesMetaMap.get(
+                                        authzModifier.getMethod())).collect(Collectors.toList());
                     if (authzModifier.getMethod() == null) {
-                        return m1.get(authzModifier.getApi());
+                        return rolePermission.get(authzModifier.getApi());
                     }
-                    return m1.get(authzModifier.getApi()).get(authzModifier.getMethod());
+                    return rolePermission.get(authzModifier.getApi()).get(authzModifier.getMethod());
                 default:
                     return Result.FAIL;
             }
@@ -319,10 +311,10 @@ public class PermissionDict implements AuthzModifiable {
     }
 
     @SuppressWarnings("all")
-    public Object modifyParam(AuthzModifier authzModifier) {
+    public static Object modifyParam(AuthzModifier authzModifier) {
         lock.lock();
         try {
-            PermRolesMeta        meta   = authzMetadata.get(authzModifier.getApi()).get(authzModifier.getMethod());
+            PermRolesMeta        meta   = _authzMetadata.get(authzModifier.getApi()).get(authzModifier.getMethod());
             AuthzModifier.Target target = authzModifier.getTarget();
 
             if (target == null &&
@@ -332,8 +324,10 @@ public class PermissionDict implements AuthzModifiable {
                 HashMap<Object, Object>    map = new HashMap<>();
                 Map<String, ParamMetadata> m1  = meta.getParamPermissionsMetadata().get(PATH_VARIABLE);
                 Map<String, ParamMetadata> m2  = meta.getParamPermissionsMetadata().get(REQUEST_PARAM);
-                if (m1 != null && m1.containsKey(authzModifier.getValue())) map.put(PATH_VARIABLE.getVal(), m1.get(authzModifier.getValue()));
-                if (m2 != null && m2.containsKey(authzModifier.getValue())) map.put(REQUEST_PARAM.getVal(), m2.get(authzModifier.getValue()));
+                if (m1 != null && m1.containsKey(authzModifier.getValue())) map.put(PATH_VARIABLE.getVal(),
+                                                                                    m1.get(authzModifier.getValue()));
+                if (m2 != null && m2.containsKey(authzModifier.getValue())) map.put(REQUEST_PARAM.getVal(),
+                                                                                    m2.get(authzModifier.getValue()));
                 return map;
             }
 
@@ -419,20 +413,21 @@ public class PermissionDict implements AuthzModifiable {
         }
     }
 
-    private Object[] getParamMetaList(PermRolesMeta meta, AuthzModifier authzModifier) {
+    private static Object[] getParamMetaList(PermRolesMeta meta, AuthzModifier authzModifier) {
         boolean       isAdd = authzModifier.getOperate() == AuthzModifier.Operate.ADD;
         ParamMetadata paramMetadata;
         if (meta == null) {
             if (isAdd) {
 
-                Map<ParamMetadata.ParamType, Map<String, Class<?>>> paramTypeMapMap = rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod());
+                Map<ParamMetadata.ParamType, Map<String, Class<?>>> paramTypeMapMap = _rawMap.get(
+                        authzModifier.getApi()).get(authzModifier.getMethod());
 
                 switch (authzModifier.getTarget().i) {
                     case 2:
                     case 3:
                         Class<?> aClass1 = paramTypeMapMap.get(PATH_VARIABLE).get(authzModifier.getValue());
                         if (aClass1 != null) {
-                            meta = authzMetadata.computeIfAbsent(authzModifier.getApi(), r -> new HashMap<>())
+                            meta = _authzMetadata.computeIfAbsent(authzModifier.getApi(), r -> new HashMap<>())
                                     .computeIfAbsent(authzModifier.getMethod(), r -> new PermRolesMeta());
                             ParamMetadata pmd = new ParamMetadata();
                             meta.put(PATH_VARIABLE,
@@ -446,7 +441,7 @@ public class PermissionDict implements AuthzModifiable {
                     case 5:
                         Class<?> aClass2 = paramTypeMapMap.get(REQUEST_PARAM).get(authzModifier.getValue());
                         if (aClass2 != null) {
-                            meta = authzMetadata.computeIfAbsent(authzModifier.getApi(), r -> new HashMap<>())
+                            meta = _authzMetadata.computeIfAbsent(authzModifier.getApi(), r -> new HashMap<>())
                                     .computeIfAbsent(authzModifier.getMethod(), r -> new PermRolesMeta());
                             ParamMetadata pmd = new ParamMetadata();
                             meta.put(REQUEST_PARAM,
@@ -467,7 +462,9 @@ public class PermissionDict implements AuthzModifiable {
             case 2:
                 paramMetadata = meta.getParamPermissionsMetadata().get(PATH_VARIABLE)
                         .computeIfAbsent(authzModifier.getValue(),
-                                         r -> new ParamMetadata().setParamType(rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod()).get(PATH_VARIABLE).get(authzModifier.getValue())));
+                                         r -> new ParamMetadata().setParamType(
+                                                 _rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod()).get(
+                                                         PATH_VARIABLE).get(authzModifier.getValue())));
                 if (paramMetadata != null) {
                     List<PermRolesMeta.Meta> rolesMetaList = paramMetadata.getRolesMetaList();
                     if (rolesMetaList == null && isAdd) {
@@ -477,7 +474,8 @@ public class PermissionDict implements AuthzModifiable {
                     return new Object[]{paramMetadata, paramMetadata.getRolesMetaList()};
                 } else {
                     if (isAdd) {
-                        paramMetadata = meta.getParamPermissionsMetadata().get(PATH_VARIABLE).computeIfAbsent(authzModifier.getValue(), r -> new ParamMetadata());
+                        paramMetadata = meta.getParamPermissionsMetadata().get(PATH_VARIABLE).computeIfAbsent(
+                                authzModifier.getValue(), r -> new ParamMetadata());
                         paramMetadata.setRolesMetaList(new ArrayList<>());
                         return new Object[]{paramMetadata, paramMetadata.getRolesMetaList()};
                     } else {
@@ -485,8 +483,11 @@ public class PermissionDict implements AuthzModifiable {
                     }
                 }
             case 3:
-                paramMetadata = meta.getParamPermissionsMetadata().get(PATH_VARIABLE).computeIfAbsent(authzModifier.getValue(),
-                                                                                                      r -> new ParamMetadata().setParamType(rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod()).get(PATH_VARIABLE).get(authzModifier.getValue())));
+                paramMetadata = meta.getParamPermissionsMetadata().get(PATH_VARIABLE).computeIfAbsent(
+                        authzModifier.getValue(),
+                        r -> new ParamMetadata().setParamType(
+                                _rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod()).get(
+                                        PATH_VARIABLE).get(authzModifier.getValue())));
                 if (paramMetadata != null) {
                     List<PermRolesMeta.Meta> permissionsMetaList = paramMetadata.getPermissionsMetaList();
                     if (permissionsMetaList == null && isAdd) {
@@ -496,7 +497,8 @@ public class PermissionDict implements AuthzModifiable {
                     return new Object[]{paramMetadata, paramMetadata.getPermissionsMetaList()};
                 } else {
                     if (isAdd) {
-                        paramMetadata = meta.getParamPermissionsMetadata().get(PATH_VARIABLE).computeIfAbsent(authzModifier.getValue(), r -> new ParamMetadata());
+                        paramMetadata = meta.getParamPermissionsMetadata().get(PATH_VARIABLE).computeIfAbsent(
+                                authzModifier.getValue(), r -> new ParamMetadata());
                         paramMetadata.setPermissionsMetaList(new ArrayList<>());
                         return new Object[]{paramMetadata, paramMetadata.getPermissionsMetaList()};
 
@@ -505,8 +507,11 @@ public class PermissionDict implements AuthzModifiable {
                     }
                 }
             case 4:
-                paramMetadata = meta.getParamPermissionsMetadata().get(REQUEST_PARAM).computeIfAbsent(authzModifier.getValue(),
-                                                                                                      r -> new ParamMetadata().setParamType(rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod()).get(REQUEST_PARAM).get(authzModifier.getValue())));
+                paramMetadata = meta.getParamPermissionsMetadata().get(REQUEST_PARAM).computeIfAbsent(
+                        authzModifier.getValue(),
+                        r -> new ParamMetadata().setParamType(
+                                _rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod()).get(
+                                        REQUEST_PARAM).get(authzModifier.getValue())));
                 if (paramMetadata != null) {
                     List<PermRolesMeta.Meta> rolesMetaList = paramMetadata.getRolesMetaList();
                     if (rolesMetaList == null && isAdd) {
@@ -516,7 +521,8 @@ public class PermissionDict implements AuthzModifiable {
                     return new Object[]{paramMetadata, paramMetadata.getRolesMetaList()};
                 } else {
                     if (isAdd) {
-                        paramMetadata = meta.getParamPermissionsMetadata().get(REQUEST_PARAM).computeIfAbsent(authzModifier.getValue(), r -> new ParamMetadata());
+                        paramMetadata = meta.getParamPermissionsMetadata().get(REQUEST_PARAM).computeIfAbsent(
+                                authzModifier.getValue(), r -> new ParamMetadata());
                         paramMetadata.setRolesMetaList(new ArrayList<>());
                         return new Object[]{paramMetadata, paramMetadata.getRolesMetaList()};
                     } else {
@@ -524,8 +530,11 @@ public class PermissionDict implements AuthzModifiable {
                     }
                 }
             case 5:
-                paramMetadata = meta.getParamPermissionsMetadata().get(REQUEST_PARAM).computeIfAbsent(authzModifier.getValue(),
-                                                                                                      r -> new ParamMetadata().setParamType(rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod()).get(REQUEST_PARAM).get(authzModifier.getValue())));
+                paramMetadata = meta.getParamPermissionsMetadata().get(REQUEST_PARAM).computeIfAbsent(
+                        authzModifier.getValue(),
+                        r -> new ParamMetadata().setParamType(
+                                _rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod()).get(
+                                        REQUEST_PARAM).get(authzModifier.getValue())));
                 if (paramMetadata != null) {
                     List<PermRolesMeta.Meta> permissionsMetaList = paramMetadata.getPermissionsMetaList();
                     if (permissionsMetaList == null && isAdd) {
@@ -536,7 +545,8 @@ public class PermissionDict implements AuthzModifiable {
 
                 } else {
                     if (isAdd) {
-                        paramMetadata = meta.getParamPermissionsMetadata().get(REQUEST_PARAM).computeIfAbsent(authzModifier.getValue(), r -> new ParamMetadata());
+                        paramMetadata = meta.getParamPermissionsMetadata().get(REQUEST_PARAM).computeIfAbsent(
+                                authzModifier.getValue(), r -> new ParamMetadata());
                         paramMetadata.setPermissionsMetaList(new ArrayList<>());
                         return new Object[]{paramMetadata, paramMetadata.getPermissionsMetaList()};
 
@@ -548,19 +558,19 @@ public class PermissionDict implements AuthzModifiable {
         return null;
     }
 
-    public Object modifyData(AuthzModifier authzModifier) {
+    public static Object modifyData(AuthzModifier authzModifier) {
         try {
             lock.lock();
             String className = authzModifier.getClassName();
             if (className == null) {
                 if (authzModifier.getTarget() == AuthzModifier.Target.DATA_COL) {
-                    return fieldMetadata;
+                    return fieldsData;
                 } else if (authzModifier.getTarget() == AuthzModifier.Target.DATA_ROW) {
-                    return dataPermMetadata;
+                    return dataPermission;
                 }
                 return Result.FAIL;
             }
-            if (authzResourcesNameAndTemplate.get(className) == null) return Result.FAIL;
+            if (_authzResourcesNameAndTemplate.get(className) == null) return Result.FAIL;
             if (authzModifier.getTarget() == AuthzModifier.Target.DATA_ROW) {
                 switch (authzModifier.getOperate()) {
                     case ADD:
@@ -575,13 +585,13 @@ public class PermissionDict implements AuthzModifiable {
                         dataPermMeta.setRoles(build.role);
                         dataPermMeta.setPermissions(build.permissions);
                         dataPermMeta.setArgsMap(authzModifier.getArgsMap());
-                        dataPermMetadata.computeIfAbsent(className, r -> new ArrayList<>()).add(dataPermMeta);
+                        _dataPermMetadata.computeIfAbsent(className, r -> new ArrayList<>()).add(dataPermMeta);
                         break;
                     case MODIFY:
                     case UPDATE:
                         if (authzModifier.getIndex() == null) return Result.FAIL;
-                        if (dataPermMetadata.get(className) == null) return Result.FAIL;
-                        DataPermMeta old_data_mata = dataPermMetadata.get(className).get(authzModifier.getIndex());
+                        if (_dataPermMetadata.get(className) == null) return Result.FAIL;
+                        DataPermMeta old_data_mata = _dataPermMetadata.get(className).get(authzModifier.getIndex());
                         DataPermMeta new_data_mata = null;
 
                         if (authzModifier.getCondition() != null) {
@@ -608,26 +618,28 @@ public class PermissionDict implements AuthzModifiable {
                     case DEL:
                     case DELETE:
                         Integer index = authzModifier.getIndex();
-                        if (dataPermMetadata.get(className) == null) return Result.FAIL;
-                        if (index == null) dataPermMetadata.get(className).clear();
-                        else dataPermMetadata.get(className).remove(index.intValue());
+                        if (_dataPermMetadata.get(className) == null) return Result.FAIL;
+                        if (index == null) _dataPermMetadata.get(className).clear();
+                        else _dataPermMetadata.get(className).remove(index.intValue());
                         break;
                     case GET:
                     case READ:
-                        if (dataPermMetadata.get(className) == null) return dataPermMetadata;
-                        if (authzModifier.getIndex() == null) return dataPermMetadata.get(className);
-                        else return dataPermMetadata.get(className).get(authzModifier.getIndex());
+                        if (_dataPermMetadata.get(className) == null) return dataPermission;
+                        if (authzModifier.getIndex() == null) return dataPermission.get(className);
+                        else return dataPermission.get(className).get(authzModifier.getIndex());
                     default:
                         return Result.FAIL;
                 }
-                return dataPermMetadata.get(className);
+                return dataPermission.get(className);
             } else {
                 switch (authzModifier.getOperate()) {
                     case ADD: {
                         if (authzModifier.getFieldName() == null) return Result.FAIL;
                         PermRolesMeta build     = authzModifier.build();
                         FieldData     fieldData = new FieldData(className, build.role, build.permissions);
-                        fieldMetadata.computeIfAbsent(className, r -> new HashMap<>()).put(authzModifier.getFieldName(), fieldData);
+                        _fieldMetadata.computeIfAbsent(className, r -> new HashMap<>()).put(
+                                authzModifier.getFieldName(),
+                                fieldData);
                     }
 
                     case UPDATE:
@@ -635,22 +647,24 @@ public class PermissionDict implements AuthzModifiable {
                         if (authzModifier.getFieldName() == null) return Result.FAIL;
                         PermRolesMeta build     = authzModifier.build();
                         FieldData     fieldData = new FieldData(className, build.role, build.permissions);
-                        FieldData     fd        = fieldMetadata.computeIfAbsent(className, r -> new HashMap<>()).computeIfAbsent(authzModifier.getFieldName(), r -> new FieldData(className, null, null));
+                        FieldData fd = _fieldMetadata.computeIfAbsent(className,
+                                                                      r -> new HashMap<>()).computeIfAbsent(
+                                authzModifier.getFieldName(), r -> new FieldData(className, null, null));
                         if (fieldData.getPermissions() != null) fd.setPermissions(fieldData.getPermissions());
                         if (fieldData.getRoles() != null) fd.setRoles(fieldData.getRoles());
                     }
 
                     case READ:
                     case GET: {
-                        return fieldMetadata.get(authzModifier.getFieldName());
+                        return fieldsData.get(authzModifier.getFieldName());
                     }
 
                     case DELETE:
                     case DEL: {
                         if (authzModifier.getFieldName() == null) {
-                            fieldMetadata.remove(className);
+                            _fieldMetadata.remove(className);
                         } else {
-                            fieldMetadata.get(className).remove(authzModifier.getFieldName());
+                            _fieldMetadata.get(className).remove(authzModifier.getFieldName());
                         }
                         return Result.SUCCESS;
                     }
@@ -666,112 +680,6 @@ public class PermissionDict implements AuthzModifiable {
 
     // ----------------------------------------- init ----------------------------------------- //
 
-    public static void init(PermissionDict permissionDict) {
-        if (SELF != null) {
-            AuInit.log.error("permissionDict 已经初始化");
-            return;
-        }
-        SELF = permissionDict;
-    }
-
-    public static void initAuthzMetadata(Map<String, Map<String, PermRolesMeta>> authzMetadata) {
-        if (PermissionDict.authzMetadata != null) {
-            AuInit.log.error("authzMetadata 已经初始化");
-            return;
-        }
-        PermissionDict.authzMetadata = authzMetadata;
-
-        m1 = Collections.unmodifiableMap(authzMetadata);
-    }
-
-    public static void addAuthzResourcesNames(Set<String> authzResourcesNames) {
-        if (authzResourcesNames == null) return;
-        Set<String> names = new HashSet<>();
-        for (String authzResourcesName : authzResourcesNames) {
-            try {
-                Map<String, String> fieldMap = PermissionDict.authzResourcesNameAndTemplate.computeIfAbsent(authzResourcesName, r -> new HashMap<>());
-                fieldMap.putAll(parseTypeForTemplate(authzResourcesName));
-                names.add(authzResourcesName);
-            } catch (Exception ignored) {
-            }
-        }
-        m2 = Collections.unmodifiableMap(authzResourcesNameAndTemplate);
-        AuInit.log.info("authz resources add success ⬇: \n{}", names);
-    }
-
-    public static void initDataPerm(Map<String, List<DataPermMeta>> dataPermMetadata) {
-        if (PermissionDict.dataPermMetadata != null) {
-            AuInit.log.error("dataPermMetadata 已经初始化");
-            return;
-        }
-        PermissionDict.dataPermMetadata = dataPermMetadata;
-        m3                              = Collections.unmodifiableMap(dataPermMetadata);
-    }
-
-    public static void initFieldMetadata(Map<String, Map<String, FieldData>> fieldMetadata) {
-        if (PermissionDict.fieldMetadata != null) {
-            AuInit.log.error("fieldMetadata 已经初始化");
-            return;
-        }
-        PermissionDict.fieldMetadata = fieldMetadata;
-        m4                           = Collections.unmodifiableMap(fieldMetadata);
-    }
-
-    public static void initArgs(Map<String, ArgsMeta> argsMetadata) {
-        if (PermissionDict.argsMetadata != null) {
-            AuInit.log.error("argsMetadata 已经初始化");
-            return;
-        }
-        PermissionDict.argsMetadata = argsMetadata;
-        m5                          = Collections.unmodifiableMap(argsMetadata);
-    }
-
-    public static void initIPRangeMeta(Map<String, Map<String, IPRangeMeta>> ipRangeMeta) {
-        if (PermissionDict.ipRangeMeta != null) {
-            AuInit.log.error("ipRangeMeta 已经初始化");
-            return;
-        }
-        PermissionDict.ipRangeMeta = ipRangeMeta;
-
-        m7 = Collections.unmodifiableMap(ipRangeMeta);
-    }
-
-    public static void initCertificatedMetadata(Map<String, Set<String>> certificatedMetadata) {
-        if (PermissionDict.certificatedMetadata != null) {
-            AuInit.log.error("certificatedMetadata 已经初始化");
-            return;
-        }
-        PermissionDict.certificatedMetadata = certificatedMetadata;
-        m8                                  = Collections.unmodifiableMap(certificatedMetadata);
-    }
-
-    public static void initGlobalAllow(Set<IPRange> allow) {
-        if (PermissionDict.globalAllow != null) {
-            AuInit.log.error("globalAllow 已经初始化");
-            return;
-        }
-        PermissionDict.globalAllow = allow;
-        m9                         = Collections.unmodifiableSet(globalAllow);
-    }
-
-    public static void initGlobalDeny(Set<IPRange> deny) {
-        if (PermissionDict.globalDeny != null) {
-            AuInit.log.error("globalDeny 已经初始化");
-            return;
-        }
-        PermissionDict.globalDeny = deny;
-        m10                       = Collections.unmodifiableSet(globalDeny);
-    }
-
-    public static void initControllerMetadata(Map<String, List<Map<String, String>>> controllerMetadata) {
-        if (PermissionDict.controllerMetadata != null) {
-            AuInit.log.error("controllerMetadata 已经初始化");
-            return;
-        }
-        PermissionDict.controllerMetadata = controllerMetadata;
-        m11                               = Collections.unmodifiableMap(controllerMetadata);
-    }
-
     public static void setPermSeparator(String permSeparator) {
         PermissionDict.permSeparator = permSeparator;
     }
@@ -780,6 +688,271 @@ public class PermissionDict implements AuthzModifiable {
 
     public static String getPermSeparator() {
         return permSeparator;
+    }
+
+    private static boolean isInit     = false;
+    private static boolean isInitArgs = false;
+
+    public static void initArgs(Set<String> authzResourcesNames,
+                                Map<String, Map<String, FieldData>> fieldMetadata,
+                                HashMap<String, List<DataPermMeta>> map,
+                                HashMap<String, PermissionDict.ArgsMeta> args) {
+        if (isInitArgs) {
+            AuInit.log.error("PermissionDict已初始化");
+        }
+        isInitArgs = true;
+        for (String authzResourcesName : authzResourcesNames) {
+            try {
+                Map<String, String> fieldMap = _authzResourcesNameAndTemplate.computeIfAbsent(authzResourcesName,
+                                                                                              r -> new HashMap<>());
+                fieldMap.putAll(parseTypeForTemplate(authzResourcesName));
+            } catch (Exception ignored) {
+            }
+        }
+        _fieldMetadata.putAll(fieldMetadata);
+        _dataPermMetadata.putAll(map);
+        _argsMetadata.putAll(args);
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static void init(AuthzProperties properties,
+                            ApplicationContext applicationContext,
+                            PermLibrary permLibrary,
+                            Cache cache,
+                            Map<RequestMappingInfo, HandlerMethod> mapRet) {
+        if (isInit) {
+            AuInit.log.error("PermissionDict已初始化");
+        }
+        isInit = true;
+
+        PermissionDict.setPermSeparator(Constants.COMMA);
+        Set<String>                toBeLoadedRoles = new HashSet<>();
+        Map<String, PermRolesMeta> pMap            = new HashMap<>();
+        Map<String, PermRolesMeta> rMap            = new HashMap<>();
+        Map<String, IPRangeMeta>   iMap            = new HashMap<>();
+        LinkedList<String>         cList           = new LinkedList<>();
+
+        applicationContext.getBeansWithAnnotation(Roles.class).forEach((key, value) -> {
+            String name  = getTypeName(value);
+            Roles  roles = getAnnoatation(value, Roles.class);
+            if (roles != null) {
+                cList.add(getTypeName(value));
+                rMap.put(name, generatePermRolesMeta(null, roles));
+            }
+        });
+
+        applicationContext.getBeansWithAnnotation(Perms.class).forEach((key, value) -> {
+            String name  = getTypeName(value);
+            Perms  perms = getAnnoatation(value, Perms.class);
+            if (perms != null) {
+                cList.add(getTypeName(value));
+                pMap.put(name, generatePermRolesMeta(perms, null));
+            }
+        });
+
+        applicationContext.getBeansWithAnnotation(Certificated.class).forEach((key, value) -> {
+            Certificated certificated = getAnnoatation(value, Certificated.class);
+            if (certificated != null) {
+                cList.add(getTypeName(value));
+            }
+        });
+
+        applicationContext.getBeansWithAnnotation(IPRangeLimit.class).forEach((key, value) -> {
+            IPRangeLimit ipRangeLimit = getAnnoatation(value, IPRangeLimit.class);
+            if (ipRangeLimit == null) return;
+            iMap.put(getTypeName(value), new IPRangeMeta().setAllow(ipRangeLimit.allow()).setDeny(ipRangeLimit.deny()));
+        });
+
+        mapRet.forEach((key, value) -> {
+            IPRangeMeta   iFc = iMap.get(value.getBeanType().getName());
+            PermRolesMeta pFc = pMap.get(value.getBeanType().getName());
+            PermRolesMeta rFc = rMap.get(value.getBeanType().getName());
+            PermRolesMeta permRolesMeta = generatePermRolesMeta(value.getMethodAnnotation(Perms.class),
+                                                                value.getMethodAnnotation(Roles.class));
+            IPRangeMeta ipRangeMeta = new IPRangeMeta();
+            List<String> mtds = key.getMethodsCondition().getMethods().stream().map(Enum::name).collect(
+                    Collectors.toList());
+            Set<String> patterns = getPatterns(key);
+
+            if (!value.getBeanType().equals(BasicErrorController.class)) {
+                List<Map<String, String>> clm = _controllerMetadata
+                        .computeIfAbsent(value.getBeanType().getSimpleName(), r -> new ArrayList<>());
+                patterns.forEach(p -> mtds.forEach(m -> {
+                    HashMap<String, String> map = new HashMap<>();
+                    map.put("method", m);
+                    map.put("path", p);
+                    clm.add(map);
+                }));
+            }
+
+            // 初始化Certificated
+            Certificated certificated = AnnotatedElementUtils.getMergedAnnotation(value.getMethod(),
+                                                                                  Certificated.class);
+            if (cList.contains(value.getBeanType().getTypeName()) || certificated != null) {
+                patterns.forEach(p -> _certificatedMetadata.computeIfAbsent(p, r -> new HashSet<>()).addAll(mtds));
+            }
+
+            // 初始化API权限
+            if (rFc != null) {
+                if (permRolesMeta == null) permRolesMeta = new PermRolesMeta();
+                if (rFc.getRequireRoles() != null) {
+                    if (permRolesMeta.getRequireRoles() != null) {
+                        permRolesMeta.getRequireRoles().addAll(rFc.getRequireRoles());
+                    } else {
+                        permRolesMeta.setRequireRoles(rFc.getRequireRoles());
+                    }
+                }
+                if (rFc.getExcludeRoles() != null) {
+                    if (permRolesMeta.getExcludeRoles() != null) {
+                        permRolesMeta.getExcludeRoles().addAll(rFc.getExcludeRoles());
+                    } else {
+                        permRolesMeta.setExcludeRoles(rFc.getExcludeRoles());
+                    }
+                }
+            }
+            if (pFc != null) {
+                if (permRolesMeta == null) permRolesMeta = new PermRolesMeta();
+                Set<Set<String>> requirePermissions = pFc.getRequirePermissions();
+                if (requirePermissions != null) {
+                    if (permRolesMeta.getRequirePermissions() != null) {
+                        permRolesMeta.getRequirePermissions().addAll(requirePermissions);
+                    } else {
+                        permRolesMeta.setRequirePermissions(requirePermissions);
+                    }
+                }
+                if (pFc.getExcludePermissions() != null) {
+                    Set<Set<String>> excludePermissions = pFc.getExcludePermissions();
+                    if (permRolesMeta.getExcludePermissions() != null) {
+                        permRolesMeta.getExcludePermissions().addAll(excludePermissions);
+                    } else {
+                        permRolesMeta.setExcludePermissions(excludePermissions);
+                    }
+                }
+            }
+            if (permRolesMeta != null) {
+                Set<Set<String>> requireRoles = permRolesMeta.getRequireRoles();
+                Set<Set<String>> excludeRoles = permRolesMeta.getExcludeRoles();
+                if (requireRoles != null) requireRoles.forEach(toBeLoadedRoles::addAll);
+                if (excludeRoles != null) excludeRoles.forEach(toBeLoadedRoles::addAll);
+
+                PermRolesMeta finalPermRolesMeta = permRolesMeta;
+                mtds.forEach(method -> patterns.forEach(
+                        patternValue -> _authzMetadata.computeIfAbsent(patternValue, r -> new HashMap<>())
+                                .put(method, finalPermRolesMeta)
+                ));
+            }
+
+            // 初始化IPRange权限
+            if (iFc != null) {
+                ipRangeMeta.setAllow(iFc.getAllow());
+                ipRangeMeta.setDeny(iFc.getDeny());
+            }
+            IPRangeLimit ipRangeLimit = value.getMethodAnnotation(IPRangeLimit.class);
+            if (ipRangeLimit != null) {
+                ipRangeMeta.setAllow(ipRangeLimit.allow()).setDeny(ipRangeLimit.deny());
+                if (iFc != null) {
+                    ipRangeMeta.getAllow().addAll(iFc.getAllow());
+                    ipRangeMeta.getDeny().addAll(iFc.getDeny());
+                }
+            }
+            if (ipRangeMeta.getDeny() != null && !ipRangeMeta.getDeny().isEmpty() || ipRangeMeta.getAllow() != null && !ipRangeMeta.getAllow().isEmpty()) {
+                mtds.forEach(method -> patterns.forEach(
+                        patternValue -> _ipRangeMeta.computeIfAbsent(patternValue, r -> new HashMap<>()).put(
+                                method, ipRangeMeta)));
+            }
+
+            // ------------- 初始化参数权限 --------------- //
+            mtds.forEach(method -> patterns.forEach(patternValue -> {
+                Map<ParamMetadata.ParamType, Map<String, Class<?>>> rawParamTypeMapMap =
+                        _rawMap.computeIfAbsent(patternValue, r -> new HashMap<>())
+                                .computeIfAbsent(method, r -> new HashMap<>());
+                for (MethodParameter param : value.getMethodParameters()) {
+                    Class<?> paramType = param.getParameter().getType();
+                    if (ValueMatcher.checkType(paramType).isOther()) {
+                        continue;
+                    }
+
+                    RequestParam requestParam = param.getParameterAnnotation(RequestParam.class);
+                    PathVariable pathVariable = param.getParameterAnnotation(PathVariable.class);
+                    String       paramName    = param.getParameter().getName();
+
+                    ParamMetadata.ParamType type;
+                    if (pathVariable != null) {
+                        type = ParamMetadata.ParamType.PATH_VARIABLE;
+                        if (!pathVariable.name().equals("")) paramName = pathVariable.name();
+                    } else if (requestParam != null) {
+                        type = ParamMetadata.ParamType.REQUEST_PARAM;
+                        if (!requestParam.name().equals("")) paramName = requestParam.name();
+                    } else {
+                        continue;
+                    }
+
+                    Map<String, Class<?>> rawParamMap = rawParamTypeMapMap.computeIfAbsent(type,
+                                                                                           r -> new HashMap<>());
+                    rawParamMap.put(paramName, paramType);
+
+                    Roles          rolesByParam   = param.getParameterAnnotation(Roles.class);
+                    Perms          permsByParam   = param.getParameterAnnotation(Perms.class);
+                    BatchAuthority batchAuthority = param.getParameterAnnotation(BatchAuthority.class);
+
+                    if (rolesByParam != null || permsByParam != null || batchAuthority != null) {
+                        ArrayList<PermRolesMeta.Meta> rolesMetaList = new ArrayList<>();
+                        ArrayList<PermRolesMeta.Meta> permsMetaList = new ArrayList<>();
+                        PermRolesMeta.Meta            vr            = generateRolesMeta(rolesByParam);
+                        PermRolesMeta.Meta            vp            = generatePermMeta(permsByParam);
+                        if (vr != null) rolesMetaList.add(vr);
+                        if (vp != null) permsMetaList.add(vp);
+
+                        if (batchAuthority != null) {
+                            Roles[] rs = batchAuthority.roles();
+                            for (Roles r : rs) {
+                                PermRolesMeta.Meta v = generateRolesMeta(r);
+                                if (v != null) {
+                                    rolesMetaList.add(v);
+                                    if (v.getRequire() != null) v.getRequire().forEach(toBeLoadedRoles::addAll);
+                                    if (v.getExclude() != null) v.getExclude().forEach(toBeLoadedRoles::addAll);
+                                }
+                            }
+                            Perms[] ps = batchAuthority.perms();
+                            for (Perms p : ps) {
+                                PermRolesMeta.Meta v = generatePermMeta(p);
+                                if (v != null) permsMetaList.add(v);
+                            }
+                        }
+
+                        PermRolesMeta meta = _authzMetadata.computeIfAbsent(patternValue, r -> new HashMap<>())
+                                .computeIfAbsent(method, r -> new PermRolesMeta());
+                        meta.put(type, paramName,
+                                 new ParamMetadata(paramType, rolesMetaList, permsMetaList)
+                        );
+                    }
+
+                }
+            }));
+
+        });
+
+        _globalAllow.addAll(IPRangeMeta.parse(properties.getGlobalIpRange().getAllow()));
+        _globalDeny.addAll(IPRangeMeta.parse(properties.getGlobalIpRange().getDeny()));
+        _supportNative = properties.getGlobalIpRange().isSupportNative();
+
+        if (properties.getCache().isEnableRedis()) {
+            Async.run(() -> {
+                List<String> collect = new ArrayList<>(toBeLoadedRoles);
+                List<Set<String>> rolesPerms = RedisUtils.Obj.get(
+                        collect.stream()
+                                .map(role -> Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role)
+                                .collect(Collectors.toList())
+                );
+                Iterator<String>             iterator = collect.iterator();
+                HashMap<String, Set<String>> map      = new HashMap<>();
+                rolesPerms.forEach(perms -> map.put(iterator.next(), perms));
+                map.forEach((role, v) -> {
+                    Set<String> permissions = permLibrary.getPermissionsByRole(role);
+                    cache.setSneaky(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role, permissions, Cache.INFINITE);
+                });
+            });
+        }
     }
 
 }

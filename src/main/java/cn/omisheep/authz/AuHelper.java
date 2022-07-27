@@ -16,6 +16,7 @@ import cn.omisheep.authz.core.auth.ipf.Blacklist;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
+import cn.omisheep.authz.core.callback.CreateAuthorizationInfoCallback;
 import cn.omisheep.authz.core.callback.RateLimitCallback;
 import cn.omisheep.authz.core.codec.AuthzRSAManager;
 import cn.omisheep.authz.core.msg.AuthzModifier;
@@ -159,7 +160,7 @@ public class AuHelper {
 
     /**
      * <li>1.注册客户端 -> 返回客户端信息（客户端id，客户端name，客户端密钥，重定向url）</li>
-     * <li>2.客户端id+登录用户 -> 获得登录用户的授权码（客户端id和所需要的权限范围）</li>
+     * <li>2.客户端id+登录用户+权限范围 -> 获得登录用户的授权码</li>
      * <li>3.授权码 -> 利用授权码去获得TokenPair</li>
      *
      * @since 1.2.0
@@ -176,131 +177,151 @@ public class AuHelper {
          * @throws AuthorizationException 验证失败，客户端密码错误 或者 授权码失效(过期 或者 已使用)
          */
         @NonNull
-        public static TokenPair authorize(String clientId, String clientSecret,
-                                          String authorizationCode) throws AuthorizationException {
+        public static TokenPair authorize(@NonNull String clientId, @NonNull String clientSecret,
+                                          @NonNull String authorizationCode) throws AuthorizationException {
             return OpenAuthHelper.authorize(clientId, clientSecret, authorizationCode);
-        }
-
-        /**
-         * 指定(客户端, 授权范围-默认权限) -> 获得登录用户的授权码
-         * 获取授权码 <br>
-         *
-         * @param clientId 客户端id
-         * @return Authorization Code 授权码
-         * @throws AuthorizationException 授权失败
-         */
-        @NonNull
-        public static String createDefaultScopeAuthorizationCode(
-                @NonNull String clientId) throws AuthorizationException {
-            String deviceType;
-            try {
-                deviceType = getHttpMeta().getUserAgent();
-            } catch (ThreadWebEnvironmentException e) {
-                deviceType = "unknown";
-            }
-            return createAuthorizationCode(clientId, "DefaultScope", deviceType, null);
-        }
-
-        /**
-         * 指定(客户端, 授权范围-默认权限) & 登录设备 -> 获得登录用户的授权码
-         * 获取授权码 <br>
-         *
-         * @param clientId   客户端id
-         * @param deviceType 设备类型
-         * @return Authorization Code 授权码
-         * @throws AuthorizationException 授权失败
-         */
-        @NonNull
-        public static String createDefaultScopeAuthorizationCode(@NonNull String clientId,
-                                                                 @NonNull String deviceType) throws AuthorizationException {
-            return createAuthorizationCode(clientId, "DefaultScope", deviceType, null);
-        }
-
-        /**
-         * 指定(客户端, 授权范围-默认权限) & 登录设备 -> 获得登录用户的授权码
-         * 获取授权码 <br>
-         *
-         * @param clientId   客户端id
-         * @param deviceType 设备类型
-         * @param deviceId   设备id
-         * @return Authorization Code 授权码
-         * @throws AuthorizationException 授权失败
-         */
-        @NonNull
-        public static String createDefaultScopeAuthorizationCode(@NonNull String clientId, @NonNull String deviceType,
-                                                                 @Nullable String deviceId) throws AuthorizationException {
-            return createAuthorizationCode(clientId, "DefaultScope", deviceType, deviceId);
         }
 
         /**
          * 指定(客户端, 授权范围) & 登录设备 -> 获得登录用户的授权码
          * 获取授权码 <br>
+         * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
          *
-         * @param clientId 客户端id
-         * @param scope    授予的权限范围
+         * @param clientId    客户端id
+         * @param scope       授予的权限范围
+         * @param redirectUrl 重定向url
          * @return Authorization Code 授权码
          * @throws AuthorizationException 授权失败
          */
         @NonNull
         public static String createAuthorizationCode(@NonNull String clientId,
-                                                     @NonNull String scope) throws AuthorizationException {
+                                                     @NonNull String scope,
+                                                     @NonNull String redirectUrl) throws AuthorizationException {
             String deviceType;
             try {
                 deviceType = getHttpMeta().getUserAgent();
             } catch (ThreadWebEnvironmentException e) {
                 deviceType = "unknown";
             }
-            return createAuthorizationCode(clientId, scope, deviceType, null);
+            return createAuthorizationCode(clientId, scope, redirectUrl, deviceType, null);
         }
 
         /**
          * 指定(客户端, 授权范围) & 登录设备 -> 获得登录用户的授权码
          * 获取授权码 <br>
+         * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
          *
-         * @param clientId   客户端id
-         * @param scope      授予的权限范围
-         * @param deviceType 设备类型
+         * @param clientId    客户端id
+         * @param scope       授予的权限范围
+         * @param redirectUrl 重定向url
+         * @param deviceType  设备类型
          * @return Authorization Code 授权码
          * @throws AuthorizationException 授权失败
          */
         @NonNull
-        public static String createAuthorizationCode(@NonNull String clientId, @NonNull String scope,
+        public static String createAuthorizationCode(@NonNull String clientId,
+                                                     @NonNull String scope,
+                                                     @NonNull String redirectUrl,
                                                      @NonNull String deviceType) throws AuthorizationException {
-            return createAuthorizationCode(clientId, scope, deviceType, null);
+            return createAuthorizationCode(clientId, scope, redirectUrl, deviceType, null);
         }
 
         /**
          * 指定(客户端, 授权范围) & 登录设备 -> 获得登录用户的授权码
          * 获取授权码 <br>
+         * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
          *
-         * @param clientId   客户端id
-         * @param scope      授予的权限范围
-         * @param deviceType 设备类型
-         * @param deviceId   设备id
+         * @param clientId    客户端id
+         * @param scope       授予的权限范围
+         * @param redirectUrl 重定向url
+         * @param deviceType  设备类型
+         * @param deviceId    设备id
          * @return Authorization Code 授权码
          * @throws AuthorizationException 授权失败
          */
         @NonNull
-        public static String createAuthorizationCode(@NonNull String clientId, @NonNull String scope,
+        public static String createAuthorizationCode(@NonNull String clientId,
+                                                     @NonNull String scope,
+                                                     @NonNull String redirectUrl,
                                                      @NonNull String deviceType,
                                                      @Nullable String deviceId) throws AuthorizationException {
             if (isLogin() && agreeAuthorize(clientId)) {
-                return OpenAuthHelper.createAuthorizationCode(clientId, scope, getUserId(), deviceType, deviceId);
+                return OpenAuthHelper.createAuthorizationCode(clientId, scope, redirectUrl, getUserId(), deviceType,
+                                                              deviceId);
             }
             throw AuthorizationException.privilegeGrantFailed();
         }
 
         /**
-         * 是否能够授权
+         * 指定(客户端, 授权范围-默认权限) -> 获得登录用户的授权码
+         * 获取授权码 <br>
+         * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
+         *
+         * @param clientId    客户端id
+         * @param redirectUrl 重定向url
+         * @return Authorization Code 授权码
+         * @throws AuthorizationException 授权失败
+         */
+        @NonNull
+        public static String createDefaultScopeAuthorizationCode(
+                @NonNull String clientId, @NonNull String redirectUrl) throws AuthorizationException {
+            String deviceType;
+            try {
+                deviceType = getHttpMeta().getUserAgent();
+            } catch (ThreadWebEnvironmentException e) {
+                deviceType = "unknown";
+            }
+            return createDefaultScopeAuthorizationCode(clientId, redirectUrl, deviceType, null);
+        }
+
+        /**
+         * 指定(客户端, 授权范围-默认权限) & 登录设备 -> 获得登录用户的授权码
+         * 获取授权码 <br>
+         * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
+         *
+         * @param clientId    客户端id
+         * @param redirectUrl 重定向url
+         * @param deviceType  设备类型
+         * @return Authorization Code 授权码
+         * @throws AuthorizationException 授权失败
+         */
+        @NonNull
+        public static String createDefaultScopeAuthorizationCode(@NonNull String clientId, @NonNull String redirectUrl,
+                                                                 @NonNull String deviceType) throws AuthorizationException {
+            return createDefaultScopeAuthorizationCode(clientId, redirectUrl, deviceType, null);
+        }
+
+        /**
+         * 指定(客户端, 授权范围-默认权限) & 登录设备 -> 获得登录用户的授权码
+         * 获取授权码 <br>
+         * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
+         *
+         * @param clientId    客户端id
+         * @param redirectUrl 重定向url
+         * @param deviceType  设备类型
+         * @param deviceId    设备id
+         * @return Authorization Code 授权码
+         * @throws AuthorizationException 授权失败
+         */
+        @NonNull
+        public static String createDefaultScopeAuthorizationCode(@NonNull String clientId, @NonNull String redirectUrl,
+                                                                 @NonNull String deviceType,
+                                                                 @Nullable String deviceId) throws AuthorizationException {
+            if (isLogin() && agreeAuthorize(clientId)) {
+                return OpenAuthHelper.createDefaultScopeAuthorizationCode(clientId, redirectUrl, getUserId(),
+                                                                          deviceType, deviceId);
+            }
+            throw AuthorizationException.privilegeGrantFailed();
+        }
+
+        /**
+         * 客户端id有效，能够授权
          *
          * @param clientId 客户端id
          * @return 是否能够授权
          */
         public static boolean agreeAuthorize(@NonNull String clientId) {
-            if (AuHelper.isLogin()) {
-                return OpenAuthHelper.findClient(clientId) != null;
-            }
-            return false;
+            return OpenAuthHelper.findClient(clientId) != null;
         }
 
         /**
@@ -311,6 +332,25 @@ public class AuHelper {
          */
         public static ClientDetails findClient(@NonNull String clientId) {
             return OpenAuthHelper.findClient(clientId);
+        }
+
+        /**
+         * 根据clientId获取注册client的RedirectUrl
+         *
+         * @param clientId 客户端id
+         * @return RedirectUrl 重定向地址
+         */
+        public static String getRedirectUrl(@NonNull String clientId) {
+            return OpenAuthHelper.findClient(clientId).getRedirectUrl();
+        }
+
+        /**
+         * 根据clientId注销client
+         *
+         * @param clientId 客户端id
+         */
+        public static void deleteClient(@NonNull String clientId) {
+            OpenAuthHelper.deleteClient(clientId);
         }
 
         /**
@@ -356,8 +396,7 @@ public class AuHelper {
          * @return 客户端的详细信息（客户端id，客户端name，客户端密钥，重定向url）
          */
         public static ClientDetails clientRegister(@NonNull String clientId, @NonNull String clientSecret,
-                                                   @NonNull String clientName,
-                                                   @NonNull String redirectUrl) {
+                                                   @NonNull String clientName, @NonNull String redirectUrl) {
             return OpenAuthHelper.clientRegister(clientId, clientSecret, clientName, redirectUrl);
         }
 
@@ -1059,6 +1098,16 @@ public class AuHelper {
          */
         public static void setRateLimitCallback(RateLimitCallback rateLimitCallback) {
             Httpd.setRateLimitCallback(rateLimitCallback);
+        }
+
+        /**
+         * 设置成功授权获得授权码时的回调函数
+         *
+         * @param createAuthorizationInfoCallback 成功授权获得授权码时的回调函数
+         */
+        public static void setCreateAuthorizationInfoCallback(
+                CreateAuthorizationInfoCallback createAuthorizationInfoCallback) {
+            OpenAuthHelper.setCreateAuthorizationInfoCallback(createAuthorizationInfoCallback);
         }
     }
 

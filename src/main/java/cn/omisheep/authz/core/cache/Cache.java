@@ -91,7 +91,8 @@ public interface Cache {
         private long expireAfterReadTime;
 
         public CacheExpiry(long expireTime, TimeUnit unit) {
-            this.expireAfterCreateTime = this.expireAfterUpdateTime = this.expireAfterReadTime = unit.toNanos(expireTime);
+            this.expireAfterCreateTime = this.expireAfterUpdateTime = this.expireAfterReadTime = unit.toNanos(
+                    expireTime);
         }
 
         public CacheExpiry() {
@@ -104,13 +105,15 @@ public interface Cache {
         }
 
         @Override
-        public long expireAfterUpdate(@NonNull String s, @NonNull CacheItem eCacheItem, long currentTime, @NonNegative long currentDuration) {
+        public long expireAfterUpdate(@NonNull String s, @NonNull CacheItem eCacheItem, long currentTime,
+                                      @NonNegative long currentDuration) {
             return eCacheItem.expireAfterNanos(expireAfterUpdateTime);
 
         }
 
         @Override
-        public long expireAfterRead(@NonNull String s, @NonNull CacheItem eCacheItem, long currentTime, @NonNegative long currentDuration) {
+        public long expireAfterRead(@NonNull String s, @NonNull CacheItem eCacheItem, long currentTime,
+                                    @NonNegative long currentDuration) {
             return eCacheItem.expireAfterNanos(expireAfterReadTime);
         }
     }
@@ -157,6 +160,13 @@ public interface Cache {
      * @param <E>     值的类型
      */
     <E> void set(@NonNull String key, @Nullable E element, long ttl);
+
+    /**
+     * 批量插入，时间为永久
+     *
+     * @param elements 键
+     */
+    void set(@NonNull Map<String, ?> elements);
 
     /**
      * @param key     键

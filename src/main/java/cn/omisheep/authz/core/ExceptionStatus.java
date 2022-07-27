@@ -31,9 +31,12 @@ public enum ExceptionStatus {
 
     WEB_ENVIRONMENT(-401, "The current thread is in a non Web Environment", false, INTERNAL_SERVER_ERROR),
 
-    PRIVILEGE_GRANT_FAILED(-500, "Privilege grant failed", false, OK),
-    CLIENT_SECRET_ERROR(-501, "client secret error or client id not match", false, OK),
-    AUTHORIZATION_CODE_EXPIRED_OR_NOT_EXIST(-502, "Authorization code does not exist or expires", false, OK);
+    PRIVILEGE_GRANT_FAILED(-500, "Privilege grant failed", false, OK), // 授权失败
+    CLIENT_SECRET_ERROR(-501, "client secret error or client id not match", false, OK), // 客户端密钥错误
+    CLIENT_NOT_EXIST(-502, "client not exist", false, OK),//客户端不存在
+    AUTHORIZATION_CODE_EXPIRED_OR_NOT_EXIST(-503, "Authorization code does not exist or expires",
+                                            false, OK); // 授权码过期或无效
+
 
 
     private final int        code;

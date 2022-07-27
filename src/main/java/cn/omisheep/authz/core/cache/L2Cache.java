@@ -6,9 +6,8 @@ import cn.omisheep.authz.core.msg.CacheMessage;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.authz.core.util.RedisUtils;
 import cn.omisheep.commons.util.Async;
-import cn.omisheep.commons.util.CollectionUtils;
-import cn.omisheep.commons.util.TimeUtils;
 import cn.omisheep.commons.util.KeyMatchUtils;
+import cn.omisheep.commons.util.TimeUtils;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
@@ -37,11 +36,11 @@ public class L2Cache implements Cache {
     private final ConcurrentSkipListSet<String> keyPatterns = new ConcurrentSkipListSet<>();
 
     public L2Cache(AuthzProperties properties) {
-        Caffeine<String, CacheItem> caffeine         = Caffeine.newBuilder().scheduler(
+        Caffeine<String, CacheItem> caffeine = Caffeine.newBuilder().scheduler(
                 Scheduler.systemScheduler()).expireAfter(
                 new CacheExpiry(TimeUtils.parseTimeValue(properties.getCache().getExpireAfterReadOrUpdateTime()),
                                 TimeUnit.MILLISECONDS));
-        Long                        cacheMaximumSize = properties.getCache().getCacheMaximumSize();
+        Long cacheMaximumSize = properties.getCache().getCacheMaximumSize();
         if (cacheMaximumSize != null) caffeine.maximumSize(cacheMaximumSize);
         cache = caffeine.build(new CacheLoader<String, CacheItem>() {
             @Override
@@ -130,14 +129,24 @@ public class L2Cache implements Cache {
     @Override
     public <E> void set(@NonNull String key, @Nullable E element, long ttl) {
         if (cache.asMap().get(key) == null) {
-            Async.run(() -> {
-                List<String> collect = keyPatterns.stream().filter(
-                        k -> KeyMatchUtils.stringMatch(k, key, false)).collect(Collectors.toList());
-                cache.invalidateAll(collect);
-            });
+            Async.run(() -> cache.invalidateAll(KeyMatchUtils.matchPatterns(key, keyPatterns)));
         }
         setSneaky(key, element, ttl);
         RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.write(key));
+    }
+
+    @Override
+    public void set(@NonNull Map<String, ?> elements) {
+        for (String key : elements.keySet()) {
+            if (cache.asMap().get(key) == null) {
+                Async.run(() -> cache.invalidateAll(KeyMatchUtils.matchPatterns(key, keyPatterns)));
+            }
+        }
+        elements.forEach((k, v) -> {
+            cache.put(k, new CacheItem(v));
+        });
+        RedisUtils.Obj.set(elements);
+        RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.write(elements.keySet()));
     }
 
     @Override
@@ -159,7 +168,7 @@ public class L2Cache implements Cache {
                 }
             }
         } catch (Exception e) {
-            LogUtils.error("{}", e.getMessage());
+            LogUtils.error(e);
         } finally {
             cache.put(key, new CacheItem(ttl, element));
         }
@@ -198,9 +207,7 @@ public class L2Cache implements Cache {
         Async.run(() -> {
             RedisUtils.Obj.del(key);
             RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.delete(key));
-            List<String> collect = keyPatterns.stream().filter(k -> KeyMatchUtils.stringMatch(k, key, false)).collect(
-                    Collectors.toList());
-            cache.invalidateAll(collect);
+            cache.invalidateAll(KeyMatchUtils.matchPatterns(key, keyPatterns));
         });
     }
 
@@ -210,10 +217,7 @@ public class L2Cache implements Cache {
         Async.run(() -> {
             RedisUtils.Obj.del(keys);
             RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.delete(keys));
-            List<String> collect = keyPatterns.stream().filter(
-                    k -> keys.stream().anyMatch(key -> KeyMatchUtils.stringMatch(k, key, false))).collect(
-                    Collectors.toList());
-            cache.invalidateAll(collect);
+            cache.invalidateAll(KeyMatchUtils.matchPatterns(keys, keyPatterns));
         });
     }
 
@@ -232,17 +236,17 @@ public class L2Cache implements Cache {
         if (pattern != null) {
             cache.put(pattern, new CacheItem(keys));
         } else {
-            String key = CollectionUtils.resolveSingletonSet(keys);
-            Object o   = RedisUtils.Obj.get(key);
-            long   ttl = RedisUtils.ttl(key);
-            if (ttl != -2) {
-                if (cache.asMap().get(key) == null) {
-                    List<String> collect = keyPatterns.stream().filter(
-                            k -> KeyMatchUtils.stringMatch(k, key, false)).collect(Collectors.toList());
-                    cache.invalidateAll(collect);
-                }
-                cache.put(key, new CacheItem(ttl, o));
-            } else cache.invalidate(key);
+            if (keys == null) return;
+            for (String key : keys) {
+                Object o   = RedisUtils.Obj.get(key);
+                long   ttl = RedisUtils.ttl(key);
+                if (ttl != -2) {
+                    if (cache.asMap().get(key) == null) {
+                        cache.invalidateAll(KeyMatchUtils.matchPatterns(key, keyPatterns));
+                    }
+                    cache.put(key, new CacheItem(ttl, o));
+                } else cache.invalidate(key);
+            }
         }
     }
 

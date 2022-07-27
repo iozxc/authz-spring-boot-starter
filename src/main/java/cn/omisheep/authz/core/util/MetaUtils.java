@@ -5,7 +5,9 @@ import cn.omisheep.authz.annotation.Roles;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.commons.util.CollectionUtils;
+import lombok.SneakyThrows;
 import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 
 import java.lang.annotation.Annotation;
 import java.util.Set;
@@ -110,6 +112,17 @@ public class MetaUtils {
             return name.substring(0, name.indexOf("$"));
         } else {
             return name;
+        }
+    }
+
+
+    @SuppressWarnings("all")
+    @SneakyThrows
+    public static Set<String> getPatterns(RequestMappingInfo info) {
+        try {
+            return info.getPatternsCondition().getPatterns();
+        } catch (Exception e) {
+            return (Set<String>) RequestMappingInfo.class.getMethod("getPatternValues").invoke(info);
         }
     }
 

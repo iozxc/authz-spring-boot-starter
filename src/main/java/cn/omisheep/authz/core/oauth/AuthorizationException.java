@@ -24,6 +24,10 @@ public class AuthorizationException extends AuthzException {
         return new AuthorizationException(ExceptionStatus.CLIENT_SECRET_ERROR);
     }
 
+    public static AuthorizationException clientNotExist() {
+        return new AuthorizationException(ExceptionStatus.CLIENT_NOT_EXIST);
+    }
+
     public static AuthorizationException authorizationCodeExpiredOrNotExist() {
         return new AuthorizationException(ExceptionStatus.AUTHORIZATION_CODE_EXPIRED_OR_NOT_EXIST);
     }
