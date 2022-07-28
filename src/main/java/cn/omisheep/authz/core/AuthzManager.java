@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core;
 
+import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.Blacklist;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
@@ -18,14 +19,17 @@ import org.springframework.lang.Nullable;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
+@SuppressWarnings("rawtypes")
 public class AuthzManager {
 
     public static final UserDevicesDict userDevicesDict;
     public static final Cache           cache;
+    public static final PermLibrary     permLibrary;
 
     static {
         userDevicesDict = AUtils.getBean(UserDevicesDict.class);
         cache           = AUtils.getBean(Cache.class);
+        permLibrary     = AUtils.getBean(PermLibrary.class);
     }
 
     @Nullable

@@ -18,12 +18,20 @@ import java.util.concurrent.ConcurrentHashMap;
 public interface UserDevicesDict {
 
     /**
-     * 可以单独为每一名用户设置登录状态管理方案
+     * 可以单独为【每一名用户】设置登录状态管理方案
      * 若为空，则使用默认的
      *
      * @since 1.2.0
      */
     Map<Object, AuthzProperties.UserConfig> usersConfig = new ConcurrentHashMap<>();
+
+    /**
+     * 可以单独为【每一类 (by role) 用户】设置登录状态管理方案
+     * 若为空，则使用默认的
+     *
+     * @since 1.2.0
+     */
+    Map<String, AuthzProperties.UserConfig> roleConfig = new ConcurrentHashMap<>();
 
     byte SUCCESS         = 0;
     byte REQUIRE_LOGIN   = 1;
@@ -35,7 +43,7 @@ public interface UserDevicesDict {
      * @param accessToken token
      * @return 0：正常  1：accessToken过期  2：需要重新登录  3：在别处登录
      */
-    int userStatus(Token accessToken);
+    byte userStatus(Token accessToken);
 
     // =========================   登入   ========================= //
 
@@ -98,14 +106,14 @@ public interface UserDevicesDict {
 
     void deviceClean(Object userId);
 
-    default void addMaximumSameTypeDeviceCount(Object userId, int count) {
+    default void changeMaximumSameTypeDeviceCount(Object userId, int count) {
         AuthzProperties.UserConfig userConfig = UserDevicesDict.usersConfig
                 .computeIfAbsent(userId, r -> new AuthzProperties.UserConfig());
         userConfig.setMaximumSameTypeDeviceCount(count);
         deviceClean(userId);
     }
 
-    default void addMaximumTotalDevice(Object userId, int count) {
+    default void changeMaximumDeviceTotal(Object userId, int count) {
         AuthzProperties.UserConfig userConfig = UserDevicesDict.usersConfig
                 .computeIfAbsent(userId, r -> new AuthzProperties.UserConfig());
         userConfig.setMaximumTotalDevice(count);
@@ -121,4 +129,11 @@ public interface UserDevicesDict {
         userConfig.getTypesTotal().add(deviceCountInfo);
         deviceClean(userId);
     }
+
+    default List<DeviceCountInfo> getAndUpdateDeviceTypesTotalLimit(Object userId) {
+        AuthzProperties.UserConfig userConfig = UserDevicesDict.usersConfig.get(userId);
+        if (userConfig == null) return null;
+        return userConfig.getTypesTotal();
+    }
+
 }

@@ -24,15 +24,12 @@ import java.util.*;
 public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterceptor {
 
     @Override
-    public String sqlChange(HttpMeta httpMeta, PermLibrary permLibrary, List<DataPermMeta> dataPermMetaList, Class<?> resultType, String sql) throws JSQLParserException {
+    public String sqlChange(HttpMeta httpMeta, PermLibrary permLibrary, List<DataPermMeta> dataPermMetaList,
+                            Class<?> resultType, String sql) throws JSQLParserException {
         if (dataPermMetaList.size() == 0) return sql;
 
-        Set<String> rolesByUserId = Optional.ofNullable(httpMeta.getRoles()).orElse(permLibrary.getRolesByUserId(httpMeta.getUserId()));
-        Set<String> permissionsByRole = Optional.ofNullable(httpMeta.getPermissions()).orElseGet(() -> {
-            HashSet<String> perms = new HashSet<>();
-            rolesByUserId.forEach(role -> perms.addAll(permLibrary.getPermissionsByRole(role)));
-            return perms;
-        });
+        Set<String> rolesByUserId = httpMeta.getRoles();
+        Set<String> permissionsByRole = httpMeta.getPermissions();
 
         Iterator<String> iterator = dataPermMetaList.stream().filter(dataPermMeta -> {
             PermRolesMeta.Meta roles = dataPermMeta.getRoles();
@@ -50,8 +47,6 @@ public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterce
         if (!iterator.hasNext()) return sql;
 
 
-
-
         Select      select     = (Select) CCJSqlParserUtil.parse(sql);
         PlainSelect selectBody = (PlainSelect) select.getSelectBody();
         Expression  where      = selectBody.getWhere();
@@ -62,10 +57,11 @@ public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterce
             sb.append(iterator.next());
             if (iterator.hasNext()) sb.append(" OR ");
             else {
-                if (where!=null) sb.append(" ) AND ").append(where);
+                if (where != null) sb.append(" ) AND ").append(where);
                 else sb.append(" ) ");
             }
-        };
+        }
+        ;
 
         Expression securityWhere = CCJSqlParserUtil.parseCondExpression(sb.toString());
 
@@ -73,14 +69,11 @@ public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterce
     }
 
     @Override
-    public Object dataTrim(HttpMeta httpMeta, PermLibrary permLibrary, Map<String, FieldData> fieldDataMap, Class<?> resultType, Object obj) {
+    public Object dataTrim(HttpMeta httpMeta, PermLibrary permLibrary, Map<String, FieldData> fieldDataMap,
+                           Class<?> resultType, Object obj) {
         try {
-            Set<String> rolesByUserId = Optional.ofNullable(httpMeta.getRoles()).orElse(permLibrary.getRolesByUserId(httpMeta.getUserId()));
-            Set<String> permissionsByRole = Optional.ofNullable(httpMeta.getPermissions()).orElseGet(() -> {
-                HashSet<String> perms = new HashSet<>();
-                rolesByUserId.forEach(role -> perms.addAll(permLibrary.getPermissionsByRole(role)));
-                return perms;
-            });
+            Set<String> rolesByUserId = httpMeta.getRoles();
+            Set<String> permissionsByRole = httpMeta.getPermissions();
 
             ArrayList<String> deleted = new ArrayList<>();
 
@@ -88,9 +81,12 @@ public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterce
                 PermRolesMeta.Meta r = v.getRoles();
                 PermRolesMeta.Meta p = v.getPermissions();
                 if ((r != null && r.getRequire() != null && !CollectionUtils.containsSub(r.getRequire(), rolesByUserId))
-                        || (p != null && p.getRequire() != null && !CollectionUtils.containsSub(p.getRequire(), permissionsByRole))
-                        || (r != null && r.getExclude() != null && CollectionUtils.containsSub(r.getExclude(), rolesByUserId))
-                        || (p != null && p.getExclude() != null && CollectionUtils.containsSub(p.getExclude(), permissionsByRole))
+                        || (p != null && p.getRequire() != null && !CollectionUtils.containsSub(p.getRequire(),
+                                                                                                permissionsByRole))
+                        || (r != null && r.getExclude() != null && CollectionUtils.containsSub(r.getExclude(),
+                                                                                               rolesByUserId))
+                        || (p != null && p.getExclude() != null && CollectionUtils.containsSub(p.getExclude(),
+                                                                                               permissionsByRole))
                 ) {
                     deleted.add(k);//任意一个没有满足则从字段中删除
                 }

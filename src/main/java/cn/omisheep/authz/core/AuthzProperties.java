@@ -170,6 +170,11 @@ public class AuthzProperties {
             private String defaultScope = "basic";
 
             /**
+             * scope分割符
+             */
+            private String scopeSeparator = " ";
+
+            /**
              * 客户端Id长度 默认24
              */
             private int clientIdLength = 24;
@@ -350,7 +355,7 @@ public class AuthzProperties {
     }
 
     @Data
-    public static class OtherConfig{
+    public static class OtherConfig {
 
         /**
          * 定期GC时间，单位 s|m|h|d

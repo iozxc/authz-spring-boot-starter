@@ -37,13 +37,17 @@ public class DeviceSlot implements Slot {
                 // 需要重新登录
                 logs("Require Login", httpMeta);
                 error.error(ExceptionStatus.REQUIRE_LOGIN);
+                httpMeta.setTokenChecked(REQUIRE_LOGIN);
                 return;
             case LOGIN_EXCEPTION:
                 // 在别处登录
                 logs("forbid : may have logged in elsewhere", httpMeta);
                 error.error(ExceptionStatus.LOGIN_EXCEPTION);
+                httpMeta.setTokenChecked(LOGIN_EXCEPTION);
                 return;
         }
+        httpMeta.setTokenChecked(SUCCESS);
+
     }
 
 }

@@ -113,7 +113,7 @@ public class AuthzAutoConfiguration {
         AuthzAppVersion.supportCloud          = properties.getCache().isEnableRedis();
         AuthzAppVersion.authorizationCodeTime = TimeUtils.parseTimeValue(
                 properties.getToken().getOauth().getAuthorizationCodeTime());
-
+        AuthzAppVersion.scopeSeparator        = properties.getToken().getOauth().getScopeSeparator();
         AuthzAppVersion.ConnectInfo connectInfo = new AuthzAppVersion.ConnectInfo();
         connectInfo.setApplication(AuthzAppVersion.APPLICATION_NAME);
         connectInfo.setAppName(AuthzAppVersion.APP_NAME);

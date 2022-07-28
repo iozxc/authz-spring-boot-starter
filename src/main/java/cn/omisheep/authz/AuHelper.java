@@ -12,6 +12,7 @@ package cn.omisheep.authz;
 import cn.omisheep.authz.core.NotLoginException;
 import cn.omisheep.authz.core.ThreadWebEnvironmentException;
 import cn.omisheep.authz.core.auth.deviced.Device;
+import cn.omisheep.authz.core.auth.deviced.DeviceCountInfo;
 import cn.omisheep.authz.core.auth.ipf.Blacklist;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
@@ -160,7 +161,7 @@ public class AuHelper {
     }
 
     /**
-     * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
+     * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
      * count >= 1 or count = -1
      *
      * @param userId 用户id
@@ -173,29 +174,38 @@ public class AuHelper {
     }
 
     /**
+     * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param count 数量
+     */
+    public static void changeMaximumDeviceTotal(int count) throws NotLoginException {
+        changeMaximumDeviceTotal(AuHelper.getUserId(), count);
+    }
+
+    /**
      * 同类型设备最多登录数 默认 1个【count最小为1】，超出会挤出最长时间未访问的设备。
      * count >= 1
      *
      * @param userId 用户id
      * @param count  数量
      */
-    public static void addMaximumTotalDevice(int count) throws NotLoginException {
-        addMaximumTotalDevice(AuHelper.getUserId(), count);
+    public static void changeMaximumSameTypeDeviceCount(int count) throws NotLoginException {
+        changeMaximumSameTypeDeviceCount(AuHelper.getUserId(), count);
+    }
+
+    /**
+     * 获得一个可修改的 DeviceTypesTotalLimit list
+     * count >= 1 or count = -1
+     *
+     * @param userId 用户id
+     */
+    public static List<DeviceCountInfo> getAndUpdateDeviceTypesTotalLimit(Object userId) {
+        return userDevicesDict.getAndUpdateDeviceTypesTotalLimit(userId);
     }
 
     /**
      * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
-     * count >= 1
-     *
-     * @param userId 用户id
-     * @param count  数量
-     */
-    public static void addMaximumSameTypeDeviceCount(int count) throws NotLoginException {
-        addMaximumSameTypeDeviceCount(AuHelper.getUserId(), count);
-    }
-
-    /**
-     * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
      * count >= 1 or count = -1
      *
      * @param userId 用户id
@@ -215,19 +225,19 @@ public class AuHelper {
      * @param userId 用户id
      * @param count  数量
      */
-    public static void addMaximumTotalDevice(Object userId, int count) {
-        userDevicesDict.addMaximumTotalDevice(userId, count);
+    public static void changeMaximumSameTypeDeviceCount(Object userId, int count) {
+        userDevicesDict.changeMaximumSameTypeDeviceCount(userId, count);
     }
 
     /**
-     * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
+     * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
      * count >= 1
      *
      * @param userId 用户id
      * @param count  数量
      */
-    public static void addMaximumSameTypeDeviceCount(Object userId, int count) {
-        userDevicesDict.addMaximumSameTypeDeviceCount(userId, count);
+    public static void changeMaximumDeviceTotal(Object userId, int count) {
+        userDevicesDict.changeMaximumDeviceTotal(userId, count);
     }
 
     /**
@@ -546,7 +556,7 @@ public class AuHelper {
                 device -> device.getDeviceType().equals(deviceType)).collect(Collectors.toList());
     }
 
-    // **************************************     状态管理      ************************************** //
+    // **************************************     状态&权限      ************************************** //
 
     /**
      * @return 当前请求是否登录 true为登录、false为未登录
@@ -602,8 +612,8 @@ public class AuHelper {
      * @return 判断当前请求用户是否有指定角色
      * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
      */
-    public static boolean hasRole(String role) throws NotLoginException {
-        return AuthzDefender.hasRoles(Collections.singletonList(role));
+    public static boolean hasRole(String... role) throws NotLoginException {
+        return hasRoles(Arrays.asList(role));
     }
 
     /**
@@ -620,8 +630,8 @@ public class AuHelper {
      * @return 判断当前请求用户是否有指定角色
      * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
      */
-    public static boolean hasPermission(String permission) throws NotLoginException {
-        return AuthzDefender.hasPermissions(Collections.singletonList(permission));
+    public static boolean hasPermission(String... permission) throws NotLoginException {
+        return hasPermissions(Arrays.asList(permission));
     }
 
     /**
@@ -631,6 +641,24 @@ public class AuHelper {
      */
     public static boolean hasPermissions(List<String> permissions) throws NotLoginException {
         return AuthzDefender.hasPermissions(permissions);
+    }
+
+    /**
+     * @param scope 所指定的访问范围
+     * @return 判断当前请求用户（oauth）是否有指定的访问权限
+     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
+     */
+    public static boolean hasScope(String... scope) {
+        return AuthzDefender.hasScope(Arrays.asList(scope));
+    }
+
+    /**
+     * @param scope 所指定的访问范围
+     * @return 判断当前请求用户（oauth）是否有指定的访问权限
+     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
+     */
+    public static boolean hasScope(List<String> scope) {
+        return AuthzDefender.hasScope(scope);
     }
 
     // ************************************     【在线/活跃】      ************************************ //

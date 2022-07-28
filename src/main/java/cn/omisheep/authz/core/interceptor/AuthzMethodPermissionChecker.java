@@ -115,23 +115,18 @@ public class AuthzMethodPermissionChecker {
             PermRolesMeta permRolesMeta = prMeta.computeIfAbsent(joinPoint.getSignature().toLongString(),
                                                                  r -> merge(perms, perms2, roles, roles2));
             if (permRolesMeta == null) return;
-            Set<String> rolesByUserId = Optional.ofNullable(httpMeta.getRoles()).orElse(
-                    permLibrary.getRolesByUserId(httpMeta.getUserId()));
-            boolean e1 = CollectionUtils.isEmpty(permRolesMeta.getRequireRoles());
-            boolean e2 = CollectionUtils.isEmpty(permRolesMeta.getExcludeRoles());
+            Set<String> rolesByUserId = httpMeta.getRoles();
+            boolean     e1            = CollectionUtils.isEmpty(permRolesMeta.getRequireRoles());
+            boolean     e2            = CollectionUtils.isEmpty(permRolesMeta.getExcludeRoles());
             if (!e1 && !CollectionUtils.containsSub(permRolesMeta.getRequireRoles(),
                                                     rolesByUserId) || !e2 && CollectionUtils.containsSub(
                     permRolesMeta.getExcludeRoles(), rolesByUserId)) {
                 throw new PermissionException();
             }
             if (perms != null || perms2 != null) {
-                Set<String> permissionsByRole = Optional.ofNullable(httpMeta.getPermissions()).orElseGet(() -> {
-                    HashSet<String> p = new HashSet<>();
-                    rolesByUserId.forEach(role -> p.addAll(permLibrary.getPermissionsByRole(role)));
-                    return p;
-                });
-                boolean e3 = CollectionUtils.isEmpty(permRolesMeta.getRequireRoles());
-                boolean e4 = CollectionUtils.isEmpty(permRolesMeta.getExcludeRoles());
+                Set<String> permissionsByRole = httpMeta.getPermissions();
+                boolean     e3                = CollectionUtils.isEmpty(permRolesMeta.getRequireRoles());
+                boolean     e4                = CollectionUtils.isEmpty(permRolesMeta.getExcludeRoles());
                 if (!e3 && !CollectionUtils.containsSub(permRolesMeta.getRequirePermissions(),
                                                         permissionsByRole) || !e4 && CollectionUtils.containsSub(
                         permRolesMeta.getExcludePermissions(), permissionsByRole)) {

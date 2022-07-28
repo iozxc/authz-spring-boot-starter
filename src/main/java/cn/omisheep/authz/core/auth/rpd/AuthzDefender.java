@@ -17,10 +17,8 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 import javax.servlet.http.HttpServletResponse;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.*;
 
@@ -171,7 +169,10 @@ public class AuthzDefender {
             HttpMeta currentHttpMeta = AUtils.getCurrentHttpMeta();
             Token    accessToken     = currentHttpMeta.getToken();
             if (accessToken == null) return false;
-            switch (userDevicesDict.userStatus(accessToken)) {
+            byte tokenChecked = Optional.ofNullable(currentHttpMeta.getTokenChecked())
+                    .orElse(userDevicesDict.userStatus(accessToken));
+            currentHttpMeta.setTokenChecked(tokenChecked);
+            switch (tokenChecked) {
                 case REQUIRE_LOGIN:
                 case LOGIN_EXCEPTION:
                     return false;
@@ -186,33 +187,27 @@ public class AuthzDefender {
     }
 
     public static boolean hasRoles(@NonNull List<String> roles) throws NotLoginException {
-        Set<String> r = null;
         try {
-            HttpMeta httpMeta = AUtils.getCurrentHttpMeta();
-            r = Optional.ofNullable(httpMeta.getRoles()).orElse(permLibrary.getRolesByUserId(httpMeta.getUserId()));
+            return AUtils.getCurrentHttpMeta().getRoles().containsAll(roles);
         } catch (ThreadWebEnvironmentException e) {
             return false;
         }
-        if (r == null) return false;
-        return r.containsAll(roles);
     }
 
     public static boolean hasPermissions(@NonNull List<String> permissions) throws NotLoginException {
-        Set<String> p = null;
         try {
-            HttpMeta httpMeta = AUtils.getCurrentHttpMeta();
-            p = Optional.ofNullable(httpMeta.getPermissions()).orElseGet(() -> {
-                HashSet<String> perms = new HashSet<>();
-                Set<String> r = Optional.ofNullable(httpMeta.getRoles()).orElse(
-                        permLibrary.getRolesByUserId(httpMeta.getUserId()));
-                r.forEach(role -> perms.addAll(permLibrary.getPermissionsByRole(role)));
-                return perms;
-            });
+            return AUtils.getCurrentHttpMeta().getPermissions().containsAll(permissions);
         } catch (ThreadWebEnvironmentException e) {
             return false;
         }
-        if (p == null) return false;
-        return p.containsAll(permissions);
+    }
+
+    public static boolean hasScope(@NonNull List<String> scope) throws NotLoginException {
+        try {
+            return AUtils.getCurrentHttpMeta().getScope().containsAll(scope);
+        } catch (ThreadWebEnvironmentException e) {
+            return false;
+        }
     }
 
     public static void logs(String status, HttpMeta httpMeta, PermRolesMeta meta) {

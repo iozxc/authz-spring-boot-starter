@@ -3,12 +3,15 @@ package cn.omisheep.authz.core.auth.ipf;
 import cn.omisheep.authz.core.AuthzException;
 import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
+import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.util.LogUtils;
+import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.web.utils.HttpUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
+import lombok.NonNull;
 import org.springframework.boot.logging.LogLevel;
 import org.springframework.util.StringUtils;
 
@@ -16,11 +19,10 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import static cn.omisheep.authz.core.AuthzManager.permLibrary;
 import static cn.omisheep.authz.core.util.LogUtils.export;
 
 /**
@@ -48,10 +50,12 @@ public class HttpMeta {
     private       boolean                     hasToken;
     private       Set<String>                 roles;
     private       Set<String>                 permissions;
+    private       Set<String>                 scope;
     private       boolean                     requireProtect;
     private       boolean                     requireLogin;
     private       PermRolesMeta               permRolesMeta;
     private       boolean                     ignore              = false;
+    private       byte                        tokenChecked;
     @JsonIgnore
     private       LinkedList<Object>          exceptionObjectList = new LinkedList<>();
     @JsonIgnore
@@ -67,6 +71,39 @@ public class HttpMeta {
         if (permissions == null) return this;
         this.permissions = permissions;
         return this;
+    }
+
+    @NonNull
+    public Set<String> getRoles() {
+        if (userId == null) return new HashSet<>();
+        roles = Optional.ofNullable(roles)
+                .orElse(Optional.ofNullable(permLibrary.getRolesByUserId(userId)).orElse(new HashSet<>()));
+        return roles;
+    }
+
+    @NonNull
+    public Set<String> getPermissions() {
+        if (userId == null) return new HashSet<>();
+        permissions = Optional.ofNullable(permissions).orElseGet(() -> {
+            HashSet<String> perms = new HashSet<>();
+            for (String role : Optional.ofNullable(getRoles()).orElse(new HashSet<>())) {
+                Set<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
+                perms.addAll(permissionsByRole);
+            }
+            return perms;
+        });
+        return permissions;
+    }
+
+    @NonNull
+    public Set<String> getScope() {
+        if (userId == null) return new HashSet<>();
+        scope = Optional.ofNullable(scope).orElseGet(() -> {
+            String s = token.getScope();
+            if (s == null || s.equals("")) return new HashSet<>();
+            return CollectionUtils.ofSet(s.split(AuthzAppVersion.scopeSeparator));
+        });
+        return scope;
     }
 
     public static Token currentToken() {
@@ -155,7 +192,7 @@ public class HttpMeta {
         this.api       = api;
         this.method    = method.toUpperCase();
         this.userAgent = request.getHeader("user-agent");
-        this.now      = now;
+        this.now       = now;
     }
 
     public boolean isMethod(String method) {

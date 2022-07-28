@@ -87,8 +87,7 @@ public class ParameterPermSlot implements Slot {
                     return;
                 }
 
-                roles = Optional.ofNullable(httpMeta.getRoles()).orElse(permLibrary.getRolesByUserId(httpMeta.getToken().getUserId()));
-                httpMeta.setRoles(roles);
+                if (roles==null) roles = httpMeta.getRoles();
 
                 List<PermRolesMeta.Meta> resourcesMeta  = rolesMetaList.stream().filter(meta -> meta.getResources() != null).collect(Collectors.toList());
                 List<PermRolesMeta.Meta> rangeMeta      = rolesMetaList.stream().filter(meta -> meta.getRange() != null).collect(Collectors.toList());
@@ -129,21 +128,10 @@ public class ParameterPermSlot implements Slot {
                     return;
                 }
                 if (roles == null) {
-                    roles = Optional.ofNullable(httpMeta.getRoles()).orElse(permLibrary.getRolesByUserId(httpMeta.getToken().getUserId()));
-                    httpMeta.setRoles(roles);
+                    roles = httpMeta.getRoles();
                 }
 
-                Set<String> perms = httpMeta.getPermissions();
-
-                if (perms != null) permissions = perms;
-                else {
-                    permissions = new HashSet<>();
-                    for (String role : roles) {
-                        Set<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
-                        permissions.addAll(permissionsByRole);
-                    }
-                    httpMeta.setPermissions(permissions);
-                }
+                permissions = httpMeta.getPermissions();
 
                 List<PermRolesMeta.Meta> resourcesMeta  = permissionsMetaList.stream().filter(meta -> meta.getResources() != null).collect(Collectors.toList());
                 List<PermRolesMeta.Meta> rangeMeta      = permissionsMetaList.stream().filter(meta -> meta.getRange() != null).collect(Collectors.toList());

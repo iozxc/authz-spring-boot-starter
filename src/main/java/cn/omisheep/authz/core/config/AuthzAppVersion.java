@@ -27,11 +27,11 @@ import static cn.omisheep.authz.core.config.Constants.CONNECT_PREFIX;
  */
 public class AuthzAppVersion {
 
-    public static final  AtomicInteger                         version   = new AtomicInteger(0);
-    public static final  ArrayList<AuthzModifier>              changeLog = new ArrayList<>();
-    public static final  ArrayList<AuthzModifier>              cache     = new ArrayList<>();
-    private static final Map<String, String>                   _values   = new HashMap<>();
-    public static final  Map<String, String>                   values    = Collections.unmodifiableMap(
+    public static final  AtomicInteger            version   = new AtomicInteger(0);
+    public static final  ArrayList<AuthzModifier> changeLog = new ArrayList<>();
+    public static final  ArrayList<AuthzModifier> cache     = new ArrayList<>();
+    private static final Map<String, String>      _values   = new HashMap<>();
+    public static final  Map<String, String>      values    = Collections.unmodifiableMap(
             _values);
 
     private static boolean md5check    = false;
@@ -52,6 +52,7 @@ public class AuthzAppVersion {
     public static final  boolean     isWindows = osName.contains("window");
     public static final  boolean     isLinux   = osName.contains("linux");
     public static        long        authorizationCodeTime;
+    public static        String      scopeSeparator;
 
     private static      String MD5;
     public static       String APPLICATION_NAME;
