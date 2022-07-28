@@ -41,7 +41,7 @@ public interface UserDevicesDict {
      * 用户设备状态判断，以及L1Cache下的第二次惰性删除
      *
      * @param accessToken token
-     * @return 0：正常  1：accessToken过期  2：需要重新登录  3：在别处登录
+     * @return {@link UserStatus}
      */
     UserStatus userStatus(Token accessToken);
 
