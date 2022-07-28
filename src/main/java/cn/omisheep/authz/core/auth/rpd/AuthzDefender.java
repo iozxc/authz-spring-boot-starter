@@ -169,7 +169,7 @@ public class AuthzDefender {
             HttpMeta currentHttpMeta = AUtils.getCurrentHttpMeta();
             Token    accessToken     = currentHttpMeta.getToken();
             if (accessToken == null) return false;
-            byte tokenChecked = Optional.ofNullable(currentHttpMeta.getTokenChecked())
+            Byte tokenChecked = Optional.ofNullable(currentHttpMeta.getTokenChecked())
                     .orElse(userDevicesDict.userStatus(accessToken));
             currentHttpMeta.setTokenChecked(tokenChecked);
             switch (tokenChecked) {
