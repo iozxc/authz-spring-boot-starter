@@ -19,11 +19,11 @@ import static cn.omisheep.commons.util.ClassUtils.castValue;
  * @since 1.0.0
  */
 @SuppressWarnings({"rawtypes"})
-public class DefaultCache implements cn.omisheep.authz.core.cache.Cache {
+public class L1Cache implements cn.omisheep.authz.core.cache.Cache {
 
     Cache<String, CacheItem> cache;
 
-    public DefaultCache(Long maximumSize, String time) {
+    public L1Cache(Long maximumSize, String time) {
         if (maximumSize == null) {
             cache = Caffeine.newBuilder()
                     .scheduler(Scheduler.systemScheduler())
@@ -38,7 +38,7 @@ public class DefaultCache implements cn.omisheep.authz.core.cache.Cache {
         }
     }
 
-    public DefaultCache() {
+    public L1Cache() {
         cache = Caffeine.newBuilder()
                 .scheduler(Scheduler.systemScheduler())
                 .expireAfter(new CacheExpiry())

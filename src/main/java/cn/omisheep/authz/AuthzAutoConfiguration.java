@@ -8,7 +8,7 @@ import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDictByCache;
 import cn.omisheep.authz.core.auth.ipf.AuthzHttpFilter;
 import cn.omisheep.authz.core.cache.Cache;
-import cn.omisheep.authz.core.cache.DefaultCache;
+import cn.omisheep.authz.core.cache.L1Cache;
 import cn.omisheep.authz.core.cache.L2Cache;
 import cn.omisheep.authz.core.cache.library.OpenAuthLibraryCache;
 import cn.omisheep.authz.core.cache.library.PermLibraryCache;
@@ -134,8 +134,8 @@ public class AuthzAutoConfiguration {
         if (properties.getCache().isEnableRedis()) {
             return new L2Cache(properties);
         } else {
-            return new DefaultCache(properties.getCache().getCacheMaximumSize(),
-                                    properties.getCache().getExpireAfterReadOrUpdateTime());
+            return new L1Cache(properties.getCache().getCacheMaximumSize(),
+                               properties.getCache().getExpireAfterReadOrUpdateTime());
         }
     }
 
