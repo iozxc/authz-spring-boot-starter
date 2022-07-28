@@ -174,6 +174,16 @@ public class AuHelper {
     }
 
     /**
+     * 获得一个可修改的 DeviceTypesTotalLimit list
+     * count >= 1 or count = -1
+     *
+     * @param userId 用户id
+     */
+    public static List<DeviceCountInfo> getOrUpdateDeviceTypesTotalLimit(Object userId) {
+        return userDevicesDict.getOrUpdateDeviceTypesTotalLimit(userId);
+    }
+
+    /**
      * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
      * count >= 1
      *
@@ -192,16 +202,6 @@ public class AuHelper {
      */
     public static void changeMaximumSameTypeDeviceCount(int count) throws NotLoginException {
         changeMaximumSameTypeDeviceCount(AuHelper.getUserId(), count);
-    }
-
-    /**
-     * 获得一个可修改的 DeviceTypesTotalLimit list
-     * count >= 1 or count = -1
-     *
-     * @param userId 用户id
-     */
-    public static List<DeviceCountInfo> getAndUpdateDeviceTypesTotalLimit(Object userId) {
-        return userDevicesDict.getAndUpdateDeviceTypesTotalLimit(userId);
     }
 
     /**

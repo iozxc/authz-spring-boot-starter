@@ -130,7 +130,7 @@ public interface UserDevicesDict {
         deviceClean(userId);
     }
 
-    default List<DeviceCountInfo> getAndUpdateDeviceTypesTotalLimit(Object userId) {
+    default List<DeviceCountInfo> getOrUpdateDeviceTypesTotalLimit(Object userId) {
         AuthzProperties.UserConfig userConfig = UserDevicesDict.usersConfig.get(userId);
         if (userConfig == null) return null;
         return userConfig.getTypesTotal();
