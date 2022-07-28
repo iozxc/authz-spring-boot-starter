@@ -21,7 +21,7 @@ import static cn.omisheep.commons.util.ClassUtils.castValue;
 @SuppressWarnings({"rawtypes"})
 public class L1Cache implements cn.omisheep.authz.core.cache.Cache {
 
-    Cache<String, CacheItem> cache;
+    private final Cache<String, CacheItem> cache;
 
     public L1Cache(Long maximumSize, String time) {
         if (maximumSize == null) {
