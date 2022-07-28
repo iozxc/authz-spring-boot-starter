@@ -938,18 +938,19 @@ public class PermissionDict {
 
         if (properties.getCache().isEnableRedis()) {
             Async.run(() -> {
-                List<String> collect = new ArrayList<>(toBeLoadedRoles);
-                List<Set<String>> rolesPerms = RedisUtils.Obj.get(
-                        collect.stream()
+                List<Set<String>> toBeLoadedRolesKeys = RedisUtils.Obj.get(
+                        toBeLoadedRoles.stream()
                                 .map(role -> Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role)
                                 .collect(Collectors.toList())
                 );
-                Iterator<String>             iterator = collect.iterator();
+                Iterator<String>             iterator = toBeLoadedRoles.iterator();
                 HashMap<String, Set<String>> map      = new HashMap<>();
-                rolesPerms.forEach(perms -> map.put(iterator.next(), perms));
+                toBeLoadedRolesKeys.forEach(perms -> map.put(iterator.next(), perms));
                 map.forEach((role, v) -> {
                     Set<String> permissions = permLibrary.getPermissionsByRole(role);
-                    cache.setSneaky(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role, permissions, Cache.INFINITE);
+                    if (permissions != null)
+                        cache.setSneaky(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role, permissions,
+                                        Cache.INFINITE);
                 });
             });
         }

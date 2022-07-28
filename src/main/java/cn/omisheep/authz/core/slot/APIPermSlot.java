@@ -60,7 +60,7 @@ public class APIPermSlot implements Slot {
             HashSet<String> perms = new HashSet<>(); // 用户所拥有的权限
             for (String role : Optional.ofNullable(roles).orElse(new HashSet<>())) {
                 Set<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
-                perms.addAll(permissionsByRole);
+                if (permissionsByRole != null) perms.addAll(permissionsByRole);
                 if (!e4 && CollectionUtils.containsSub(permRolesMeta.getExcludePermissions(), permissionsByRole)) {
                     logs("Forbid : permissions exception", httpMeta, permRolesMeta);
                     error.error(ExceptionStatus.PERM_EXCEPTION);

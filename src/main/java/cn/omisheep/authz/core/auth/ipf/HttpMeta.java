@@ -89,7 +89,7 @@ public class HttpMeta {
             HashSet<String> perms = new HashSet<>();
             for (String role : Optional.ofNullable(getRoles()).orElse(new HashSet<>())) {
                 Set<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
-                perms.addAll(permissionsByRole);
+                if (permissionsByRole!=null) perms.addAll(permissionsByRole);
             }
             return perms;
         });

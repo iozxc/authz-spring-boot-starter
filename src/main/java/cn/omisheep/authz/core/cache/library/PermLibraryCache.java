@@ -34,8 +34,7 @@ public class PermLibraryCache {
     }
 
     private Object handle(String key, ProceedingJoinPoint joinPoint) throws Throwable {
-        Object o = cache.get(key);
-        if (o != null) return o;
+        if (!cache.notKey(key)) return cache.get(key);
         Object result = joinPoint.proceed();
         if (result == null) {
             HashSet<String> set = new HashSet<>();
