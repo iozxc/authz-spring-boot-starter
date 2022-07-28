@@ -23,8 +23,7 @@ import java.util.stream.Collectors;
 import static cn.omisheep.commons.util.ClassUtils.castValue;
 
 /**
- * 两级同步缓存
- * Double Deck Synchronous Cache
+ * 二级同步缓存
  *
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0

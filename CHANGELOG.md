@@ -1,16 +1,26 @@
 # 更新日记【Authz】
 
-## Version 1.2.0 - 2022.7.28
+## <span style="color: green">Version 1.2.0</span>(_Recommend_) - 2022.7.28
 
 ### Added
 
-- 提供了OpenAuth的支持
-- 用vue重写了dashboard，界面更好看了
+- 提供了OpenAuth【OAuth2.0】 的支持 `AuHelper.OpenAuth.*`
+- 用vue重写了dashboard，功能更多了，界面更好看了，
 - 新增了用户登录数量限制的一些配置接口
+    - 现在能够为【每一名用户 by userId】设置登录设备数量的限制
+    - 现在能够为【每一类用户 by role】设置登录设备数量的限制
+    - > `AuHelper.addDeviceTypesTotalLimit` ,
+      `AuHelper.getOrUpdateDeviceTypesTotalLimit` ,
+      `AuHelper.changeMaximumDeviceTotal` ,
+      `AuHelper.changeMaximumSameTypeDeviceCount` .
 
-### Fixed
+- 优化了框架的大量代码
+- 优化了框架响应速度，登录以及验证速度变快了
+- 优化了二级同步缓存以及一级默认缓存的部分逻辑
 
-- 优化了登录以及验证逻辑，速度变快了
+### Removed
+
+- 移除了UserDevicesDictByHashMap，现在统一用UserDevicesDictByCache，其中的Cache为L1Cache或者L2Cache
 
 ## Version 1.1.9 - 2022.7.16
 
@@ -23,7 +33,7 @@
 - 增加了token的简洁模式
 - 在没有实现 `cn.omisheep.authz.core.auth.PermLibrary` 的情况下会报warn
 
-## <span style="color: green">Version 1.1.8</span>(_Recommend_) - 2022.7.14
+## Version 1.1.8 - 2022.7.14
 
 ### Fixed
 
