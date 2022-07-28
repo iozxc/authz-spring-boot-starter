@@ -175,6 +175,7 @@ public class AuthzDefender {
             switch (tokenChecked) {
                 case REQUIRE_LOGIN:
                 case LOGIN_EXCEPTION:
+                case ACCESS_TOKEN_OVERDUE:
                     return false;
                 case SUCCESS:
                     return true;
