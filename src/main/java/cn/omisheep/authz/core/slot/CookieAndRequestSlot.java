@@ -1,7 +1,6 @@
 package cn.omisheep.authz.core.slot;
 
 import cn.omisheep.authz.core.AuthzProperties;
-import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
@@ -17,7 +16,7 @@ import org.springframework.web.method.HandlerMethod;
 import javax.servlet.http.Cookie;
 import java.util.Locale;
 
-import static cn.omisheep.authz.core.auth.rpd.AuthzDefender.logs;
+import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.ACCESS_TOKEN_OVERDUE;
 import static cn.omisheep.authz.core.config.Constants.USER_ID;
 
 /**
@@ -75,8 +74,7 @@ public class CookieAndRequestSlot implements Slot {
                     } catch (Exception ee) {
                         // skip
                     } finally {
-                        logs("Forbid : expired token exception", httpMeta);
-                        error.error(ExceptionStatus.ACCESS_TOKEN_OVERDUE);
+                        httpMeta.setTokenChecked(ACCESS_TOKEN_OVERDUE);
                     }
                 }
             }

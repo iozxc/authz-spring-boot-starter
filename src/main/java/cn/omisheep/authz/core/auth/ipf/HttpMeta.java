@@ -55,7 +55,7 @@ public class HttpMeta {
     private       boolean                     requireLogin;
     private       PermRolesMeta               permRolesMeta;
     private       boolean                     ignore              = false;
-    private       byte                        tokenChecked;
+    private       Byte                        tokenChecked;
     @JsonIgnore
     private       LinkedList<Object>          exceptionObjectList = new LinkedList<>();
     @JsonIgnore

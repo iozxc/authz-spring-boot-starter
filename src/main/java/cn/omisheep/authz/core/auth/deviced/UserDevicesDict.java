@@ -33,9 +33,10 @@ public interface UserDevicesDict {
      */
     Map<String, AuthzProperties.UserConfig> roleConfig = new ConcurrentHashMap<>();
 
-    byte SUCCESS         = 0;
-    byte REQUIRE_LOGIN   = 1;
-    byte LOGIN_EXCEPTION = 2;
+    byte SUCCESS              = 0;
+    byte REQUIRE_LOGIN        = 1;
+    byte LOGIN_EXCEPTION      = 2;
+    byte ACCESS_TOKEN_OVERDUE = 3;
 
     /**
      * 用户设备状态判断，以及L1Cache下的第二次惰性删除

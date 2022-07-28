@@ -26,6 +26,11 @@ public class DeviceSlot implements Slot {
     public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
         if (!httpMeta.isRequireLogin()) return;
 
+        if (httpMeta.getTokenChecked() != null && httpMeta.getTokenChecked().equals(ACCESS_TOKEN_OVERDUE)) {
+            logs("Forbid : expired token exception", httpMeta);
+            error.error(ExceptionStatus.ACCESS_TOKEN_OVERDUE);
+        }
+
         if (!httpMeta.isHasToken()) {
             logs("Require Login", httpMeta);
             error.error(ExceptionStatus.REQUIRE_LOGIN);
