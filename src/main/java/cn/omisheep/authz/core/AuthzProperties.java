@@ -40,27 +40,11 @@ public class AuthzProperties {
     private LogLevel log = LogLevel.WARN;
 
     /**
-     * 开启redis缓存时可以不用设置。用户缓存刷新频率，清除掉过期掉值 默认10秒一次，单位 s|m|h|d
-     */
-    private String userBufferRefreshWithPeriod = "10s";
-
-    /**
      * 使用`@Decrypt`时的默认的解密器
      *
      * @since 1.0.11
      */
     private Class<? extends Decryptor> defaultDecryptor = RSADecryptor.class;
-
-    /**
-     * 定期GC时间，单位 s|m|h|d
-     * 为0或为空则关闭
-     */
-    private String gcPeriod;
-
-    /**
-     * 没啥用，可能以后会有用
-     */
-    private boolean md5check = false;
 
     /**
      * orm框架 目前仅支持mybatis
@@ -89,6 +73,8 @@ public class AuthzProperties {
      * @since 1.1.3
      */
     private ResponseConfig  response  = new ResponseConfig();
+
+    private OtherConfig sys = new OtherConfig();
 
     @Data
     public static class TokenConfig {
@@ -363,4 +349,19 @@ public class AuthzProperties {
         private boolean alwaysOk = false;
     }
 
+    @Data
+    public static class OtherConfig{
+
+        /**
+         * 定期GC时间，单位 s|m|h|d
+         * 为0或为空则关闭
+         */
+        private String gcPeriod;
+
+        /**
+         * 没啥用，可能以后会有用
+         */
+        private boolean md5check = false;
+
+    }
 }

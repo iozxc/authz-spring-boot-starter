@@ -268,11 +268,6 @@ public class AuthzAutoConfiguration {
     @Bean
     public UserDevicesDict userDevicesDict(AuthzProperties properties, Cache cache) {
         return new UserDevicesDictByCache(properties, cache);
-//        if (properties.getCache().isEnableRedis()) {
-//            return new UserDevicesDictByCache(properties, cache);
-//        } else {
-//            return new UserDevicesDictByHashMap(properties);
-//        }
     }
 
     @Bean

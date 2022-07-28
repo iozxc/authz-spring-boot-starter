@@ -15,6 +15,7 @@ import cn.omisheep.authz.core.oauth.OpenAuthDict;
 import cn.omisheep.authz.core.oauth.OpenAuthLibrary;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
+import cn.omisheep.commons.util.TaskBuilder;
 import lombok.SneakyThrows;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.system.ApplicationHome;
@@ -87,7 +88,6 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
         OpenAuthDict.init(properties, ctx, permLibrary, cache, mapRet);
         LogUtils.debug("OpenAuthDict init success \n");
-//        initOpenAuthDict(ctx, mapRet);
 
         // init Httpd
         Httpd.init(properties, ctx, mapRet);
@@ -95,27 +95,19 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
         AuthzDefender.init(userDevicesDict, permLibrary);
 
-        // init Jobs
-        AuthzRSAManager.setTime(properties.getRsa().getRsaKeyRefreshWithPeriod());
-        if (properties.getRsa().isAuto() && (properties.getRsa().getCustomPrivateKey() == null || properties.getRsa().getCustomPublicKey() == null)) {
-            AuthzRSAManager.setAuto(true);
-        } else {
-            AuthzRSAManager.setAuto(false);
-            AuthzProperties.RSAConfig rsaConfig = properties.getRsa();
-            AuthzRSAManager.setAuKeyPair(rsaConfig.getCustomPublicKey(), rsaConfig.getCustomPrivateKey());
-        }
+        // init rsa
+        initRSA();
 
-//        if (!properties.getCache().isEnableRedis()) {
-//            TaskBuilder.schedule(Pelcron::activeExpireCycle, properties.getUserBufferRefreshWithPeriod());
-//        }
-//        TaskBuilder.schedule(Pelcron::GC, properties.getGcPeriod());
+        if (properties.getSys().getGcPeriod() != null) {
+            TaskBuilder.schedule(Pelcron::GC, properties.getSys().getGcPeriod());
+        }
 
         openAuthLibrary.init();
 
         AuInit.log.info("Started Authz Message id: {}", Message.uuid);
 
         initVersionInfo();
-        if (properties.isMd5check()) {
+        if (properties.getSys().isMd5check()) {
             AuInit.log.info("project md5 => {}", AuthzAppVersion.getMd5());
         }
     }
@@ -123,7 +115,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
     private void initVersionInfo() {
         try {
             AuthzAppVersion.setProjectPath(getJarPath());
-            AuthzAppVersion.setMd5check(properties.isMd5check());
+            AuthzAppVersion.setMd5check(properties.getSys().isMd5check());
             if (properties.getCache().isEnableRedis()) {
                 AuthzAppVersion.born();
             }
@@ -142,4 +134,14 @@ public class AuCoreInitialization implements ApplicationContextAware {
         return null;
     }
 
+    private void initRSA(){
+        AuthzRSAManager.setTime(properties.getRsa().getRsaKeyRefreshWithPeriod());
+        if (properties.getRsa().isAuto() && (properties.getRsa().getCustomPrivateKey() == null || properties.getRsa().getCustomPublicKey() == null)) {
+            AuthzRSAManager.setAuto(true);
+        } else {
+            AuthzRSAManager.setAuto(false);
+            AuthzProperties.RSAConfig rsaConfig = properties.getRsa();
+            AuthzRSAManager.setAuKeyPair(rsaConfig.getCustomPublicKey(), rsaConfig.getCustomPrivateKey());
+        }
+    }
 }

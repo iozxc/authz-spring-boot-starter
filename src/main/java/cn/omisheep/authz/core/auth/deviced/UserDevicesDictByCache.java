@@ -456,11 +456,17 @@ public class UserDevicesDictByCache implements UserDevicesDict {
 
             List<String> deviceTypes = refreshInfoMap.values().stream().map(DefaultDevice::getDeviceType).collect(
                     Collectors.toList());
-            // 登录设备总数
-            if (userConfig.getMaximumTotalDevice() != -1 && userConfig.getMaximumTotalDevice() > 0 && refreshInfoKeys.size() > userConfig.getMaximumTotalDevice()) {
-                int max = userConfig.getMaximumTotalDevice();
-                if (finalOk) max--;
-                d(max, refreshInfoMap, accessInfoMap, delKeys, e -> true);
+
+            List<DeviceCountInfo> typesTotal = userConfig.getTypesTotal();
+            // 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1）
+            if (typesTotal != null && !typesTotal.isEmpty()) {
+                for (DeviceCountInfo deviceCountInfo : typesTotal) {
+                    if (deviceCountInfo.getTypes().isEmpty()) continue;
+                    int max = deviceCountInfo.getTotal();
+                    if (finalOk) max--;
+                    d(max, refreshInfoMap, accessInfoMap, delKeys,
+                      e -> deviceCountInfo.getTypes().contains(e.getValue().getDeviceType()));
+                }
             }
 
             // 同类型设备最大登录数量
@@ -473,16 +479,11 @@ public class UserDevicesDictByCache implements UserDevicesDict {
                 }
             }
 
-            List<DeviceCountInfo> typesTotal = userConfig.getTypesTotal();
-            // 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1）
-            if (typesTotal != null && !typesTotal.isEmpty()) {
-                for (DeviceCountInfo deviceCountInfo : typesTotal) {
-                    if (deviceCountInfo.getTypes().isEmpty()) continue;
-                    int max = deviceCountInfo.getTotal();
-                    if (finalOk) max--;
-                    d(max, refreshInfoMap, accessInfoMap, delKeys,
-                      e -> deviceCountInfo.getTypes().contains(e.getValue().getDeviceType()));
-                }
+            // 登录设备总数
+            if (userConfig.getMaximumTotalDevice() != -1 && userConfig.getMaximumTotalDevice() > 0 && refreshInfoKeys.size() > userConfig.getMaximumTotalDevice()) {
+                int max = userConfig.getMaximumTotalDevice();
+                if (finalOk) max--;
+                d(max, refreshInfoMap, accessInfoMap, delKeys, e -> true);
             }
 
             if (!delKeys.isEmpty()) {

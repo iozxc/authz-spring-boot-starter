@@ -1,11 +1,8 @@
 package cn.omisheep.authz.core.config;
 
-import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
-import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
 
 /**
- * device删除器，（惰性删除策略和定期删除策略）
  * 定期GC
  *
  * @author zhouxinchen[1269670415@qq.com]
@@ -13,24 +10,8 @@ import cn.omisheep.authz.core.util.LogUtils;
  */
 public class Pelcron {
 
-    private static final UserDevicesDict userDevicesDict;
-
-    static {
-        userDevicesDict = AUtils.getBean(UserDevicesDict.class);
+    private Pelcron() {
     }
-
-    public Pelcron() {
-    }
-
-    /**
-     * 删除过期的用户信息，
-     */
-//    public static void activeExpireCycle() {
-//        if (userDevicesDict instanceof UserDevicesDictByHashMap) {
-//            UserDevicesDictByHashMap userDevicesDictByHashMap = (UserDevicesDictByHashMap) userDevicesDict;
-//            userDevicesDictByHashMap.cleanCycle();
-//        }
-//    }
 
     public static void GC() {
         System.gc();
