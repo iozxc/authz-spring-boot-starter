@@ -169,9 +169,11 @@ public class AuthzDefender {
             HttpMeta currentHttpMeta = AUtils.getCurrentHttpMeta();
             Token    accessToken     = currentHttpMeta.getToken();
             if (accessToken == null) return false;
-            UserStatus userStatus = Optional.ofNullable(currentHttpMeta.getUserStatus())
-                    .orElse(userDevicesDict.userStatus(accessToken));
-            currentHttpMeta.setUserStatus(userStatus);
+            UserStatus userStatus = Optional.ofNullable(currentHttpMeta.getUserStatus()).orElseGet(() -> {
+                UserStatus u = userDevicesDict.userStatus(accessToken);
+                currentHttpMeta.setUserStatus(u);
+                return u;
+            });
             switch (userStatus) {
                 case REQUIRE_LOGIN:
                 case LOGIN_EXCEPTION:
