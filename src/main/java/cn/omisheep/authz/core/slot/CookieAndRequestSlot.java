@@ -16,7 +16,7 @@ import org.springframework.web.method.HandlerMethod;
 import javax.servlet.http.Cookie;
 import java.util.Locale;
 
-import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.ACCESS_TOKEN_OVERDUE;
+import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.UserStatus.ACCESS_TOKEN_OVERDUE;
 import static cn.omisheep.authz.core.config.Constants.USER_ID;
 
 /**
@@ -74,7 +74,7 @@ public class CookieAndRequestSlot implements Slot {
                     } catch (Exception ee) {
                         // skip
                     } finally {
-                        httpMeta.setTokenChecked(ACCESS_TOKEN_OVERDUE);
+                        httpMeta.setUserStatus(ACCESS_TOKEN_OVERDUE);
                     }
                 }
             }

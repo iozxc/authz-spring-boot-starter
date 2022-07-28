@@ -2,6 +2,7 @@ package cn.omisheep.authz.core.auth.ipf;
 
 import cn.omisheep.authz.core.AuthzException;
 import cn.omisheep.authz.core.ExceptionStatus;
+import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.config.Constants;
@@ -55,7 +56,7 @@ public class HttpMeta {
     private       boolean                     requireLogin;
     private       PermRolesMeta               permRolesMeta;
     private       boolean                     ignore              = false;
-    private       Byte                        tokenChecked;
+    private       UserDevicesDict.UserStatus  userStatus;
     @JsonIgnore
     private       LinkedList<Object>          exceptionObjectList = new LinkedList<>();
     @JsonIgnore

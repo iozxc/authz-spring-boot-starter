@@ -33,10 +33,9 @@ public interface UserDevicesDict {
      */
     Map<String, AuthzProperties.UserConfig> roleConfig = new ConcurrentHashMap<>();
 
-    byte SUCCESS              = 0;
-    byte REQUIRE_LOGIN        = 1;
-    byte LOGIN_EXCEPTION      = 2;
-    byte ACCESS_TOKEN_OVERDUE = 3;
+    enum UserStatus {
+        SUCCESS, REQUIRE_LOGIN, LOGIN_EXCEPTION, ACCESS_TOKEN_OVERDUE;
+    }
 
     /**
      * 用户设备状态判断，以及L1Cache下的第二次惰性删除
@@ -44,7 +43,7 @@ public interface UserDevicesDict {
      * @param accessToken token
      * @return 0：正常  1：accessToken过期  2：需要重新登录  3：在别处登录
      */
-    byte userStatus(Token accessToken);
+    UserStatus userStatus(Token accessToken);
 
     // =========================   登入   ========================= //
 

@@ -20,6 +20,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.UserStatus.*;
+
 /**
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
@@ -37,7 +39,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     @Override
-    public byte userStatus(Token accessToken) {
+    public UserStatus userStatus(Token accessToken) {
         Object userId        = accessToken.getUserId();
         String deviceType    = accessToken.getDeviceType();
         String deviceId      = accessToken.getDeviceId();
