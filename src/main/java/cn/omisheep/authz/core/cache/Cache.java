@@ -136,6 +136,8 @@ public interface Cache {
     }
 
     /**
+     * get(key)!=null并不能判断是否有这个key，因为这个Cache可以存null
+     *
      * @param key key
      * @return 如果没有这个key，返回true
      */
@@ -223,6 +225,8 @@ public interface Cache {
 
     /**
      * 得到对应key的值
+     * get(key)!=null并不能判断是否有这个key，因为这个Cache可以存null
+     * 若需要判断请用{@link #notKey(String)}
      *
      * @param key key
      * @return value
