@@ -132,8 +132,8 @@ public class AuthzMap implements Map<Object, Object> {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof AuMap)) return false;
-        AuMap auMap = (AuMap) o;
+        if (!(o instanceof AuthzMap)) return false;
+        AuthzMap auMap = (AuthzMap) o;
         return Objects.equal(map, auMap.map);
     }
 }
