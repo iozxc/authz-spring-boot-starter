@@ -10,22 +10,25 @@ package cn.omisheep.authz;
  */
 
 import cn.omisheep.authz.core.NotLoginException;
+import cn.omisheep.authz.core.RefreshTokenExpiredException;
 import cn.omisheep.authz.core.ThreadWebEnvironmentException;
 import cn.omisheep.authz.core.auth.deviced.Device;
 import cn.omisheep.authz.core.auth.deviced.DeviceCountInfo;
 import cn.omisheep.authz.core.auth.ipf.Blacklist;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
-import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
 import cn.omisheep.authz.core.callback.CreateAuthorizationInfoCallback;
 import cn.omisheep.authz.core.callback.RateLimitCallback;
 import cn.omisheep.authz.core.codec.AuthzRSAManager;
+import cn.omisheep.authz.core.helper.AuthzGranterHelper;
+import cn.omisheep.authz.core.helper.AuthzStateHelper;
+import cn.omisheep.authz.core.helper.BaseHelper;
+import cn.omisheep.authz.core.helper.OpenAuthHelper;
 import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.oauth.AuthorizationException;
 import cn.omisheep.authz.core.oauth.ClientDetails;
-import cn.omisheep.authz.core.oauth.OpenAuthHelper;
-import cn.omisheep.authz.core.tk.Token;
-import cn.omisheep.authz.core.tk.TokenPair;
+import cn.omisheep.authz.core.tk.AccessToken;
+import cn.omisheep.authz.core.tk.IssueToken;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.commons.util.TimeUtils;
 import org.springframework.lang.NonNull;
@@ -42,7 +45,7 @@ import static cn.omisheep.authz.core.AuthzManager.*;
  * @since 1.0.0
  */
 @SuppressWarnings("all")
-public class AuHelper {
+public class AuHelper extends BaseHelper {
 
     // **************************************     登录 & 用户设备      ************************************** //
 
@@ -51,7 +54,7 @@ public class AuHelper {
      * @return 授权后的tokenPair(accessToken以及refreshToken)，返回空则登录失败
      */
     @Nullable
-    public static TokenPair login(@NonNull Object userId) {
+    public static IssueToken login(@NonNull Object userId) {
         String deviceType;
         try {
             deviceType = getHttpMeta().getUserAgent();
@@ -67,7 +70,7 @@ public class AuHelper {
      * @return 授权后的tokenPair(accessToken以及refreshToken)，返回空则登录失败
      */
     @Nullable
-    public static TokenPair login(@NonNull Object userId, @NonNull String deviceType) {
+    public static IssueToken login(@NonNull Object userId, @NonNull String deviceType) {
         return login(userId, deviceType, null);
     }
 
@@ -78,8 +81,8 @@ public class AuHelper {
      * @return 授权后的tokenPair(accessToken以及refreshToken)，返回空则登录失败
      */
     @Nullable
-    public static TokenPair login(@NonNull Object userId, @NonNull String deviceType, @Nullable String deviceId) {
-        return AuthzDefender.grant(userId, deviceType, deviceId);
+    public static IssueToken login(@NonNull Object userId, @NonNull String deviceType, @Nullable String deviceId) {
+        return AuthzGranterHelper.grant(userId, deviceType, deviceId);
     }
 
     /**
@@ -92,23 +95,23 @@ public class AuHelper {
      * @param refreshToken 与accessToken一起授予的refreshToken
      * @return 刷新成功（true）/ 失败（false）返回 [空] 则登录失败
      */
-    @Nullable
-    public static TokenPair refreshToken(@NonNull String refreshToken) {
-        return AuthzDefender.refreshToken(refreshToken);
+    @NonNull
+    public static IssueToken refreshToken(@NonNull String refreshToken) throws RefreshTokenExpiredException {
+        return AuthzGranterHelper.refreshToken(refreshToken);
     }
 
     /**
      * 注销当前用户当前设备
      */
     public static void logout() {
-        AuthzDefender.logout();
+        AuthzGranterHelper.logout();
     }
 
     /**
      * 注销当前用户所有设备
      */
     public static void logoutAll() {
-        AuthzDefender.logoutAll();
+        AuthzGranterHelper.logoutAll();
     }
 
     /**
@@ -117,7 +120,7 @@ public class AuHelper {
      * @param deviceType 指定设备类型
      */
     public static void logout(@NonNull String deviceType) {
-        AuthzDefender.logout(deviceType);
+        AuthzGranterHelper.logout(deviceType);
     }
 
     /**
@@ -127,7 +130,7 @@ public class AuHelper {
      * @param deviceId   指定设备id
      */
     public static void logout(@NonNull String deviceType, @Nullable String deviceId) {
-        AuthzDefender.logout(deviceType, deviceId);
+        AuthzGranterHelper.logout(deviceType, deviceId);
     }
 
     /**
@@ -136,7 +139,7 @@ public class AuHelper {
      * @param userId 用户id
      */
     public static void logoutAll(@NonNull Object userId) {
-        AuthzDefender.logoutAll(userId);
+        AuthzGranterHelper.logoutAll(userId);
     }
 
     /**
@@ -146,7 +149,7 @@ public class AuHelper {
      * @param deviceType 指定设备类型
      */
     public static void logout(@NonNull Object userId, @NonNull String deviceType) {
-        AuthzDefender.logout(userId, deviceType);
+        AuthzGranterHelper.logout(userId, deviceType);
     }
 
     /**
@@ -157,7 +160,7 @@ public class AuHelper {
      * @param deviceId   指定设备id
      */
     public static void logout(@NonNull Object userId, @NonNull String deviceType, @Nullable String deviceId) {
-        AuthzDefender.logout(userId, deviceType, deviceId);
+        AuthzGranterHelper.logout(userId, deviceType, deviceId);
     }
 
     /**
@@ -259,8 +262,8 @@ public class AuHelper {
          * @return 授权后的tokenPair(accessToken以及refreshToken)
          * @throws AuthorizationException 验证失败，客户端密码错误 或者 授权码失效(过期 或者 已使用)
          */
-        @NonNull
-        public static TokenPair authorize(@NonNull String clientId, @NonNull String clientSecret,
+        @Nullable
+        public static IssueToken authorize(@NonNull String clientId, @NonNull String clientSecret,
                                           @NonNull String authorizationCode) throws AuthorizationException {
             return OpenAuthHelper.authorize(clientId, clientSecret, authorizationCode);
         }
@@ -350,7 +353,7 @@ public class AuHelper {
          * @throws AuthorizationException 授权失败
          */
         @NonNull
-        public static String createDefaultScopeAuthorizationCode(
+        public static String createBasicScopeAuthorizationCode(
                 @NonNull String clientId, @NonNull String redirectUrl) throws AuthorizationException {
             String deviceType;
             try {
@@ -358,7 +361,7 @@ public class AuHelper {
             } catch (ThreadWebEnvironmentException e) {
                 deviceType = "unknown";
             }
-            return createDefaultScopeAuthorizationCode(clientId, redirectUrl, deviceType, null);
+            return createBasicScopeAuthorizationCode(clientId, redirectUrl, deviceType, null);
         }
 
         /**
@@ -374,9 +377,9 @@ public class AuHelper {
          * @throws AuthorizationException 授权失败
          */
         @NonNull
-        public static String createDefaultScopeAuthorizationCode(@NonNull String clientId, @NonNull String redirectUrl,
+        public static String createBasicScopeAuthorizationCode(@NonNull String clientId, @NonNull String redirectUrl,
                                                                  @NonNull String deviceType) throws AuthorizationException {
-            return createDefaultScopeAuthorizationCode(clientId, redirectUrl, deviceType, null);
+            return createBasicScopeAuthorizationCode(clientId, redirectUrl, deviceType, null);
         }
 
         /**
@@ -393,11 +396,11 @@ public class AuHelper {
          * @throws AuthorizationException 授权失败
          */
         @NonNull
-        public static String createDefaultScopeAuthorizationCode(@NonNull String clientId, @NonNull String redirectUrl,
+        public static String createBasicScopeAuthorizationCode(@NonNull String clientId, @NonNull String redirectUrl,
                                                                  @NonNull String deviceType,
                                                                  @Nullable String deviceId) throws AuthorizationException {
             if (isLogin() && agreeAuthorize(clientId)) {
-                return OpenAuthHelper.createDefaultScopeAuthorizationCode(clientId, redirectUrl, getUserId(),
+                return OpenAuthHelper.createBasicScopeAuthorizationCode(clientId, redirectUrl, getUserId(),
                                                                           deviceType, deviceId);
             }
             throw AuthorizationException.privilegeGrantFailed();
@@ -522,7 +525,7 @@ public class AuHelper {
      */
     @NonNull
     public static List<Device> getAllDeviceFromCurrentUser() {
-        return userDevicesDict.listDevicesForCurrentUser();
+        return userDevicesDict.listDevicesByUserId(getUserId());
     }
 
     /**
@@ -562,7 +565,7 @@ public class AuHelper {
      * @return 当前请求是否登录 true为登录、false为未登录
      */
     public static boolean isLogin() {
-        return AuthzDefender.isLogin();
+        return AuthzStateHelper.isLogin();
     }
 
     /**
@@ -579,7 +582,7 @@ public class AuHelper {
      * @return 获得当前请求的Token信息
      * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
      */
-    public static Token getToken() throws NotLoginException {
+    public static AccessToken getToken() throws NotLoginException {
         return AUtils.getCurrentToken();
     }
 
@@ -622,7 +625,7 @@ public class AuHelper {
      * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
      */
     public static boolean hasRoles(List<String> roles) throws NotLoginException {
-        return AuthzDefender.hasRoles(roles);
+        return AuthzStateHelper.hasRoles(roles);
     }
 
     /**
@@ -640,7 +643,7 @@ public class AuHelper {
      * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
      */
     public static boolean hasPermissions(List<String> permissions) throws NotLoginException {
-        return AuthzDefender.hasPermissions(permissions);
+        return AuthzStateHelper.hasPermissions(permissions);
     }
 
     /**
@@ -649,7 +652,7 @@ public class AuHelper {
      * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
      */
     public static boolean hasScope(String... scope) {
-        return AuthzDefender.hasScope(Arrays.asList(scope));
+        return AuthzStateHelper.hasScope(Arrays.asList(scope));
     }
 
     /**
@@ -658,7 +661,7 @@ public class AuHelper {
      * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
      */
     public static boolean hasScope(List<String> scope) {
-        return AuthzDefender.hasScope(scope);
+        return AuthzStateHelper.hasScope(scope);
     }
 
     // ************************************     【在线/活跃】      ************************************ //
@@ -1184,8 +1187,7 @@ public class AuHelper {
         /**
          * 重新加载指定的缓存
          */
-        @SafeVarargs
-        public static void reloadCache(Collection<String>... keys) {
+        public static void reloadCache(Collection<String> keys) {
             cache.reload(keys);
         }
 

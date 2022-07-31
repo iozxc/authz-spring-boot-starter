@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.auth.deviced;
 
 
-import java.util.Date;
+import cn.omisheep.authz.core.tk.GrantType;
 
 import static cn.omisheep.authz.core.config.Constants.*;
 
@@ -28,6 +28,17 @@ public class DefaultDevice extends AuMap implements Device {
     }
 
     @Override
+    public Long getExpiresAt() {
+        return getLong(ACCESS_TOKEN_EXPIRATION);
+    }
+
+    @Override
+    public Device setExpiresAt(Long accessExpiresAt) {
+        setValue(ACCESS_TOKEN_EXPIRATION, String.valueOf(accessExpiresAt));
+        return this;
+    }
+
+    @Override
     public String getDeviceId() {
         return getString(DEVICE_ID);
     }
@@ -39,29 +50,47 @@ public class DefaultDevice extends AuMap implements Device {
     }
 
     @Override
-    public Date getLastRequestTime() {
-        return getDate(LAST_REQUEST_TIME);
+    public String getAccessTokenId() {
+        return getString(ACCESS_TOKEN_ID);
     }
 
     @Override
-    public Long getLastRequestTimeLong() {
-        return getLong(LAST_REQUEST_TIME);
-    }
-
-    @Override
-    public Device setLastRequestTime(Date lastRequestTime) {
-        setDate(LAST_REQUEST_TIME, lastRequestTime);
+    public Device setAccessTokenId(String accessTokenId) {
+        setValue(ACCESS_TOKEN_ID, accessTokenId);
         return this;
     }
 
     @Override
-    public String getIp() {
-        return getString(IP);
+    public String getScope() {
+        return getString(SCOPE);
     }
 
     @Override
-    public Device setIp(String ip) {
-        setValue(IP, ip);
+    public Device setScope(String scope) {
+        setValue(SCOPE, scope);
         return this;
     }
+
+    @Override
+    public GrantType getGrantType() {
+        return GrantType.grantType(getString(GRANT_TYPE));
+    }
+
+    @Override
+    public Device setGrantType(GrantType grantType) {
+        setValue(GRANT_TYPE, grantType.getType());
+        return this;
+    }
+
+    @Override
+    public String getClientId() {
+        return getString(CLIENT_ID);
+    }
+
+    @Override
+    public Device setClientId(String clientId) {
+        setValue(CLIENT_ID, clientId);
+        return this;
+    }
+
 }

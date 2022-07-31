@@ -6,7 +6,7 @@ import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import org.springframework.web.method.HandlerMethod;
 
 import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.UserStatus.*;
-import static cn.omisheep.authz.core.auth.rpd.AuthzDefender.logs;
+import static cn.omisheep.authz.core.util.LogUtils.logs;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]

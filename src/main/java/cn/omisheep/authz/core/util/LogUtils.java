@@ -1,6 +1,9 @@
 package cn.omisheep.authz.core.util;
 
+import cn.omisheep.authz.core.auth.ipf.HttpMeta;
+import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.config.Constants;
+import cn.omisheep.authz.core.tk.AccessToken;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -34,11 +37,14 @@ public abstract class LogUtils {
     }
 
     public static void error(Throwable throwable) {
-        if (logLevel.ordinal() <= LogLevel.ERROR.ordinal() && log.isErrorEnabled(MARKER)) log.error(MARKER, throwable.getMessage(), throwable);
+        if (logLevel.ordinal() <= LogLevel.ERROR.ordinal() && log.isErrorEnabled(MARKER)) log.error(MARKER,
+                                                                                                    throwable.getMessage(),
+                                                                                                    throwable);
     }
 
     public static void error(String msg, Throwable throwable) {
-        if (logLevel.ordinal() <= LogLevel.ERROR.ordinal() && log.isErrorEnabled(MARKER)) log.error(MARKER, msg, throwable);
+        if (logLevel.ordinal() <= LogLevel.ERROR.ordinal() && log.isErrorEnabled(MARKER)) log.error(MARKER, msg,
+                                                                                                    throwable);
     }
 
     public static void warn(String msg, Object... args) {
@@ -122,6 +128,26 @@ public abstract class LogUtils {
                 formatMsg = formatMsg.replaceFirst("\\{}", String.valueOf(arg));
             }
             return formatMsg;
+        }
+    }
+
+    public static void logs(String status, HttpMeta httpMeta, PermRolesMeta meta) {
+        AccessToken accessToken = httpMeta.getToken();
+        if (accessToken == null) {
+            httpMeta.log("「{}」\t{}", status, meta);
+        } else {
+            httpMeta.log("「{}」\t\t{}\t, userId: [{}]\t, deviceType = [{}]\t, deviceId = [{}]",
+                         status, meta, accessToken.getUserId(), accessToken.getDeviceType(), accessToken.getDeviceId());
+        }
+    }
+
+    public static void logs(String status, HttpMeta httpMeta) {
+        AccessToken accessToken = httpMeta.getToken();
+        if (accessToken == null) {
+            httpMeta.log("「{}」", status);
+        } else {
+            httpMeta.log("「{}」\t, userId: [{}]\t, deviceType = [{}]\t, deviceId = [{}]",
+                         status, accessToken.getUserId(), accessToken.getDeviceType(), accessToken.getDeviceId());
         }
     }
 

@@ -76,9 +76,16 @@ public class AuthzAppVersion {
     public static void init(String app) {
         Assert.state(!_values.containsKey("APP"), "APP已初始化");
         _values.put("APP", app);
+
+        _values.put("USER_DEVICE_KEY_PREFIX", "authz:" + app + ":user:device:");
+        _values.put("OAUTH_USER_DEVICE_KEY_PREFIX", "authz:" + app + ":oauth:user:device:");
+
+        _values.put("OAUTH_USER_REQUEST_KEY_PREFIX", "authz:" + app + ":oauth:user:request:");
+        _values.put("USER_REQUEST_KEY_PREFIX", "authz:" + app + ":user:request");
+
         _values.put("ACCESS_INFO_KEY_PREFIX", "authz:" + app + ":usersAccessInfo:");
         _values.put("REFRESH_INFO_KEY_PREFIX", "authz:" + app + ":usersRefreshInfo:");
-        _values.put("DEVICE_REQUEST_INFO_KEY_PREFIX", "authz:" + app + ":requestInfo:");
+
         _values.put("PERMISSIONS_BY_ROLE_KEY_PREFIX", "authz:" + app + ":permissionsByRole:");
         _values.put("USER_ROLES_KEY_PREFIX", "authz:" + app + ":userRoles:");
         _values.put("DASHBOARD_KEY_PREFIX", "authz:" + app + ":dashboard:");

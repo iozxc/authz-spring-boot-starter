@@ -6,7 +6,6 @@ import cn.omisheep.authz.core.auth.DefaultPermLibrary;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
-import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.codec.AuthzRSAManager;
@@ -92,8 +91,6 @@ public class AuCoreInitialization implements ApplicationContextAware {
         // init Httpd
         Httpd.init(properties, ctx, mapRet);
         LogUtils.debug("Httpd init success \n");
-
-        AuthzDefender.init(userDevicesDict, permLibrary);
 
         // init rsa
         initRSA();

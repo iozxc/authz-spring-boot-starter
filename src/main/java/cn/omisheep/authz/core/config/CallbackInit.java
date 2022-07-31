@@ -3,7 +3,7 @@ package cn.omisheep.authz.core.config;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.callback.CreateAuthorizationInfoCallback;
 import cn.omisheep.authz.core.callback.RateLimitCallback;
-import cn.omisheep.authz.core.oauth.OpenAuthHelper;
+import cn.omisheep.authz.core.helper.OpenAuthHelper;
 import org.springframework.context.ApplicationContext;
 
 import java.util.Map;

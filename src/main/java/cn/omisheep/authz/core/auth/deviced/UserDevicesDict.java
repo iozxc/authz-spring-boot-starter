@@ -2,8 +2,11 @@ package cn.omisheep.authz.core.auth.deviced;
 
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.authz.core.tk.Token;
+import cn.omisheep.authz.core.config.Constants;
+import cn.omisheep.authz.core.tk.AccessToken;
+import cn.omisheep.authz.core.tk.RefreshToken;
 import cn.omisheep.authz.core.tk.TokenPair;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -43,19 +46,19 @@ public interface UserDevicesDict {
      * @param accessToken token
      * @return {@link UserStatus}
      */
-    UserStatus userStatus(Token accessToken);
+    UserStatus userStatus(AccessToken accessToken);
 
     // =========================   登入   ========================= //
 
-    boolean addUser(TokenPair tokenPair, HttpMeta httpMeta);
+    void addUser(TokenPair tokenPair, HttpMeta httpMeta);
 
     // =========================   刷新   ========================= //
 
-    boolean refreshUser(TokenPair tokenPair);
+    boolean refreshUser(RefreshToken refresh, TokenPair tokenPair);
 
     // =========================   登出   ========================= //
 
-    void removeDeviceByUserIdAndAccessTokenId(Object userId, String accessTokenId);
+    void removeDeviceByTokenId(Object userId, String refreshTokenId);
 
     void removeAllDeviceByUserId(Object userId);
 
@@ -78,8 +81,6 @@ public interface UserDevicesDict {
     List<Object> listUserId();
 
     List<Device> listDevicesByUserId(Object userId);
-
-    List<Device> listDevicesForCurrentUser();
 
     // =========================   活跃用户   ========================= //
 
@@ -136,4 +137,72 @@ public interface UserDevicesDict {
         return userConfig.getTypesTotal();
     }
 
+
+    default String requestKey(AccessToken accessToken) {
+        return requestKey(accessToken.getUserId(), accessToken.getRefreshTokenId());
+    }
+
+    default String requestKey(Object userId, String refreshTokenId) {
+        return Constants.USER_REQUEST_KEY_PREFIX.get() + userId + Constants.SEPARATOR + refreshTokenId;
+    }
+
+    default String oauthRequestKey(AccessToken accessToken) {
+        return oauthRequestKey(accessToken.getUserId(), accessToken.getRefreshTokenId());
+    }
+
+    default String oauthRequestKey(Object userId, String refreshTokenId) {
+        return Constants.OAUTH_USER_REQUEST_KEY_PREFIX.get() + userId + Constants.SEPARATOR + refreshTokenId;
+    }
+
+    default String key(AccessToken accessToken) {
+        return key(accessToken.getUserId(), accessToken.getRefreshTokenId());
+    }
+
+    default String key(RefreshToken refreshToken) {
+        return key(refreshToken.getUserId(), refreshToken.getTokenId());
+    }
+
+    default String key(Object userId, String refreshTokenId) {
+        return Constants.USER_DEVICE_KEY_PREFIX.get() + userId + Constants.SEPARATOR + refreshTokenId;
+    }
+
+    default String oauthKey(AccessToken accessToken) {
+        return oauthKey(accessToken.getUserId(), accessToken.getRefreshTokenId());
+    }
+
+    default String oauthKey(RefreshToken refreshToken) {
+        return oauthKey(refreshToken.getUserId(), refreshToken.getTokenId());
+    }
+
+    default String oauthKey(Object userId, String refreshTokenId) {
+        return Constants.OAUTH_USER_DEVICE_KEY_PREFIX.get() + userId + Constants.SEPARATOR + refreshTokenId;
+    }
+
+    default boolean equalsDeviceByTypeAndId(Device device, String deviceType, String deviceId) {
+        if (device == null) return false;
+        return StringUtils.equals(device.getDeviceType(), deviceType) && StringUtils.equals(device.getDeviceId(),
+                                                                                            deviceId);
+    }
+
+    default boolean equalsDeviceById(Device device, Device otherDevice) {
+        if (device == null) return false;
+        return equalsDeviceById(device, otherDevice.getDeviceId());
+    }
+
+    default boolean equalsDeviceById(Device device, String deviceId) {
+        if (device == null) return false;
+        return device.getDeviceId() != null && StringUtils.equals(device.getDeviceId(), deviceId);
+    }
+
+    default boolean equalsDeviceByType(Device device, String deviceType) {
+        if (device == null) return false;
+        return StringUtils.equals(device.getDeviceType(), deviceType);
+    }
+
+    default boolean equalsDeviceByTypeOrId(Device device, Device otherDevice) {
+        if (device == null) return false;
+        return StringUtils.equals(device.getDeviceType(),
+                                  otherDevice.getDeviceType()) || (device.getDeviceId() != null && StringUtils.equals(
+                device.getDeviceId(), otherDevice.getDeviceId())); // null时不参与匹配
+    }
 }

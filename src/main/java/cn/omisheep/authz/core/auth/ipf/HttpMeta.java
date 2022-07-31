@@ -6,7 +6,7 @@ import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.config.Constants;
-import cn.omisheep.authz.core.tk.Token;
+import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.web.utils.HttpUtils;
@@ -46,7 +46,7 @@ public class HttpMeta {
     private final String                      refer;
     private       String                      body;
     private final Date                        now;
-    private       Token                       token;
+    private       AccessToken                 token;
     private       Object                      userId;
     private       boolean                     hasToken;
     private       Set<String>                 roles;
@@ -89,7 +89,7 @@ public class HttpMeta {
             HashSet<String> perms = new HashSet<>();
             for (String role : Optional.ofNullable(getRoles()).orElse(new HashSet<>())) {
                 Set<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
-                if (permissionsByRole!=null) perms.addAll(permissionsByRole);
+                if (permissionsByRole != null) perms.addAll(permissionsByRole);
             }
             return perms;
         });
@@ -107,7 +107,7 @@ public class HttpMeta {
         return scope;
     }
 
-    public static Token currentToken() {
+    public static AccessToken currentToken() {
         try {
             return ((HttpMeta) HttpUtils.getCurrentRequest().getAttribute(Constants.HTTP_META)).token;
         } catch (Exception e) {
@@ -177,7 +177,7 @@ public class HttpMeta {
         return body;
     }
 
-    public void setToken(Token token) {
+    public void setToken(AccessToken token) {
         if (this.token == null) {
             this.token  = token;
             this.userId = token.getUserId();

@@ -8,7 +8,7 @@ import cn.omisheep.authz.core.PermissionException;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
-import cn.omisheep.authz.core.tk.Token;
+import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.commons.util.CollectionUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
@@ -142,8 +142,8 @@ public class AuthzMethodPermissionChecker {
     @Before("!hasRequestMapping()&&(hasOAuthScope()||hasOAuthScopeInType()||hasOAuthScopeBasic()||hasOAuthScopeBasicInType())")
     public void checkScope(JoinPoint joinPoint) {
         try {
-            Token token = AuHelper.getToken();
-            if (token.getClientId() == null) return; //不需要拦截
+            AccessToken accessToken = AuHelper.getToken();
+            if (accessToken.getClientId() == null) return; //不需要拦截
 
             MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
             Method method = joinPoint.getSignature().getDeclaringType().getMethod(joinPoint.getSignature().getName(),
@@ -159,8 +159,8 @@ public class AuthzMethodPermissionChecker {
             Set<String> requireScope = scope.computeIfAbsent(joinPoint.getSignature().toLongString(), r ->
                     merge(oAuthScope1, oAuthScope2, oAuthScopeBasic1, oAuthScopeBasic1));
             if (requireScope.isEmpty()) return;
-            if (token.getScope() == null
-                    || !CollectionUtils.newSet(token.getScope().split(" ")).containsAll(requireScope)) {
+            if (accessToken.getScope() == null
+                    || !CollectionUtils.newSet(accessToken.getScope().split(" ")).containsAll(requireScope)) {
                 throw new PermissionException();
             }
         } catch (NoSuchMethodException e) {
@@ -221,7 +221,7 @@ public class AuthzMethodPermissionChecker {
                               OAuthScopeBasic oAuthScopeBasic2) {
         HashSet<String> set = new HashSet<>();
         if (oAuthScopeBasic1 != null || oAuthScopeBasic2 != null) {
-            String defaultScope = properties.getToken().getOauth().getDefaultScope();
+            String defaultScope = properties.getToken().getOauth().getDefaultBasicScope();
             if (defaultScope != null) {
                 set.addAll(Arrays.asList(defaultScope.split(" ")));
             }

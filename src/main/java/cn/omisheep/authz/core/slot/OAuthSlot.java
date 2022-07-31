@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.slot;
 
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.authz.core.tk.Token;
+import cn.omisheep.authz.core.tk.AccessToken;
 import org.springframework.web.method.HandlerMethod;
 
 /**
@@ -12,7 +12,7 @@ import org.springframework.web.method.HandlerMethod;
 public class OAuthSlot implements Slot {
     @Override
     public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
-        Token token = httpMeta.getToken(); // todo
+        AccessToken token = httpMeta.getToken(); // todo
         System.out.println(token);
     }
 }

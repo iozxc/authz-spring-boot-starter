@@ -4,7 +4,6 @@ import cn.omisheep.authz.core.auth.deviced.DeviceCountInfo;
 import cn.omisheep.authz.core.codec.Decryptor;
 import cn.omisheep.authz.core.codec.RSADecryptor;
 import cn.omisheep.authz.support.entity.User;
-import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.logging.LogLevel;
@@ -92,21 +91,6 @@ public class AuthzProperties {
         private OpenAuthConfig oauth = new OpenAuthConfig();
 
         /**
-         * Token字符串表示模式。默认为标准模式。
-         */
-        private Mode mode = Mode.STANDARD;
-
-        /**
-         * Token签名算法
-         */
-        private SignatureAlgorithm algorithm = SignatureAlgorithm.HS256;
-
-        /**
-         * Token压缩算法
-         */
-        private Compress compress = Compress.NONE;
-
-        /**
          * tokenId的长度
          */
         private int tokenIdBits = 8;
@@ -119,7 +103,7 @@ public class AuthzProperties {
         /**
          * header name
          */
-        private String headerName = "Authorization";
+        private String headerName = "authorization";
 
         /**
          * prefix 例如：headerPrefix = 'Bearer' -> "Bearer <token>"
@@ -137,23 +121,6 @@ public class AuthzProperties {
          */
         private String refreshTime = "30d";
 
-        /**
-         * issuer 发行用户
-         */
-        private String issuer;
-
-        public enum Mode {
-            STANDARD,
-            BRIEF,
-            OLD
-        }
-
-        public enum Compress {
-            GZIP,
-            DEFLATE,
-            NONE
-        }
-
         @Data
         public static class OpenAuthConfig {
 
@@ -167,7 +134,7 @@ public class AuthzProperties {
              * 通过oauth授权登录的用户拥有的权限，`@OAuthScopeBasic`标识之后的额外scope
              * 通过正常登录的用户不受scope的影响，能访问所有资源
              */
-            private String defaultScope = "basic";
+            private String defaultBasicScope = "basic";
 
             /**
              * scope分割符
@@ -222,6 +189,7 @@ public class AuthzProperties {
         }
 
         /**
+         * 相当于typesTotal对所有的类型添加一个设备数量限制，会被typesTotal覆盖。
          * 同类型设备最大登录数 默认 1个【-1为不做限制，最小为1】，超出会挤出最长时间未访问的设备。
          */
         private int maximumSameTypeDeviceCount = 1;
@@ -295,7 +263,7 @@ public class AuthzProperties {
         /**
          * 在【读取】之后L2Cache存活时间  默认10分钟
          */
-        private String expireAfterReadTime = "10m";
+        private String expireAfterReadTime   = "10m";
 
     }
 

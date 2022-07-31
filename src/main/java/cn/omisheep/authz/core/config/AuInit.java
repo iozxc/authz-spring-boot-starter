@@ -27,10 +27,8 @@ public class AuInit {
                     "token.key is empty, digital signature will not be executed, please configure in YML as soon as possible");
         } else {
             byte[]             keyBytes  = token.getKey().getBytes(StandardCharsets.UTF_8);
-            SignatureAlgorithm algorithm = token.getAlgorithm();
-            if (keyBytes.length * 8 < algorithm.getMinKeyLength()) {
-                log.warn(
-                        "The specified key byte array length is " + keyBytes.length + "，For the specified algorithm " + algorithm + " not safe enough. At least " + algorithm.getMinKeyLength() / 8 + " length, insufficient will default to `.` fill as `******..........................`，Please update the key as soon as possible");
+            if (keyBytes.length * 8 < SignatureAlgorithm.HS256.getMinKeyLength()) {
+                log.warn("The specified key byte array length is " + keyBytes.length + "，For the specified algorithm HS256 not safe enough. At least " + SignatureAlgorithm.HS256.getMinKeyLength() / 8 + " length, insufficient will default to `.` fill as `******..........................`，Please update the key as soon as possible");
             }
         }
     }

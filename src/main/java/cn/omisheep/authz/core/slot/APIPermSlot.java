@@ -5,7 +5,6 @@ import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
-import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.commons.util.CollectionUtils;
 import org.springframework.web.method.HandlerMethod;
 
@@ -13,7 +12,8 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import static cn.omisheep.authz.core.auth.rpd.AuthzDefender.logs;
+import static cn.omisheep.authz.core.util.LogUtils.logs;
+
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -35,8 +35,6 @@ public class APIPermSlot implements Slot {
         PermRolesMeta permRolesMeta = PermissionDict.getRolePermission().get(httpMeta.getApi()).get(
                 httpMeta.getMethod());
         if (permRolesMeta.non()) return;
-
-        Token accessToken = httpMeta.getToken();
 
         Set<String> roles = null;
         boolean     e1    = CollectionUtils.isEmpty(permRolesMeta.getRequireRoles());

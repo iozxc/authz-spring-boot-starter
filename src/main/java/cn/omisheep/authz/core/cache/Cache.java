@@ -28,7 +28,7 @@ public interface Cache {
     String EMPTY     = "";
     String SEPARATOR = ":";
     long   INFINITE  = -1;
-    long   FOREVER   = Long.MAX_VALUE;
+    long   FOREVER   = Integer.MAX_VALUE;
 
     class CacheItem<E> {
         // 到期的时间，用毫秒表示
@@ -311,8 +311,8 @@ public interface Cache {
     }
 
     @SuppressWarnings("all")
-    default void reload(@NonNull Collection<String>... keys) {
-        reload(Arrays.stream(keys).toArray(String[]::new));
+    default void reload(@NonNull Collection<String> keys) {
+        reload(keys.toArray(new String[0]));
     }
 
 }

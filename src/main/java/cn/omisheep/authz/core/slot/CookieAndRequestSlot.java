@@ -4,7 +4,7 @@ import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.authz.core.tk.Token;
+import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.authz.core.tk.TokenHelper;
 import cn.omisheep.commons.util.Async;
 import cn.omisheep.web.utils.HttpUtils;
@@ -17,6 +17,7 @@ import javax.servlet.http.Cookie;
 import java.util.Locale;
 
 import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.UserStatus.ACCESS_TOKEN_OVERDUE;
+import static cn.omisheep.authz.core.config.Constants.REFRESH_TOKEN_ID;
 import static cn.omisheep.authz.core.config.Constants.USER_ID;
 
 /**
@@ -57,8 +58,8 @@ public class CookieAndRequestSlot implements Slot {
 
         if (tokenValue != null) {
             try {
-                Token token = TokenHelper.parseToken(tokenValue);
-                httpMeta.setToken(token);
+                AccessToken accessToken = TokenHelper.parseAccessToken(tokenValue);
+                httpMeta.setToken(accessToken);
                 // 每次访问将最后一次访问时间和ip存入缓存中
                 Async.run(userDevicesDict::request);
                 httpMeta.setHasToken(true);
@@ -69,7 +70,8 @@ public class CookieAndRequestSlot implements Slot {
                         TokenHelper.clearCookie();
                         if (e instanceof ExpiredJwtException) {
                             Claims claims = ((ExpiredJwtException) e).getClaims();
-                            userDevicesDict.removeDeviceByUserIdAndAccessTokenId(claims.get(USER_ID), claims.getId());
+                            userDevicesDict.removeDeviceByTokenId(claims.get(USER_ID),
+                                                                  claims.get(REFRESH_TOKEN_ID, String.class));
                         }
                     } catch (Exception ee) {
                         // skip

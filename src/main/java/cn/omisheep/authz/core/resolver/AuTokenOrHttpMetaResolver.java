@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.resolver;
 
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.authz.core.tk.Token;
+import cn.omisheep.authz.core.tk.AccessToken;
 import org.springframework.core.MethodParameter;
 import org.springframework.lang.Nullable;
 import org.springframework.web.bind.support.WebDataBinderFactory;
@@ -20,14 +20,14 @@ import static cn.omisheep.authz.core.config.Constants.HTTP_META;
 public class AuTokenOrHttpMetaResolver implements HandlerMethodArgumentResolver {
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
-        return parameter.getParameterType().equals(Token.class) || parameter.getParameterType().equals(HttpMeta.class);
+        return parameter.getParameterType().equals(AccessToken.class) || parameter.getParameterType().equals(HttpMeta.class);
     }
 
     @Override
     public Object resolveArgument(MethodParameter methodParameter, @Nullable ModelAndViewContainer modelAndViewContainer, NativeWebRequest nativeWebRequest, @Nullable WebDataBinderFactory webDataBinderFactory) {
         HttpMeta httpMeta = (HttpMeta) ((HttpServletRequest) nativeWebRequest.getNativeRequest()).getAttribute(HTTP_META);
         if (httpMeta == null) return null;
-        if (methodParameter.getParameterType().equals(Token.class)) {
+        if (methodParameter.getParameterType().equals(AccessToken.class)) {
             return httpMeta.getToken();
         } else {
             return httpMeta;

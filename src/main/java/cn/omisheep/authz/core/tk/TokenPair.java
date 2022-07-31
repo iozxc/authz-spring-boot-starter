@@ -10,6 +10,6 @@ import lombok.Getter;
 @AllArgsConstructor
 @Getter
 public class TokenPair {
-    private final Token accessToken;
-    private final Token refreshToken;
+    private final AccessToken  accessToken;
+    private final RefreshToken refreshToken;
 }

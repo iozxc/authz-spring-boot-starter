@@ -4,7 +4,7 @@ import cn.omisheep.authz.core.NotLoginException;
 import cn.omisheep.authz.core.ThreadWebEnvironmentException;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.config.Constants;
-import cn.omisheep.authz.core.tk.Token;
+import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.web.utils.HttpUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
@@ -53,11 +53,11 @@ public final class AUtils {
     }
 
     @NonNull
-    public static Token getCurrentToken() throws NotLoginException {
+    public static AccessToken getCurrentToken() throws NotLoginException {
         try {
-            Token token = getCurrentHttpMeta().getToken();
-            if (token == null) throw new NotLoginException();
-            return token;
+            AccessToken accessToken = getCurrentHttpMeta().getToken();
+            if (accessToken == null) throw new NotLoginException();
+            return accessToken;
         } catch (Exception e) {
             throw new NotLoginException();
         }

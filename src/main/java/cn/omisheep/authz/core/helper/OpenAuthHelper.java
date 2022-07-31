@@ -1,9 +1,14 @@
-package cn.omisheep.authz.core.oauth;
+package cn.omisheep.authz.core.helper;
 
 import cn.omisheep.authz.core.AuthzProperties;
-import cn.omisheep.authz.core.auth.rpd.AuthzDefender;
 import cn.omisheep.authz.core.callback.CreateAuthorizationInfoCallback;
 import cn.omisheep.authz.core.config.AuthzAppVersion;
+import cn.omisheep.authz.core.oauth.AuthorizationException;
+import cn.omisheep.authz.core.oauth.AuthorizationInfo;
+import cn.omisheep.authz.core.oauth.ClientDetails;
+import cn.omisheep.authz.core.oauth.OpenAuthLibrary;
+import cn.omisheep.authz.core.tk.GrantType;
+import cn.omisheep.authz.core.tk.IssueToken;
 import cn.omisheep.authz.core.tk.TokenHelper;
 import cn.omisheep.authz.core.tk.TokenPair;
 import cn.omisheep.authz.core.util.AUtils;
@@ -37,8 +42,8 @@ public class OpenAuthHelper {
     @Setter
     private static       CreateAuthorizationInfoCallback            createAuthorizationInfoCallback;
 
-    public static TokenPair authorize(String clientId, String clientSecret,
-                                      String authorizationCode) throws AuthorizationException {
+    public static IssueToken authorize(String clientId, String clientSecret,
+                                       String authorizationCode) throws AuthorizationException {
         ClientDetails clientDetails = openAuthLibrary.getClientById(clientId);
 
         if (clientDetails == null || !StringUtils.equals(clientDetails.getClientSecret(), clientSecret)) {
@@ -50,14 +55,14 @@ public class OpenAuthHelper {
         AuthorizationInfo authorizationInfo = cache.get(key, AuthorizationInfo.class);
         cache.del(key);
 
-        if (authorizationInfo == null || authorizationInfo.getExpiredTime().before(TimeUtils.now())) {
+        if (authorizationInfo == null || authorizationInfo.getExpiresAt() < TimeUtils.nowTime()) {
             // 授权码不存在或过期
             throw AuthorizationException.authorizationCodeExpiredOrNotExist();
         }
 
         TokenPair tokenPair = TokenHelper.createTokenPair(authorizationInfo);
-        if (AuthzDefender.grant(tokenPair)) return null;
-        return tokenPair;
+        if (!AuthzGranterHelper.grant(tokenPair, false)) return null;
+        return new IssueToken(tokenPair);
     }
 
     public static String createAuthorizationCode(String clientId, String scope, String redirectUrl,
@@ -78,20 +83,22 @@ public class OpenAuthHelper {
         Date expiredTime =
                 Date.from(LocalDateTime.now().plus(AuthzAppVersion.authorizationCodeTime, ChronoUnit.MILLIS).atZone(
                         ZoneId.systemDefault()).toInstant());
-        AuthorizationInfo authorizationInfo = new AuthorizationInfo(clientId, scope, userId, deviceType, deviceId,
-                                                                    fromNow, expiredTime);
+        AuthorizationInfo authorizationInfo = new AuthorizationInfo(clientId, scope, GrantType.AUTHORIZATION_CODE,
+                                                                    AuthzAppVersion.authorizationCodeTime,
+                                                                    expiredTime.getTime(), userId, deviceType,
+                                                                    deviceId);
         if (createAuthorizationInfoCallback != null) {
             createAuthorizationInfoCallback.createAuthorizationInfoCallback(authorizationCode, authorizationInfo);
         }
         cache.set(AUTHORIZE_CODE_PREFIX + authorizationCode, authorizationInfo,
-                  oauthConfig.getAuthorizationCodeTime());
+                  AuthzAppVersion.authorizationCodeTime / 1000);
         return authorizationCode;
     }
 
-    public static String createDefaultScopeAuthorizationCode(String clientId, String redirectUrl, Object userId,
-                                                             String deviceType,
-                                                             String deviceId) throws AuthorizationException {
-        return createAuthorizationCode(clientId, oauthConfig.getDefaultScope(), redirectUrl, userId, deviceType,
+    public static String createBasicScopeAuthorizationCode(String clientId, String redirectUrl, Object userId,
+                                                           String deviceType,
+                                                           String deviceId) throws AuthorizationException {
+        return createAuthorizationCode(clientId, oauthConfig.getDefaultBasicScope(), redirectUrl, userId, deviceType,
                                        deviceId);
     }
 

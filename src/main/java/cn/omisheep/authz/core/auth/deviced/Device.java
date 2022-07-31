@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core.auth.deviced;
 
-import java.util.Date;
+import cn.omisheep.authz.core.tk.GrantType;
+
 import java.util.Map;
 
 /**
@@ -9,21 +10,39 @@ import java.util.Map;
  */
 public interface Device extends Map<Object, Object>, java.io.Serializable {
 
-    String getDeviceType();
-
+    // 设备id
     String getDeviceId();
-
-    Date getLastRequestTime();
-
-    Long getLastRequestTimeLong();
-
-    String getIp();
-
-    Device setDeviceType(String type);
-
-    Device setLastRequestTime(Date lastRequestTime);
 
     Device setDeviceId(String id);
 
-    Device setIp(String ip);
+    // 设备类型
+    String getDeviceType();
+
+    Device setDeviceType(String type);
+
+    // 过期时间
+    Long getExpiresAt();
+
+    Device setExpiresAt(Long expiresAt);
+
+    // accessTokenId
+    String getAccessTokenId();
+
+    Device setAccessTokenId(String accessTokenId);
+
+    // scope
+    String getScope();
+
+    Device setScope(String scope);
+
+    // grantType
+    GrantType getGrantType();
+
+    Device setGrantType(GrantType grantType);
+
+    // clientId
+    String getClientId();
+
+    Device setClientId(String clientId);
+
 }

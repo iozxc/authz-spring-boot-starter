@@ -2,7 +2,7 @@ package cn.omisheep.authz.core.auth.ipf;
 
 import cn.omisheep.authz.core.AuthzManager;
 import cn.omisheep.authz.core.msg.AuthzModifier;
-import cn.omisheep.authz.core.tk.Token;
+import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.authz.support.util.IPAddress;
 import cn.omisheep.authz.support.util.IPRange;
 import cn.omisheep.commons.util.TimeUtils;
@@ -39,9 +39,9 @@ public class Blacklist {
         return IP.check(ip) && IPRangeDeny.check(ip) && User.check(userId, deviceType, deviceId);
     }
 
-    public static boolean check(String ip, @Nullable Token token) {
-        if (token == null) return check(ip);
-        return IP.check(ip) && IPRangeDeny.check(ip) && User.check(token.getUserId(), token.getDeviceType(), token.getDeviceId());
+    public static boolean check(String ip, @Nullable AccessToken accessToken) {
+        if (accessToken == null) return check(ip);
+        return IP.check(ip) && IPRangeDeny.check(ip) && User.check(accessToken.getUserId(), accessToken.getDeviceType(), accessToken.getDeviceId());
     }
 
     public static boolean check(String ip) {

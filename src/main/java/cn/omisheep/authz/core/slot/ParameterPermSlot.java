@@ -15,10 +15,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerMapping;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import static cn.omisheep.authz.core.auth.rpd.AuthzDefender.logs;
+import static cn.omisheep.authz.core.util.LogUtils.logs;
+
 
 /**
  * @author zhouxinchen[1269670415@qq.com]

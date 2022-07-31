@@ -14,10 +14,10 @@ public enum ExceptionStatus {
     MISMATCHED_URL(-100, "URL matching failed", false, NOT_FOUND),
 
     REQUIRE_LOGIN(-101, "Require login", true, NETWORK_AUTHENTICATION_REQUIRED),
-    ACCESS_TOKEN_OVERDUE(-102, "AccessToken overdue", true, NETWORK_AUTHENTICATION_REQUIRED),
-    PERM_EXCEPTION(-103, "Insufficient permissions", false, NETWORK_AUTHENTICATION_REQUIRED),
+    PERM_EXCEPTION(-102, "Insufficient permissions", false, NETWORK_AUTHENTICATION_REQUIRED),
+    ACCESS_TOKEN_OVERDUE(-103, "AccessToken overdue", true, NETWORK_AUTHENTICATION_REQUIRED),
+    REFRESH_TOKEN_EXPIRED_EXCEPTION(-104, "RefreshToken expired", true, NETWORK_AUTHENTICATION_REQUIRED),
 
-    TOKEN_EXCEPTION(-201, "Token exception", true, FORBIDDEN),
     REQUEST_REPEAT(-202, "Request repeat error", false, TOO_MANY_REQUESTS),
     LOGIN_EXCEPTION(-203, "You are offline, or you may have logged in elsewhere", true, FORBIDDEN),
     /**
@@ -31,12 +31,11 @@ public enum ExceptionStatus {
 
     WEB_ENVIRONMENT(-401, "The current thread is in a non Web Environment", false, INTERNAL_SERVER_ERROR),
 
-    PRIVILEGE_GRANT_FAILED(-500, "Privilege grant failed", false, OK), // 授权失败
-    CLIENT_SECRET_ERROR(-501, "client secret error or client id not match", false, OK), // 客户端密钥错误
-    CLIENT_NOT_EXIST(-502, "client not exist", false, OK),//客户端不存在
+    PRIVILEGE_GRANT_FAILED(-500, "Grant failed, not login or client id does not exist", false, OK), // 授权失败
+    CLIENT_SECRET_ERROR(-501, "Client secret error or client id not match", false, OK), // 客户端密钥错误
+    CLIENT_NOT_EXIST(-502, "Client not exist", false, OK),//客户端不存在
     AUTHORIZATION_CODE_EXPIRED_OR_NOT_EXIST(-503, "Authorization code does not exist or expires",
                                             false, OK); // 授权码过期或无效
-
 
 
     private final int        code;

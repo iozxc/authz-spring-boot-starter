@@ -72,7 +72,7 @@ AuHelper.denyIP("10.2.0.2", "10d"); // 对ip 10.2.0.2进行封禁10天
 ```java
 AuHelper.login(1);    // 登录用户1，返回：TokenPair
 AuHelper.refreshToken("用户的RefreshTokenValue"); // 利用RefreshToken刷新获得新的AccessToken
-AuHelper.getToken();    // 获取当前用户的Token，返回：Token
+AuHelper.getToken();    // 获取当前用户的Token，返回：AccessToken
 AuHelper.isLogin();    // 此次访问是否已经登录, 返回：true｜false
 AuHelper.logout();    // 注销当前访问用户的当前设备
 AuHelper.logoutAll();    // 注销当前访问用户的所有设备

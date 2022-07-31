@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import static cn.omisheep.authz.core.config.Constants.USER_REQUEST;
 import static cn.omisheep.commons.util.ClassUtils.castValue;
 
 /**
@@ -72,6 +73,7 @@ public class L2Cache implements Cache {
         CacheItem cacheItem = cache.asMap().get(pattern);
         if (cacheItem != null) return (Set<String>) cacheItem.value;
         Set<String> scan = RedisUtils.scan(pattern);
+        if (pattern.startsWith(USER_REQUEST)) return scan;
         RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.write(pattern, scan));
         if (!scan.isEmpty()) {
             cache.put(pattern, new CacheItem(scan));

@@ -1,15 +1,12 @@
 package cn.omisheep.authz.core;
 
-import cn.omisheep.authz.core.auth.PermLibrary;
-import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.Blacklist;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
-import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.cache.L2Cache;
 import cn.omisheep.authz.core.config.AuthzAppVersion;
+import cn.omisheep.authz.core.helper.BaseHelper;
 import cn.omisheep.authz.core.msg.AuthzModifier;
-import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.web.entity.Result;
 import cn.omisheep.web.entity.ResultCode;
 import org.springframework.lang.NonNull;
@@ -20,17 +17,7 @@ import org.springframework.lang.Nullable;
  * @since 1.0.0
  */
 @SuppressWarnings("rawtypes")
-public class AuthzManager {
-
-    public static final UserDevicesDict userDevicesDict;
-    public static final Cache           cache;
-    public static final PermLibrary     permLibrary;
-
-    static {
-        userDevicesDict = AUtils.getBean(UserDevicesDict.class);
-        cache           = AUtils.getBean(Cache.class);
-        permLibrary     = AUtils.getBean(PermLibrary.class);
-    }
+public class AuthzManager extends BaseHelper {
 
     @Nullable
     public static Object op(@NonNull AuthzModifier authzModifier) {
@@ -60,6 +47,5 @@ public class AuthzManager {
         if (res instanceof ResultCode) return ((ResultCode) res).data();
         return Result.SUCCESS.data(res);
     }
-
 
 }

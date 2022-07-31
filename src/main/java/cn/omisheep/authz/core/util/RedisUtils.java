@@ -92,7 +92,6 @@ public abstract class RedisUtils {
     }
 
     public static long ttl(String key) {
-        System.out.println("redis - ttl " + key); // todo
         Long expire = redisTemplate.getExpire(key);
         return expire != null ? expire : -2;
     }
@@ -131,7 +130,6 @@ public abstract class RedisUtils {
         }
 
         public static List get(Collection<String> key) {
-            System.out.println("redis-get" + key); // todo
             List objects = redisTemplate.opsForValue().multiGet(key);
             if (objects == null) return new ArrayList<>();
             return objects;

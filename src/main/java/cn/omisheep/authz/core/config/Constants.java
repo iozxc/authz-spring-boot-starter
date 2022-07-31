@@ -19,6 +19,7 @@ public interface Constants {
     String ACCESS_TOKEN_EXPIRATION  = "aex";
     String REFRESH_TOKEN_EXPIRATION = "rex";
     String IP                       = "ip";
+    String GRANT_TYPE               = "gtp";
 
     String SEPARATOR = ":";
     String COMMA     = ",";
@@ -30,19 +31,25 @@ public interface Constants {
     String HTTP_META = "AU_HTTP_META";
     String OPTIONS   = "OPTIONS";
 
-    Supplier<String>                   ACCESS_INFO_KEY_PREFIX         = () -> AuthzAppVersion.values.get(
-            "ACCESS_INFO_KEY_PREFIX");
-    Supplier<String>                   REFRESH_INFO_KEY_PREFIX        = () -> AuthzAppVersion.values.get(
-            "REFRESH_INFO_KEY_PREFIX");
-    Supplier<String>                   USER_ROLES_KEY_PREFIX          = () -> AuthzAppVersion.values.get(
+    Supplier<String> USER_DEVICE_KEY_PREFIX         = () -> AuthzAppVersion.values.get(
+            "USER_DEVICE_KEY_PREFIX");
+    Supplier<String> OAUTH_USER_DEVICE_KEY_PREFIX         = () -> AuthzAppVersion.values.get(
+            "OAUTH_USER_DEVICE_KEY_PREFIX");
+
+    Supplier<String> USER_REQUEST_KEY_PREFIX        = () -> AuthzAppVersion.values.get(
+            "USER_REQUEST_KEY_PREFIX");
+    Supplier<String> OAUTH_USER_REQUEST_KEY_PREFIX        = () -> AuthzAppVersion.values.get(
+            "OAUTH_USER_REQUEST_KEY_PREFIX");
+
+    Supplier<String> USER_ROLES_KEY_PREFIX          = () -> AuthzAppVersion.values.get(
             "USER_ROLES_KEY_PREFIX");
-    Supplier<String>                   DASHBOARD_KEY_PREFIX           = () -> AuthzAppVersion.values.get(
+    Supplier<String> DASHBOARD_KEY_PREFIX           = () -> AuthzAppVersion.values.get(
             "DASHBOARD_KEY_PREFIX");
-    Supplier<String>                   DEVICE_REQUEST_INFO_KEY_PREFIX = () -> AuthzAppVersion.values.get(
-            "DEVICE_REQUEST_INFO_KEY_PREFIX");
-    Supplier<String>                   PERMISSIONS_BY_ROLE_KEY_PREFIX = () -> AuthzAppVersion.values.get(
+
+    Supplier<String> PERMISSIONS_BY_ROLE_KEY_PREFIX = () -> AuthzAppVersion.values.get(
             "PERMISSIONS_BY_ROLE_KEY_PREFIX");
 
+    String USER_REQUEST          = "USER_REQUEST";
     String CONNECT_PREFIX        = "authz:connect:";
     String CLINT_PREFIX          = "authz:oauth:client:";
     String AUTHORIZE_CODE_PREFIX = "authz:oauth:code:";
