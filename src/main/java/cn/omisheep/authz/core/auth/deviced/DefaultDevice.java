@@ -9,7 +9,7 @@ import static cn.omisheep.authz.core.config.Constants.*;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-public class DefaultDevice extends AuMap implements Device {
+public class DefaultDevice extends AuthzMap implements Device {
     private static final long serialVersionUID = 3561879223319144385L;
 
     public DefaultDevice() {

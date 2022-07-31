@@ -9,7 +9,7 @@ import static cn.omisheep.authz.core.config.Constants.LAST_REQUEST_TIME;
  * @author zhouxinchen
  * @since 1.2.0
  */
-public class DefaultRequestDetails extends AuMap implements RequestDetails {
+public class DefaultRequestDetails extends AuthzMap implements RequestDetails {
 
     @Override
     public Date getLastRequestTime() {

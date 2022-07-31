@@ -8,14 +8,14 @@ import java.util.*;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-public class AuMap implements Map<Object, Object> {
+public class AuthzMap implements Map<Object, Object> {
     private final Map<Object, Object> map;
 
-    public AuMap() {
+    public AuthzMap() {
         this(new LinkedHashMap<>());
     }
 
-    public AuMap(Map<Object, Object> map) {
+    public AuthzMap(Map<Object, Object> map) {
         this.map = map;
     }
 
