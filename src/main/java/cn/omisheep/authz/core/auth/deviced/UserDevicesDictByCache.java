@@ -9,7 +9,6 @@ import cn.omisheep.authz.core.tk.Token;
 import cn.omisheep.authz.core.tk.TokenPair;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.commons.util.Async;
-import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.commons.util.TimeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
@@ -46,11 +45,13 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         String accessTokenId = accessToken.getTokenId();
         String clientId      = accessToken.getClientId();
 
+        long    time1                = new Date().getTime();
         Set<String> refreshInfoKeys = cache.keysAndLoad(rfKey(userId, Constants.WILDCARD));
-
+        System.out.println(new Date().getTime() - time1);
         CompletableFuture<AccessInfo> acSupply = Async.supply(
                 () -> cache.get(acKey(userId, accessTokenId), AccessInfo.class));
 
+        long    time                = new Date().getTime();
         boolean hasTargetDeviceInfo = false;
         if (!refreshInfoKeys.isEmpty()) {
             Map<String, RefreshInfo> refreshInfoMap = cache.get(refreshInfoKeys, RefreshInfo.class);
@@ -58,6 +59,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
                     .anyMatch(e -> equalsDeviceByTypeAndId(e.getValue().getDevice(), deviceType, deviceId));
 
         }
+        System.out.println(new Date().getTime() - time);
         if (!hasTargetDeviceInfo) return REQUIRE_LOGIN;
 
         AccessInfo accessInfo = acSupply.join();
@@ -102,6 +104,8 @@ public class UserDevicesDictByCache implements UserDevicesDict {
                           () -> refreshInfoKeys.addAll(cache.keysAndLoad(rfKey(userId, Constants.WILDCARD))))
                     .join(); // 获得所有的key access和refresh
 
+            if (refreshInfoKeys.isEmpty() && accessInfoKeys.isEmpty()) return;
+
             Map<String, RefreshInfo> refreshInfoMap = cache.get(refreshInfoKeys, RefreshInfo.class);
             Map<String, AccessInfo>  accessInfoMap  = cache.get(accessInfoKeys, AccessInfo.class);
 
@@ -143,7 +147,6 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         return true;
     }
 
-
     private void d(int max, Map<String, RefreshInfo> refreshInfoMap, Map<String, AccessInfo> accessInfoMap,
                    Set<String> delKeys, Predicate<? super Map.Entry<String, RefreshInfo>> predicate) {
         HashSet<String> _del = new HashSet<>();
@@ -177,19 +180,17 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         if (cache.notKey(rfKey)) return false;
 
         Async.run(() -> {
-            String      k    = null;
             Set<String> keys = cache.keysAndLoad(acKey(userId, Constants.WILDCARD));
             keys.remove(acKey);
-            for (String key : keys) {
-                Device deviceInfo = getDeviceOe(userId, key);
-                if (deviceInfo == null) continue;
-                if (StringUtils.equals(accessToken.getDeviceType(), deviceInfo.getDeviceType()) && StringUtils.equals(
-                        accessToken.getDeviceId(), deviceInfo.getDeviceId())) {
-                    k = key;
-                    break;
-                }
+            Map<String, RefreshInfo> refreshInfoMap = cache.get(keys, RefreshInfo.class);
+            List<String> list = refreshInfoMap.entrySet().stream().filter(e -> {
+                Device device = e.getValue().getDevice();
+                return StringUtils.equals(accessToken.getDeviceType(), device.getDeviceType()) && StringUtils.equals(
+                        accessToken.getDeviceId(), device.getDeviceId());
+            }).map(Map.Entry::getKey).collect(Collectors.toList());
+            if (!list.isEmpty()) {
+                cache.del(list);
             }
-            if (k != null) cache.del(k);
             cache.del(acKey(userId, Constants.WILDCARD));
             cache.del(rfKey(userId, Constants.WILDCARD));
         });
@@ -258,105 +259,50 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     private void removeDevice(Object userId, String deviceType) {
-        Set<String>     acKeys = cache.keysAndLoad(acKey(userId, Constants.WILDCARD));
-        Set<String>     rfKeys = cache.keysAndLoad(rfKey(userId, Constants.WILDCARD));
-        HashSet<String> keys   = new HashSet<>();
-        keys.add(acKey(userId, Constants.WILDCARD));
-        keys.add(rfKey(userId, Constants.WILDCARD));
+        if (deviceType == null || deviceType.equals("")) return;
+        Set<String>     acKeys  = cache.keysAndLoad(acKey(userId, Constants.WILDCARD));
+        Set<String>     rfKeys  = cache.keysAndLoad(rfKey(userId, Constants.WILDCARD));
+        HashSet<String> delKeys = new HashSet<>();
 
-        if (deviceType != null) {
-            acKeys.removeIf(acKey -> {
-                Device deviceOe = getDeviceOe(userId, acKey);
-                if (deviceOe != null) {
-                    if (equalsDeviceByType(deviceOe, deviceType)) {
-                        keys.add(acKey);
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-                return true;
-            });
-            rfKeys.removeIf(rfKey -> {
-                Device device = (Device) cache.get(rfKey);
-                if (device == null || !device.isEmpty()) {
-                    if (equalsDeviceByType(device, deviceType)) {
-                        keys.add(rfKey);
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-                return true;
-            });
+        Map<String, RefreshInfo> refreshInfoMap = cache.get(rfKeys, RefreshInfo.class);
+        Map<String, AccessInfo>  accessInfoMap  = cache.get(acKeys, AccessInfo.class);
+
+        d(Integer.MIN_VALUE, refreshInfoMap, accessInfoMap, delKeys,
+          e -> equalsDeviceByType(e.getValue().getDevice(), deviceType));
+
+        if (!delKeys.isEmpty()) {
+            delKeys.add(acKey(userId, Constants.WILDCARD));
+            delKeys.add(rfKey(userId, Constants.WILDCARD));
+            cache.del(delKeys);
         }
-
-        cache.del(keys);
     }
 
     private void removeDevice(Object userId, String deviceType, String deviceId) {
-        Set<String>     acKeys = cache.keysAndLoad(acKey(userId, Constants.WILDCARD));
-        Set<String>     rfKeys = cache.keysAndLoad(rfKey(userId, Constants.WILDCARD));
-        HashSet<String> keys   = new HashSet<>();
-        keys.add(acKey(userId, Constants.WILDCARD));
-        keys.add(rfKey(userId, Constants.WILDCARD));
+        if (deviceType == null || deviceType.equals("")) return;
+        Set<String>     acKeys  = cache.keysAndLoad(acKey(userId, Constants.WILDCARD));
+        Set<String>     rfKeys  = cache.keysAndLoad(rfKey(userId, Constants.WILDCARD));
+        HashSet<String> delKeys = new HashSet<>();
 
-        if (deviceType != null) {
-            acKeys.removeIf(acKey -> {
-                Device deviceOe = getDeviceOe(userId, acKey);
-                if (deviceOe != null) {
-                    if (equalsDeviceByTypeAndId(deviceOe, deviceType, deviceId)) {
-                        keys.add(acKey);
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-                return true;
-            });
-            rfKeys.removeIf(rfKey -> {
-                Device device = (Device) cache.get(rfKey);
-                if (device == null || !device.isEmpty()) {
-                    if (equalsDeviceByTypeAndId(device, deviceType, deviceId)) {
-                        keys.add(rfKey);
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-                return true;
-            });
+        Map<String, RefreshInfo> refreshInfoMap = cache.get(rfKeys, RefreshInfo.class);
+        Map<String, AccessInfo>  accessInfoMap  = cache.get(acKeys, AccessInfo.class);
+
+        d(Integer.MIN_VALUE, refreshInfoMap, accessInfoMap, delKeys,
+          e -> equalsDeviceByTypeAndId(e.getValue().getDevice(), deviceType, deviceId));
+
+        if (!delKeys.isEmpty()) {
+            delKeys.add(acKey(userId, Constants.WILDCARD));
+            delKeys.add(rfKey(userId, Constants.WILDCARD));
+            cache.del(delKeys);
         }
-
-        cache.del(keys);
-    }
-
-    private Device getDeviceOe(Object userId, String acKey) {
-        AccessInfo accessInfo = (AccessInfo) cache.get(acKey);
-        if (accessInfo == null) return null;
-        String rtid = accessInfo.getRefreshTokenId();
-        if (rtid != null) {
-            String rfKey = rfKey(userId, rtid);
-            return (Device) cache.get(rfKey);
-        }
-        return null;
     }
 
     @Override
     public Device getDevice(Object userId, String deviceType, String deviceId) {
         Set<String> acKeys = cache.keysAndLoad(acKey(userId, Constants.WILDCARD));
-
-        if (CollectionUtils.isNotEmpty(acKeys)) {
-            for (String acKey : acKeys) {
-                Device deviceOe = getDeviceOe(userId, acKey);
-                if (deviceOe != null) {
-                    if (equalsDeviceByTypeAndId(deviceOe, deviceType, deviceId)) {
-                        return deviceOe;
-                    }
-                }
-            }
-        }
-        return null;
+        if (acKeys.isEmpty()) return null;
+        return cache.get(acKeys, RefreshInfo.class).values().stream()
+                .filter(refreshInfo -> equalsDeviceByTypeAndId(refreshInfo.getDevice(), deviceType, deviceId)).map(
+                        RefreshInfo::getDevice).findAny().get();
     }
 
     @Override
@@ -368,7 +314,8 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     @Override
     public List<Device> listDevicesByUserId(Object userId) {
         Set<String> keys = cache.keysAndLoad(acKey(userId, Constants.WILDCARD));
-        return keys.stream().map(key -> getDeviceOe(userId, key)).collect(Collectors.toList());
+        return cache.get(keys, RefreshInfo.class).values().stream().map(RefreshInfo::getDevice).collect(
+                Collectors.toList());
     }
 
     @Override
@@ -456,6 +403,9 @@ public class UserDevicesDictByCache implements UserDevicesDict {
                 accessInfoKeys.remove(finalRetainAcKey);
                 refreshInfoKeys.remove(finalRetainRfKey);
             }
+
+            if (refreshInfoKeys.isEmpty() && accessInfoKeys.isEmpty()) return;
+
             Map<String, RefreshInfo> refreshInfoMap = cache.get(refreshInfoKeys, RefreshInfo.class);
             Map<String, AccessInfo>  accessInfoMap  = cache.get(accessInfoKeys, AccessInfo.class);
 

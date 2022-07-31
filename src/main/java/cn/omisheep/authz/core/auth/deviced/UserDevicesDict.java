@@ -123,7 +123,7 @@ public interface UserDevicesDict {
     default void addDeviceTypesTotalLimit(Object userId,
                                           Collection<String> types,
                                           int total) {
-        DeviceCountInfo deviceCountInfo = new DeviceCountInfo().setTypes(new HashSet<String>(types)).setTotal(total);
+        DeviceCountInfo deviceCountInfo = new DeviceCountInfo().setTypes(new HashSet<>(types)).setTotal(total);
         AuthzProperties.UserConfig userConfig = UserDevicesDict.usersConfig
                 .computeIfAbsent(userId, r -> new AuthzProperties.UserConfig());
         userConfig.getTypesTotal().add(deviceCountInfo);

@@ -284,9 +284,18 @@ public class AuthzProperties {
         private Long cacheMaximumSize;
 
         /**
-         * 在读取或者更新之后刷新缓存存活的时间 默认10分钟
+         * 在【创建】之后L2Cache存活时间  默认10分钟
          */
-        private String expireAfterReadOrUpdateTime = "10m";
+        private String expireAfterCreateTime = "10m";
+
+        /**
+         * 在【更新】之后L2Cache存活时间  默认10分钟
+         */
+        private String expireAfterUpdateTime = "10m";
+        /**
+         * 在【读取】之后L2Cache存活时间  默认10分钟
+         */
+        private String expireAfterReadTime = "10m";
 
     }
 

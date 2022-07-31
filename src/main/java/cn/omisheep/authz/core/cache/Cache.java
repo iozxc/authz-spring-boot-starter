@@ -27,8 +27,8 @@ public interface Cache {
     String ALL       = "*";
     String EMPTY     = "";
     String SEPARATOR = ":";
-    long   INFINITE  = Integer.MAX_VALUE;
-    long   INHERIT   = -1L;
+    long   INFINITE  = -1;
+    long   FOREVER   = Long.MAX_VALUE;
 
     class CacheItem<E> {
         // 到期的时间，用毫秒表示
@@ -36,46 +36,41 @@ public interface Cache {
         @Getter
         protected       Object value;
 
+        public CacheItem() {
+            this.expiration = INFINITE;
+        }
+
         /**
-         * @param ttl   存活时间 单位秒， -1表示在【创建】【更新】【读取】时，xx秒后会过期，这个时间取决与配置
+         * @param ttl   存活时间 单位秒
          * @param value 值
          */
         public CacheItem(long ttl, E value) {
-            if (ttl != -1)
-                this.expiration = TimeUtils.nowTime() + ttl * 1000;
-            else
-                this.expiration = 0;
+            if (ttl == INFINITE) this.expiration = -1;
+            else this.expiration = TimeUtils.nowTime() + ttl * 1000L;
             this.value = value;
         }
 
         public CacheItem(E value) {
-            this(INHERIT, value);
+            this(INFINITE, value);
         }
 
         /**
-         * 返回的ttl值 秒 （INHERIT）1 为跟随cache刷新，（INFINITE） 为永驻 0x7fffffff
+         * 返回的ttl值 秒
          *
          * @return 秒
          */
         public long ttl() {
-            if (expiration == INFINITE || expiration == INHERIT) return expiration;
+            if (expiration == -1) return INFINITE;
             return TimeUnit.MILLISECONDS.toSeconds(expiration - TimeUtils.nowTime());
         }
 
         /**
-         * @return 过期前所存活的时间
-         */
-        public long expireAfterNanos() {
-            return expireAfterNanos(Long.MAX_VALUE);
-        }
-
-        /**
-         * @param expireNanos 如果没有设置过期时间，则使用此配置为默认的存活时间
+         * @param expireNanos L2缓存内存活时间
          * @return 过期前所存活的时间
          */
         public long expireAfterNanos(long expireNanos) {
-            if (expiration == 0) return expireNanos;
-            return TimeUnit.MILLISECONDS.toNanos(expiration - TimeUtils.nowTime());
+            if (expiration == -1) return expireNanos;
+            return Math.min(TimeUnit.MILLISECONDS.toNanos(expiration - TimeUtils.nowTime()), expireNanos);
         }
 
     }
@@ -90,13 +85,14 @@ public interface Cache {
         private long expireAfterUpdateTime;
         private long expireAfterReadTime;
 
-        public CacheExpiry(long expireTime, TimeUnit unit) {
-            this.expireAfterCreateTime = this.expireAfterUpdateTime = this.expireAfterReadTime = unit.toNanos(
-                    expireTime);
+        public CacheExpiry(long expireAfterCreateTime, long expireAfterUpdateTime, long expireAfterReadTime) {
+            this.expireAfterCreateTime = TimeUnit.MILLISECONDS.toNanos(expireAfterCreateTime);
+            this.expireAfterUpdateTime = TimeUnit.MILLISECONDS.toNanos(expireAfterUpdateTime);
+            this.expireAfterReadTime   = TimeUnit.MILLISECONDS.toNanos(expireAfterReadTime);
         }
 
         public CacheExpiry() {
-            this(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+            this(Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE);
         }
 
         @Override
@@ -188,7 +184,7 @@ public interface Cache {
      * @param <E>     Type
      */
     default <E> void set(@NonNull String key, @Nullable E element) {
-        set(key, element, INHERIT);
+        set(key, element, INFINITE);
     }
 
     /**
@@ -289,6 +285,11 @@ public interface Cache {
      * @param keys keys
      */
     void del(@NonNull Set<String> keys);
+
+    default void del(@NonNull Collection<String> keys) {
+        if (keys instanceof Set) del((Set<String>) keys);
+        else del(new HashSet<>(keys));
+    }
 
     default void del(@NonNull String... keys) {
         del(CollectionUtils.ofSet(keys));

@@ -5,7 +5,7 @@ import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import org.springframework.web.method.HandlerMethod;
 
-import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.*;
+import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.UserStatus.*;
 import static cn.omisheep.authz.core.auth.rpd.AuthzDefender.logs;
 
 /**
@@ -26,7 +26,7 @@ public class DeviceSlot implements Slot {
     public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
         if (!httpMeta.isRequireLogin()) return;
 
-        if (httpMeta.getTokenChecked() != null && httpMeta.getTokenChecked().equals(ACCESS_TOKEN_OVERDUE)) {
+        if (httpMeta.getUserStatus() != null && httpMeta.getUserStatus().equals(ACCESS_TOKEN_OVERDUE)) {
             logs("Forbid : expired token exception", httpMeta);
             error.error(ExceptionStatus.ACCESS_TOKEN_OVERDUE);
         }
@@ -42,16 +42,16 @@ public class DeviceSlot implements Slot {
                 // 需要重新登录
                 logs("Require Login", httpMeta);
                 error.error(ExceptionStatus.REQUIRE_LOGIN);
-                httpMeta.setTokenChecked(REQUIRE_LOGIN);
+                httpMeta.setUserStatus(REQUIRE_LOGIN);
                 return;
             case LOGIN_EXCEPTION:
                 // 在别处登录
                 logs("forbid : may have logged in elsewhere", httpMeta);
                 error.error(ExceptionStatus.LOGIN_EXCEPTION);
-                httpMeta.setTokenChecked(LOGIN_EXCEPTION);
+                httpMeta.setUserStatus(LOGIN_EXCEPTION);
                 return;
         }
-        httpMeta.setTokenChecked(SUCCESS);
+        httpMeta.setUserStatus(SUCCESS);
 
     }
 

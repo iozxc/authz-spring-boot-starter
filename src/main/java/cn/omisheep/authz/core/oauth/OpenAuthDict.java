@@ -40,6 +40,7 @@ public class OpenAuthDict {
                             PermLibrary permLibrary,
                             Cache cache,
                             Map<RequestMappingInfo, HandlerMethod> mapRet) {
+        // todo
         applicationContext.getBeansWithAnnotation(OAuthScope.class).forEach((key, value) -> {
             System.out.println(key);
             System.out.println(value);

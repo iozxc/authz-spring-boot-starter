@@ -135,7 +135,9 @@ public class AuthzAutoConfiguration {
             return new L2Cache(properties);
         } else {
             return new L1Cache(properties.getCache().getCacheMaximumSize(),
-                               properties.getCache().getExpireAfterReadOrUpdateTime());
+                               properties.getCache().getExpireAfterCreateTime(),
+                               properties.getCache().getExpireAfterUpdateTime(),
+                               properties.getCache().getExpireAfterReadTime());
         }
     }
 

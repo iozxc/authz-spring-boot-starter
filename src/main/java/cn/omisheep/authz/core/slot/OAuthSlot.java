@@ -12,7 +12,7 @@ import org.springframework.web.method.HandlerMethod;
 public class OAuthSlot implements Slot {
     @Override
     public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
-        Token token = httpMeta.getToken();
+        Token token = httpMeta.getToken(); // todo
         System.out.println(token);
     }
 }

@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.cache;
 
-import cn.omisheep.commons.util.TimeUtils;
 import cn.omisheep.commons.util.KeyMatchUtils;
+import cn.omisheep.commons.util.TimeUtils;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Scheduler;
@@ -9,7 +9,6 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static cn.omisheep.commons.util.ClassUtils.castValue;
@@ -23,18 +22,17 @@ public class L1Cache implements cn.omisheep.authz.core.cache.Cache {
 
     private final Cache<String, CacheItem> cache;
 
-    public L1Cache(Long maximumSize, String time) {
+    public L1Cache(Long maximumSize, String expireAfterCreateTime, String expireAfterUpdateTime,
+                   String expireAfterReadTime) {
+        Caffeine<String, CacheItem> caffeine = Caffeine.newBuilder()
+                .scheduler(Scheduler.systemScheduler())
+                .expireAfter(new CacheExpiry(TimeUtils.parseTimeValue(expireAfterCreateTime),
+                                             TimeUtils.parseTimeValue(expireAfterUpdateTime),
+                                             TimeUtils.parseTimeValue(expireAfterReadTime)));
         if (maximumSize == null) {
-            cache = Caffeine.newBuilder()
-                    .scheduler(Scheduler.systemScheduler())
-                    .expireAfter(new CacheExpiry(TimeUtils.parseTimeValue(time), TimeUnit.MILLISECONDS))
-                    .build();
+            cache = caffeine.build();
         } else {
-            cache = Caffeine.newBuilder()
-                    .scheduler(Scheduler.systemScheduler())
-                    .expireAfter(new CacheExpiry(TimeUtils.parseTimeValue(time), TimeUnit.MILLISECONDS))
-                    .maximumSize(maximumSize)
-                    .build();
+            cache = caffeine.maximumSize(maximumSize).build();
         }
     }
 
