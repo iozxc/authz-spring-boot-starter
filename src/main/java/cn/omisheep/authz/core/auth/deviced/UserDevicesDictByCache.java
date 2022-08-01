@@ -5,8 +5,10 @@ import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.config.Constants;
-import cn.omisheep.authz.core.tk.*;
-import cn.omisheep.authz.core.util.AUtils;
+import cn.omisheep.authz.core.tk.AccessToken;
+import cn.omisheep.authz.core.tk.GrantType;
+import cn.omisheep.authz.core.tk.RefreshToken;
+import cn.omisheep.authz.core.tk.TokenPair;
 import cn.omisheep.commons.util.Async;
 import cn.omisheep.commons.util.TimeUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -195,7 +197,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         Map<String, RequestDetails> requestDetailsMap = cache.get(rKeys, RequestDetails.class);
         if (requestDetailsMap.isEmpty()) return new ArrayList<>(0);
         return requestDetailsMap.entrySet().stream()
-                .filter(e -> (now - e.getValue().getLastRequestTime().getTime()) < ms)
+                .filter(e -> (now - e.getValue().getLastRequestTimeLong()) < ms)
                 .map(e -> e.getKey().split(Constants.SEPARATOR)[4]).distinct().collect(Collectors.toList());
     }
 
@@ -217,15 +219,14 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     @Override
-    public void request() {
+    public void request(HttpMeta httpMeta) {
         try {
-            HttpMeta    currentHttpMeta = AUtils.getCurrentHttpMeta();
-            AccessToken token           = currentHttpMeta.getToken();
+            AccessToken token           = httpMeta.getToken();
             if (token.getClientId() == null) {
                 Async.run(() -> cache.setSneaky(requestKey(token),
                                                 new DefaultRequestDetails()
-                                                        .setLastRequestTime(currentHttpMeta.getNow())
-                                                        .setIp(currentHttpMeta.getIp()),
+                                                        .setLastRequestTime(httpMeta.getNow())
+                                                        .setIp(httpMeta.getIp()),
                                                 2, TimeUnit.DAYS
                           )
                 );

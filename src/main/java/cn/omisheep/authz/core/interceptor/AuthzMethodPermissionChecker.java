@@ -2,13 +2,13 @@ package cn.omisheep.authz.core.interceptor;
 
 import cn.omisheep.authz.AuHelper;
 import cn.omisheep.authz.annotation.*;
-import cn.omisheep.authz.core.AuthzProperties;
-import cn.omisheep.authz.core.NotLoginException;
-import cn.omisheep.authz.core.PermissionException;
+import cn.omisheep.authz.core.*;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
+import cn.omisheep.authz.core.oauth.OpenAuthDict;
 import cn.omisheep.authz.core.tk.AccessToken;
+import cn.omisheep.authz.core.tk.GrantType;
 import cn.omisheep.commons.util.CollectionUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
@@ -18,7 +18,10 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import static cn.omisheep.authz.core.util.MetaUtils.generatePermRolesMeta;
 
@@ -36,8 +39,8 @@ public class AuthzMethodPermissionChecker {
      */
     private final HashMap<String, PermRolesMeta> prMeta = new HashMap<>();
 
-    private final HashMap<String, Set<String>> scope = new HashMap<>();
-    private final AuthzProperties              properties;
+    private final HashMap<String, OpenAuthDict.OAuthInfo> oauthInfoList = new HashMap<>();
+    private final AuthzProperties                         properties;
 
     public AuthzMethodPermissionChecker(PermLibrary permLibrary,
                                         AuthzProperties properties) {
@@ -142,31 +145,49 @@ public class AuthzMethodPermissionChecker {
 
     @Before("!hasRequestMapping()&&(hasOAuthScope()||hasOAuthScopeInType()||hasOAuthScopeBasic()||hasOAuthScopeBasicInType())")
     public void checkScope(JoinPoint joinPoint) {
+        MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+        Method          method          = null;
         try {
-            AccessToken accessToken = AuHelper.getToken();
-            if (accessToken.getClientId() == null) return; //不需要拦截
-
-            MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-            Method method = joinPoint.getSignature().getDeclaringType().getMethod(joinPoint.getSignature().getName(),
-                                                                                  methodSignature.getParameterTypes());
-            OAuthScope oAuthScope1 = AnnotatedElementUtils.getMergedAnnotation(method, OAuthScope.class);
-            OAuthScope oAuthScope2 = AnnotatedElementUtils.getMergedAnnotation(method.getDeclaringClass(),
-                                                                               OAuthScope.class);
-
-            OAuthScopeBasic oAuthScopeBasic1 = AnnotatedElementUtils.getMergedAnnotation(method, OAuthScopeBasic.class);
-            OAuthScopeBasic oAuthScopeBasic2 = AnnotatedElementUtils.getMergedAnnotation(method.getDeclaringClass(),
-                                                                                         OAuthScopeBasic.class);
-
-            Set<String> requireScope = scope.computeIfAbsent(joinPoint.getSignature().toLongString(), r ->
-                    merge(oAuthScope1, oAuthScope2, oAuthScopeBasic1, oAuthScopeBasic1));
-            if (requireScope.isEmpty()) return;
-            if (accessToken.getScope() == null
-                    || !CollectionUtils.newSet(accessToken.getScope().split(" ")).containsAll(requireScope)) {
-                throw new PermissionException();
-            }
+            method = joinPoint.getSignature().getDeclaringType().getMethod(joinPoint.getSignature().getName(),
+                                                                           methodSignature.getParameterTypes());
         } catch (NoSuchMethodException e) {
             // skip
         }
+        if (method == null) return;
+
+        AccessToken accessToken = AuHelper.getToken();
+        if (accessToken == null) {
+            throw new NotLoginException();
+        }
+        if (accessToken.getClientId() == null) return; //不需要拦截
+        if (AuHelper.getHttpMeta().getScope().isEmpty() || AuHelper.getHttpMeta()
+                .getToken()
+                .getGrantType() == null) {
+            throw new AuthzException(ExceptionStatus.SCOPE_EXCEPTION_OR_TYPE_ERROR);
+        }
+
+        OAuthScope oAuthScope1 = AnnotatedElementUtils.getMergedAnnotation(method, OAuthScope.class);
+        OAuthScope oAuthScope2 = AnnotatedElementUtils.getMergedAnnotation(method.getDeclaringClass(),
+                                                                           OAuthScope.class);
+
+        OAuthScopeBasic oAuthScopeBasic1 = AnnotatedElementUtils.getMergedAnnotation(method, OAuthScopeBasic.class);
+        OAuthScopeBasic oAuthScopeBasic2 = AnnotatedElementUtils.getMergedAnnotation(method.getDeclaringClass(),
+                                                                                     OAuthScopeBasic.class);
+
+        OpenAuthDict.OAuthInfo oAuthInfo = oauthInfoList
+                .computeIfAbsent(joinPoint.getSignature().toLongString(),
+                                 r -> merge(oAuthScope1, oAuthScope2,
+                                            oAuthScopeBasic1,
+                                            oAuthScopeBasic1));
+
+        if (oAuthInfo == null) return;
+        if (!oAuthInfo.getType().contains(accessToken.getGrantType())) {
+            throw new AuthzException(ExceptionStatus.SCOPE_EXCEPTION_OR_TYPE_ERROR);
+        }
+        if (!AuHelper.getHttpMeta().getScope().containsAll(oAuthInfo.getScope())) {
+            throw new AuthzException(ExceptionStatus.SCOPE_EXCEPTION_OR_TYPE_ERROR);
+        }
+
     }
 
 
@@ -221,11 +242,12 @@ public class AuthzMethodPermissionChecker {
         return null;
     }
 
-    private Set<String> merge(OAuthScope oAuthScope1,
-                              OAuthScope oAuthScope2,
-                              OAuthScopeBasic oAuthScopeBasic1,
-                              OAuthScopeBasic oAuthScopeBasic2) {
-        HashSet<String> set = new HashSet<>();
+    private OpenAuthDict.OAuthInfo merge(OAuthScope oAuthScope1,
+                                         OAuthScope oAuthScope2,
+                                         OAuthScopeBasic oAuthScopeBasic1,
+                                         OAuthScopeBasic oAuthScopeBasic2) {
+        HashSet<String>    set  = new HashSet<>();
+        HashSet<GrantType> set2 = new HashSet<>();
         if (oAuthScopeBasic1 != null || oAuthScopeBasic2 != null) {
             String defaultScope = properties.getToken().getOauth().getDefaultBasicScope();
             if (defaultScope != null) {
@@ -234,18 +256,23 @@ public class AuthzMethodPermissionChecker {
         }
         if (oAuthScope1 != null) {
             set.addAll(Arrays.asList(oAuthScope1.scope()));
+            set2.addAll(Arrays.asList(oAuthScope1.type()));
         }
         if (oAuthScope2 != null) {
             set.addAll(Arrays.asList(oAuthScope2.scope()));
+            set2.addAll(Arrays.asList(oAuthScope2.type()));
         }
         if (oAuthScopeBasic1 != null) {
             set.addAll(Arrays.asList(oAuthScopeBasic1.scope()));
+            set2.addAll(Arrays.asList(oAuthScopeBasic1.type()));
         }
         if (oAuthScopeBasic2 != null) {
             set.addAll(Arrays.asList(oAuthScopeBasic2.scope()));
+            set2.addAll(Arrays.asList(oAuthScopeBasic2.type()));
         }
-        return set;
-    }
 
+        if (set.isEmpty() || set2.isEmpty()) return null;
+        return new OpenAuthDict.OAuthInfo().setScope(set).setType(set2);
+    }
 
 }

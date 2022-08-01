@@ -30,7 +30,7 @@ import java.util.*;
 public class SupportServlet extends HttpServlet {
 
     private static final String        resourceRootPath = "support/http/dist";
-    private static final String        resourcePath     = "support/http/dist/authz-dashboard";
+    private static final String        resourcePath     = "support/http/dist/authz-dashboard-static";
     private final        List<IPRange> allowList        = new ArrayList<>();
     private final        List<IPRange> denyList         = new ArrayList<>();
     private final        ApiHandler    apiHandler       = new ApiHandler();
@@ -181,7 +181,6 @@ public class SupportServlet extends HttpServlet {
         } else {
             filePath = resourcePath + fileName;
         }
-
 
         if (filePath.endsWith(".html")) {
             response.setContentType("text/html; charset=utf-8");

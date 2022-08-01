@@ -96,7 +96,9 @@ public class CookieAndRequestSlot implements Slot {
         try {
             AccessToken accessToken = TokenHelper.parseAccessToken(tokenValue);
             httpMeta.setToken(accessToken);
-            Async.run(userDevicesDict::request);
+            Async.run(() -> {
+                userDevicesDict.request(httpMeta);
+            });
         } catch (Exception e) {
             TokenHelper.clearCookie();
             if (e instanceof JwtException) {

@@ -100,7 +100,7 @@ public interface UserDevicesDict {
 
     // =========================   other   ========================= //
 
-    void request();
+    void request(HttpMeta httpMeta);
 
     void deviceClean(Object userId);
 
