@@ -9,7 +9,7 @@ import org.springframework.web.method.HandlerMethod;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.1.0
  */
-@Order(5)
+@Order(15)
 @SuppressWarnings("all")
 public class BlacklistSlot implements Slot {
     @Override

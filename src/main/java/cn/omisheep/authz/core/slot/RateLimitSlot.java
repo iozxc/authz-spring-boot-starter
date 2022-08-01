@@ -20,7 +20,7 @@ import static cn.omisheep.authz.annotation.RateLimit.CheckType.USER_ID;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.1.1
  */
-@Order(2)
+@Order(10)
 public class RateLimitSlot implements Slot {
 
     private final AuthzProperties properties;
