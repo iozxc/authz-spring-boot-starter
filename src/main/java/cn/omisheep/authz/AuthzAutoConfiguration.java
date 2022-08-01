@@ -66,6 +66,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 
+import static cn.omisheep.authz.core.config.Constants.DASHBOARD;
+
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -375,8 +377,7 @@ public class AuthzAutoConfiguration {
                                                         Cache cache) {
             AuthzProperties.DashboardConfig dashboard = properties.getDashboard();
             ServletRegistrationBean<SupportServlet> bean =
-                    new ServletRegistrationBean<>(new SupportServlet(dashboard, cache), "/authz-api/*",
-                                                  "/authz-dashboard/*", "/authz.html", "/authz-dashboard-favicon.ico");
+                    new ServletRegistrationBean<>(new SupportServlet(dashboard, cache), DASHBOARD);
 
             HashMap<String, String> initParameters = new HashMap<>();
 

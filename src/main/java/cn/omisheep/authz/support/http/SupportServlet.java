@@ -30,7 +30,7 @@ import java.util.*;
 public class SupportServlet extends HttpServlet {
 
     private static final String        resourceRootPath = "support/http/dist";
-    private static final String        resourcePath     = "support/http/dist/authz-dashboard-static";
+    private static final String        resourcePath     = "support/http/dist" + Constants.DASHBOARD_STATIC_PREFIX;
     private final        List<IPRange> allowList        = new ArrayList<>();
     private final        List<IPRange> denyList         = new ArrayList<>();
     private final        ApiHandler    apiHandler       = new ApiHandler();
@@ -104,7 +104,7 @@ public class SupportServlet extends HttpServlet {
         if (contextPath == null) {contextPath = "";}
         String uri = contextPath + servletPath;
         String path;
-        if (Objects.equals(servletPath, "/authz.html")) {
+        if (Objects.equals(servletPath, Constants.DASHBOARD_HTML)) {
             path = servletPath;
         } else {
             path = requestURI.substring(contextPath.length() + servletPath.length());
@@ -119,7 +119,7 @@ public class SupportServlet extends HttpServlet {
             return; // 跳转匹配
         }
 
-        if ("/authz-api".equals(servletPath) && path.startsWith("/v1")) {
+        if (Constants.DASHBOARD_API_PREFIX.equals(servletPath) && path.startsWith("/v1")) {
             apiHandler.process(request, response, path, !requireLogin || auth(request, cache) != null);
             return;
         }

@@ -7,18 +7,18 @@ import java.util.function.Supplier;
  * @since 1.0.0
  */
 public interface Constants {
-    String SCOPE                = "cop";
-    String ID                   = "tid";
-    String ACCESS_TOKEN_ID      = "aid";
-    String USER_ID              = "uid";
-    String CLIENT_ID            = "cid";
-    String DEVICE_ID            = "did";
-    String DEVICE_TYPE          = "dtp";
-    String LAST_REQUEST_TIME    = "lrt";
-    String IP                   = "ip";
-    String GRANT_TYPE           = "gtp";
-    String AUTHORIZED_TIME      = "aut";
-    String EXPIRES_TIME         = "ext";
+    String SCOPE             = "cop";
+    String ID                = "tid";
+    String ACCESS_TOKEN_ID   = "aid";
+    String USER_ID           = "uid";
+    String CLIENT_ID         = "cid";
+    String DEVICE_ID         = "did";
+    String DEVICE_TYPE       = "dtp";
+    String LAST_REQUEST_TIME = "lrt";
+    String IP                = "ip";
+    String GRANT_TYPE        = "gtp";
+    String AUTHORIZED_TIME   = "aut";
+    String EXPIRES_TIME      = "ext";
 
     String SEPARATOR = ":";
     String COMMA     = ",";
@@ -27,12 +27,20 @@ public interface Constants {
     String CRLF      = "\n";
     String EMPTY     = "";
 
+    String   DASHBOARD_STATIC_PREFIX = "/authz-dashboard-static";
+    String   DASHBOARD_API_PREFIX    = "/authz-api";
+    String   DASHBOARD_STATIC        = DASHBOARD_STATIC_PREFIX + "/*";
+    String   DASHBOARD_API           = DASHBOARD_API_PREFIX + "/*";
+    String   DASHBOARD_HTML          = "/authz.html";
+    String   DASHBOARD_LOGO          = "/authz-dashboard-favicon.ico";
+    String[] DASHBOARD               = new String[]{DASHBOARD_STATIC, DASHBOARD_API, DASHBOARD_LOGO, DASHBOARD_HTML};
+
     String HTTP_META = "AU_HTTP_META";
     String OPTIONS   = "OPTIONS";
 
-    Supplier<String> USER_DEVICE_KEY_PREFIX         = () -> AuthzAppVersion.values.get(
+    Supplier<String> USER_DEVICE_KEY_PREFIX       = () -> AuthzAppVersion.values.get(
             "USER_DEVICE_KEY_PREFIX");
-    Supplier<String> OAUTH_USER_DEVICE_KEY_PREFIX   = () -> AuthzAppVersion.values.get(
+    Supplier<String> OAUTH_USER_DEVICE_KEY_PREFIX = () -> AuthzAppVersion.values.get(
             "OAUTH_USER_DEVICE_KEY_PREFIX");
 
     Supplier<String> USER_REQUEST_KEY_PREFIX       = () -> AuthzAppVersion.values.get(
