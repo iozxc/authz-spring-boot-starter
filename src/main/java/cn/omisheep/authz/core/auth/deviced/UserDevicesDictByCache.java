@@ -53,7 +53,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
 
         // clientId不匹配。需要重新dengue
         if (clientId != null) {
-            if (StringUtils.equals(device.getClientId(), clientId)) return REQUIRE_LOGIN;
+            if (!StringUtils.equals(device.getClientId(), clientId)) return REQUIRE_LOGIN;
         }
 
         // accessTokenId不匹配，账号在其他地方登录

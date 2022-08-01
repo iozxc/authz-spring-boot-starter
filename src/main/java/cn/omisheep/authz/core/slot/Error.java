@@ -6,5 +6,5 @@ package cn.omisheep.authz.core.slot;
  */
 @FunctionalInterface
 public interface Error {
-    void error(Object error);
+    void error(Object... error);
 }

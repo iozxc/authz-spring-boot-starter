@@ -17,6 +17,7 @@ public enum ExceptionStatus {
     PERM_EXCEPTION(-102, "Insufficient permissions", false, NETWORK_AUTHENTICATION_REQUIRED),
     ACCESS_TOKEN_OVERDUE(-103, "AccessToken overdue", true, NETWORK_AUTHENTICATION_REQUIRED),
     REFRESH_TOKEN_EXPIRED_EXCEPTION(-104, "RefreshToken expired", true, NETWORK_AUTHENTICATION_REQUIRED),
+    TOKEN_EXCEPTION(-104, "Token exception", true, FORBIDDEN),
 
     REQUEST_REPEAT(-202, "Request repeat error", false, TOO_MANY_REQUESTS),
     LOGIN_EXCEPTION(-203, "You are offline, or you may have logged in elsewhere", true, FORBIDDEN),

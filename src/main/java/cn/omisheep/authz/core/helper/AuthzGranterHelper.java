@@ -1,5 +1,7 @@
 package cn.omisheep.authz.core.helper;
 
+import cn.omisheep.authz.core.AuthzException;
+import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.RefreshTokenExpiredException;
 import cn.omisheep.authz.core.ThreadWebEnvironmentException;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
@@ -84,6 +86,8 @@ public class AuthzGranterHelper extends BaseHelper {
             return null;
         } catch (ExpiredJwtException e) {
             throw new RefreshTokenExpiredException();
+        } catch (Exception e) {
+            throw new AuthzException(ExceptionStatus.TOKEN_EXCEPTION);
         }
     }
 

@@ -181,6 +181,7 @@ public class HttpMeta {
         if (this.token == null) {
             this.token  = token;
             this.userId = token.getUserId();
+            this.hasToken = true;
         }
     }
 

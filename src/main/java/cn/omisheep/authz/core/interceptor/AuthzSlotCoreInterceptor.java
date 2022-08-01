@@ -43,7 +43,8 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response,
+                             Object handler) throws Exception {
         HttpMeta httpMeta = (HttpMeta) request.getAttribute(HTTP_META);
         if (httpMeta == null) return true;
         if (!(handler instanceof HandlerMethod)) {
@@ -54,7 +55,8 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
         LinkedList<ExceptionStatus> list          = httpMeta.getExceptionStatusList();
         if (!list.isEmpty()) {
             httpMeta.exportLog();
-            return authzExceptionHandler.handle(request, response, httpMeta, list.getFirst(), httpMeta.getExceptionObjectList());
+            return authzExceptionHandler.handle(request, response, httpMeta, list.getFirst(),
+                                                httpMeta.getExceptionObjectList());
         }
         httpMeta.clearError();
 
@@ -65,13 +67,15 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
             for (Slot slot : slots) {
                 if (next.get() || slot.must()) slot.chain(httpMeta, handlerMethod, (error) -> {
                     next.set(false);
-                    if (error == null) return;
-                    if (error instanceof ExceptionStatus) {
-                        exceptionStatusList.offer((ExceptionStatus) error);
-                    } else if (error instanceof AuthzException) {
-                        exceptionStatusList.offer(((AuthzException) error).getExceptionStatus());
-                    } else {
-                        exceptionObjectList.offer(error);
+                    if (error == null || error.length == 0) return;
+                    for (Object o : error) {
+                        if (o instanceof ExceptionStatus) {
+                            exceptionStatusList.offer((ExceptionStatus) o);
+                        } else if (o instanceof AuthzException) {
+                            exceptionStatusList.offer(((AuthzException) o).getExceptionStatus());
+                        } else {
+                            exceptionObjectList.offer(error);
+                        }
                     }
                 });
             }
@@ -84,7 +88,8 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
             } else return true;
         } catch (Exception e) {
             LogUtils.error(e);
-            return authzExceptionHandler.handle(request, response, httpMeta, ExceptionStatus.UNKNOWN, httpMeta.getExceptionObjectList());
+            return authzExceptionHandler.handle(request, response, httpMeta, ExceptionStatus.UNKNOWN,
+                                                httpMeta.getExceptionObjectList());
         }
     }
 

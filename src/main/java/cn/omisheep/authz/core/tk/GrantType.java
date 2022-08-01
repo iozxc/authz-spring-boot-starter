@@ -1,5 +1,7 @@
 package cn.omisheep.authz.core.tk;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 /**
  * 授权方式
  *
@@ -12,6 +14,7 @@ public enum GrantType {
      */
     AUTHORIZATION_CODE("authorization_code");
 
+    @JsonValue
     private final String type;
 
     GrantType(String type) {

@@ -1,6 +1,8 @@
 package cn.omisheep.authz.core.tk;
 
+import cn.omisheep.authz.core.AuthzException;
 import cn.omisheep.authz.core.AuthzProperties;
+import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.auth.deviced.Device;
 import cn.omisheep.authz.core.helper.BaseHelper;
 import cn.omisheep.authz.core.oauth.AuthorizationInfo;
@@ -24,7 +26,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 import static cn.omisheep.authz.core.config.Constants.*;
-import static io.jsonwebtoken.CompressionCodecs.DEFLATE;
+import static io.jsonwebtoken.CompressionCodecs.GZIP;
 import static io.jsonwebtoken.SignatureAlgorithm.HS256;
 import static io.jsonwebtoken.SignatureAlgorithm.NONE;
 
@@ -43,7 +45,7 @@ public class TokenHelper extends BaseHelper {
     private static final SecretKey secretKey;
 
     private static final SignatureAlgorithm alg;
-    private static final CompressionCodec   codec = DEFLATE;
+    private static final CompressionCodec   codec = GZIP;
     private static final int                tokenIdBits;
     private static final String             prefix;
 
@@ -152,7 +154,8 @@ public class TokenHelper extends BaseHelper {
      * @return TokenPair
      */
     public static TokenPair createTokenPair(Object userId, String deviceType, String deviceId, String clientId,
-                                            String scope, GrantType grantType, String accessTokenId, String refreshTokenId,
+                                            String scope, GrantType grantType, String accessTokenId,
+                                            String refreshTokenId,
                                             Date toAccessExpiredTime, Date toRefreshExpiredTime) {
         AccessToken accessToken = createAccessToken(userId, deviceType, deviceId, accessTokenId, refreshTokenId,
                                                     toAccessExpiredTime, grantType, clientId, scope);
@@ -209,8 +212,9 @@ public class TokenHelper extends BaseHelper {
      *
      * @param refreshToken refreshToken
      * @return TokenPair
+     * @throws Exception e
      */
-    public static TokenPair refreshToken(String refreshToken) {
+    public static TokenPair refreshToken(String refreshToken) throws Exception {
         return refreshToken(parseRefreshToken(refreshToken));
     }
 
@@ -296,13 +300,16 @@ public class TokenHelper extends BaseHelper {
      *
      * @param accessToken accessToken
      * @return AccessToken
+     * @throws Exception e
      */
-    public static AccessToken parseAccessToken(String accessToken) {
+    public static AccessToken parseAccessToken(String accessToken) throws Exception {
         Claims claims = parseToken(accessToken);
-        if (claims == null) return null;
-        if (claims.get(REFRESH_TOKEN_ID, String.class) == null) return null;
+        if (claims == null || claims.get(REFRESH_TOKEN_ID, String.class) == null) {
+            throw new AuthzException(ExceptionStatus.TOKEN_EXCEPTION);
+        }
         return new AccessToken(accessToken, claims.getId(), claims.get(REFRESH_TOKEN_ID, String.class), null,
-                               claims.getExpiration().getTime(), GrantType.grantType(claims.get(GRANT_TYPE, String.class)),
+                               claims.getExpiration().getTime(),
+                               GrantType.grantType(claims.get(GRANT_TYPE, String.class)),
                                claims.get(CLIENT_ID, String.class), claims.get(SCOPE, String.class),
                                claims.get(USER_ID), claims.get(DEVICE_TYPE, String.class),
                                claims.get(DEVICE_ID, String.class));
@@ -313,16 +320,18 @@ public class TokenHelper extends BaseHelper {
      *
      * @param refreshToken refreshToken
      * @return AccessToken
+     * @throws Exception e
      */
-    public static RefreshToken parseRefreshToken(String refreshToken) {
+    public static RefreshToken parseRefreshToken(String refreshToken) throws Exception {
         Claims claims = parseToken(refreshToken);
-        if (claims == null) return null;
+        if (claims == null) {
+            throw new AuthzException(ExceptionStatus.TOKEN_EXCEPTION);
+        }
         return new RefreshToken(refreshToken, claims.getId(),
                                 null,
                                 claims.getExpiration().getTime(),
                                 claims.get(USER_ID),
                                 claims.get(CLIENT_ID, String.class));
     }
-
 
 }

@@ -17,7 +17,7 @@ public class IssueToken {
 
     public IssueToken(TokenPair tokenPair) {
         this.accessToken  = tokenPair.getAccessToken().getToken();
-        this.refreshToken = tokenPair.getAccessToken().getToken();
+        this.refreshToken = tokenPair.getRefreshToken().getToken();
         this.scope        = tokenPair.getAccessToken().getScope();
         this.expiresIn    = tokenPair.getAccessToken().getExpiresIn();
     }

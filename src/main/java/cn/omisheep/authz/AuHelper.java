@@ -38,7 +38,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static cn.omisheep.authz.core.AuthzManager.*;
+import static cn.omisheep.authz.core.AuthzManager.modify;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -264,7 +264,7 @@ public class AuHelper extends BaseHelper {
          */
         @Nullable
         public static IssueToken authorize(@NonNull String clientId, @NonNull String clientSecret,
-                                          @NonNull String authorizationCode) throws AuthorizationException {
+                                           @NonNull String authorizationCode) throws AuthorizationException {
             return OpenAuthHelper.authorize(clientId, clientSecret, authorizationCode);
         }
 
@@ -378,7 +378,7 @@ public class AuHelper extends BaseHelper {
          */
         @NonNull
         public static String createBasicScopeAuthorizationCode(@NonNull String clientId, @NonNull String redirectUrl,
-                                                                 @NonNull String deviceType) throws AuthorizationException {
+                                                               @NonNull String deviceType) throws AuthorizationException {
             return createBasicScopeAuthorizationCode(clientId, redirectUrl, deviceType, null);
         }
 
@@ -397,11 +397,11 @@ public class AuHelper extends BaseHelper {
          */
         @NonNull
         public static String createBasicScopeAuthorizationCode(@NonNull String clientId, @NonNull String redirectUrl,
-                                                                 @NonNull String deviceType,
-                                                                 @Nullable String deviceId) throws AuthorizationException {
+                                                               @NonNull String deviceType,
+                                                               @Nullable String deviceId) throws AuthorizationException {
             if (isLogin() && agreeAuthorize(clientId)) {
                 return OpenAuthHelper.createBasicScopeAuthorizationCode(clientId, redirectUrl, getUserId(),
-                                                                          deviceType, deviceId);
+                                                                        deviceType, deviceId);
             }
             throw AuthorizationException.privilegeGrantFailed();
         }
@@ -608,6 +608,14 @@ public class AuHelper extends BaseHelper {
      */
     public static String getDeviceId() throws NotLoginException {
         return AUtils.getCurrentToken().getDeviceId();
+    }
+
+    /**
+     * @return 获得当前请求的clientId
+     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
+     */
+    public static String getClientId() throws NotLoginException {
+        return AUtils.getCurrentToken().getClientId();
     }
 
     /**
