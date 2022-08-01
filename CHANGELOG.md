@@ -4,7 +4,10 @@
 
 ### Added
 
-- 提供了OpenAuth【OAuth2.0】 的支持 `AuHelper.OpenAuth.*`
+- 提供了OpenAuth【OAuth2.0】 的支持
+    - `AuHelper.OpenAuth.*` 授权、验证、注册客户端等操作
+    - `@OAuthScope` 标记在方法和Controller上，需要对应访问权限才能访问
+    - `@OAuthScopeBasic` 同 `@OAuthScope` ，多一个基础访问权限、可在yml里配置
 - 用vue重写了dashboard，功能更多了，界面更好看了，
 - 新增了用户登录数量限制的一些配置接口
     - 现在能够为【每一名用户 by userId】设置登录设备数量的限制
@@ -17,6 +20,8 @@
 - 优化了框架的大量代码
 - 优化了框架响应速度，登录以及验证速度变快了
 - 优化了二级同步缓存以及一级默认缓存的部分逻辑
+- 重构了Device的逻辑
+- 新增RequestDetails，其不会进入同步缓存的领域
 
 ### Removed
 

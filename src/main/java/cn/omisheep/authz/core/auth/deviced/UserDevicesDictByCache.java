@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -126,7 +127,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
 
     @Override
     public void removeDeviceByTid(Object userId,
-                                      String tid) {
+                                  String tid) {
         String key    = key(userId, tid);
         Device device = cache.get(key, Device.class);
         if (device == null) return;
@@ -221,8 +222,13 @@ public class UserDevicesDictByCache implements UserDevicesDict {
             HttpMeta    currentHttpMeta = AUtils.getCurrentHttpMeta();
             AccessToken token           = currentHttpMeta.getToken();
             if (token.getClientId() == null) {
-                Async.run(() -> cache.set(requestKey(token), new DefaultRequestDetails()
-                        .setLastRequestTime(currentHttpMeta.getNow()).setIp(currentHttpMeta.getIp())));
+                Async.run(() -> cache.setSneaky(requestKey(token),
+                                                new DefaultRequestDetails()
+                                                        .setLastRequestTime(currentHttpMeta.getNow())
+                                                        .setIp(currentHttpMeta.getIp()),
+                                                2, TimeUnit.DAYS
+                          )
+                );
             }
         } catch (Exception ignored) {
         }
@@ -260,10 +266,10 @@ public class UserDevicesDictByCache implements UserDevicesDict {
                               () -> rKeys.addAll(cache.keys(requestKey(userId, Constants.WILDCARD)))
                 ));
 
-        if (!key.isEmpty()) {
+        if (key != null && !keys.isEmpty()) {
             keys.remove(key);
         }
-        if (!rKeys.isEmpty()) {
+        if (rKey != null && !rKeys.isEmpty()) {
             rKeys.remove(rKey);
         }
 
