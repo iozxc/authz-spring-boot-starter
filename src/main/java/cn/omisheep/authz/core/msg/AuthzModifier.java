@@ -3,6 +3,9 @@ package cn.omisheep.authz.core.msg;
 import cn.omisheep.authz.annotation.RateLimit;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.Rule;
+import cn.omisheep.authz.core.oauth.OpenAuthDict;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -17,32 +20,27 @@ import java.util.Map;
  */
 @Data
 @Accessors(chain = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class AuthzModifier {
 
-    private Operate operate;
-    private Target  target;
-    private String  method;
-    private String  api;
-
-    private String value;
-
-    private Integer index;
-
-    private List<String> range;
-    private List<String> resources;
-
+    private Operate                   operate;
+    private Target                    target;
+    private String                    method;
+    private String                    api;
+    private String                    value;
+    private Integer                   index;
+    private List<String>              range;
+    private List<String>              resources;
     private String                    className;
     private String                    fieldName;
     private String                    condition;
     private Rule                      rule;
     private Map<String, List<String>> argsMap;
-
-    private Role       role;
-    private Permission permission;
-
-    private RateLimitInfo rateLimit;
-
-    private BlacklistInfo blacklistInfo;
+    private Role                      role;
+    private Permission                permission;
+    private RateLimitInfo             rateLimit;
+    private BlacklistInfo             blacklistInfo;
+    private OpenAuthDict.OAuthInfo    oauth;
 
     @Data
     public static class Role {
@@ -79,14 +77,31 @@ public class AuthzModifier {
         private String time;
 
         public enum OP {
-            ADD, CHANGE, REMOVE, READ
+            ADD, CHANGE, REMOVE, READ, NON;
+
+            @JsonCreator
+            public static OP create(String op) {
+                try {
+                    return valueOf(op.toUpperCase(Locale.ROOT));
+                } catch (Exception e) {
+                    return NON;
+                }
+            }
         }
 
         public enum TYPE {
-            IP, USER, IP_RANGE
+            IP, USER, IP_RANGE, NON;
+
+            @JsonCreator
+            public static TYPE create(String type) {
+                try {
+                    return valueOf(type.toUpperCase(Locale.ROOT));
+                } catch (Exception e) {
+                    return NON;
+                }
+            }
         }
     }
-
 
     /**
      * API
@@ -109,6 +124,7 @@ public class AuthzModifier {
         PARAM(9, "role", "permission"),
         RATE(10),
         BLACKLIST(11),
+        OPEN_AUTH(12),
         NON(0);
 
         public final int      i;
@@ -118,6 +134,17 @@ public class AuthzModifier {
                String... with) {
             this.i    = i;
             this.with = with;
+        }
+
+        @JsonCreator
+        public static Target create(String target) {
+            String u = target.toLowerCase(Locale.ROOT);
+            for (Target value : values()) {
+                if (value.contains(u)) {
+                    return value;
+                }
+            }
+            return NON;
         }
 
         public boolean contains(String... with) {
@@ -130,51 +157,16 @@ public class AuthzModifier {
         DELETE, DEL,
         MODIFY, UPDATE,
         GET, READ,
-        EMPTY, NON
-    }
+        EMPTY, NON;
 
-    public AuthzModifier setTarget(Target target) {
-        this.target = target;
-        return this;
-    }
-
-    public AuthzModifier setTarget(String target) {
-        try {
-            this.target = Target.valueOf(target.toUpperCase(Locale.ROOT));
-        } catch (Exception e) {
-            this.target = Target.NON;
+        @JsonCreator
+        public static Operate create(String type) {
+            try {
+                return valueOf(type.toUpperCase(Locale.ROOT));
+            } catch (Exception e) {
+                return EMPTY;
+            }
         }
-        return this;
-    }
-
-
-    public AuthzModifier setOp(Operate operate) {
-        this.operate = operate;
-        return this;
-    }
-
-    public AuthzModifier setOp(String operate) {
-        try {
-            this.operate = Operate.valueOf(operate.toUpperCase(Locale.ROOT));
-        } catch (Exception e) {
-            this.operate = Operate.EMPTY;
-        }
-        return this;
-    }
-
-
-    public AuthzModifier setOperate(Operate operate) {
-        this.operate = operate;
-        return this;
-    }
-
-    public AuthzModifier setOperate(String operate) {
-        try {
-            this.operate = Operate.valueOf(operate.toUpperCase(Locale.ROOT));
-        } catch (Exception e) {
-            this.operate = Operate.EMPTY;
-        }
-        return this;
     }
 
     public AuthzModifier setMethod(String method) {

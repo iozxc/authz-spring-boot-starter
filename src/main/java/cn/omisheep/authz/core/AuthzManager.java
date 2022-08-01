@@ -7,6 +7,7 @@ import cn.omisheep.authz.core.cache.L2Cache;
 import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.helper.BaseHelper;
 import cn.omisheep.authz.core.msg.AuthzModifier;
+import cn.omisheep.authz.core.oauth.OpenAuthDict;
 import cn.omisheep.web.entity.Result;
 import cn.omisheep.web.entity.ResultCode;
 import org.springframework.lang.NonNull;
@@ -21,12 +22,15 @@ public class AuthzManager extends BaseHelper {
 
     @Nullable
     public static Object op(@NonNull AuthzModifier authzModifier) {
-        if (authzModifier.getTarget() == AuthzModifier.Target.RATE) {
-            return Httpd.modify(authzModifier);
-        } else if (authzModifier.getTarget() == AuthzModifier.Target.BLACKLIST) {
-            return Blacklist.modify(authzModifier);
-        } else {
-            return PermissionDict.modify(authzModifier);
+        switch (authzModifier.getTarget()) {
+            case OPEN_AUTH:
+                return OpenAuthDict.modify(authzModifier);
+            case RATE:
+                return Httpd.modify(authzModifier);
+            case BLACKLIST:
+                return Blacklist.modify(authzModifier);
+            default:
+                return PermissionDict.modify(authzModifier);
         }
     }
 

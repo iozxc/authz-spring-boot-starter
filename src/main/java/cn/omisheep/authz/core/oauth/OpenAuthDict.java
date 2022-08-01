@@ -5,6 +5,7 @@ import cn.omisheep.authz.annotation.OAuthScopeBasic;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.tk.GrantType;
+import cn.omisheep.web.entity.Result;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -27,30 +28,25 @@ import static cn.omisheep.authz.core.util.MetaUtils.*;
  */
 public class OpenAuthDict {
 
-    private static final Map<String, Map<String, AuthInfo>> _src = new HashMap<>();
+    private static final Map<String, Map<String, OAuthInfo>> _src = new HashMap<>();
 
     @Data
     @Accessors(chain = true)
-    public static class AuthInfo {
-        private Set<String>    scope = new HashSet<>();
-        private Set<GrantType> type  = new HashSet<>();
+    public static class OAuthInfo {
+        private Set<String>    scope;
+        private Set<GrantType> type;
     }
 
     @Getter
-    private static final Map<String, Map<String, AuthInfo>> src = Collections.unmodifiableMap(_src);
-
-    @Nullable
-    public Object modify(@NonNull AuthzModifier modifier) { //todo
-        return null;
-    }
+    private static final Map<String, Map<String, OAuthInfo>> src = Collections.unmodifiableMap(_src);
 
     public static boolean target(String path,
                                  String method,
                                  GrantType type,
                                  Set<String> scope) {
-        Map<String, AuthInfo> p = src.get(path);
+        Map<String, OAuthInfo> p = src.get(path);
         if (p == null) return false;
-        AuthInfo authInfo = p.get(method);
+        OAuthInfo authInfo = p.get(method);
         if (authInfo == null) return false;
         if (authInfo.scope == null || authInfo.scope.isEmpty()) {
             return false;
@@ -116,12 +112,44 @@ public class OpenAuthDict {
 
             if (scope.isEmpty() && type.isEmpty()) return;
             patterns.forEach(pattern -> mtds.forEach(method -> {
-                AuthInfo authInfo = _src.computeIfAbsent(pattern, r -> new HashMap<>())
-                        .computeIfAbsent(method, r -> new AuthInfo());
+                OAuthInfo authInfo = _src.computeIfAbsent(pattern, r -> new HashMap<>())
+                        .computeIfAbsent(method, r -> new OAuthInfo());
+                authInfo.scope = new HashSet<>();
+                authInfo.type  = new HashSet<>();
                 authInfo.scope.addAll(scope);
                 authInfo.type.addAll(type);
             }));
         });
+    }
+
+    @Nullable
+    public static Object modify(@NonNull AuthzModifier modifier) {
+        if (modifier.getTarget() != AuthzModifier.Target.OPEN_AUTH) return Result.FAIL.data();
+        switch (modifier.getOperate()) {
+            case READ:
+            case GET:
+                return src;
+            case ADD:
+            case UPDATE:
+            case MODIFY: {
+                OAuthInfo oauth = modifier.getOauth();
+                if (oauth == null) return Result.SUCCESS;
+                _src.computeIfAbsent(modifier.getApi(), r -> new HashMap<>()).put(modifier.getMethod(), oauth);
+                return Result.SUCCESS;
+            }
+            case DELETE:
+            case DEL: {
+                Map<String, OAuthInfo> map = _src.get(modifier.getApi());
+                if (map != null) {
+                    map.remove(modifier.getMethod());
+                    if (map.isEmpty()) {
+                        _src.remove(modifier.getApi());
+                    }
+                }
+                return Result.SUCCESS;
+            }
+        }
+        return Result.SUCCESS;
     }
 
 }
