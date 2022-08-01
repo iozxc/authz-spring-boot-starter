@@ -384,7 +384,7 @@ public class AuthzAutoConfiguration {
             bean.setInitParameters(initParameters);
             return bean;
         }
-    }
 
+    }
 
 }

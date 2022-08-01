@@ -85,7 +85,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
         PermissionDict.init(properties, ctx, permLibrary, cache, mapRet);
         LogUtils.debug("PermissionDict init success \n");
 
-        OpenAuthDict.init(properties, ctx, permLibrary, cache, mapRet);
+        OpenAuthDict.init(properties, ctx, mapRet);
         LogUtils.debug("OpenAuthDict init success \n");
 
         // init Httpd

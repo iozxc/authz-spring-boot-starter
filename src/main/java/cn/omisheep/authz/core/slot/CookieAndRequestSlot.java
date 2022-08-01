@@ -14,6 +14,7 @@ import cn.omisheep.web.utils.HttpUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
+import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.web.method.HandlerMethod;
 
 import javax.servlet.http.Cookie;
@@ -51,7 +52,10 @@ public class CookieAndRequestSlot implements Slot {
         String tokenValue = null;
 
         AuthRequestToken authRequestToken = handler.getMethodAnnotation(AuthRequestToken.class);
-
+        if (authRequestToken == null) {
+            authRequestToken = AnnotationUtils.getAnnotation(handler.getBeanType(),
+                                                             AuthRequestToken.class);
+        }
         if (authRequestToken != null) {
             if (!authRequestToken.header().equals("")) {
                 tokenValue = HttpUtils.getCurrentRequestHeaders().get(
@@ -95,7 +99,7 @@ public class CookieAndRequestSlot implements Slot {
                             userDevicesDict.removeDeviceByTokenId(claims.get(USER_ID),
                                                                   claims.get(REFRESH_TOKEN_ID, String.class));
                             httpMeta.setUserStatus(ACCESS_TOKEN_OVERDUE);
-                        }else {
+                        } else {
                             httpMeta.setUserStatus(REQUIRE_LOGIN);
                         }
                     } catch (Exception ee) {

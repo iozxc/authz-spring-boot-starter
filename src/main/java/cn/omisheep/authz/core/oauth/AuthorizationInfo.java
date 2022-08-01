@@ -19,6 +19,4 @@ public class AuthorizationInfo {
     private final Long      expiresIn;
     private final Long      expiresAt;
     private final Object    userId;
-    private final String    deviceType;
-    private final String    deviceId;
 }

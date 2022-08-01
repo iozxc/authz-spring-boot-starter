@@ -1,7 +1,8 @@
 package cn.omisheep.authz.core.slot;
 
+import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.authz.core.tk.AccessToken;
+import cn.omisheep.authz.core.oauth.OpenAuthDict;
 import org.springframework.web.method.HandlerMethod;
 
 /**
@@ -10,9 +11,12 @@ import org.springframework.web.method.HandlerMethod;
  */
 @Order(50)
 public class OAuthSlot implements Slot {
+
     @Override
     public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
-        AccessToken token = httpMeta.getToken(); // todo
-        System.out.println(token);
+        if (!OpenAuthDict.hasScope(httpMeta.getApi(), httpMeta.getMethod(), httpMeta.getScope())) {
+            error.error(ExceptionStatus.SCOPE_EXCEPTION);
+        }
     }
+
 }

@@ -734,7 +734,7 @@ public class PermissionDict {
 
         applicationContext.getBeansWithAnnotation(Roles.class).forEach((key, value) -> {
             String name  = getTypeName(value);
-            Roles  roles = getAnnoatation(value, Roles.class);
+            Roles  roles = getAnnotation(value, Roles.class);
             if (roles != null) {
                 cList.add(getTypeName(value));
                 rMap.put(name, generatePermRolesMeta(null, roles));
@@ -743,7 +743,7 @@ public class PermissionDict {
 
         applicationContext.getBeansWithAnnotation(Perms.class).forEach((key, value) -> {
             String name  = getTypeName(value);
-            Perms  perms = getAnnoatation(value, Perms.class);
+            Perms  perms = getAnnotation(value, Perms.class);
             if (perms != null) {
                 cList.add(getTypeName(value));
                 pMap.put(name, generatePermRolesMeta(perms, null));
@@ -751,14 +751,14 @@ public class PermissionDict {
         });
 
         applicationContext.getBeansWithAnnotation(Certificated.class).forEach((key, value) -> {
-            Certificated certificated = getAnnoatation(value, Certificated.class);
+            Certificated certificated = getAnnotation(value, Certificated.class);
             if (certificated != null) {
                 cList.add(getTypeName(value));
             }
         });
 
         applicationContext.getBeansWithAnnotation(IPRangeLimit.class).forEach((key, value) -> {
-            IPRangeLimit ipRangeLimit = getAnnoatation(value, IPRangeLimit.class);
+            IPRangeLimit ipRangeLimit = getAnnotation(value, IPRangeLimit.class);
             if (ipRangeLimit == null) return;
             iMap.put(getTypeName(value), new IPRangeMeta().setAllow(ipRangeLimit.allow()).setDeny(ipRangeLimit.deny()));
         });

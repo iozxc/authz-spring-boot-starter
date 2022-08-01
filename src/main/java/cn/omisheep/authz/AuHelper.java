@@ -17,7 +17,7 @@ import cn.omisheep.authz.core.auth.deviced.DeviceCountInfo;
 import cn.omisheep.authz.core.auth.ipf.Blacklist;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
-import cn.omisheep.authz.core.callback.CreateAuthorizationInfoCallback;
+import cn.omisheep.authz.core.callback.AuthorizationCallback;
 import cn.omisheep.authz.core.callback.RateLimitCallback;
 import cn.omisheep.authz.core.codec.AuthzRSAManager;
 import cn.omisheep.authz.core.helper.AuthzGranterHelper;
@@ -164,86 +164,6 @@ public class AuHelper extends BaseHelper {
     }
 
     /**
-     * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
-     * count >= 1 or count = -1
-     *
-     * @param userId 用户id
-     * @param types  deviceType
-     * @param total  数量
-     */
-    public static void addDeviceTypesTotalLimit(
-            Collection<String> types, int total) throws NotLoginException {
-        addDeviceTypesTotalLimit(AuHelper.getUserId(), types, total);
-    }
-
-    /**
-     * 获得一个可修改的 DeviceTypesTotalLimit list
-     * count >= 1 or count = -1
-     *
-     * @param userId 用户id
-     */
-    public static List<DeviceCountInfo> getOrUpdateDeviceTypesTotalLimit(Object userId) {
-        return userDevicesDict.getOrUpdateDeviceTypesTotalLimit(userId);
-    }
-
-    /**
-     * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
-     * count >= 1
-     *
-     * @param count 数量
-     */
-    public static void changeMaximumDeviceTotal(int count) throws NotLoginException {
-        changeMaximumDeviceTotal(AuHelper.getUserId(), count);
-    }
-
-    /**
-     * 同类型设备最多登录数 默认 1个【count最小为1】，超出会挤出最长时间未访问的设备。
-     * count >= 1
-     *
-     * @param userId 用户id
-     * @param count  数量
-     */
-    public static void changeMaximumSameTypeDeviceCount(int count) throws NotLoginException {
-        changeMaximumSameTypeDeviceCount(AuHelper.getUserId(), count);
-    }
-
-    /**
-     * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
-     * count >= 1 or count = -1
-     *
-     * @param userId 用户id
-     * @param types  deviceType
-     * @param total  数量
-     */
-    public static void addDeviceTypesTotalLimit(Object userId,
-                                                Collection<String> types,
-                                                int total) {
-        userDevicesDict.addDeviceTypesTotalLimit(userId, types, total);
-    }
-
-    /**
-     * 同类型设备最多登录数 默认 1个【count最小为1】，超出会挤出最长时间未访问的设备。
-     * count >= 1
-     *
-     * @param userId 用户id
-     * @param count  数量
-     */
-    public static void changeMaximumSameTypeDeviceCount(Object userId, int count) {
-        userDevicesDict.changeMaximumSameTypeDeviceCount(userId, count);
-    }
-
-    /**
-     * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
-     * count >= 1
-     *
-     * @param userId 用户id
-     * @param count  数量
-     */
-    public static void changeMaximumDeviceTotal(Object userId, int count) {
-        userDevicesDict.changeMaximumDeviceTotal(userId, count);
-    }
-
-    /**
      * <li>1.注册客户端 {@link #clientRegister(String, String)} -> 返回客户端信息（客户端id，客户端name，客户端密钥，重定向url）</li>
      * <li>2.获取授权码 {@link #createAuthorizationCode(String, String, String)} -> 客户端id+登录用户+权限范围 、获得登录用户的授权码</li>
      * <li>3.验证授权码 {@link #authorize(String, String, String)}-> 利用授权码去获得TokenPair</li>
@@ -270,7 +190,7 @@ public class AuHelper extends BaseHelper {
 
         /**
          * 若未登录，抛出 {@link  AuthorizationException } 授权失败
-         * 指定(客户端, 授权范围) & 登录设备 -> 获得登录用户的授权码
+         * 指定(客户端, 授权范围) -> 获得登录用户的授权码
          * 获取授权码 <br>
          * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
          *
@@ -284,59 +204,8 @@ public class AuHelper extends BaseHelper {
         public static String createAuthorizationCode(@NonNull String clientId,
                                                      @NonNull String scope,
                                                      @NonNull String redirectUrl) throws AuthorizationException {
-            String deviceType;
-            try {
-                deviceType = getHttpMeta().getUserAgent();
-            } catch (ThreadWebEnvironmentException e) {
-                deviceType = "unknown";
-            }
-            return createAuthorizationCode(clientId, scope, redirectUrl, deviceType, null);
-        }
-
-        /**
-         * 若未登录，抛出 {@link  AuthorizationException } 授权失败
-         * 指定(客户端, 授权范围) & 登录设备 -> 获得登录用户的授权码
-         * 获取授权码 <br>
-         * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
-         *
-         * @param clientId    客户端id
-         * @param scope       授予的权限范围
-         * @param redirectUrl 重定向url
-         * @param deviceType  设备类型
-         * @return Authorization Code 授权码
-         * @throws AuthorizationException 授权失败
-         */
-        @NonNull
-        public static String createAuthorizationCode(@NonNull String clientId,
-                                                     @NonNull String scope,
-                                                     @NonNull String redirectUrl,
-                                                     @NonNull String deviceType) throws AuthorizationException {
-            return createAuthorizationCode(clientId, scope, redirectUrl, deviceType, null);
-        }
-
-        /**
-         * 若未登录，抛出 {@link  AuthorizationException } 授权失败
-         * 指定(客户端, 授权范围) & 登录设备 -> 获得登录用户的授权码
-         * 获取授权码 <br>
-         * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
-         *
-         * @param clientId    客户端id
-         * @param scope       授予的权限范围
-         * @param redirectUrl 重定向url
-         * @param deviceType  设备类型
-         * @param deviceId    设备id
-         * @return Authorization Code 授权码
-         * @throws AuthorizationException 授权失败
-         */
-        @NonNull
-        public static String createAuthorizationCode(@NonNull String clientId,
-                                                     @NonNull String scope,
-                                                     @NonNull String redirectUrl,
-                                                     @NonNull String deviceType,
-                                                     @Nullable String deviceId) throws AuthorizationException {
             if (isLogin() && agreeAuthorize(clientId)) {
-                return OpenAuthHelper.createAuthorizationCode(clientId, scope, redirectUrl, getUserId(), deviceType,
-                                                              deviceId);
+                return OpenAuthHelper.createAuthorizationCode(clientId, scope, redirectUrl, getUserId());
             }
             throw AuthorizationException.privilegeGrantFailed();
         }
@@ -353,55 +222,10 @@ public class AuHelper extends BaseHelper {
          * @throws AuthorizationException 授权失败
          */
         @NonNull
-        public static String createBasicScopeAuthorizationCode(
-                @NonNull String clientId, @NonNull String redirectUrl) throws AuthorizationException {
-            String deviceType;
-            try {
-                deviceType = getHttpMeta().getUserAgent();
-            } catch (ThreadWebEnvironmentException e) {
-                deviceType = "unknown";
-            }
-            return createBasicScopeAuthorizationCode(clientId, redirectUrl, deviceType, null);
-        }
-
-        /**
-         * 若未登录，抛出 {@link  AuthorizationException } 授权失败
-         * 指定(客户端, 授权范围-默认权限) & 登录设备 -> 获得登录用户的授权码
-         * 获取授权码 <br>
-         * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
-         *
-         * @param clientId    客户端id
-         * @param redirectUrl 重定向url
-         * @param deviceType  设备类型
-         * @return Authorization Code 授权码
-         * @throws AuthorizationException 授权失败
-         */
-        @NonNull
-        public static String createBasicScopeAuthorizationCode(@NonNull String clientId, @NonNull String redirectUrl,
-                                                               @NonNull String deviceType) throws AuthorizationException {
-            return createBasicScopeAuthorizationCode(clientId, redirectUrl, deviceType, null);
-        }
-
-        /**
-         * 若未登录，抛出 {@link  AuthorizationException } 授权失败
-         * 指定(客户端, 授权范围-默认权限) & 登录设备 -> 获得登录用户的授权码
-         * 获取授权码 <br>
-         * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
-         *
-         * @param clientId    客户端id
-         * @param redirectUrl 重定向url
-         * @param deviceType  设备类型
-         * @param deviceId    设备id
-         * @return Authorization Code 授权码
-         * @throws AuthorizationException 授权失败
-         */
-        @NonNull
-        public static String createBasicScopeAuthorizationCode(@NonNull String clientId, @NonNull String redirectUrl,
-                                                               @NonNull String deviceType,
-                                                               @Nullable String deviceId) throws AuthorizationException {
+        public static String createBasicScopeAuthorizationCode(@NonNull String clientId,
+                                                               @NonNull String redirectUrl) throws AuthorizationException {
             if (isLogin() && agreeAuthorize(clientId)) {
-                return OpenAuthHelper.createBasicScopeAuthorizationCode(clientId, redirectUrl, getUserId(),
-                                                                        deviceType, deviceId);
+                return OpenAuthHelper.createBasicScopeAuthorizationCode(clientId, redirectUrl, getUserId());
             }
             throw AuthorizationException.privilegeGrantFailed();
         }
@@ -495,6 +319,86 @@ public class AuHelper extends BaseHelper {
     }
 
     /**
+     * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
+     * count >= 1 or count = -1
+     *
+     * @param userId 用户id
+     * @param types  deviceType
+     * @param total  数量
+     */
+    public static void addDeviceTypesTotalLimit(
+            Collection<String> types, int total) throws NotLoginException {
+        addDeviceTypesTotalLimit(AuHelper.getUserId(), types, total);
+    }
+
+    /**
+     * 获得一个可修改的 DeviceTypesTotalLimit list
+     * count >= 1 or count = -1
+     *
+     * @param userId 用户id
+     */
+    public static List<DeviceCountInfo> getOrUpdateDeviceTypesTotalLimit(Object userId) {
+        return userDevicesDict.getOrUpdateDeviceTypesTotalLimit(userId);
+    }
+
+    /**
+     * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param count 数量
+     */
+    public static void changeMaximumDeviceTotal(int count) throws NotLoginException {
+        changeMaximumDeviceTotal(AuHelper.getUserId(), count);
+    }
+
+    /**
+     * 同类型设备最多登录数 默认 1个【count最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param userId 用户id
+     * @param count  数量
+     */
+    public static void changeMaximumSameTypeDeviceCount(int count) throws NotLoginException {
+        changeMaximumSameTypeDeviceCount(AuHelper.getUserId(), count);
+    }
+
+    /**
+     * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
+     * count >= 1 or count = -1
+     *
+     * @param userId 用户id
+     * @param types  deviceType
+     * @param total  数量
+     */
+    public static void addDeviceTypesTotalLimit(Object userId,
+                                                Collection<String> types,
+                                                int total) {
+        userDevicesDict.addDeviceTypesTotalLimit(userId, types, total);
+    }
+
+    /**
+     * 同类型设备最多登录数 默认 1个【count最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param userId 用户id
+     * @param count  数量
+     */
+    public static void changeMaximumSameTypeDeviceCount(Object userId, int count) {
+        userDevicesDict.changeMaximumSameTypeDeviceCount(userId, count);
+    }
+
+    /**
+     * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param userId 用户id
+     * @param count  数量
+     */
+    public static void changeMaximumDeviceTotal(Object userId, int count) {
+        userDevicesDict.changeMaximumDeviceTotal(userId, count);
+    }
+
+    /**
      * 查询所有用户信息，一个map userId->设备信息列表
      *
      * @return 一个map userId->设备信息列表
@@ -557,6 +461,10 @@ public class AuHelper extends BaseHelper {
     public static List<Device> getAllDeviceByUserIdAndDeviceType(@NonNull Object userId, @NonNull String deviceType) {
         return userDevicesDict.listDevicesByUserId(userId).stream().filter(
                 device -> device.getDeviceType().equals(deviceType)).collect(Collectors.toList());
+    }
+
+    public static void getGrantDevice() {
+
     }
 
     // **************************************     状态&权限      ************************************** //
@@ -1219,11 +1127,11 @@ public class AuHelper extends BaseHelper {
         /**
          * 设置成功授权获得授权码时的回调函数
          *
-         * @param createAuthorizationInfoCallback 成功授权获得授权码时的回调函数
+         * @param createAuthorizationCodeCallback 成功授权获得授权码时的回调函数
          */
-        public static void setCreateAuthorizationInfoCallback(
-                CreateAuthorizationInfoCallback createAuthorizationInfoCallback) {
-            OpenAuthHelper.setCreateAuthorizationInfoCallback(createAuthorizationInfoCallback);
+        public static void setAuthorizationCallback(
+                AuthorizationCallback authorizationCallback) {
+            OpenAuthHelper.setAuthorizationCallback(authorizationCallback);
         }
     }
 

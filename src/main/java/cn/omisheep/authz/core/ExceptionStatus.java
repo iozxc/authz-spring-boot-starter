@@ -36,7 +36,8 @@ public enum ExceptionStatus {
     CLIENT_SECRET_ERROR(-501, "Client secret error or client id not match", false, OK), // 客户端密钥错误
     CLIENT_NOT_EXIST(-502, "Client not exist", false, OK),//客户端不存在
     AUTHORIZATION_CODE_EXPIRED_OR_NOT_EXIST(-503, "Authorization code does not exist or expires",
-                                            false, OK); // 授权码过期或无效
+                                            false, OK), // 授权码过期或无效
+    SCOPE_EXCEPTION(-504, "Insufficient scope of authorization", false, NETWORK_AUTHENTICATION_REQUIRED);
 
 
     private final int        code;

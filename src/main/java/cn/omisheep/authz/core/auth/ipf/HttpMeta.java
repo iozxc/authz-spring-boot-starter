@@ -6,6 +6,7 @@ import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.config.Constants;
+import cn.omisheep.authz.core.helper.BaseHelper;
 import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.CollectionUtils;
@@ -23,7 +24,6 @@ import java.io.InputStreamReader;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static cn.omisheep.authz.core.AuthzManager.permLibrary;
 import static cn.omisheep.authz.core.util.LogUtils.export;
 
 /**
@@ -32,7 +32,7 @@ import static cn.omisheep.authz.core.util.LogUtils.export;
  */
 @Data
 @SuppressWarnings("all")
-public class HttpMeta {
+public class HttpMeta extends BaseHelper {
 
     @JsonIgnore
     private final HttpServletRequest          request;

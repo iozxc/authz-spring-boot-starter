@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.helper;
 
 import cn.omisheep.authz.core.AuthzProperties;
-import cn.omisheep.authz.core.callback.CreateAuthorizationInfoCallback;
+import cn.omisheep.authz.core.callback.AuthorizationCallback;
 import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.oauth.AuthorizationException;
 import cn.omisheep.authz.core.oauth.AuthorizationInfo;
@@ -11,7 +11,6 @@ import cn.omisheep.authz.core.tk.GrantType;
 import cn.omisheep.authz.core.tk.IssueToken;
 import cn.omisheep.authz.core.tk.TokenHelper;
 import cn.omisheep.authz.core.tk.TokenPair;
-import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.commons.encryption.Digest;
 import cn.omisheep.commons.util.TimeUtils;
 import cn.omisheep.commons.util.UUIDBits;
@@ -23,24 +22,23 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
-import static cn.omisheep.authz.core.AuthzManager.cache;
 import static cn.omisheep.authz.core.config.Constants.AUTHORIZE_CODE_PREFIX;
 
 /**
  * @author zhouxinchen
  * @since 1.2.0
  */
-public class OpenAuthHelper {
+public class OpenAuthHelper extends BaseHelper {
 
     private OpenAuthHelper() {
     }
 
-    private static final AuthzProperties.TokenConfig.OpenAuthConfig oauthConfig     = AUtils.getBean(
-            AuthzProperties.class).getToken().getOauth();
-    private static final OpenAuthLibrary                            openAuthLibrary = AUtils.getBean(
-            OpenAuthLibrary.class);
+    private static final AuthzProperties.TokenConfig.OpenAuthConfig oauthConfig = properties.getToken().getOauth();
+
+    private static final OpenAuthLibrary openAuthLibrary = ctx.getBean(OpenAuthLibrary.class);
+
     @Setter
-    private static       CreateAuthorizationInfoCallback            createAuthorizationInfoCallback;
+    private static AuthorizationCallback authorizationCallback;
 
     public static IssueToken authorize(String clientId, String clientSecret,
                                        String authorizationCode) throws AuthorizationException {
@@ -62,12 +60,15 @@ public class OpenAuthHelper {
 
         TokenPair tokenPair = TokenHelper.createTokenPair(authorizationInfo);
         if (!AuthzGranterHelper.grant(tokenPair, false)) return null;
+
+        if (authorizationCallback != null) {
+            authorizationCallback.authorize(authorizationInfo);
+        }
         return new IssueToken(tokenPair);
     }
 
     public static String createAuthorizationCode(String clientId, String scope, String redirectUrl,
-                                                 Object userId, String deviceType,
-                                                 String deviceId) throws AuthorizationException {
+                                                 Object userId) throws AuthorizationException {
         ClientDetails client = findClient(clientId);
 
         if (client == null || !StringUtils.equals(client.getRedirectUrl(), redirectUrl)) {
@@ -80,32 +81,28 @@ public class OpenAuthHelper {
         if (authorizationCode == null) throw AuthorizationException.privilegeGrantFailed();
         LocalDateTime now     = LocalDateTime.now();
         Date          fromNow = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
-        Date expiredTime =
-                Date.from(LocalDateTime.now().plus(AuthzAppVersion.authorizationCodeTime, ChronoUnit.MILLIS).atZone(
+        Date expiredTime = Date.from(
+                LocalDateTime.now().plus(AuthzAppVersion.authorizationCodeTime, ChronoUnit.MILLIS).atZone(
                         ZoneId.systemDefault()).toInstant());
         AuthorizationInfo authorizationInfo = new AuthorizationInfo(clientId, scope, GrantType.AUTHORIZATION_CODE,
                                                                     AuthzAppVersion.authorizationCodeTime,
-                                                                    expiredTime.getTime(), userId, deviceType,
-                                                                    deviceId);
-        if (createAuthorizationInfoCallback != null) {
-            createAuthorizationInfoCallback.createAuthorizationInfoCallback(authorizationCode, authorizationInfo);
+                                                                    expiredTime.getTime(), userId);
+        if (authorizationCallback != null) {
+            authorizationCallback.createAuthorizationCodeCallback(authorizationCode, authorizationInfo);
         }
         cache.set(AUTHORIZE_CODE_PREFIX + authorizationCode, authorizationInfo,
                   AuthzAppVersion.authorizationCodeTime / 1000);
         return authorizationCode;
     }
 
-    public static String createBasicScopeAuthorizationCode(String clientId, String redirectUrl, Object userId,
-                                                           String deviceType,
-                                                           String deviceId) throws AuthorizationException {
-        return createAuthorizationCode(clientId, oauthConfig.getDefaultBasicScope(), redirectUrl, userId, deviceType,
-                                       deviceId);
+    public static String createBasicScopeAuthorizationCode(String clientId, String redirectUrl,
+                                                           Object userId) throws AuthorizationException {
+        return createAuthorizationCode(clientId, oauthConfig.getDefaultBasicScope(), redirectUrl, userId);
     }
 
     public static ClientDetails clientRegister(String clientName, String redirectUrl) {
         String clientId = UUIDBits.getUUIDBits(oauthConfig.getClientIdLength(),
-                                               k -> openAuthLibrary.getClientById(k) == null,
-                                               20);
+                                               k -> openAuthLibrary.getClientById(k) == null, 20);
         if (clientId == null) return null; // 重复id，重试
         return clientRegister(clientId, UUIDBits.getUUIDBits(oauthConfig.getClientSecretLength()), clientName,
                               redirectUrl);

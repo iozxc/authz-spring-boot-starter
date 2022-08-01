@@ -83,7 +83,7 @@ public class MetaUtils {
         return flag ? prm : null;
     }
 
-    public static <A extends Annotation> A getAnnoatation(Object value, Class<A> clz) {
+    public static <A extends Annotation> A getAnnotation(Object value, Class<A> clz) {
         A annotation = AnnotatedElementUtils.getMergedAnnotation(value.getClass(), clz);
         try {
             if (annotation == null) {
@@ -94,7 +94,7 @@ public class MetaUtils {
         }
     }
 
-    public static <A extends Annotation> Set<A> getAnnoatations(Object value, Class<A> clz) {
+    public static <A extends Annotation> Set<A> getAnnotations(Object value, Class<A> clz) {
         Set<A> annotations = AnnotatedElementUtils.getAllMergedAnnotations(value.getClass(), clz);
         try {
             if (annotations.isEmpty()) {

@@ -22,7 +22,6 @@ import java.lang.reflect.Constructor;
 @SuppressWarnings("all")
 public class DecryptRequestParamHandler implements HandlerMethodArgumentResolver {
 
-
     private final DecryptHandler decryptHandler;
 
     public DecryptRequestParamHandler(DecryptHandler decryptHandler) {
@@ -34,15 +33,20 @@ public class DecryptRequestParamHandler implements HandlerMethodArgumentResolver
         return (parameter.hasParameterAnnotation(Decrypt.class) || parameter.hasMethodAnnotation(Decrypt.class));
     }
 
-    public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer modelAndViewContainer, NativeWebRequest nativeWebRequest, WebDataBinderFactory webDataBinderFactory) throws Exception {
+    public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer modelAndViewContainer,
+                                  NativeWebRequest nativeWebRequest,
+                                  WebDataBinderFactory webDataBinderFactory) throws Exception {
         HttpServletRequest request = nativeWebRequest.getNativeRequest(HttpServletRequest.class);
         if (request != null) {
             Constructor<?> constructor = parameter.getParameterType().getConstructor(String.class);
             String         text        = request.getParameter(parameter.getParameterName());
-            Decrypt        decrypt     = parameter.getParameterAnnotation(Decrypt.class);
+            if (constructor == null) return text;
+            Decrypt decrypt = parameter.getParameterAnnotation(Decrypt.class);
+            if (decrypt == null) decrypt = parameter.getMethodAnnotation(Decrypt.class);
             return constructor.newInstance(decryptHandler.decrypt(text, decrypt));
         }
         return null;
     }
+
 }
 

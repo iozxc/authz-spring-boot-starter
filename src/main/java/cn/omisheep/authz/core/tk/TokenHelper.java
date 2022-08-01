@@ -96,7 +96,7 @@ public class TokenHelper extends BaseHelper {
      * @return TokenPair
      */
     public static TokenPair createTokenPair(AuthorizationInfo info) {
-        return createTokenPair(info.getUserId(), info.getDeviceType(), info.getDeviceId(), info.getClientId(),
+        return createTokenPair(info.getUserId(), null, null, info.getClientId(),
                                info.getScope(), info.getGrantType());
     }
 

@@ -10,6 +10,7 @@ import org.springframework.lang.NonNull;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * @author zhouxinchen
@@ -61,7 +62,10 @@ public class AuthzStateHelper extends BaseHelper {
 
     public static boolean hasScope(@NonNull List<String> scope) throws NotLoginException {
         try {
-            return AUtils.getCurrentHttpMeta().getScope().containsAll(scope);
+            if (scope.isEmpty()) return true;
+            Set<String> userScope = AUtils.getCurrentHttpMeta().getScope();
+            if (userScope.isEmpty()) return false;
+            return userScope.containsAll(scope);
         } catch (ThreadWebEnvironmentException e) {
             return false;
         }

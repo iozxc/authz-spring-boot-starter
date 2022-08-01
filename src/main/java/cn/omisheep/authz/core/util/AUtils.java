@@ -41,6 +41,10 @@ public final class AUtils {
         ctx = applicationContext;
     }
 
+    public static ApplicationContext getCtx() {
+        return ctx;
+    }
+
     @NonNull
     public static HttpMeta getCurrentHttpMeta() throws ThreadWebEnvironmentException {
         try {
