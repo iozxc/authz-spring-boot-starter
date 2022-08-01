@@ -31,7 +31,7 @@ public class OpenAuthLibraryCache {
         List<ClientDetails>            initList = (List<ClientDetails>) joinPoint.proceed();
         HashMap<String, ClientDetails> map      = new HashMap<>(initList.size());
         for (ClientDetails clientDetails : initList) {
-            map.put(Constants.CLINT_PREFIX + clientDetails.getClientId(), clientDetails);
+            map.put(Constants.CLINT_PREFIX.get() + clientDetails.getClientId(), clientDetails);
         }
         cache.set(map);
         return initList;
@@ -39,7 +39,7 @@ public class OpenAuthLibraryCache {
 
     @Around("execution(* cn.omisheep.authz.core.oauth.OpenAuthLibrary+.getClientById(String))")
     public Object aroundGetClientById(ProceedingJoinPoint joinPoint) throws Throwable {
-        String key = Constants.CLINT_PREFIX + joinPoint.getArgs()[0];
+        String key = Constants.CLINT_PREFIX.get() + joinPoint.getArgs()[0];
         if (cache.notKey(key)) {
             Object result = joinPoint.proceed();
             cache.set(key, result);
@@ -51,21 +51,21 @@ public class OpenAuthLibraryCache {
 
     @Around("execution(* cn.omisheep.authz.core.oauth.OpenAuthLibrary+.deleteClientById(String))")
     public Object aroundDeleteClientById(ProceedingJoinPoint joinPoint) throws Throwable {
-        cache.del(Constants.CLINT_PREFIX + joinPoint.getArgs()[0]);
+        cache.del(Constants.CLINT_PREFIX.get() + joinPoint.getArgs()[0]);
         return joinPoint.proceed();
     }
 
     @Around("execution(* cn.omisheep.authz.core.oauth.OpenAuthLibrary+.registerClient(cn.omisheep.authz.core.oauth.ClientDetails)))")
     public Object aroundRegisterClient(ProceedingJoinPoint joinPoint) throws Throwable {
         ClientDetails clientDetails = (ClientDetails) joinPoint.getArgs()[0];
-        String        key           = Constants.CLINT_PREFIX + clientDetails.getClientId();
+        String        key           = Constants.CLINT_PREFIX.get() + clientDetails.getClientId();
         cache.set(key, clientDetails);
         return joinPoint.proceed();
     }
 
     @Around("execution(* cn.omisheep.authz.core.callback.AuthorizationCallback+.createAuthorizationCodeCallback(String,cn.omisheep.authz.core.oauth.AuthorizationInfo)))")
     public Object aroundCreateAuthorizationInfo(ProceedingJoinPoint joinPoint) throws Throwable {
-        cache.set(AUTHORIZE_CODE_PREFIX + joinPoint.getArgs()[0],
+        cache.set(AUTHORIZE_CODE_PREFIX.get() + joinPoint.getArgs()[0],
                   joinPoint.getArgs()[1],
                   AuthzAppVersion.authorizationCodeTime);
         return joinPoint.proceed();

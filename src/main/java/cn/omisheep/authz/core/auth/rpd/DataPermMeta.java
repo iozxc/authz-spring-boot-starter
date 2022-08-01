@@ -31,13 +31,15 @@ public class DataPermMeta {
         return new DataPermMeta().setCondition(RuleParser.parseRuleToString(rule)).setRule(rule);
     }
 
-    public DataPermMeta addArg(String source, List<String> args) {
+    public DataPermMeta addArg(String source,
+                               List<String> args) {
         if (argsMap == null) argsMap = new HashMap<>();
         argsMap.put(source, args);
         return this;
     }
 
-    public void addArg(String source, String... args) {
+    public void addArg(String source,
+                       String... args) {
         if (argsMap == null) argsMap = new HashMap<>();
         if (args != null) argsMap.put(source, Arrays.stream(args).collect(Collectors.toList()));
     }

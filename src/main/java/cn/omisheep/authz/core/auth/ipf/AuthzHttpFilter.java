@@ -28,7 +28,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
 
     private final boolean isDashboard;
 
-    public AuthzHttpFilter( boolean isDashboard) {
+    public AuthzHttpFilter(boolean isDashboard) {
         this.isDashboard = isDashboard;
     }
 
@@ -53,7 +53,8 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
         HttpUtils.request.set(request);
 
         if (isIgnoreSuffix(uri, Httpd.getIgnoreSuffix())
-                || (isDashboard && (servletPath.equals("/authz-dashboard-favicon.ico") ||servletPath.startsWith("/authz-api") || servletPath.startsWith("/authz-dashboard") || servletPath.startsWith("authz.html")))) {
+                || (isDashboard && (servletPath.equals("/authz-dashboard-favicon.ico") || servletPath.startsWith(
+                "/authz-api") || servletPath.startsWith("/authz-dashboard") || servletPath.startsWith("authz.html")))) {
             HttpMeta httpMeta = new HttpMeta(
                     request,
                     ip, uri, null, method, new Date());

@@ -25,7 +25,11 @@ public class RequestMessage implements Message {
     public RequestMessage() {
     }
 
-    public RequestMessage(String method, String api, String ip,Object userId, long now) {
+    public RequestMessage(String method,
+                          String api,
+                          String ip,
+                          Object userId,
+                          long now) {
         this.method = method;
         this.api    = api;
         this.ip     = ip;

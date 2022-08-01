@@ -30,7 +30,9 @@ public class RateLimitSlot implements Slot {
     }
 
     @Override
-    public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
+    public void chain(HttpMeta httpMeta,
+                      HandlerMethod handler,
+                      Error error) {
         String    ip         = httpMeta.getIp();
         long      now        = httpMeta.getNow().getTime();
         String    method     = httpMeta.getMethod();
@@ -40,16 +42,18 @@ public class RateLimitSlot implements Slot {
         Object    userId     = null;
         String    deviceType = null;
         String    deviceId   = null;
-        if (httpMeta.isHasToken()) {
+        String    clientId   = null;
+        if (httpMeta.hasToken()) {
             userId     = httpMeta.getToken().getUserId();
             deviceType = httpMeta.getToken().getDeviceType();
             deviceId   = httpMeta.getToken().getDeviceId();
+            clientId   = httpMeta.getToken().getClientId();
         }
 
         if (limitMeta == null) {
             httpMeta.log(
-                    "「普通访问」 \t api: [{}] ,  method: [{}] , ip : [{}] , userId : [{}] , deviceType: [{}] , deviceId: [{}] , path: [{}]  ",
-                    api, method, ip, userId, deviceType, deviceId, path);
+                    "「普通访问」 \t api: [{}] ,  method: [{}] , ip : [{}] , clientId : [{}] , userId : [{}] , deviceType: [{}] , deviceId: [{}] , path: [{}]  ",
+                    api, method, ip, clientId, userId, deviceType, deviceId, path);
             return;
         }
 
@@ -65,14 +69,14 @@ public class RateLimitSlot implements Slot {
 
         if (checkType.equals(USER_ID) && userId == null) {
             httpMeta.log(
-                    "「普通访问」 \t api: [{}] ,  method: [{}] , ip : [{}] , userId : [{}] , deviceType: [{}] , deviceId: [{}] , path: [{}]  ",
-                    api, method, ip, userId, deviceType, deviceId, path);
+                    "「普通访问」 \t api: [{}] ,  method: [{}] , ip : [{}] , clientId : [{}] , userId : [{}] , deviceType: [{}] , deviceId: [{}] , path: [{}]  ",
+                    api, method, ip, clientId, null, deviceType, deviceId, path);
             return;
         }
         if (ipRequestPool == null || userIdRequestPool == null) {
             httpMeta.log(
-                    "「普通访问」 \t api: [{}] ,  method: [{}] , ip : [{}] , userId : [{}] , deviceType: [{}] , deviceId: [{}] , path: [{}]  ",
-                    api, method, ip, userId, deviceType, deviceId, path);
+                    "「普通访问」 \t api: [{}] ,  method: [{}] , ip : [{}] , clientId : [{}] , userId : [{}] , deviceType: [{}] , deviceId: [{}] , path: [{}]  ",
+                    api, method, ip, clientId, userId, deviceType, deviceId, path);
             return;
         }
         RequestMeta requestMeta = checkType.equals(IP) ? ipRequestPool.get(ip) : userIdRequestPool.get(
@@ -80,16 +84,17 @@ public class RateLimitSlot implements Slot {
         if (requestMeta != null && requestMeta.isBan()) {
             if (!requestMeta.enableRelive(now)) {
                 httpMeta.log(LogLevel.WARN,
-                             "「请求频繁、{}封锁(拒绝)」 \t api: [{}] , 距上次访问: [{}] , method: [{}] , ip : [{}] , userId : [{}] , deviceType: [{}] , deviceId: [{}] , path: [{}]  ",
-                             checkType, api, requestMeta.sinceLastTime(), method, ip, userId, deviceType, deviceId,
-                             path);
+                             "「请求频繁、{}封锁(拒绝)」 \t api: [{}] , 距上次访问: [{}] , method: [{}] , ip : [{}] , clientId : [{}] , userId : [{}] , deviceType: [{}] , deviceId: [{}] , path: [{}]  ",
+                             checkType, api, requestMeta.sinceLastTime(), method, ip, clientId, userId, deviceType,
+                             deviceId, path);
                 error.error(ExceptionStatus.REQUEST_REPEAT);
                 requestMeta.setLastRequestTime(now);
                 return;
             } else {
                 httpMeta.log(
-                        "「解除{}封禁(解封)」 \t api: [{}] , 距上次访问: [{}] , method: [{}] , ip : [{}] , userId : [{}] , deviceType: [{}] , deviceId: [{}] , path: [{}]  ",
-                        checkType, api, requestMeta.sinceLastTime(), method, ip, userId, deviceType, deviceId, path);
+                        "「解除{}封禁(解封)」 \t api: [{}] , 距上次访问: [{}] , method: [{}] , ip : [{}] , clientId : [{}] , userId : [{}] , deviceType: [{}] , deviceId: [{}] , path: [{}]  ",
+                        checkType, api, requestMeta.sinceLastTime(), method, ip, clientId, userId, deviceType, deviceId,
+                        path);
                 Httpd.relive(requestMeta, limitMeta, method, api);
             }
         }
@@ -100,20 +105,20 @@ public class RateLimitSlot implements Slot {
                 userIdRequestPool.put(userId.toString(), new RequestMeta(now, null, userId));
             }
             httpMeta.log(
-                    "「普通访问(首次)」 \t method: [{}] , api: [{}] , ip : [{}] , userId: [{}] , deviceType: [{}] , deviceId: [{}] , path: [{}]  ",
-                    method, api, ip, userId, deviceType, deviceId, path);
+                    "「普通访问(首次)」 \t method: [{}] , api: [{}] , ip : [{}] , clientId : [{}] , userId: [{}] , deviceType: [{}] , deviceId: [{}] , path: [{}]  ",
+                    method, api, ip, clientId, userId, deviceType, deviceId, path);
         } else {
             if (requestMeta.request(now, limitMeta.getMaxRequests(), limitMeta.getWindow(),
                                     limitMeta.getMinInterval())) {
                 httpMeta.log(
-                        "「普通访问(正常)」 \t 距上次访问: [{}]  api: [{}] ,  method: [{}] , ip : [{}] , userId : [{}] , deviceType: [{}] , deviceId: [{}] , path: [{}]  ",
-                        requestMeta.sinceLastTime(), api, method, ip, userId, deviceType, deviceId, path);
+                        "「普通访问(正常)」 \t 距上次访问: [{}]  api: [{}] ,  method: [{}] , ip : [{}] , clientId : [{}] , userId : [{}] , deviceType: [{}] , deviceId: [{}] , path: [{}]  ",
+                        requestMeta.sinceLastTime(), api, method, ip, clientId, userId, deviceType, deviceId, path);
             } else {
                 Httpd.forbid(now, requestMeta, limitMeta, method, api);
                 httpMeta.log(LogLevel.WARN,
-                             "「请求频繁、{}封锁(封禁)」 \t api: [{}] , 距上次访问: [{}] , method: [{}] , ip : [{}] , userId : [{}] , deviceType: [{}] , deviceId: [{}] , path: [{}]  ",
-                             checkType, api, requestMeta.sinceLastTime(), method, ip, userId, deviceType, deviceId,
-                             path);
+                             "「请求频繁、{}封锁(封禁)」 \t api: [{}] , 距上次访问: [{}] , method: [{}] , ip : [{}] , clientId : [{}] , userId : [{}] , deviceType: [{}] , deviceId: [{}] , path: [{}]  ",
+                             checkType, api, requestMeta.sinceLastTime(), method, ip, clientId, userId, deviceType,
+                             deviceId, path);
                 error.error(ExceptionStatus.REQUEST_REPEAT);
             }
         }

@@ -41,7 +41,8 @@ public class AuthzRSAManager {
         }
     }
 
-    public static void setAuKeyPair(String publicKey, String privateKey) {
+    public static void setAuKeyPair(String publicKey,
+                                    String privateKey) {
         if (scheduledFuture != null) {
             scheduledFuture.cancel(true);
             scheduledFuture = null;

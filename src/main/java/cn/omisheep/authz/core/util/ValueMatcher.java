@@ -28,22 +28,28 @@ public abstract class ValueMatcher {
         }
     }
 
-    public static boolean match(Set<String> resources, String rawValue, Class<?> valueType) {
+    public static boolean match(Set<String> resources,
+                                String rawValue,
+                                Class<?> valueType) {
         return resources.stream().anyMatch(resource -> match(resource, rawValue, valueType));
     }
 
     @SuppressWarnings({"all"})
-    private static boolean matchArg(Object obj, Object rawValue, Class<?> valueType) {
+    private static boolean matchArg(Object obj,
+                                    Object rawValue,
+                                    Class<?> valueType) {
         if (obj instanceof Collection) {
-            return ((Collection) obj).stream().anyMatch(o->
-                ObjectUtils.equals(o, parse(rawValue.toString(), valueType)));
+            return ((Collection) obj).stream().anyMatch(o -> ObjectUtils.equals(o, parse(rawValue.toString(),
+                                                                                         valueType)));
         } else {
             return ObjectUtils.equals(obj, parse(rawValue.toString(), valueType));
         }
     }
 
     @SuppressWarnings({"all"})
-    public static boolean match(String resources, String rawValue, Class<?> valueType) {
+    public static boolean match(String resources,
+                                String rawValue,
+                                Class<?> valueType) {
         if (resources == null) return false;
         if (resources.equals(WILDCARD)) return true;
         try {
@@ -80,7 +86,8 @@ public abstract class ValueMatcher {
         }
     }
 
-    private static Object parse(String value, Class<?> type) {
+    private static Object parse(String value,
+                                Class<?> type) {
         if (type.equals(String.class)) return value;
         if (type.equals(Integer.class) || type.equals(int.class)) {
             return new Integer(value);
@@ -138,16 +145,16 @@ public abstract class ValueMatcher {
     }
 
     public static ValueType checkType(Class<?> type) {
-        if (type.equals(String.class) || type.equals(Boolean.class) || type.equals(boolean.class))
+        if (type.equals(String.class) || type.equals(Boolean.class) || type.equals(boolean.class)) {
             return ValueType.EQUALS;
+        }
 
         if (type.equals(Integer.class) || type.equals(int.class)
                 || type.equals(Long.class) || type.equals(long.class)
                 || type.equals(Short.class) || type.equals(short.class)
                 || type.equals(Double.class) || type.equals(double.class)
                 || type.equals(Float.class) || type.equals(float.class)
-                || type.equals(Character.class) || type.equals(char.class))
-            return ValueType.RANGE;
+                || type.equals(Character.class) || type.equals(char.class)) {return ValueType.RANGE;}
 
         return ValueType.OTHER;
     }

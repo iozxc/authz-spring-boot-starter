@@ -17,7 +17,9 @@ import java.util.Set;
 public class ProtectCheckerSlot implements Slot {
 
     @Override
-    public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
+    public void chain(HttpMeta httpMeta,
+                      HandlerMethod handler,
+                      Error error) {
         httpMeta.setRequireProtect(requireProtect(httpMeta));
         httpMeta.setRequireLogin(requireLogin(httpMeta));
     }

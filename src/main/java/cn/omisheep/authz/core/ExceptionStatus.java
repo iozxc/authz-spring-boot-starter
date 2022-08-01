@@ -87,9 +87,10 @@ public enum ExceptionStatus {
     AUTHORIZATION_CODE_EXPIRED_OR_NOT_EXIST(-503, "Authorization code does not exist or expires", false, OK),
 
     /**
-     * 授权范围不足
+     * 授权范围不足或授权类型错误
      */
-    SCOPE_EXCEPTION(-504, "Insufficient scope of authorization", false, NETWORK_AUTHENTICATION_REQUIRED),
+    SCOPE_EXCEPTION_OR_TYPE_ERROR(-504, "Insufficient scope of authorization or GrantType error", false,
+                                  NETWORK_AUTHENTICATION_REQUIRED),
 
     /**
      * url匹配错误
@@ -106,14 +107,19 @@ public enum ExceptionStatus {
     private final boolean    clearToken;
     private final HttpStatus httpStatus;
 
-    ExceptionStatus(int code, String message, boolean clearToken, HttpStatus httpStatus) {
+    ExceptionStatus(int code,
+                    String message,
+                    boolean clearToken,
+                    HttpStatus httpStatus) {
         this.code       = code;
         this.message    = message;
         this.clearToken = clearToken;
         this.httpStatus = httpStatus;
     }
 
-    ExceptionStatus(int code, String message, HttpStatus httpStatus) {
+    ExceptionStatus(int code,
+                    String message,
+                    HttpStatus httpStatus) {
         this.code       = code;
         this.message    = message;
         this.clearToken = false;

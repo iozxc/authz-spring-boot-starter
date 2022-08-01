@@ -20,12 +20,17 @@ import static cn.omisheep.authz.core.config.Constants.HTTP_META;
 public class AuTokenOrHttpMetaResolver implements HandlerMethodArgumentResolver {
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
-        return parameter.getParameterType().equals(AccessToken.class) || parameter.getParameterType().equals(HttpMeta.class);
+        return parameter.getParameterType().equals(AccessToken.class) || parameter.getParameterType()
+                .equals(HttpMeta.class);
     }
 
     @Override
-    public Object resolveArgument(MethodParameter methodParameter, @Nullable ModelAndViewContainer modelAndViewContainer, NativeWebRequest nativeWebRequest, @Nullable WebDataBinderFactory webDataBinderFactory) {
-        HttpMeta httpMeta = (HttpMeta) ((HttpServletRequest) nativeWebRequest.getNativeRequest()).getAttribute(HTTP_META);
+    public Object resolveArgument(MethodParameter methodParameter,
+                                  @Nullable ModelAndViewContainer modelAndViewContainer,
+                                  NativeWebRequest nativeWebRequest,
+                                  @Nullable WebDataBinderFactory webDataBinderFactory) {
+        HttpMeta httpMeta = (HttpMeta) ((HttpServletRequest) nativeWebRequest.getNativeRequest()).getAttribute(
+                HTTP_META);
         if (httpMeta == null) return null;
         if (methodParameter.getParameterType().equals(AccessToken.class)) {
             return httpMeta.getToken();

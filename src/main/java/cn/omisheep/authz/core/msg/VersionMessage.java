@@ -28,18 +28,23 @@ public class VersionMessage implements Message {
     public VersionMessage() {
     }
 
-    public VersionMessage(int version, String md5) {
+    public VersionMessage(int version,
+                          String md5) {
         this.version = version;
         this.md5     = md5;
     }
 
-    public VersionMessage(AuthzModifier authzModifier, int version, String md5) {
+    public VersionMessage(AuthzModifier authzModifier,
+                          int version,
+                          String md5) {
         this.authzModifier = authzModifier;
         this.version       = version;
         this.md5           = md5;
     }
 
-    public VersionMessage(List<AuthzModifier> changelog, int version, String md5) {
+    public VersionMessage(List<AuthzModifier> changelog,
+                          int version,
+                          String md5) {
         this.authzModifierList = changelog;
         this.version           = version;
         this.md5               = md5;

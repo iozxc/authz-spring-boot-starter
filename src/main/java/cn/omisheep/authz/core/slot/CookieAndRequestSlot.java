@@ -22,7 +22,7 @@ import java.util.Locale;
 
 import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.UserStatus.ACCESS_TOKEN_OVERDUE;
 import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.UserStatus.REQUIRE_LOGIN;
-import static cn.omisheep.authz.core.config.Constants.REFRESH_TOKEN_ID;
+import static cn.omisheep.authz.core.config.Constants.ID;
 import static cn.omisheep.authz.core.config.Constants.USER_ID;
 
 /**
@@ -39,7 +39,9 @@ public class CookieAndRequestSlot implements Slot {
     private final String          headerName;
     private final String          headerPrefix;
 
-    public CookieAndRequestSlot(UserDevicesDict userDevicesDict, PermLibrary permLibrary, AuthzProperties properties) {
+    public CookieAndRequestSlot(UserDevicesDict userDevicesDict,
+                                PermLibrary permLibrary,
+                                AuthzProperties properties) {
         this.userDevicesDict = userDevicesDict;
         this.isEnableRedis   = properties.getCache().isEnableRedis();
         this.cookieName      = properties.getToken().getCookieName();
@@ -48,7 +50,9 @@ public class CookieAndRequestSlot implements Slot {
     }
 
     @Override
-    public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
+    public void chain(HttpMeta httpMeta,
+                      HandlerMethod handler,
+                      Error error) {
         String tokenValue = null;
 
         AuthRequestToken authRequestToken = handler.getMethodAnnotation(AuthRequestToken.class);
@@ -87,40 +91,37 @@ public class CookieAndRequestSlot implements Slot {
             tokenValue = cookie.getValue();
         }
 
-        if (tokenValue != null) {
-            try {
-                AccessToken accessToken = TokenHelper.parseAccessToken(tokenValue);
-                httpMeta.setToken(accessToken);
-                Async.run(userDevicesDict::request);
-            } catch (Exception e) {
-                httpMeta.setHasToken(false);
-                TokenHelper.clearCookie();
-                if (e instanceof JwtException) {
-                    try {
-                        if (e instanceof ExpiredJwtException) {
-                            Claims claims = ((ExpiredJwtException) e).getClaims();
-                            userDevicesDict.removeDeviceByTokenId(claims.get(USER_ID),
-                                                                  claims.get(REFRESH_TOKEN_ID, String.class));
-                            httpMeta.setUserStatus(ACCESS_TOKEN_OVERDUE);
-                        } else {
-                            httpMeta.setUserStatus(REQUIRE_LOGIN);
-                        }
-                    } catch (Exception ee) {
-                        // skip
-                    }
-                } else if (e instanceof AuthzException) {
-                    if (ExceptionStatus.TOKEN_EXCEPTION.equals(((AuthzException) e).getExceptionStatus())) {
+        if (tokenValue == null) return;
+
+        try {
+            AccessToken accessToken = TokenHelper.parseAccessToken(tokenValue);
+            httpMeta.setToken(accessToken);
+            Async.run(userDevicesDict::request);
+        } catch (Exception e) {
+            TokenHelper.clearCookie();
+            if (e instanceof JwtException) {
+                try {
+                    if (e instanceof ExpiredJwtException) {
+                        Claims claims = ((ExpiredJwtException) e).getClaims();
+                        userDevicesDict.removeDeviceByTid(claims.get(USER_ID),
+                                                          claims.get(ID, String.class));
+                        httpMeta.setUserStatus(ACCESS_TOKEN_OVERDUE);
+                    } else {
                         httpMeta.setUserStatus(REQUIRE_LOGIN);
-                        error.error(ExceptionStatus.TOKEN_EXCEPTION);
-                        return;
                     }
-                } else {
-                    error.error(e);
+                } catch (Exception ee) {
+                    // skip
+                }
+            } else if (e instanceof AuthzException) {
+                if (ExceptionStatus.TOKEN_EXCEPTION.equals(((AuthzException) e).getExceptionStatus())) {
+                    httpMeta.setUserStatus(REQUIRE_LOGIN);
+                    error.error(ExceptionStatus.TOKEN_EXCEPTION);
                     return;
                 }
+            } else {
+                error.error(e);
+                return;
             }
-        } else {
-            httpMeta.setHasToken(false);
         }
 
     }

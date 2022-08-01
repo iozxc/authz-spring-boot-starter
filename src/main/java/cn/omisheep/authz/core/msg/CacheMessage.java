@@ -29,7 +29,8 @@ public class CacheMessage implements Message {
         return collect(key).setType(Type.WRITE);
     }
 
-    public static CacheMessage write(String pattern, Collection<String> keys) {
+    public static CacheMessage write(String pattern,
+                                     Collection<String> keys) {
         return collect(keys).setType(Type.WRITE).setPattern(pattern);
     }
 
@@ -43,8 +44,7 @@ public class CacheMessage implements Message {
 
     private static CacheMessage collect(Collection<String> keys) {
         CacheMessage message = new CacheMessage();
-        if (keys instanceof Set) message.keys = (Set<String>) keys;
-        else message.keys = new HashSet<>(keys);
+        if (keys instanceof Set) {message.keys = (Set<String>) keys;} else message.keys = new HashSet<>(keys);
         return message;
     }
 

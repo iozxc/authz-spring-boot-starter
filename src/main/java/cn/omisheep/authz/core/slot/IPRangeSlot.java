@@ -19,7 +19,9 @@ import java.util.Set;
 public class IPRangeSlot implements Slot {
 
     @Override
-    public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
+    public void chain(HttpMeta httpMeta,
+                      HandlerMethod handler,
+                      Error error) {
         try {
             if (PermissionDict.isSupportNative()) {
                 if (httpMeta.getIp().equals("0:0:0:0:0:0:0:1") || httpMeta.getIp().equals("127.0.0.1")) {
@@ -27,12 +29,14 @@ public class IPRangeSlot implements Slot {
                     return;
                 }
             }
-            if (!isPermittedRequest(httpMeta.getIp(), PermissionDict.getGlobalAllow(), PermissionDict.getGlobalDeny())) {
+            if (!isPermittedRequest(httpMeta.getIp(), PermissionDict.getGlobalAllow(),
+                                    PermissionDict.getGlobalDeny())) {
                 error.error(ExceptionStatus.PERM_EXCEPTION);
                 return;
             }
             IPRangeMeta ipRangeMeta = PermissionDict.getIPRange().get(httpMeta.getApi()).get(httpMeta.getMethod());
-            if (ipRangeMeta != null && !isPermittedRequest(httpMeta.getIp(), ipRangeMeta.getAllow(), ipRangeMeta.getDeny())) {
+            if (ipRangeMeta != null && !isPermittedRequest(httpMeta.getIp(), ipRangeMeta.getAllow(),
+                                                           ipRangeMeta.getDeny())) {
                 error.error(ExceptionStatus.PERM_EXCEPTION);
                 return;
             }
@@ -42,7 +46,9 @@ public class IPRangeSlot implements Slot {
         }
     }
 
-    public boolean isPermittedRequest(String remoteAddress, Set<IPRange> allowList, Set<IPRange> denyList) {
+    public boolean isPermittedRequest(String remoteAddress,
+                                      Set<IPRange> allowList,
+                                      Set<IPRange> denyList) {
         boolean ipV6 = remoteAddress.indexOf(':') != -1;
 
         if (ipV6) {

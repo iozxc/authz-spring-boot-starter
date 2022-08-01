@@ -13,7 +13,9 @@ import org.springframework.web.method.HandlerMethod;
 @SuppressWarnings("all")
 public class BlacklistSlot implements Slot {
     @Override
-    public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
+    public void chain(HttpMeta httpMeta,
+                      HandlerMethod handler,
+                      Error error) {
         boolean check = Blacklist.check(httpMeta.getIp(), httpMeta.getToken());
         if (check) return;
         error.error(ExceptionStatus.REQUEST_EXCEPTION);

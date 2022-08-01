@@ -23,7 +23,8 @@ public class CompressDirUtil {
                 zipOutput = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(compresspath + ".zip")));
                 compressZip(zipOutput, file, "");
             } else {
-                zipOutput = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(compresspath.substring(0, compresspath.lastIndexOf(".")) + ".zip")));
+                zipOutput = new ZipOutputStream(new BufferedOutputStream(
+                        new FileOutputStream(compresspath.substring(0, compresspath.lastIndexOf(".")) + ".zip")));
                 zipOFile(zipOutput, file);
             }
             zipOutput.closeEntry();
@@ -35,7 +36,9 @@ public class CompressDirUtil {
         return bool;
     }
 
-    private static void compressZip(ZipOutputStream zipOutput, File file, String suffixpath) {
+    private static void compressZip(ZipOutputStream zipOutput,
+                                    File file,
+                                    String suffixpath) {
         File[] listFiles = file.listFiles();
         if (listFiles == null) return;
         for (File fi : listFiles) {
@@ -51,7 +54,9 @@ public class CompressDirUtil {
         }
     }
 
-    public static void zip(ZipOutputStream zipOutput, File file, String suffixpath) {
+    public static void zip(ZipOutputStream zipOutput,
+                           File file,
+                           String suffixpath) {
         try {
             ZipEntry zEntry = null;
             if (suffixpath.equals("")) {
@@ -72,7 +77,8 @@ public class CompressDirUtil {
         }
     }
 
-    public static void zipOFile(ZipOutputStream zipOutput, File file) {
+    public static void zipOFile(ZipOutputStream zipOutput,
+                                File file) {
         try {
             ZipEntry zEntry = new ZipEntry(file.getName());
             zipOutput.putNextEntry(zEntry);

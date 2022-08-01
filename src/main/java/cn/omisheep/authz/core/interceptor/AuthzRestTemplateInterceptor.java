@@ -16,7 +16,9 @@ import java.io.IOException;
  */
 public class AuthzRestTemplateInterceptor implements ClientHttpRequestInterceptor {
     @Override
-    public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
+    public ClientHttpResponse intercept(HttpRequest request,
+                                        byte[] body,
+                                        ClientHttpRequestExecution execution) throws IOException {
         HttpUtils.getCurrentRequestHeaders().forEach(request.getHeaders()::set);
         return execution.execute(request, body);
     }

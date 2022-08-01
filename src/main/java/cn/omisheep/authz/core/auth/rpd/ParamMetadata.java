@@ -21,7 +21,9 @@ public class ParamMetadata {
     private List<PermRolesMeta.Meta> rolesMetaList;
     private List<PermRolesMeta.Meta> permissionsMetaList;
 
-    public ParamMetadata(Class<?> paramType, List<PermRolesMeta.Meta> rolesMetaList, List<PermRolesMeta.Meta> permissionsMetaList) {
+    public ParamMetadata(Class<?> paramType,
+                         List<PermRolesMeta.Meta> rolesMetaList,
+                         List<PermRolesMeta.Meta> permissionsMetaList) {
         this.paramType = paramType;
         if (rolesMetaList != null && !rolesMetaList.isEmpty()) this.rolesMetaList = rolesMetaList;
         if (permissionsMetaList != null && !permissionsMetaList.isEmpty()) this.permissionsMetaList = permissionsMetaList;

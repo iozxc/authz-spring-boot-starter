@@ -29,7 +29,8 @@ public class AuthzHandlerRegister implements WebMvcConfigurer, ApplicationContex
     private final AuthzExceptionHandler authzExceptionHandler;
     private final DecryptHandler        decryptHandler;
 
-    public AuthzHandlerRegister(AuthzExceptionHandler authzExceptionHandler, DecryptHandler decryptHandler) {
+    public AuthzHandlerRegister(AuthzExceptionHandler authzExceptionHandler,
+                                DecryptHandler decryptHandler) {
         this.authzExceptionHandler = authzExceptionHandler;
         this.decryptHandler        = decryptHandler;
     }

@@ -12,7 +12,7 @@ import java.util.Date;
  */
 @Data
 public class AuthorizedDeviceDetails {
-    private String    id;
+    private String    authorizedDeviceId;
     private Object    userId;
     private String    clientId;
     private GrantType grantType;
@@ -20,8 +20,10 @@ public class AuthorizedDeviceDetails {
     private Date      authorizedDate;
     private Date      expiresDate;
 
-    public AuthorizedDeviceDetails(Device device, Object userId, String id) {
-        this.id             = id;
+    public AuthorizedDeviceDetails(Device device,
+                                   Object userId,
+                                   String authorizedDeviceId) {
+        this.authorizedDeviceId             = authorizedDeviceId;
         this.userId         = userId;
         this.clientId       = device.getClientId();
         this.grantType      = device.getGrantType();
@@ -30,13 +32,18 @@ public class AuthorizedDeviceDetails {
         this.expiresDate    = device.getExpiresDate();
     }
 
-    public AuthorizedDeviceDetails(AuthorizationInfo authorizationInfo, String id) {
-        this.userId         = authorizationInfo.getUserId();
-        this.clientId       = authorizationInfo.getClientId();
-        this.grantType      = authorizationInfo.getGrantType();
-        this.scope          = authorizationInfo.getScope();
-        this.authorizedDate = new Date(authorizationInfo.getAuthorizedAt());
-        this.expiresDate    = new Date(authorizationInfo.getExpiresAt());
-        this.id             = id;
+    public AuthorizedDeviceDetails(AuthorizationInfo authorizationInfo,
+                                   String authorizedDeviceId) {
+        this.userId    = authorizationInfo.getUserId();
+        this.clientId  = authorizationInfo.getClientId();
+        this.grantType = authorizationInfo.getGrantType();
+        this.scope     = authorizationInfo.getScope();
+        if (authorizationInfo.getAuthorizedAt() != null) {
+            this.authorizedDate = new Date(authorizationInfo.getAuthorizedAt());
+        }
+        if (authorizationInfo.getExpiresAt() != null) {
+            this.expiresDate = new Date(authorizationInfo.getExpiresAt());
+        }
+        this.authorizedDeviceId = authorizedDeviceId;
     }
 }

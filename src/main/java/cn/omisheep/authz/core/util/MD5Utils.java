@@ -20,8 +20,7 @@ public class MD5Utils {
         } catch (IOException e) {
             try {
                 boolean b = CompressDirUtil.compressFileToZip(path);
-                if (!b) return "";
-                else {
+                if (!b) {return "";} else {
                     String zip = path + ".zip";
                     String md5 = DigestUtils.md5Hex(new BufferedInputStream(new FileInputStream(zip)));
                     new File(zip).delete();

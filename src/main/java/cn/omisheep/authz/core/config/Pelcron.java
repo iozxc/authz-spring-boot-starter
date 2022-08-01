@@ -22,7 +22,7 @@ public class Pelcron {
         long    usable = max - total + free; // 最大可用内存 （usable）这是JVM真正还可以再继续使用的内存
         long    using  = total - free; // 当前使用内存 (using)
         LogUtils.debug("已分配内存 = {}MB  当前使用内存 = {}MB  已分配内存中的剩余空间 = {}MB  最大内存 = {}MB  最大可用内存 = {}MB",
-                total, using, free, max, usable);
+                       total, using, free, max, usable);
     }
 
 }

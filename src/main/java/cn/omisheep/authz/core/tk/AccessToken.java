@@ -14,6 +14,11 @@ import lombok.experimental.Accessors;
 public class AccessToken {
 
     /**
+     * id
+     */
+    private final String id;
+
+    /**
      * token字符串
      */
     private final String token;
@@ -22,12 +27,6 @@ public class AccessToken {
      * access token id
      */
     private final String tokenId;
-
-
-    /**
-     * refresh token id
-     */
-    private final String refreshTokenId;
 
     /**
      * 多少时间过期

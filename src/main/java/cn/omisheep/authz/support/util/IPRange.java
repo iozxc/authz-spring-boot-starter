@@ -212,10 +212,12 @@ public class IPRange {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof IPRange)) return false;
+        if (this == o) {return true;}
+        if (!(o instanceof IPRange)) {return false;}
         IPRange ipRange = (IPRange) o;
-        return getExtendedNetworkPrefix() == ipRange.getExtendedNetworkPrefix() && Objects.equal(ipAddress, ipRange.ipAddress) && Objects.equal(ipSubnetMask, ipRange.ipSubnetMask);
+        return getExtendedNetworkPrefix() == ipRange.getExtendedNetworkPrefix() && Objects.equal(ipAddress,
+                                                                                                 ipRange.ipAddress) && Objects.equal(
+                ipSubnetMask, ipRange.ipSubnetMask);
     }
 
     @Override

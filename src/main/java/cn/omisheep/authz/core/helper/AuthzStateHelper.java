@@ -8,7 +8,6 @@ import org.springframework.lang.NonNull;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * @author zhouxinchen
@@ -44,6 +43,7 @@ public class AuthzStateHelper extends BaseHelper {
 
     public static boolean hasRoles(@NonNull List<String> roles) {
         try {
+            if (roles.isEmpty()) return true;
             return AUtils.getCurrentHttpMeta().getRoles().containsAll(roles);
         } catch (Exception e) {
             return false;
@@ -52,6 +52,7 @@ public class AuthzStateHelper extends BaseHelper {
 
     public static boolean hasPermissions(@NonNull List<String> permissions) {
         try {
+            if (permissions.isEmpty()) return true;
             return AUtils.getCurrentHttpMeta().getPermissions().containsAll(permissions);
         } catch (Exception e) {
             return false;
@@ -61,9 +62,7 @@ public class AuthzStateHelper extends BaseHelper {
     public static boolean hasScope(@NonNull List<String> scope) {
         try {
             if (scope.isEmpty()) return true;
-            Set<String> userScope = AUtils.getCurrentHttpMeta().getScope();
-            if (userScope.isEmpty()) return false;
-            return userScope.containsAll(scope);
+            return AUtils.getCurrentHttpMeta().getScope().containsAll(scope);
         } catch (Exception e) {
             return false;
         }

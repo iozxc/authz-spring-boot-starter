@@ -13,11 +13,16 @@ import java.util.Set;
  * @since 1.2.0
  */
 public class ScanUtils {
-    public static String[] scan(Class<?> clz, String... packages) {
+    public static String[] scan(Class<?> clz,
+                                String... packages) {
         ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
         scanner.addIncludeFilter(new AssignableTypeFilter(clz));
         Set<String> classes = new HashSet<>();
-        Arrays.stream(packages).forEach(basePackage -> scanner.findCandidateComponents(basePackage).stream().map(BeanDefinition::getBeanClassName).forEach(classes::add));
+        Arrays.stream(packages)
+                .forEach(basePackage -> scanner.findCandidateComponents(basePackage)
+                        .stream()
+                        .map(BeanDefinition::getBeanClassName)
+                        .forEach(classes::add));
         return classes.toArray(new String[0]);
     }
 }

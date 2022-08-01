@@ -22,9 +22,10 @@ public class ApiSupportImport implements ImportSelector {
     @NonNull
     @Override
     public String[] selectImports(@NonNull AnnotationMetadata annotationMetadata) {
-        Map<String, Object> annotationAttributes = annotationMetadata.getAnnotationAttributes(ApiSupportScan.class.getName());
+        Map<String, Object> annotationAttributes = annotationMetadata.getAnnotationAttributes(
+                ApiSupportScan.class.getName());
         String[]            packages             = new String[0];
-        if (annotationAttributes != null) packages = (String[]) annotationAttributes.get("packages");
+        if (annotationAttributes != null) {packages = (String[]) annotationAttributes.get("packages");}
         String[] v = ScanUtils.scan(ApiSupport.class, packages);
         Arrays.stream(packages)
                 .forEach(pkg -> ClassUtils.getClassSet(pkg)
@@ -38,10 +39,14 @@ public class ApiSupportImport implements ImportSelector {
                                         path = tMapping.path();
                                         rel  = tMapping.requireLogin();
                                     }
-                                    if (mMapping == null) return;
+                                    if (mMapping == null) {return;}
                                     path += mMapping.path();
                                     rel = rel || mMapping.requireLogin();
-                                    ApiHandler.getApi().put(path, new ApiHandler.ApiInfo().setRequireLogin(rel).setDesc(mMapping.desc()).setInvoke(method).setMethod(mMapping.type()));
+                                    ApiHandler.getApi()
+                                            .put(path, new ApiHandler.ApiInfo().setRequireLogin(rel)
+                                                    .setDesc(mMapping.desc())
+                                                    .setInvoke(method)
+                                                    .setMethod(mMapping.type()));
                                 })
                         )
                 );

@@ -40,7 +40,7 @@ public class IPUtils {
     }
 
     private static final String UNKNOWN              = "unknown";
-    private static final String CMMOa              = ",";
+    private static final String CMMOa                = ",";
     private static final String X_FORWARDED_FOR      = "x-forwarded-for";
     private static final String PROXY_CLIENT_IP      = "Proxy-Client-IP";
     private static final String WL_PROXY_CLIENT_IP   = "WL-Proxy-Client-IP";

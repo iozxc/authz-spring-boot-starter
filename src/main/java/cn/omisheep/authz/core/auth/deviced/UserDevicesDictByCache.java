@@ -5,10 +5,7 @@ import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.config.Constants;
-import cn.omisheep.authz.core.tk.AccessToken;
-import cn.omisheep.authz.core.tk.GrantType;
-import cn.omisheep.authz.core.tk.RefreshToken;
-import cn.omisheep.authz.core.tk.TokenPair;
+import cn.omisheep.authz.core.tk.*;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.commons.util.Async;
 import cn.omisheep.commons.util.TimeUtils;
@@ -32,7 +29,8 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     private final AuthzProperties properties;
     private final Cache           cache;
 
-    public UserDevicesDictByCache(AuthzProperties properties, Cache cache) {
+    public UserDevicesDictByCache(AuthzProperties properties,
+                                  Cache cache) {
         this.properties = properties;
         this.cache      = cache;
     }
@@ -55,10 +53,10 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         // clientId不匹配。需要重新dengue
         if (clientId != null) {
             if (!StringUtils.equals(device.getClientId(), clientId)) return REQUIRE_LOGIN;
+        } else {
+            // accessTokenId不匹配，账号在其他地方登录
+            if (!StringUtils.equals(device.getAccessTokenId(), accessTokenId)) return LOGIN_EXCEPTION;
         }
-
-        // accessTokenId不匹配，账号在其他地方登录
-        if (!StringUtils.equals(device.getAccessTokenId(), accessTokenId)) return LOGIN_EXCEPTION;
 
         // 成功
         return SUCCESS;
@@ -66,13 +64,21 @@ public class UserDevicesDictByCache implements UserDevicesDict {
 
     // @since 1.2.0 优化了登录以及验证逻辑，略微提速
     @Override
-    public void addUser(TokenPair tokenPair, HttpMeta httpMeta) {
-        if (tokenPair == null || tokenPair.getAccessToken() == null || tokenPair.getRefreshToken() == null)
-            return;
+    public void addUser(TokenPair tokenPair,
+                        HttpMeta httpMeta) {
+        if (tokenPair == null || tokenPair.getAccessToken() == null || tokenPair.getRefreshToken() == null) {return;}
 
-        AccessToken  accessToken  = tokenPair.getAccessToken();
-        RefreshToken refreshToken = tokenPair.getRefreshToken();
-        Integer      expiredIn    = refreshToken.getExpiredIn();
+        AccessToken accessToken = tokenPair.getAccessToken();
+        Integer     expiredIn;
+        Date        expiresAt;
+        if (GrantType.CLIENT_CREDENTIALS.equals(accessToken.getGrantType())) {
+            expiresAt = new Date(accessToken.getExpiresAt());
+            expiredIn = accessToken.getExpiresIn();
+        } else {
+            RefreshToken refreshToken = tokenPair.getRefreshToken();
+            expiresAt = new Date(refreshToken.getExpiresAt());
+            expiredIn = refreshToken.getExpiresIn();
+        }
 
         Device device = new DefaultDevice()
                 .setAccessTokenId(accessToken.getTokenId());
@@ -82,7 +88,8 @@ public class UserDevicesDictByCache implements UserDevicesDict {
             String    scope     = accessToken.getScope();
             GrantType grantType = accessToken.getGrantType();
             device.setScope(scope).setGrantType(grantType).setClientId(clientId)
-                    .setAuthorizedDate(httpMeta.getNow()).setExpiresDate(new Date(refreshToken.getExpiredAt()));
+                    .setAuthorizedDate(httpMeta.getNow())
+                    .setExpiresDate(expiresAt);
             String key = UserDevicesDict.oauthKey(accessToken);
             cache.set(key, device, expiredIn);
         } else {
@@ -98,14 +105,15 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     @Override
-    public boolean refreshUser(RefreshToken refreshToken, TokenPair tokenPair) {
+    public boolean refreshUser(RefreshToken refreshToken,
+                               TokenPair tokenPair) {
         if (tokenPair == null) return false;
         String key    = key(refreshToken);
         Device device = cache.get(key, Device.class);
         if (device == null) return false;
 
         AccessToken accessToken = tokenPair.getAccessToken();
-        Long        expiredAt   = refreshToken.getExpiredAt();
+        Long        expiredAt   = refreshToken.getExpiresAt();
 
         device.setAccessTokenId(accessToken.getTokenId());
 
@@ -117,8 +125,9 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     @Override
-    public void removeDeviceByTokenId(Object userId, String refreshTokenId) {
-        String key    = key(userId, refreshTokenId);
+    public void removeDeviceByTid(Object userId,
+                                      String tid) {
+        String key    = key(userId, tid);
         Device device = cache.get(key, Device.class);
         if (device == null) return;
         device.setAccessTokenId(null);
@@ -139,7 +148,9 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     @Override
-    public void removeDevice(Object userId, String deviceType, String deviceId) {
+    public void removeDevice(Object userId,
+                             String deviceType,
+                             String deviceId) {
         if (deviceType == null || deviceType.equals("")) return;
         Map<String, Device> deviceMap = cache.get(cache.keys(key(userId, Constants.WILDCARD)), Device.class);
         Set<String> dels = deviceMap.entrySet().stream()
@@ -151,7 +162,9 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     @Override
-    public Device getDevice(Object userId, String deviceType, String deviceId) {
+    public Device getDevice(Object userId,
+                            String deviceType,
+                            String deviceId) {
         Set<String> keys = cache.keys(key(userId, Constants.WILDCARD));
         if (keys.isEmpty()) return null;
         Map<String, Device> deviceMap = cache.get(keys, Device.class);
@@ -186,7 +199,8 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     @Override
-    public List<Device> listActiveUserDevices(Object userId, long ms) {
+    public List<Device> listActiveUserDevices(Object userId,
+                                              long ms) {
         long now = TimeUtils.nowTime();
         Set<String> rKeys = cache.keys(
                 requestKey(Constants.WILDCARD, Constants.WILDCARD));
@@ -204,9 +218,12 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     @Override
     public void request() {
         try {
-            HttpMeta currentHttpMeta = AUtils.getCurrentHttpMeta();
-            Async.run(() -> cache.set(requestKey(currentHttpMeta.getToken()), new DefaultRequestDetails()
-                    .setLastRequestTime(currentHttpMeta.getNow()).setIp(currentHttpMeta.getIp())));
+            HttpMeta    currentHttpMeta = AUtils.getCurrentHttpMeta();
+            AccessToken token           = currentHttpMeta.getToken();
+            if (token.getClientId() == null) {
+                Async.run(() -> cache.set(requestKey(token), new DefaultRequestDetails()
+                        .setLastRequestTime(currentHttpMeta.getNow()).setIp(currentHttpMeta.getIp())));
+            }
         } catch (Exception ignored) {
         }
     }
@@ -227,7 +244,11 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         }
     }
 
-    private void clean(Object userId, String deviceType, String deviceId, String key, String rKey) {
+    private void clean(Object userId,
+                       String deviceType,
+                       String deviceId,
+                       String key,
+                       String rKey) {
         AuthzProperties.UserConfig userConfig = usersConfig.getOrDefault(userId, properties.getUser());
 
         Set<String> delKeys = new HashSet<>();
@@ -297,9 +318,11 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         }
     }
 
-    private void d(int max, Map<String, Device> deviceMap,
+    private void d(int max,
+                   Map<String, Device> deviceMap,
                    Map<String, RequestDetails> requestDetailsMap,
-                   Set<String> delKeys, Predicate<? super Map.Entry<String, Device>> predicate) {
+                   Set<String> delKeys,
+                   Predicate<? super Map.Entry<String, Device>> predicate) {
         if (max <= 0) {
             if (deviceMap.isEmpty()) return;
             delKeys.addAll(deviceMap.keySet());

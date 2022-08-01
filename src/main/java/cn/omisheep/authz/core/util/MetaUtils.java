@@ -59,7 +59,8 @@ public class MetaUtils {
         return flag ? rolesMeta : null;
     }
 
-    public static PermRolesMeta generatePermRolesMeta(Perms p, Roles r) {
+    public static PermRolesMeta generatePermRolesMeta(Perms p,
+                                                      Roles r) {
         PermRolesMeta prm  = new PermRolesMeta();
         boolean       flag = false;
         if (p != null) {
@@ -83,23 +84,25 @@ public class MetaUtils {
         return flag ? prm : null;
     }
 
-    public static <A extends Annotation> A getAnnotation(Object value, Class<A> clz) {
+    public static <A extends Annotation> A getAnnotation(Object value,
+                                                         Class<A> clz) {
         A annotation = AnnotatedElementUtils.getMergedAnnotation(value.getClass(), clz);
         try {
             if (annotation == null) {
                 return AnnotatedElementUtils.getMergedAnnotation(Class.forName(getTypeName(value)), clz);
-            } else return annotation;
+            } else {return annotation;}
         } catch (Exception e) {
             return null;
         }
     }
 
-    public static <A extends Annotation> Set<A> getAnnotations(Object value, Class<A> clz) {
+    public static <A extends Annotation> Set<A> getAnnotations(Object value,
+                                                               Class<A> clz) {
         Set<A> annotations = AnnotatedElementUtils.getAllMergedAnnotations(value.getClass(), clz);
         try {
             if (annotations.isEmpty()) {
                 return AnnotatedElementUtils.getAllMergedAnnotations(Class.forName(getTypeName(value)), clz);
-            } else return annotations;
+            } else {return annotations;}
         } catch (Exception e) {
             return null;
         }

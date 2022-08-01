@@ -32,11 +32,11 @@ public abstract class ArgsParser {
         return parse(argName, null);
     }
 
-    public static <E> Object parse(String argName, Supplier<E> fail) {
+    public static <E> Object parse(String argName,
+                                   Supplier<E> fail) {
         Matcher matcher = c.matcher(argName);
         if (!matcher.find()) {
-            if (fail == null) return argName;
-            else return fail.get();
+            if (fail == null) {return argName;} else return fail.get();
         }
         String   obj     = matcher.group(1);
         String[] trace   = obj.split("\\.");
@@ -44,7 +44,9 @@ public abstract class ArgsParser {
         if (isArrayOrCollection(convert)) {
             String arrString = parseAndToString(convert);
             if (arrString == null) return argName;
-            return Arrays.stream(arrString.substring(1, arrString.length() - 1).trim().split(",")).map(String::trim).collect(Collectors.toList());
+            return Arrays.stream(arrString.substring(1, arrString.length() - 1).trim().split(","))
+                    .map(String::trim)
+                    .collect(Collectors.toList());
         } else {
             return convert;
         }
@@ -63,7 +65,7 @@ public abstract class ArgsParser {
                     char o;
                     if (k - 1 < 0) {
                         o = '#';
-                    } else o = condition.charAt(k - 1);
+                    } else {o = condition.charAt(k - 1);}
                     if (o == '#' || o == '$') {
                         op = o;
                         stringBuilder.append(condition, index, k - 1);
@@ -121,7 +123,8 @@ public abstract class ArgsParser {
         return builder.toString();
     }
 
-    private static Object ref(String argName, DataPermMeta dataPermMeta) {
+    private static Object ref(String argName,
+                              DataPermMeta dataPermMeta) {
         Map<String, List<String>> argsMap = dataPermMeta.getArgsMap();
         if (argsMap == null) return argsHandle(argName);
         List<String> list = dataPermMeta.getArgsMap().get(argName);
@@ -147,7 +150,9 @@ public abstract class ArgsParser {
         return argsHandle(argName, argsList.toArray());
     }
 
-    private static String parseObject(char op, String[] trace, Object value) {
+    private static String parseObject(char op,
+                                      String[] trace,
+                                      Object value) {
         if (op == '#') {
             if (value == null) return "";
             Object convert = convert(trace, value);
@@ -162,13 +167,15 @@ public abstract class ArgsParser {
         }
     }
 
-    private static Object argsHandle(String argName, Object... otherArgs) {
+    private static Object argsHandle(String argName,
+                                     Object... otherArgs) {
         return PermissionDict.argsHandle(argName, otherArgs);
     }
 
     private static final Pattern compile = Pattern.compile("(.*?)\\[(\\d+|\\*)]");
 
-    private static Object convert(String[] trace, Object obj) {
+    private static Object convert(String[] trace,
+                                  Object obj) {
         if (trace.length == 1) {
             return obj;
         } else {
@@ -205,8 +212,7 @@ public abstract class ArgsParser {
                 } else {
                     if (isObject) {
                         Object o1 = o.get(trace[i]);
-                        if (o1 instanceof JSONObject) o = (JSONObject) o1;
-                        else {
+                        if (o1 instanceof JSONObject) {o = (JSONObject) o1;} else {
                             a        = (JSONArray) o1;
                             isObject = false;
                         }
@@ -244,7 +250,9 @@ public abstract class ArgsParser {
         }
     }
 
-    private static List<Object> collect(List<Object> a, String name, int i) {
+    private static List<Object> collect(List<Object> a,
+                                        String name,
+                                        int i) {
         return (List<Object>) a.stream().flatMap(jo -> {
             if (jo == null) return null;
             if (jo instanceof JSONObject) {
@@ -256,7 +264,8 @@ public abstract class ArgsParser {
         }).collect(Collectors.toList());
     }
 
-    private static List<Object> collect(List<Object> a, String name) {
+    private static List<Object> collect(List<Object> a,
+                                        String name) {
         return (List<Object>) a.stream().flatMap(jo -> {
             if (jo == null) return null;
             if (jo instanceof JSONObject) {
@@ -293,168 +302,140 @@ public abstract class ArgsParser {
                 return parseArray((short[]) o);
             } else if (o instanceof String[]) {
                 return parseArray((String[]) o);
-            } else return parseArray((Object[]) o);
+            } else {return parseArray((Object[]) o);}
         }
         if (o instanceof Collection) return parseArray((Collection) o);
         return null;
     }
 
     private static String parseArray(short[] a) {
-        if (a == null)
-            return null;
+        if (a == null) {return null;}
         int iMax = a.length - 1;
-        if (iMax == -1)
-            return null;
+        if (iMax == -1) {return null;}
 
         StringBuilder b = new StringBuilder();
         b.append("( ");
         for (int i = 0; ; i++) {
             b.append(a[i]);
-            if (i == iMax)
-                return b.append(" )").toString();
+            if (i == iMax) {return b.append(" )").toString();}
             b.append(", ");
         }
     }
 
     private static String parseArray(int[] a) {
-        if (a == null)
-            return "";
+        if (a == null) {return "";}
         int iMax = a.length - 1;
-        if (iMax == -1)
-            return "";
+        if (iMax == -1) {return "";}
 
         StringBuilder b = new StringBuilder();
         b.append("( ");
         for (int i = 0; ; i++) {
             b.append(a[i]);
-            if (i == iMax)
-                return b.append(" )").toString();
+            if (i == iMax) {return b.append(" )").toString();}
             b.append(", ");
         }
     }
 
     private static String parseArray(long[] a) {
-        if (a == null)
-            return "";
+        if (a == null) {return "";}
         int iMax = a.length - 1;
-        if (iMax == -1)
-            return "";
+        if (iMax == -1) {return "";}
 
         StringBuilder b = new StringBuilder();
         b.append("( ");
         for (int i = 0; ; i++) {
             b.append(a[i]);
-            if (i == iMax)
-                return b.append(" )").toString();
+            if (i == iMax) {return b.append(" )").toString();}
             b.append(", ");
         }
     }
 
     private static String parseArray(float[] a) {
-        if (a == null)
-            return "";
+        if (a == null) {return "";}
         int iMax = a.length - 1;
-        if (iMax == -1)
-            return "";
+        if (iMax == -1) {return "";}
 
         StringBuilder b = new StringBuilder();
         b.append("( ");
         for (int i = 0; ; i++) {
             b.append(a[i]);
-            if (i == iMax)
-                return b.append(" )").toString();
+            if (i == iMax) {return b.append(" )").toString();}
             b.append(", ");
         }
     }
 
     private static String parseArray(double[] a) {
-        if (a == null)
-            return "";
+        if (a == null) {return "";}
         int iMax = a.length - 1;
-        if (iMax == -1)
-            return "";
+        if (iMax == -1) {return "";}
 
         StringBuilder b = new StringBuilder();
         b.append("( ");
         for (int i = 0; ; i++) {
             b.append(a[i]);
-            if (i == iMax)
-                return b.append(" )").toString();
+            if (i == iMax) {return b.append(" )").toString();}
             b.append(", ");
         }
     }
 
     private static String parseArray(char[] a) {
-        if (a == null)
-            return "";
+        if (a == null) {return "";}
         int iMax = a.length - 1;
-        if (iMax == -1)
-            return "";
+        if (iMax == -1) {return "";}
 
         StringBuilder b = new StringBuilder();
         b.append("( ");
         for (int i = 0; ; i++) {
             b.append(a[i]);
-            if (i == iMax)
-                return b.append(" )").toString();
+            if (i == iMax) {return b.append(" )").toString();}
             b.append(", ");
         }
     }
 
     private static String parseArray(boolean[] a) {
-        if (a == null)
-            return "";
+        if (a == null) {return "";}
         int iMax = a.length - 1;
-        if (iMax == -1)
-            return "";
+        if (iMax == -1) {return "";}
 
         StringBuilder b = new StringBuilder();
         b.append("( ");
         for (int i = 0; ; i++) {
             b.append(a[i]);
-            if (i == iMax)
-                return b.append(" )").toString();
+            if (i == iMax) {return b.append(" )").toString();}
             b.append(", ");
         }
     }
 
     private static String parseArray(String[] a) {
-        if (a == null)
-            return "";
+        if (a == null) {return "";}
         int iMax = a.length - 1;
-        if (iMax == -1)
-            return "";
+        if (iMax == -1) {return "";}
 
         StringBuilder b = new StringBuilder();
         b.append("( ");
         for (int i = 0; ; i++) {
             b.append(a[i]);
-            if (i == iMax)
-                return b.append(" )").toString();
+            if (i == iMax) {return b.append(" )").toString();}
             b.append(", ");
         }
     }
 
     private static String parseArray(Object[] a) {
-        if (a == null)
-            return "";
+        if (a == null) {return "";}
         int iMax = a.length - 1;
-        if (iMax == -1)
-            return "";
+        if (iMax == -1) {return "";}
 
         StringBuilder b = new StringBuilder();
         b.append("( ");
         for (int i = 0; ; i++) {
             b.append(a[i]);
-            if (i == iMax)
-                return b.append(" )").toString();
+            if (i == iMax) {return b.append(" )").toString();}
             b.append(", ");
         }
     }
 
     private static String parseArray(Collection<?> collection) {
-        if (collection == null)
-            return "";
+        if (collection == null) {return "";}
 
         Iterator<?> iterator = collection.iterator();
         if (!iterator.hasNext()) {
@@ -465,11 +446,10 @@ public abstract class ArgsParser {
         b.append("( ");
         while (iterator.hasNext()) {
             Object next = iterator.next();
-            if (next instanceof String || next instanceof Character || next.equals(Character.TYPE))
+            if (next instanceof String || next instanceof Character || next.equals(Character.TYPE)) {
                 b.append("'").append(next).append("'");
-            else b.append(next);
-            if (iterator.hasNext()) b.append(", ");
-            else b.append(")");
+            } else {b.append(next);}
+            if (iterator.hasNext()) {b.append(", ");} else b.append(")");
         }
 
         return b.toString();

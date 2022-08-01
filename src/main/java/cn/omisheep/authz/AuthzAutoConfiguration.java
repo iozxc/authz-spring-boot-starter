@@ -79,7 +79,8 @@ import java.util.HashMap;
 public class AuthzAutoConfiguration {
 
     @Autowired
-    private void init(ConfigurableEnvironment environment, AuthzProperties properties) {
+    private void init(ConfigurableEnvironment environment,
+                      AuthzProperties properties) {
         LogUtils.setLogLevel(properties.getLog());
         String name = environment.getProperty("spring.application.name");
 
@@ -123,7 +124,7 @@ public class AuthzAutoConfiguration {
         connectInfo.setPort(port);
         if (properties.getDashboard().isEnabled()) {
             String u = baseUrl;
-            if (!baseUrl.endsWith("/")) u = u + "/";
+            if (!baseUrl.endsWith("/")) {u = u + "/";}
             connectInfo.setDashboard(u + "authz.html");
         }
         AuthzAppVersion.connectInfo = connectInfo;
@@ -268,7 +269,8 @@ public class AuthzAutoConfiguration {
     }
 
     @Bean
-    public UserDevicesDict userDevicesDict(AuthzProperties properties, Cache cache) {
+    public UserDevicesDict userDevicesDict(AuthzProperties properties,
+                                           Cache cache) {
         return new UserDevicesDictByCache(properties, cache);
     }
 
@@ -321,7 +323,8 @@ public class AuthzAutoConfiguration {
     @Bean
     public AuCoreInitialization auCoreInitialization(AuthzProperties properties,
                                                      UserDevicesDict userDevicesDict,
-                                                     PermLibrary permLibrary, OpenAuthLibrary openAuthLibrary,
+                                                     PermLibrary permLibrary,
+                                                     OpenAuthLibrary openAuthLibrary,
                                                      Cache cache) {
         return new AuCoreInitialization(properties, userDevicesDict, permLibrary,
                                         openAuthLibrary, cache);
@@ -368,7 +371,8 @@ public class AuthzAutoConfiguration {
         }
 
         @Bean
-        public ServletRegistrationBean DashboardServlet(AuthzProperties properties, Cache cache) {
+        public ServletRegistrationBean DashboardServlet(AuthzProperties properties,
+                                                        Cache cache) {
             AuthzProperties.DashboardConfig dashboard = properties.getDashboard();
             ServletRegistrationBean<SupportServlet> bean =
                     new ServletRegistrationBean<>(new SupportServlet(dashboard, cache), "/authz-api/*",

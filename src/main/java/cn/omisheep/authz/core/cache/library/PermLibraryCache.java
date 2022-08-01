@@ -25,7 +25,7 @@ public class PermLibraryCache {
     public Object aroundRolesByUserId(ProceedingJoinPoint joinPoint) throws Throwable {
         Object[] args = joinPoint.getArgs();
         if (args.length != 1) return joinPoint.proceed();
-        return handle(Constants.USER_ROLES_KEY_PREFIX.get() + args[0], joinPoint);
+        return handle(Constants.ROLES_BY_USER_KEY_PREFIX.get() + args[0], joinPoint);
     }
 
     @Around("execution(* cn.omisheep.authz.core.auth.PermLibrary+.getPermissionsByRole(String))")
@@ -33,7 +33,8 @@ public class PermLibraryCache {
         return handle(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + joinPoint.getArgs()[0], joinPoint);
     }
 
-    private Object handle(String key, ProceedingJoinPoint joinPoint) throws Throwable {
+    private Object handle(String key,
+                          ProceedingJoinPoint joinPoint) throws Throwable {
         if (!cache.notKey(key)) return cache.get(key);
         Object result = joinPoint.proceed();
         if (result == null) {

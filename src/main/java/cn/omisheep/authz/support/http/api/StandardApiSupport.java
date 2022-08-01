@@ -27,11 +27,11 @@ public class StandardApiSupport implements ApiSupport {
 
     @Post(value = "/operate", desc = "权限操作通用接口")
     public Result operate(@JSON AuthzModifier modifier) {
-        if (modifier == null) return Result.FAIL.data();
+        if (modifier == null) {return Result.FAIL.data();}
         return AuthzManager.operate(modifier);
     }
 
-    @Get(value = "/version",desc= "版本号")
+    @Get(value = "/version", desc = "版本号")
     public String version() {
         return AuthzVersion.getVersion();
     }

@@ -27,7 +27,9 @@ public class AuthzGranterHelper extends BaseHelper {
      * @param deviceId   设备id
      * @return 授权后的tokenPair(accessToken, refreshToken)
      */
-    public static IssueToken grant(Object userId, String deviceType, String deviceId) {
+    public static IssueToken grant(Object userId,
+                                   String deviceType,
+                                   String deviceId) {
         TokenPair tokenPair = TokenHelper.createTokenPair(userId, deviceType, deviceId);
         if (grant(tokenPair, true)) return TokenHelper.createIssueToken(tokenPair);
         return null;
@@ -48,7 +50,8 @@ public class AuthzGranterHelper extends BaseHelper {
      * @param resp      保存于cookie / 不缓存
      * @return 登录是否成功
      */
-    public static boolean grant(TokenPair tokenPair, boolean resp) {
+    public static boolean grant(TokenPair tokenPair,
+                                boolean resp) {
         if (tokenPair == null) return false;
         try {
             HttpMeta            httpMeta    = AUtils.getCurrentHttpMeta();
@@ -113,21 +116,24 @@ public class AuthzGranterHelper extends BaseHelper {
         }
     }
 
-    public static void clearCookie(Object userId, String deviceType) {
+    public static void clearCookie(Object userId,
+                                   String deviceType) {
         AccessToken token = AUtils.getCurrentToken();
         if (token == null) return;
         if (userId == null) userId = token.getUserId();
         if (ObjectUtils.equals(token.getUserId(), userId) && StringUtils.equals(token.getDeviceType(),
-                                                                                deviceType)) clearCookie(userId);
+                                                                                deviceType)) {clearCookie(userId);}
     }
 
-    public static void clearCookie(Object userId, String deviceType, String deviceId) {
+    public static void clearCookie(Object userId,
+                                   String deviceType,
+                                   String deviceId) {
         AccessToken token = AUtils.getCurrentToken();
         if (token == null) return;
         if (userId == null) userId = token.getUserId();
         if (ObjectUtils.equals(token.getUserId(), userId) && StringUtils.equals(token.getDeviceType(),
                                                                                 deviceType) && StringUtils.equals(
-                token.getDeviceId(), deviceId)) clearCookie();
+                token.getDeviceId(), deviceId)) {clearCookie();}
     }
 
     public static void logout() {
@@ -153,7 +159,8 @@ public class AuthzGranterHelper extends BaseHelper {
         }
     }
 
-    public static void logout(@NonNull String deviceType, @Nullable String deviceId) {
+    public static void logout(@NonNull String deviceType,
+                              @Nullable String deviceId) {
         try {
             userDevicesDict.removeDevice(AuHelper.getUserId(), deviceType, deviceId);
             clearCookie(null, deviceType, deviceType);
@@ -167,12 +174,15 @@ public class AuthzGranterHelper extends BaseHelper {
         clearCookie(userId);
     }
 
-    public static void logout(@NonNull Object userId, @NonNull String deviceType) {
+    public static void logout(@NonNull Object userId,
+                              @NonNull String deviceType) {
         userDevicesDict.removeDevice(userId, deviceType, null);
         clearCookie(userId, deviceType);
     }
 
-    public static void logout(@NonNull Object userId, @NonNull String deviceType, @Nullable String deviceId) {
+    public static void logout(@NonNull Object userId,
+                              @NonNull String deviceType,
+                              @Nullable String deviceId) {
         userDevicesDict.removeDevice(userId, deviceType, deviceId);
         clearCookie(userId, deviceType, deviceId);
     }

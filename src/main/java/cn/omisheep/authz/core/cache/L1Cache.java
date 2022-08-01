@@ -22,7 +22,9 @@ public class L1Cache implements cn.omisheep.authz.core.cache.Cache {
 
     private final Cache<String, CacheItem> cache;
 
-    public L1Cache(Long maximumSize, String expireAfterCreateTime, String expireAfterUpdateTime,
+    public L1Cache(Long maximumSize,
+                   String expireAfterCreateTime,
+                   String expireAfterUpdateTime,
                    String expireAfterReadTime) {
         Caffeine<String, CacheItem> caffeine = Caffeine.newBuilder()
                 .scheduler(Scheduler.systemScheduler())
@@ -65,7 +67,9 @@ public class L1Cache implements cn.omisheep.authz.core.cache.Cache {
     }
 
     @Override
-    public <E> void set(@NonNull String key, @Nullable E element, long ttl) {
+    public <E> void set(@NonNull String key,
+                        @Nullable E element,
+                        long ttl) {
         cache.put(key, new CacheItem<>(ttl, element));
     }
 
@@ -88,7 +92,8 @@ public class L1Cache implements cn.omisheep.authz.core.cache.Cache {
     }
 
     @Override
-    public @NonNull <T> Map<String, T> get(@NonNull Set<String> keys, @NonNull Class<T> requiredType) {
+    public @NonNull <T> Map<String, T> get(@NonNull Set<String> keys,
+                                           @NonNull Class<T> requiredType) {
         HashMap<String, T>     map   = new HashMap<>();
         Map<String, CacheItem> items = cache.getAllPresent(keys);
         items.forEach((k, v) -> {

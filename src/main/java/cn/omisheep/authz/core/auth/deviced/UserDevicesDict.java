@@ -3,9 +3,7 @@ package cn.omisheep.authz.core.auth.deviced;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.config.Constants;
-import cn.omisheep.authz.core.tk.AccessToken;
-import cn.omisheep.authz.core.tk.RefreshToken;
-import cn.omisheep.authz.core.tk.TokenPair;
+import cn.omisheep.authz.core.tk.*;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.Collection;
@@ -50,17 +48,21 @@ public interface UserDevicesDict {
 
     // =========================   登入   ========================= //
 
-    void addUser(TokenPair tokenPair, HttpMeta httpMeta);
+    void addUser(TokenPair tokenPair,
+                 HttpMeta httpMeta);
 
     // =========================   刷新   ========================= //
 
-    boolean refreshUser(RefreshToken refresh, TokenPair tokenPair);
+    boolean refreshUser(RefreshToken refresh,
+                        TokenPair tokenPair);
 
     // =========================   登出   ========================= //
 
-    void removeDeviceByTokenId(Object userId, String refreshTokenId);
+    void removeDeviceByTid(Object userId, String tid);
 
-    void removeDevice(Object userId, String deviceType, String deviceId);
+    void removeDevice(Object userId,
+                      String deviceType,
+                      String deviceId);
 
     void removeAllDevice(Object userId);
 
@@ -68,7 +70,9 @@ public interface UserDevicesDict {
 
     // =========================   查找   ========================= //
 
-    Device getDevice(Object userId, String deviceType, String deviceId);
+    Device getDevice(Object userId,
+                     String deviceType,
+                     String deviceId);
 
     List<Object> listUserId();
 
@@ -91,7 +95,8 @@ public interface UserDevicesDict {
      * @param ms     毫秒书
      * @return 【在线/活跃】设备数组
      */
-    List<Device> listActiveUserDevices(Object userId, long ms);
+    List<Device> listActiveUserDevices(Object userId,
+                                       long ms);
 
     // =========================   other   ========================= //
 
@@ -99,14 +104,16 @@ public interface UserDevicesDict {
 
     void deviceClean(Object userId);
 
-    default void changeMaximumSameTypeDeviceCount(Object userId, int count) {
+    default void changeMaximumSameTypeDeviceCount(Object userId,
+                                                  int count) {
         AuthzProperties.UserConfig userConfig = UserDevicesDict.usersConfig
                 .computeIfAbsent(userId, r -> new AuthzProperties.UserConfig());
         userConfig.setMaximumSameTypeDeviceCount(count);
         deviceClean(userId);
     }
 
-    default void changeMaximumDeviceTotal(Object userId, int count) {
+    default void changeMaximumDeviceTotal(Object userId,
+                                          int count) {
         AuthzProperties.UserConfig userConfig = UserDevicesDict.usersConfig
                 .computeIfAbsent(userId, r -> new AuthzProperties.UserConfig());
         userConfig.setMaximumTotalDevice(count);
@@ -131,36 +138,42 @@ public interface UserDevicesDict {
 
 
     static String requestKey(AccessToken accessToken) {
-        return requestKey(accessToken.getUserId(), accessToken.getRefreshTokenId());
+        return requestKey(accessToken.getUserId(), accessToken.getId());
     }
 
-    static String requestKey(Object userId, String refreshTokenId) {
-        return Constants.USER_REQUEST_KEY_PREFIX.get() + userId + Constants.SEPARATOR + refreshTokenId;
+    static String requestKey(Object userId,
+                             String tid) {
+        return Constants.USER_REQUEST_KEY_PREFIX.get() + userId + Constants.SEPARATOR + tid;
     }
 
     static String key(AccessToken accessToken) {
-        return key(accessToken.getUserId(), accessToken.getRefreshTokenId());
+        return key(accessToken.getUserId(), accessToken.getId());
     }
 
     static String key(RefreshToken refreshToken) {
-        return key(refreshToken.getUserId(), refreshToken.getTokenId());
+        return key(refreshToken.getUserId(), refreshToken.getId());
     }
 
-    static String key(Object userId, String refreshTokenId) {
-        return Constants.USER_DEVICE_KEY_PREFIX.get() + userId + Constants.SEPARATOR + refreshTokenId;
+    static String key(Object userId,
+                      String tid) {
+        return Constants.USER_DEVICE_KEY_PREFIX.get() + userId + Constants.SEPARATOR + tid;
     }
 
     static String oauthKey(AccessToken accessToken) {
-        return oauthKey(accessToken.getUserId(), accessToken.getRefreshTokenId());
+        return oauthKey(accessToken.getUserId(), accessToken.getId());
     }
 
-    static String oauthKey(Object userId, String refreshTokenId) {
-        return Constants.OAUTH_USER_DEVICE_KEY_PREFIX.get() + userId + Constants.SEPARATOR + refreshTokenId;
+    static String oauthKey(Object userId,
+                           String tid) {
+        return Constants.OAUTH_USER_DEVICE_KEY_PREFIX.get() + userId + Constants.SEPARATOR + tid;
     }
 
-    static boolean equalsDeviceByTypeAndId(Device device, String deviceType, String deviceId) {
+    static boolean equalsDeviceByTypeAndId(Device device,
+                                           String deviceType,
+                                           String deviceId) {
         if (device == null) return false;
-        return StringUtils.equals(device.getDeviceType(), deviceType) && StringUtils.equals(device.getDeviceId(), deviceId);
+        return StringUtils.equals(device.getDeviceType(), deviceType) && StringUtils.equals(device.getDeviceId(),
+                                                                                            deviceId);
     }
 
 }

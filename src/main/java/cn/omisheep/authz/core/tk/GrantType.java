@@ -9,10 +9,21 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * @since 1.2.0
  */
 public enum GrantType {
+
     /**
      * 授权码模式
      */
-    AUTHORIZATION_CODE("authorization_code");
+    AUTHORIZATION_CODE("authorization_code"),
+
+    /**
+     * 密码模式(使用用户名，密码，直接获取token，在authz中为登录之后直接获取token)
+     */
+    PASSWORD("password"),
+
+    /**
+     * 客户端模式(无用户,用户向客户端注册,然后客户端以自己的名义向’服务端’获取资源)
+     */
+    CLIENT_CREDENTIALS("client_credentials");
 
     @JsonValue
     private final String type;

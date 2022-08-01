@@ -58,11 +58,11 @@ public class AuthzModifier {
 
     @Data
     public static class RateLimitInfo {
-        private String       window;
-        private int          maxRequests;
-        private List<String> punishmentTime;
-        private String       minInterval;
-        private List<String> associatedPatterns;
+        private String              window;
+        private int                 maxRequests;
+        private List<String>        punishmentTime;
+        private String              minInterval;
+        private List<String>        associatedPatterns;
         private RateLimit.CheckType checkType;
     }
 
@@ -114,7 +114,8 @@ public class AuthzModifier {
         public final int      i;
         final        String[] with;
 
-        Target(int i, String... with) {
+        Target(int i,
+               String... with) {
             this.i    = i;
             this.with = with;
         }

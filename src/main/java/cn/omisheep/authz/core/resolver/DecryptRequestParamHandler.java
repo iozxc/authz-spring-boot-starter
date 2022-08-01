@@ -33,7 +33,8 @@ public class DecryptRequestParamHandler implements HandlerMethodArgumentResolver
         return (parameter.hasParameterAnnotation(Decrypt.class) || parameter.hasMethodAnnotation(Decrypt.class));
     }
 
-    public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer modelAndViewContainer,
+    public Object resolveArgument(MethodParameter parameter,
+                                  ModelAndViewContainer modelAndViewContainer,
                                   NativeWebRequest nativeWebRequest,
                                   WebDataBinderFactory webDataBinderFactory) throws Exception {
         HttpServletRequest request = nativeWebRequest.getNativeRequest(HttpServletRequest.class);

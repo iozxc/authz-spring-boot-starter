@@ -119,7 +119,8 @@ public class PermissionDict {
         @JsonInclude(JsonInclude.Include.NON_EMPTY)
         private final Map<String, String> returnTypeTemplate;
 
-        private ArgsMeta(Class<?> type, Method method) {
+        private ArgsMeta(Class<?> type,
+                         Method method) {
             this.type               = type;
             this.method             = method;
             this.returnType         = method.getReturnType();
@@ -131,11 +132,14 @@ public class PermissionDict {
             return method.getName();
         }
 
-        public static ArgsMeta of(Class<?> type, Method method) {
+        public static ArgsMeta of(Class<?> type,
+                                  Method method) {
             return new ArgsMeta(type, method);
         }
 
-        public static ArgsMeta of(Class<?> type, String methodName, Class<?>... args) {
+        public static ArgsMeta of(Class<?> type,
+                                  String methodName,
+                                  Class<?>... args) {
             try {
                 return new ArgsMeta(type, type.getMethod(methodName, args));
             } catch (NoSuchMethodException e) {
@@ -144,7 +148,9 @@ public class PermissionDict {
             }
         }
 
-        public static ArgsMeta of(Object type, String methodName, Class<?>... args) {
+        public static ArgsMeta of(Object type,
+                                  String methodName,
+                                  Class<?>... args) {
             return of(type.getClass(), methodName, args);
         }
 
@@ -198,7 +204,8 @@ public class PermissionDict {
         return meta.parameterList;
     }
 
-    public static Object argsHandle(String argName, Object... otherArgs) {
+    public static Object argsHandle(String argName,
+                                    Object... otherArgs) {
         ArgsMeta meta = _argsMetadata.get(argName);
         if (meta == null) {
             LogUtils.error("arg {} is null", argName);
@@ -263,9 +270,10 @@ public class PermissionDict {
                     Map<String, PermRolesMeta> target = _authzMetadata.get(authzModifier.getApi());
                     PermRolesMeta              build  = authzModifier.build();
                     target.put(authzModifier.getMethod(), build);
-                    if (build.non()) _certificatedMetadata.get(authzModifier.getApi()).remove(
-                            authzModifier.getMethod());
-                    else _certificatedMetadata.get(authzModifier.getApi()).add(authzModifier.getMethod());
+                    if (build.non()) {
+                        _certificatedMetadata.get(authzModifier.getApi()).remove(
+                                authzModifier.getMethod());
+                    } else {_certificatedMetadata.get(authzModifier.getApi()).add(authzModifier.getMethod());}
                     return Result.SUCCESS;
                 }
                 case MODIFY:
@@ -290,12 +298,13 @@ public class PermissionDict {
                 case GET:
                 case READ:
                     if (authzModifier.getApi() == null && authzModifier.getMethod() == null) return rolePermission;
-                    if (authzModifier.getApi() == null)
+                    if (authzModifier.getApi() == null) {
                         return rolePermission.values().stream().filter(
                                 stringPermRolesMetaMap -> stringPermRolesMetaMap.containsKey(
                                         authzModifier.getMethod())).map(
                                 stringPermRolesMetaMap -> stringPermRolesMetaMap.get(
                                         authzModifier.getMethod())).collect(Collectors.toList());
+                    }
                     if (authzModifier.getMethod() == null) {
                         return rolePermission.get(authzModifier.getApi());
                     }
@@ -319,15 +328,20 @@ public class PermissionDict {
 
             if (target == null &&
                     (authzModifier.getOperate() == AuthzModifier.Operate.GET || authzModifier.getOperate() == AuthzModifier.Operate.READ)) {
-                if (authzModifier.getTarget() == null && authzModifier.getValue() == null)
+                if (authzModifier.getTarget() == null && authzModifier.getValue() == null) {
                     return meta.getParamPermissionsMetadata();
+                }
                 HashMap<Object, Object>    map = new HashMap<>();
                 Map<String, ParamMetadata> m1  = meta.getParamPermissionsMetadata().get(PATH_VARIABLE);
                 Map<String, ParamMetadata> m2  = meta.getParamPermissionsMetadata().get(REQUEST_PARAM);
-                if (m1 != null && m1.containsKey(authzModifier.getValue())) map.put(PATH_VARIABLE.getVal(),
-                                                                                    m1.get(authzModifier.getValue()));
-                if (m2 != null && m2.containsKey(authzModifier.getValue())) map.put(REQUEST_PARAM.getVal(),
-                                                                                    m2.get(authzModifier.getValue()));
+                if (m1 != null && m1.containsKey(authzModifier.getValue())) {
+                    map.put(PATH_VARIABLE.getVal(),
+                            m1.get(authzModifier.getValue()));
+                }
+                if (m2 != null && m2.containsKey(authzModifier.getValue())) {
+                    map.put(REQUEST_PARAM.getVal(),
+                            m2.get(authzModifier.getValue()));
+                }
                 return map;
             }
 
@@ -363,8 +377,9 @@ public class PermissionDict {
                     return metaList;
                 case DEL:
                 case DELETE:
-                    if (authzModifier.getIndex() != null) metaList.remove(metaList.get(authzModifier.getIndex()));
-                    else {
+                    if (authzModifier.getIndex() != null) {
+                        metaList.remove(metaList.get(authzModifier.getIndex()));
+                    } else {
                         if (target == AuthzModifier.Target.PATH) {
                             meta.getParamPermissionsMetadata().get(PATH_VARIABLE).remove(authzModifier.getValue());
                         } else {
@@ -377,15 +392,11 @@ public class PermissionDict {
                     PermRolesMeta build = authzModifier.build();
                     PermRolesMeta.Meta m = metaList.get(authzModifier.getIndex());
                     if (authzModifier.getTarget().contains("role")) {
-                        if (build.getRequireRoles() != null)
-                            m.setRequire(build.getRequireRoles());
-                        if (build.getExcludeRoles() != null)
-                            m.setExclude(build.getExcludeRoles());
+                        if (build.getRequireRoles() != null) {m.setRequire(build.getRequireRoles());}
+                        if (build.getExcludeRoles() != null) {m.setExclude(build.getExcludeRoles());}
                     } else {
-                        if (build.getRequirePermissions() != null)
-                            m.setRequire(build.getRequirePermissions());
-                        if (build.getExcludePermissions() != null)
-                            m.setExclude(build.getExcludePermissions());
+                        if (build.getRequirePermissions() != null) {m.setRequire(build.getRequirePermissions());}
+                        if (build.getExcludePermissions() != null) {m.setExclude(build.getExcludePermissions());}
                     }
                     if (authzModifier.getRange() != null) {
                         m.setRange(new HashSet<>(authzModifier.getRange()));
@@ -413,7 +424,8 @@ public class PermissionDict {
         }
     }
 
-    private static Object[] getParamMetaList(PermRolesMeta meta, AuthzModifier authzModifier) {
+    private static Object[] getParamMetaList(PermRolesMeta meta,
+                                             AuthzModifier authzModifier) {
         boolean       isAdd = authzModifier.getOperate() == AuthzModifier.Operate.ADD;
         ParamMetadata paramMetadata;
         if (meta == null) {
@@ -619,14 +631,17 @@ public class PermissionDict {
                     case DELETE:
                         Integer index = authzModifier.getIndex();
                         if (_dataPermMetadata.get(className) == null) return Result.FAIL;
-                        if (index == null) _dataPermMetadata.get(className).clear();
-                        else _dataPermMetadata.get(className).remove(index.intValue());
+                        if (index == null) {_dataPermMetadata.get(className).clear();} else {
+                            _dataPermMetadata.get(
+                                    className).remove(index.intValue());
+                        }
                         break;
                     case GET:
                     case READ:
                         if (_dataPermMetadata.get(className) == null) return dataPermission;
-                        if (authzModifier.getIndex() == null) return dataPermission.get(className);
-                        else return dataPermission.get(className).get(authzModifier.getIndex());
+                        if (authzModifier.getIndex() == null) {return dataPermission.get(className);} else {
+                            return dataPermission.get(className).get(authzModifier.getIndex());
+                        }
                     default:
                         return Result.FAIL;
                 }
@@ -855,7 +870,8 @@ public class PermissionDict {
                     ipRangeMeta.getDeny().addAll(iFc.getDeny());
                 }
             }
-            if (ipRangeMeta.getDeny() != null && !ipRangeMeta.getDeny().isEmpty() || ipRangeMeta.getAllow() != null && !ipRangeMeta.getAllow().isEmpty()) {
+            if (ipRangeMeta.getDeny() != null && !ipRangeMeta.getDeny()
+                    .isEmpty() || ipRangeMeta.getAllow() != null && !ipRangeMeta.getAllow().isEmpty()) {
                 mtds.forEach(method -> patterns.forEach(
                         patternValue -> _ipRangeMeta.computeIfAbsent(patternValue, r -> new HashMap<>()).put(
                                 method, ipRangeMeta)));
@@ -948,9 +964,10 @@ public class PermissionDict {
                 toBeLoadedRolesKeys.forEach(perms -> map.put(iterator.next(), perms));
                 map.forEach((role, v) -> {
                     Set<String> permissions = permLibrary.getPermissionsByRole(role);
-                    if (permissions != null)
+                    if (permissions != null) {
                         cache.setSneaky(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role, permissions,
                                         Cache.INFINITE);
+                    }
                 });
             });
         }

@@ -12,8 +12,9 @@ public abstract class RuleParser {
 
     public static String parseRuleToString(Rule rule) {
         String parse = parseRuleToStringNotTrim(rule);
-        if (parse.startsWith("(") && parse.endsWith(")")) return parse.substring(2, parse.length() - 2);
-        else return parse;
+        if (parse.startsWith("(") && parse.endsWith(")")) {return parse.substring(2, parse.length() - 2);} else {
+            return parse;
+        }
     }
 
     private static String parseRuleToStringNotTrim(Rule rule) {
@@ -25,8 +26,11 @@ public abstract class RuleParser {
             Iterator<Rule> iterator = rule.getRules().iterator();
             while (iterator.hasNext()) {
                 stringBuilder.append(parseRuleToStringNotTrim(iterator.next()));
-                if (iterator.hasNext()) stringBuilder.append(" ").append(op).append(" ");
-                else stringBuilder.append(" ");
+                if (iterator.hasNext()) {
+                    stringBuilder.append(" ").append(op).append(" ");
+                } else {
+                    stringBuilder.append(" ");
+                }
             }
             stringBuilder.append(")");
             return stringBuilder.toString();
@@ -70,7 +74,9 @@ public abstract class RuleParser {
         return to(km, sb, n);
     }
 
-    private static Rule to(Map<String, Rule> map, StringBuilder info, int n) {
+    private static Rule to(Map<String, Rule> map,
+                           StringBuilder info,
+                           int n) {
         String[] or = info.toString().split(" [oO][rR] ");
         or = Arrays.stream(or).map(String::trim).toArray(String[]::new);
         Rule rr = new Rule();

@@ -24,7 +24,8 @@ public class AuthzMap implements Map<Object, Object> {
         return v != null ? String.valueOf(v) : null;
     }
 
-    protected void setValue(String name, String v) {
+    protected void setValue(String name,
+                            String v) {
         if (v == null) {
             map.remove(name);
         } else {
@@ -49,7 +50,8 @@ public class AuthzMap implements Map<Object, Object> {
         }
     }
 
-    protected void setDate(String name, Date d) {
+    protected void setDate(String name,
+                           Date d) {
         if (d == null) {
             map.remove(name);
         } else {
@@ -83,7 +85,8 @@ public class AuthzMap implements Map<Object, Object> {
     }
 
     @Override
-    public Object put(Object s, Object o) {
+    public Object put(Object s,
+                      Object o) {
         if (o == null) {
             return map.remove(s);
         } else {

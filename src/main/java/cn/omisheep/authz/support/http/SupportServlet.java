@@ -43,7 +43,8 @@ public class SupportServlet extends HttpServlet {
         return !users.isEmpty();
     }
 
-    public SupportServlet(AuthzProperties.DashboardConfig dashboardConfig, Cache cache) {
+    public SupportServlet(AuthzProperties.DashboardConfig dashboardConfig,
+                          Cache cache) {
         this.cache = cache;
 
         this.requireLogin = !StringUtils.isEmpty(dashboardConfig.getUsername()) && !StringUtils.isEmpty(
@@ -69,9 +70,10 @@ public class SupportServlet extends HttpServlet {
         }
     }
 
-    public static User login(String username, String password) {
-        if (users.isEmpty()) return null;
-        if (username == null || password == null) return null;
+    public static User login(String username,
+                             String password) {
+        if (users.isEmpty()) {return null;}
+        if (username == null || password == null) {return null;}
         if (users.stream().anyMatch(
                 u -> StringUtils.equals(u.getUsername(), username) && StringUtils.equals(u.getPassword(), password))) {
             return new User().setUsername(username).setPassword(password);
@@ -79,7 +81,8 @@ public class SupportServlet extends HttpServlet {
         return null;
     }
 
-    public static User auth(HttpServletRequest request, Cache cache) {
+    public static User auth(HttpServletRequest request,
+                            Cache cache) {
         String uuid1    = request.getHeader("uuid");
         String uuid     = uuid1 != null ? uuid1 : request.getParameter("uuid");
         Object username = cache.get(Constants.DASHBOARD_KEY_PREFIX.get() + uuid);
@@ -93,11 +96,12 @@ public class SupportServlet extends HttpServlet {
     }
 
     @Override
-    public void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    public void service(HttpServletRequest request,
+                        HttpServletResponse response) throws ServletException, IOException {
         String contextPath = request.getContextPath();
         String servletPath = request.getServletPath();
         String requestURI  = request.getRequestURI();
-        if (contextPath == null) contextPath = "";
+        if (contextPath == null) {contextPath = "";}
         String uri = contextPath + servletPath;
         String path;
         if (Objects.equals(servletPath, "/authz.html")) {
@@ -108,8 +112,12 @@ public class SupportServlet extends HttpServlet {
 
         response.setCharacterEncoding("utf-8");
 
-        if (!checkIp(request, response)) return; // 检查ip
-        if (gotoIndex(contextPath, path, request, response)) return; // 跳转匹配
+        if (!checkIp(request, response)) {
+            return; // 检查ip
+        }
+        if (gotoIndex(contextPath, path, request, response)) {
+            return; // 跳转匹配
+        }
 
         if ("/authz-api".equals(servletPath) && path.startsWith("/v1")) {
             apiHandler.process(request, response, path, !requireLogin || auth(request, cache) != null);
@@ -119,7 +127,8 @@ public class SupportServlet extends HttpServlet {
         returnResourceFile(path, uri, request, response);
     }
 
-    private boolean checkIp(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    private boolean checkIp(HttpServletRequest request,
+                            HttpServletResponse response) throws IOException {
         try {
             if (!isPermittedRequest(request)) {
                 nopermit(response);
@@ -132,7 +141,9 @@ public class SupportServlet extends HttpServlet {
         return true;
     }
 
-    private boolean gotoIndex(String contextPath, String path, HttpServletRequest request,
+    private boolean gotoIndex(String contextPath,
+                              String path,
+                              HttpServletRequest request,
                               HttpServletResponse response) throws IOException {
         if ("".equals(path)) {
             if (contextPath.equals("") || contextPath.equals("/")) {
@@ -155,10 +166,12 @@ public class SupportServlet extends HttpServlet {
         if (text == null) {
             response.getWriter().write("");
             response.setStatus(404);
-        } else response.getWriter().write(text);
+        } else {response.getWriter().write(text);}
     }
 
-    private void returnResourceFile(String fileName, String uri, HttpServletRequest request,
+    private void returnResourceFile(String fileName,
+                                    String uri,
+                                    HttpServletRequest request,
                                     HttpServletResponse response) throws IOException {
         String filePath;
         if (Objects.equals(fileName, "/authz.html")) {
@@ -225,7 +238,8 @@ public class SupportServlet extends HttpServlet {
         return true;
     }
 
-    private void sendRedirect(HttpServletRequest request, HttpServletResponse response,
+    private void sendRedirect(HttpServletRequest request,
+                              HttpServletResponse response,
                               String path) throws IOException {
         Map<String, String[]> parameterMap = request.getParameterMap();
         if (parameterMap.isEmpty()) {

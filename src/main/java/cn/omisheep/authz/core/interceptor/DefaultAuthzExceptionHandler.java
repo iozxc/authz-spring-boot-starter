@@ -21,19 +21,23 @@ public class DefaultAuthzExceptionHandler implements AuthzExceptionHandler {
     public DefaultAuthzExceptionHandler(AuthzProperties.ResponseConfig config) {this.config = config;}
 
     @Override
-    public boolean handle(HttpServletRequest request, HttpServletResponse response,
-                          HttpMeta httpMeta, ExceptionStatus firstExceptionStatus, List<Object> errorObjects) throws Exception {
+    public boolean handle(HttpServletRequest request,
+                          HttpServletResponse response,
+                          HttpMeta httpMeta,
+                          ExceptionStatus firstExceptionStatus,
+                          List<Object> errorObjects) throws Exception {
         if (firstExceptionStatus.equals(ExceptionStatus.MISMATCHED_URL)) {
-            httpMeta.log("「普通访问(uri不存在)」 \tmethod: [{}] , ip : [{}] , path: [{}]   ", httpMeta.getMethod(), httpMeta.getIp(), httpMeta.getApi());
+            httpMeta.log("「普通访问(uri不存在)」 \tmethod: [{}] , ip : [{}] , path: [{}]   ", httpMeta.getMethod(),
+                         httpMeta.getIp(), httpMeta.getApi());
             return true;
         }
 
         if (config.isAlwaysOk()) {
             HttpUtils.returnResponse(200,
-                    Result.of(firstExceptionStatus.getCode(), firstExceptionStatus.getMessage()));
+                                     Result.of(firstExceptionStatus.getCode(), firstExceptionStatus.getMessage()));
         } else {
             HttpUtils.returnResponse(firstExceptionStatus.getHttpStatus(),
-                    Result.of(firstExceptionStatus.getCode(), firstExceptionStatus.getMessage()));
+                                     Result.of(firstExceptionStatus.getCode(), firstExceptionStatus.getMessage()));
         }
 
         return false;

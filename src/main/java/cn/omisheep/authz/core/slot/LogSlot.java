@@ -17,7 +17,9 @@ public class LogSlot implements Slot {
     }
 
     @Override
-    public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
+    public void chain(HttpMeta httpMeta,
+                      HandlerMethod handler,
+                      Error error) {
         httpMeta.exportLog();
     }
 }

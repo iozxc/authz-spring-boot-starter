@@ -12,24 +12,24 @@ import lombok.experimental.Accessors;
 public class RefreshToken {
 
     /**
+     * id
+     */
+    private final String id;
+
+    /**
      * token字符串
      */
     private final String token;
 
     /**
-     * refresh token id
-     */
-    private final String tokenId;
-
-    /**
      * 多少时间过期
      */
-    private final Integer expiredIn;
+    private final Integer expiresIn;
 
     /**
      * 过期时间戳
      */
-    private final Long expiredAt;
+    private final Long expiresAt;
 
     /**
      * 用户id

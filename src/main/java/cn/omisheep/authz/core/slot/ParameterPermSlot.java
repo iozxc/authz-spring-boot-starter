@@ -31,21 +31,25 @@ import static cn.omisheep.authz.core.util.LogUtils.logs;
 @SuppressWarnings("all")
 public class ParameterPermSlot implements Slot {
 
-    private final PermLibrary    permLibrary;
+    private final PermLibrary permLibrary;
 
     public ParameterPermSlot(PermLibrary permLibrary) {
-        this.permLibrary    = permLibrary;
+        this.permLibrary = permLibrary;
     }
 
     @Override
-    public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
+    public void chain(HttpMeta httpMeta,
+                      HandlerMethod handler,
+                      Error error) {
         if (!httpMeta.isRequireProtect()) return;
-        PermRolesMeta permRolesMeta = PermissionDict.getRolePermission().get(httpMeta.getApi()).get(httpMeta.getMethod());
+        PermRolesMeta permRolesMeta = PermissionDict.getRolePermission().get(httpMeta.getApi()).get(
+                httpMeta.getMethod());
         if (permRolesMeta.getParamPermissionsMetadata() == null) return;
         Set<String> roles       = null;
         Set<String> permissions = null;
 
-        Map<String, String> pathVariables = (Map<String, String>) httpMeta.getRequest().getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+        Map<String, String> pathVariables = (Map<String, String>) httpMeta.getRequest().getAttribute(
+                HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
 
         for (MethodParameter parameter : handler.getMethodParameters()) {
             RequestParam requestParam = AnnotationUtils.getAnnotation(parameter.getParameter(), RequestParam.class);
@@ -84,18 +88,20 @@ public class ParameterPermSlot implements Slot {
             List<PermRolesMeta.Meta> rolesMetaList = paramMetadata.getRolesMetaList();
             rolesMetaCheck:
             if (rolesMetaList != null && !rolesMetaList.isEmpty()) {
-                if (!httpMeta.isHasToken()) {
+                if (!httpMeta.hasToken()) {
                     logs("Require Login", httpMeta, permRolesMeta);
                     error.error(ExceptionStatus.REQUIRE_LOGIN);
                     return;
                 }
 
-                if (roles==null) roles = httpMeta.getRoles();
+                if (roles == null) roles = httpMeta.getRoles();
 
-                List<PermRolesMeta.Meta> resourcesMeta  = rolesMetaList.stream().filter(meta -> meta.getResources() != null).collect(Collectors.toList());
-                List<PermRolesMeta.Meta> rangeMeta      = rolesMetaList.stream().filter(meta -> meta.getRange() != null).collect(Collectors.toList());
-                boolean                  next_resources = true; // 默认让过，但是如果值匹配上但没有对应role，则不让通过
-                boolean                  next_range     = true; // 默认让过。但是如果某个用户有对应的role。则看这些角色里面是否能拿出一个让过。如果都不让过。则不通过。反之通过
+                List<PermRolesMeta.Meta> resourcesMeta = rolesMetaList.stream().filter(
+                        meta -> meta.getResources() != null).collect(Collectors.toList());
+                List<PermRolesMeta.Meta> rangeMeta = rolesMetaList.stream().filter(
+                        meta -> meta.getRange() != null).collect(Collectors.toList());
+                boolean next_resources = true; // 默认让过，但是如果值匹配上但没有对应role，则不让通过
+                boolean next_range     = true; // 默认让过。但是如果某个用户有对应的role。则看这些角色里面是否能拿出一个让过。如果都不让过。则不通过。反之通过
                 label_resources:
                 for (PermRolesMeta.Meta meta : resourcesMeta) {
                     if (ValueMatcher.match(meta.getResources(), value, paramType)) { // 值是否匹配，若匹配上
@@ -136,10 +142,12 @@ public class ParameterPermSlot implements Slot {
 
                 permissions = httpMeta.getPermissions();
 
-                List<PermRolesMeta.Meta> resourcesMeta  = permissionsMetaList.stream().filter(meta -> meta.getResources() != null).collect(Collectors.toList());
-                List<PermRolesMeta.Meta> rangeMeta      = permissionsMetaList.stream().filter(meta -> meta.getRange() != null).collect(Collectors.toList());
-                boolean                  next_resources = true; // 默认让过，但是如果值匹配上但没有对应perm，则不让通过
-                boolean                  next_range     = true;  // 默认让过。但是如果某个用户有对应的perm。则看这些角色里面是否能拿出一个让过。如果都不让过。则不通过。反之通过
+                List<PermRolesMeta.Meta> resourcesMeta = permissionsMetaList.stream().filter(
+                        meta -> meta.getResources() != null).collect(Collectors.toList());
+                List<PermRolesMeta.Meta> rangeMeta = permissionsMetaList.stream().filter(
+                        meta -> meta.getRange() != null).collect(Collectors.toList());
+                boolean next_resources = true; // 默认让过，但是如果值匹配上但没有对应perm，则不让通过
+                boolean next_range     = true;  // 默认让过。但是如果某个用户有对应的perm。则看这些角色里面是否能拿出一个让过。如果都不让过。则不通过。反之通过
                 label_resources:
                 for (PermRolesMeta.Meta meta : resourcesMeta) {
                     if (!ValueMatcher.match(meta.getResources(), value, paramType)) { // 值是否匹配，若匹配上

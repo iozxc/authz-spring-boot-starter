@@ -77,7 +77,8 @@ public abstract class SupportUtils {
         return output.toByteArray();
     }
 
-    public static void copy(InputStream input, OutputStream output) throws IOException {
+    public static void copy(InputStream input,
+                            OutputStream output) throws IOException {
         final int EOF = -1;
 
         byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
@@ -99,11 +100,14 @@ public abstract class SupportUtils {
         }
     }
 
-    public static void toJSON(HttpServletResponse response, Object o) {
+    public static void toJSON(HttpServletResponse response,
+                              Object o) {
         try {
             response.setContentType("application/json;charset=utf-8");
-            if (o instanceof String) response.getWriter().println(o);
-            else response.getWriter().println(JSONUtils.toJSONString(o));
+            if (o instanceof String) {response.getWriter().println(o);} else {
+                response.getWriter()
+                        .println(JSONUtils.toJSONString(o));
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }

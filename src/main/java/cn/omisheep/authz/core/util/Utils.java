@@ -34,11 +34,13 @@ public abstract class Utils {
         }
     }
 
-    public static String format(String format, Object... vals) {
+    public static String format(String format,
+                                Object... vals) {
         return StringUtils.format(format, vals);
     }
 
-    public static boolean isIgnoreSuffix(String uri, String... suffix) {
+    public static boolean isIgnoreSuffix(String uri,
+                                         String... suffix) {
         for (String s : suffix) {
             if (uri.endsWith(s)) return true;
         }

@@ -71,13 +71,15 @@ public class Httpd {
     @JsonIgnore
     private static final Map<LimitMeta, List<RequestPool>> associatedIpPoolsCache = new HashMap<>();
 
-    public static RequestPool getIpRequestPools(String api, String method) {
+    public static RequestPool getIpRequestPools(String api,
+                                                String method) {
         ConcurrentHashMap<String, RequestPool> map = _ipRequestPools.get(api);
         if (map == null) return null;
         return map.get(method);
     }
 
-    public static RequestPool getUserIdRequestPool(String api, String method) {
+    public static RequestPool getUserIdRequestPool(String api,
+                                                   String method) {
         ConcurrentHashMap<String, RequestPool> map = _userIdRequestPools.get(api);
         if (map == null) return null;
         return map.get(method);
@@ -91,7 +93,8 @@ public class Httpd {
         private static final long serialVersionUID = -284927742264879191L;
     }
 
-    public static LimitMeta getLimitMetadata(String method, String api) {
+    public static LimitMeta getLimitMetadata(String method,
+                                             String api) {
         Map<String, LimitMeta> limitMetaMap = _rateLimitMetadata.get(api);
         if (limitMetaMap == null) return null;
         return limitMetaMap.get(method);
@@ -101,7 +104,8 @@ public class Httpd {
         pathMatcherMap.put(pattern, pathPatternParser.parse(pattern));
     }
 
-    public static boolean match(String pattern, String path) {
+    public static boolean match(String pattern,
+                                String path) {
         PathPattern pathPattern = pathMatcherMap.get(pattern);
         if (pathPattern == null) return false;
         return pathPattern.matches(PathContainer.parsePath(path));
@@ -116,7 +120,8 @@ public class Httpd {
         return null;
     }
 
-    public static String getPattern(String method, String path) {
+    public static String getPattern(String method,
+                                    String path) {
         for (Map.Entry<String, PathPattern> entry : pathMatcherMap.entrySet()) {
             if (entry.getValue().matches(PathContainer.parsePath(path))) {
                 ConcurrentHashMap<String, RequestPool> map = _ipRequestPools.get(entry.getKey());
@@ -177,18 +182,25 @@ public class Httpd {
         return oIpPools;
     }
 
-    public static void forbid(long now, RequestMeta requestMeta, LimitMeta limitMeta, String method, String api) {
+    public static void forbid(long now,
+                              RequestMeta requestMeta,
+                              LimitMeta limitMeta,
+                              String method,
+                              String api) {
         requestMeta.forbidden(method, api, limitMeta);
         String ip     = requestMeta.getIp();
         Object userId = requestMeta.getUserId();
         for (Httpd.RequestPool ipPool : associatedIpPools(limitMeta)) {
             if (!ipPool.containsKey(ip)) {
                 ipPool.put(ip, new RequestMeta(now, ip, userId).forbidden(method, api, limitMeta));
-            } else ipPool.get(ip).forbidden(method, api, limitMeta);
+            } else {ipPool.get(ip).forbidden(method, api, limitMeta);}
         }
     }
 
-    public static void relive(RequestMeta requestMeta, LimitMeta limitMeta, String method, String api) {
+    public static void relive(RequestMeta requestMeta,
+                              LimitMeta limitMeta,
+                              String method,
+                              String api) {
         String ip = requestMeta.getIp();
         requestMeta.relive(method, api, limitMeta);
         associatedIpPools(limitMeta).forEach(ipPool -> {
@@ -275,10 +287,11 @@ public class Httpd {
                             getPatterns(key).forEach(
                                     patternValue -> {
                                         LimitMeta limitMeta = cMap.get(value.getBeanType().getName());
-                                        if (limitMeta != null)
+                                        if (limitMeta != null) {
                                             _rateLimitMetadata
                                                     .computeIfAbsent(patternValue, r -> new HashMap<>()).put(
                                                             method.toString(), limitMeta);
+                                        }
                                     });
                         });
             }

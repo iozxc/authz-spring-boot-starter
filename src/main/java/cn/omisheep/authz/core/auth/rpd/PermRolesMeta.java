@@ -45,7 +45,9 @@ public class PermRolesMeta {
         return paramPermissionsMetadata;
     }
 
-    public void put(ParamMetadata.ParamType paramType, String name, ParamMetadata paramMetadata) {
+    public void put(ParamMetadata.ParamType paramType,
+                    String name,
+                    ParamMetadata paramMetadata) {
         if (paramPermissionsMetadata == null) paramPermissionsMetadata = new HashMap<>();
         paramPermissionsMetadata
                 .computeIfAbsent(paramType, r -> new HashMap<>()).put(name, paramMetadata);
@@ -118,28 +120,28 @@ public class PermRolesMeta {
         if (requireRoles == null) return;
         if (role == null) role = new Meta();
         this.role.require = CollectionUtils.splitStrValsToSets(PermissionDict.getPermSeparator(),
-                requireRoles.toArray(new String[]{}));
+                                                               requireRoles.toArray(new String[]{}));
     }
 
     public void setExcludeRoles(Collection<String> excludeRoles) {
         if (excludeRoles == null) return;
         if (role == null) role = new Meta();
         this.role.exclude = CollectionUtils.splitStrValsToSets(PermissionDict.getPermSeparator(),
-                excludeRoles.toArray(new String[]{}));
+                                                               excludeRoles.toArray(new String[]{}));
     }
 
     public void setRequirePermissions(Collection<String> requirePermissions) {
         if (requirePermissions == null) return;
         if (permissions == null) permissions = new Meta();
         this.permissions.require = CollectionUtils.splitStrValsToSets(PermissionDict.getPermSeparator(),
-                requirePermissions.toArray(new String[]{}));
+                                                                      requirePermissions.toArray(new String[]{}));
     }
 
     public void setExcludePermissions(Collection<String> excludePermissions) {
         if (excludePermissions == null) return;
         if (permissions == null) permissions = new Meta();
         this.permissions.exclude = CollectionUtils.splitStrValsToSets(PermissionDict.getPermSeparator(),
-                excludePermissions.toArray(new String[]{}));
+                                                                      excludePermissions.toArray(new String[]{}));
     }
 
     public void merge(PermRolesMeta other) {

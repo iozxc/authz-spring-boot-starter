@@ -42,23 +42,35 @@ public class DecryptRequestBodyAdvice implements RequestBodyAdvice {
      * 3、注意的是，如果这个方法，不论在方法上还是在参数上、只要有Decrypt注解，都会给@ReqeusetBody的内容解密
      */
     @Override
-    public boolean supports(MethodParameter parameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
+    public boolean supports(MethodParameter parameter,
+                            Type targetType,
+                            Class<? extends HttpMessageConverter<?>> converterType) {
         return parameter.hasMethodAnnotation(Decrypt.class) || parameter.hasParameterAnnotation(Decrypt.class);
     }
 
     @Override
-    public Object handleEmptyBody(Object body, HttpInputMessage inputMessage, MethodParameter parameter, Type targetType, Class<? extends HttpMessageConverter<?>> converterType) {
+    public Object handleEmptyBody(Object body,
+                                  HttpInputMessage inputMessage,
+                                  MethodParameter parameter,
+                                  Type targetType,
+                                  Class<? extends HttpMessageConverter<?>> converterType) {
         return body;
     }
 
     @Override
-    public HttpInputMessage beforeBodyRead(HttpInputMessage inputMessage, MethodParameter parameter, Type targetType,
+    public HttpInputMessage beforeBodyRead(HttpInputMessage inputMessage,
+                                           MethodParameter parameter,
+                                           Type targetType,
                                            Class<? extends HttpMessageConverter<?>> converterType) throws IOException {
-        return new DecryptRequestBodyHandler(inputMessage, AnnotationUtils.getAnnotation(parameter.getParameter(), Decrypt.class));
+        return new DecryptRequestBodyHandler(inputMessage,
+                                             AnnotationUtils.getAnnotation(parameter.getParameter(), Decrypt.class));
     }
 
     @Override
-    public Object afterBodyRead(Object body, HttpInputMessage inputMessage, MethodParameter parameter, Type targetType,
+    public Object afterBodyRead(Object body,
+                                HttpInputMessage inputMessage,
+                                MethodParameter parameter,
+                                Type targetType,
                                 Class<? extends HttpMessageConverter<?>> converterType) {
         return body;
     }
@@ -68,7 +80,8 @@ public class DecryptRequestBodyAdvice implements RequestBodyAdvice {
         private final HttpHeaders headers;
         private final InputStream body;
 
-        public DecryptRequestBodyHandler(HttpInputMessage inputMessage, Decrypt decrypt) throws IOException {
+        public DecryptRequestBodyHandler(HttpInputMessage inputMessage,
+                                         Decrypt decrypt) throws IOException {
             this.headers = inputMessage.getHeaders();
             String content = new BufferedReader(new InputStreamReader(inputMessage.getBody()))
                     .lines().collect(Collectors.joining(System.lineSeparator()));

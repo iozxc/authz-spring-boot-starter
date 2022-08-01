@@ -12,7 +12,9 @@ import static cn.omisheep.authz.core.config.Constants.OPTIONS;
 @Order(0)
 public class FilterSlot implements Slot {
     @Override
-    public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
+    public void chain(HttpMeta httpMeta,
+                      HandlerMethod handler,
+                      Error error) {
         if (httpMeta.isMethod(OPTIONS) || httpMeta.isIgnore()) {
             error.error();
         }

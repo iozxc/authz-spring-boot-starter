@@ -84,7 +84,8 @@ public class Rule {
     }
 
     private static final Pattern compile =
-            Pattern.compile("(.*?)(=|!=|<=|<|>=|>|[nN][oO][tT] *?[iI][nN]|[iI][nN]|[nN][oO][tT] *?[lL][iL][kK][eE]|[lL][iI][kK][eE])(.*)");
+            Pattern.compile(
+                    "(.*?)(=|!=|<=|<|>=|>|[nN][oO][tT] *?[iI][nN]|[iI][nN]|[nN][oO][tT] *?[lL][iL][kK][eE]|[lL][iI][kK][eE])(.*)");
 
     public static Rule of(String info) {
         Matcher matcher = compile.matcher(info);
@@ -94,7 +95,8 @@ public class Rule {
         return null;
     }
 
-    public static Rule or(Rule rule1, Rule rule2) {
+    public static Rule or(Rule rule1,
+                          Rule rule2) {
         return new Rule().setOp("or").setRules(Arrays.asList(rule1, rule2));
     }
 

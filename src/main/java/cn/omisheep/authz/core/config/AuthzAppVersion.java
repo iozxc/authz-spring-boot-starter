@@ -78,16 +78,20 @@ public class AuthzAppVersion {
         _values.put("APP", app);
 
         _values.put("USER_DEVICE_KEY_PREFIX", "authz:" + app + ":user:device:");
-        _values.put("OAUTH_USER_DEVICE_KEY_PREFIX", "authz:" + app + ":oauth:user:device:");
-
-        _values.put("OAUTH_USER_REQUEST_KEY_PREFIX", "authz:" + app + ":oauth:user:request:");
         _values.put("USER_REQUEST_KEY_PREFIX", "authz:" + app + ":user:request");
+
+        _values.put("OAUTH_USER_DEVICE_KEY_PREFIX", "authz:" + app + ":oauth:user:device:");
+        _values.put("OAUTH_USER_REQUEST_KEY_PREFIX", "authz:" + app + ":oauth:user:request:");
 
         _values.put("ACCESS_INFO_KEY_PREFIX", "authz:" + app + ":usersAccessInfo:");
         _values.put("REFRESH_INFO_KEY_PREFIX", "authz:" + app + ":usersRefreshInfo:");
 
         _values.put("PERMISSIONS_BY_ROLE_KEY_PREFIX", "authz:" + app + ":permissionsByRole:");
-        _values.put("USER_ROLES_KEY_PREFIX", "authz:" + app + ":userRoles:");
+        _values.put("ROLES_BY_USER_KEY_PREFIX", "authz:" + app + ":userRoles:");
+
+        _values.put("CLINT_PREFIX", "authz:" + app + ":oauth:client:");
+        _values.put("AUTHORIZE_CODE_PREFIX", "authz:" + app + ":oauth:code:");
+
         _values.put("DASHBOARD_KEY_PREFIX", "authz:" + app + ":dashboard:");
     }
 

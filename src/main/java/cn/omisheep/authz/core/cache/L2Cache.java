@@ -109,7 +109,9 @@ public class L2Cache implements Cache {
      * @param ttl     秒
      */
     @Override
-    public <E> void set(@NonNull String key, @Nullable E element, long ttl) {
+    public <E> void set(@NonNull String key,
+                        @Nullable E element,
+                        long ttl) {
         if (cache.asMap().get(key) == null) {
             Async.run(() -> removePatterns(key));
         }
@@ -138,12 +140,17 @@ public class L2Cache implements Cache {
     }
 
     @Override
-    public <E> void setSneaky(@NonNull String key, @Nullable E element, long number, @NonNull TimeUnit unit) {
+    public <E> void setSneaky(@NonNull String key,
+                              @Nullable E element,
+                              long number,
+                              @NonNull TimeUnit unit) {
         setSneaky(key, element, unit.toSeconds(number));
     }
 
     @Override
-    public <E> void setSneaky(@NonNull String key, @Nullable E element, long ttl) {
+    public <E> void setSneaky(@NonNull String key,
+                              @Nullable E element,
+                              long ttl) {
         if (ttl < -1 || ttl == 0) return;
         CacheItem item = new CacheItem(ttl, element);
         try {
@@ -174,7 +181,8 @@ public class L2Cache implements Cache {
     }
 
     @Override
-    public @NonNull <T> Map<String, T> get(@NonNull Set<String> keys, @NonNull Class<T> requiredType) {
+    public @NonNull <T> Map<String, T> get(@NonNull Set<String> keys,
+                                           @NonNull Class<T> requiredType) {
         HashMap<String, T> map = new HashMap<>();
         if (keys.isEmpty()) return map;
         Map<String, CacheItem> items = cache.getAll(keys);
@@ -210,6 +218,11 @@ public class L2Cache implements Cache {
     }
 
     @Override
+    public void delSneaky(@NonNull Collection<String> keys) {
+        cache.invalidateAll(keys);
+    }
+
+    @Override
     public void receive(@NonNull CacheMessage message) {
         if (CacheMessage.Type.WRITE.equals(message.getType())) {
             setSync(message);
@@ -233,7 +246,7 @@ public class L2Cache implements Cache {
                         removePatterns(key);
                     }
                     cache.put(key, new CacheItem(ttl, o));
-                } else cache.invalidate(key);
+                } else {cache.invalidate(key);}
             }
         }
     }
@@ -254,14 +267,10 @@ public class L2Cache implements Cache {
 
     @Override
     public void reload(@NonNull String... keys) {
-        for (String key : keys) {
-            long ttl = RedisUtils.ttl(key);
-            if (ttl == -2) {
-                del(key);
-            } else if (ttl > -2) {
-                set(key, RedisUtils.Obj.get(key), ttl);
-            }
-        }
+        if (keys == null || keys.length == 0) return;
+        List<String> list = Arrays.asList(keys);
+        cache.invalidateAll(list);
+        cache.getAll(list);
     }
 
     @Override

@@ -23,7 +23,10 @@ public class AuHttpMetaResolver implements HandlerMethodArgumentResolver {
     }
 
     @Override
-    public Object resolveArgument(MethodParameter methodParameter, @Nullable ModelAndViewContainer modelAndViewContainer, NativeWebRequest nativeWebRequest, @Nullable WebDataBinderFactory webDataBinderFactory) {
+    public Object resolveArgument(MethodParameter methodParameter,
+                                  @Nullable ModelAndViewContainer modelAndViewContainer,
+                                  NativeWebRequest nativeWebRequest,
+                                  @Nullable WebDataBinderFactory webDataBinderFactory) {
         HttpServletRequest request = (HttpServletRequest) nativeWebRequest.getNativeRequest();
         return request.getAttribute(HTTP_META);
     }

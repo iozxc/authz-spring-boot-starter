@@ -32,7 +32,8 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
     private final AuthzExceptionHandler authzExceptionHandler;
     private final LinkedList<Slot>      slots = new LinkedList<>();
 
-    public AuthzSlotCoreInterceptor(AuthzExceptionHandler authzExceptionHandler, Collection<Slot> slots) {
+    public AuthzSlotCoreInterceptor(AuthzExceptionHandler authzExceptionHandler,
+                                    Collection<Slot> slots) {
         this.authzExceptionHandler = authzExceptionHandler;
         slots.stream().sorted((v1, v2) -> {
             Order orderV1 = AnnotationUtils.getAnnotation(v1.getClass(), Order.class);
@@ -43,7 +44,8 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response,
+    public boolean preHandle(HttpServletRequest request,
+                             HttpServletResponse response,
                              Object handler) throws Exception {
         HttpMeta httpMeta = (HttpMeta) request.getAttribute(HTTP_META);
         if (httpMeta == null) return true;
@@ -65,19 +67,21 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
             LinkedList<ExceptionStatus> exceptionStatusList = httpMeta.getExceptionStatusList();
             LinkedList<Object>          exceptionObjectList = httpMeta.getExceptionObjectList();
             for (Slot slot : slots) {
-                if (next.get() || slot.must()) slot.chain(httpMeta, handlerMethod, (error) -> {
-                    next.set(false);
-                    if (error == null || error.length == 0) return;
-                    for (Object o : error) {
-                        if (o instanceof ExceptionStatus) {
-                            exceptionStatusList.offer((ExceptionStatus) o);
-                        } else if (o instanceof AuthzException) {
-                            exceptionStatusList.offer(((AuthzException) o).getExceptionStatus());
-                        } else {
-                            exceptionObjectList.offer(error);
+                if (next.get() || slot.must()) {
+                    slot.chain(httpMeta, handlerMethod, (error) -> {
+                        next.set(false);
+                        if (error == null || error.length == 0) return;
+                        for (Object o : error) {
+                            if (o instanceof ExceptionStatus) {
+                                exceptionStatusList.offer((ExceptionStatus) o);
+                            } else if (o instanceof AuthzException) {
+                                exceptionStatusList.offer(((AuthzException) o).getExceptionStatus());
+                            } else {
+                                exceptionObjectList.offer(error);
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
             if (!exceptionStatusList.isEmpty() || !exceptionObjectList.isEmpty()) {
                 ExceptionStatus status = exceptionStatusList.getFirst();
@@ -85,7 +89,7 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
                     TokenHelper.clearCookie(response);
                 }
                 return authzExceptionHandler.handle(request, response, httpMeta, status, exceptionObjectList);
-            } else return true;
+            } else {return true;}
         } catch (Exception e) {
             LogUtils.error(e);
             return authzExceptionHandler.handle(request, response, httpMeta, ExceptionStatus.UNKNOWN,

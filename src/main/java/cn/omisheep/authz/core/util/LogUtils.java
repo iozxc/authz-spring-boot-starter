@@ -28,38 +28,50 @@ public abstract class LogUtils {
     private static final Marker                     MARKER = MarkerFactory.getMarker("cn.omisheep.authz");
     private static final ThreadLocal<List<LogMeta>> logs   = ThreadLocal.withInitial(ArrayList::new);
 
-    public static void info(String msg, Object... args) {
+    public static void info(String msg,
+                            Object... args) {
         if (logLevel.ordinal() <= LogLevel.INFO.ordinal() && log.isInfoEnabled(MARKER)) log.info(MARKER, msg, args);
     }
 
-    public static void error(String msg, Object... args) {
+    public static void error(String msg,
+                             Object... args) {
         if (logLevel.ordinal() <= LogLevel.ERROR.ordinal() && log.isErrorEnabled(MARKER)) log.error(MARKER, msg, args);
     }
 
     public static void error(Throwable throwable) {
-        if (logLevel.ordinal() <= LogLevel.ERROR.ordinal() && log.isErrorEnabled(MARKER)) log.error(MARKER,
-                                                                                                    throwable.getMessage(),
-                                                                                                    throwable);
+        if (logLevel.ordinal() <= LogLevel.ERROR.ordinal() && log.isErrorEnabled(MARKER)) {
+            log.error(MARKER,
+                      throwable.getMessage(),
+                      throwable);
+        }
     }
 
-    public static void error(String msg, Throwable throwable) {
-        if (logLevel.ordinal() <= LogLevel.ERROR.ordinal() && log.isErrorEnabled(MARKER)) log.error(MARKER, msg,
-                                                                                                    throwable);
+    public static void error(String msg,
+                             Throwable throwable) {
+        if (logLevel.ordinal() <= LogLevel.ERROR.ordinal() && log.isErrorEnabled(MARKER)) {
+            log.error(MARKER, msg,
+                      throwable);
+        }
     }
 
-    public static void warn(String msg, Object... args) {
+    public static void warn(String msg,
+                            Object... args) {
         if (logLevel.ordinal() <= LogLevel.WARN.ordinal() && log.isWarnEnabled(MARKER)) log.warn(MARKER, msg, args);
     }
 
-    public static void debug(String msg, Object... args) {
+    public static void debug(String msg,
+                             Object... args) {
         if (logLevel.ordinal() <= LogLevel.DEBUG.ordinal() && log.isDebugEnabled(MARKER)) log.debug(MARKER, msg, args);
     }
 
-    public static void push(String formatMsg, Object... args) {
+    public static void push(String formatMsg,
+                            Object... args) {
         push(LogLevel.INFO, formatMsg, args);
     }
 
-    public static void push(LogLevel logLevel, String formatMsg, Object... args) {
+    public static void push(LogLevel logLevel,
+                            String formatMsg,
+                            Object... args) {
         if (LogUtils.logLevel.ordinal() > logLevel.ordinal()) return;
         logs.get().add(new LogMeta(logLevel, formatMsg, args));
     }
@@ -109,7 +121,9 @@ public abstract class LogUtils {
         private final String   format;
         private final Object[] objects;
 
-        public LogMeta(LogLevel logLevel, String format, Object... objects) {
+        public LogMeta(LogLevel logLevel,
+                       String format,
+                       Object... objects) {
             if (logLevel == null) {
                 logLevel = LogLevel.INFO;
             }
@@ -123,7 +137,8 @@ public abstract class LogUtils {
             return format(format, objects);
         }
 
-        private static String format(String formatMsg, Object... args) {
+        private static String format(String formatMsg,
+                                     Object... args) {
             for (Object arg : args) {
                 formatMsg = formatMsg.replaceFirst("\\{}", String.valueOf(arg));
             }
@@ -131,7 +146,9 @@ public abstract class LogUtils {
         }
     }
 
-    public static void logs(String status, HttpMeta httpMeta, PermRolesMeta meta) {
+    public static void logs(String status,
+                            HttpMeta httpMeta,
+                            PermRolesMeta meta) {
         AccessToken accessToken = httpMeta.getToken();
         if (accessToken == null) {
             httpMeta.log("「{}」\t{}", status, meta);
@@ -141,7 +158,8 @@ public abstract class LogUtils {
         }
     }
 
-    public static void logs(String status, HttpMeta httpMeta) {
+    public static void logs(String status,
+                            HttpMeta httpMeta) {
         AccessToken accessToken = httpMeta.getToken();
         if (accessToken == null) {
             httpMeta.log("「{}」", status);

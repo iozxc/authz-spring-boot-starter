@@ -39,7 +39,8 @@ public class AuthzMethodPermissionChecker {
     private final HashMap<String, Set<String>> scope = new HashMap<>();
     private final AuthzProperties              properties;
 
-    public AuthzMethodPermissionChecker(PermLibrary permLibrary, AuthzProperties properties) {
+    public AuthzMethodPermissionChecker(PermLibrary permLibrary,
+                                        AuthzProperties properties) {
         this.permLibrary = permLibrary;
         this.properties  = properties;
     }
@@ -169,7 +170,10 @@ public class AuthzMethodPermissionChecker {
     }
 
 
-    private PermRolesMeta merge(Perms perms, Perms perms2, Roles roles, Roles roles2) {
+    private PermRolesMeta merge(Perms perms,
+                                Perms perms2,
+                                Roles roles,
+                                Roles roles2) {
         PermRolesMeta permRolesMeta1 = generatePermRolesMeta(perms, roles);
         PermRolesMeta permRolesMeta2 = generatePermRolesMeta(perms2, roles2);
         if (permRolesMeta1 != null && permRolesMeta2 == null) {
@@ -217,7 +221,9 @@ public class AuthzMethodPermissionChecker {
         return null;
     }
 
-    private Set<String> merge(OAuthScope oAuthScope1, OAuthScope oAuthScope2, OAuthScopeBasic oAuthScopeBasic1,
+    private Set<String> merge(OAuthScope oAuthScope1,
+                              OAuthScope oAuthScope2,
+                              OAuthScopeBasic oAuthScopeBasic1,
                               OAuthScopeBasic oAuthScopeBasic2) {
         HashSet<String> set = new HashSet<>();
         if (oAuthScopeBasic1 != null || oAuthScopeBasic2 != null) {

@@ -45,13 +45,12 @@ public class LimitMeta {
             for (String info : associatedPatterns) {
                 AssociatedPattern associatedPattern = new AssociatedPattern(info);
                 int               i                 = this.associatedPatterns.indexOf(associatedPattern);
-                if (i == -1) this.associatedPatterns.add(associatedPattern);
-                else {
+                if (i == -1) {this.associatedPatterns.add(associatedPattern);} else {
                     AssociatedPattern existedAssociatedPattern = this.associatedPatterns.get(i);
                     existedAssociatedPattern.mergeMethods(associatedPattern);
                 }
             }
-        } else this.associatedPatterns = null;
+        } else {this.associatedPatterns = null;}
     }
 
     public List<AssociatedPattern> _getAssociatedPatterns() {
@@ -61,7 +60,9 @@ public class LimitMeta {
 
     public Set<String> getAssociatedPatterns() {
         if (associatedPatterns == null) return null;
-        return associatedPatterns.stream().flatMap(a -> a.methods.stream().map(m -> m + " " + a.pattern)).collect(Collectors.toSet());
+        return associatedPatterns.stream()
+                .flatMap(a -> a.methods.stream().map(m -> m + " " + a.pattern))
+                .collect(Collectors.toSet());
     }
 
     public List<Long> getPunishmentTime() {
@@ -90,8 +91,7 @@ public class LimitMeta {
         }
 
         public String[] mtsFn(String mts) {
-            if (mts.equals("*")) return Constants.METHODS;
-            else return new String[]{mts};
+            if (mts.equals("*")) {return Constants.METHODS;} else return new String[]{mts};
         }
 
         public void mergeMethods(AssociatedPattern other) {

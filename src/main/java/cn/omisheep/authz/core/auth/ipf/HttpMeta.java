@@ -48,7 +48,6 @@ public class HttpMeta extends BaseHelper {
     private final Date                        now;
     private       AccessToken                 token;
     private       Object                      userId;
-    private       boolean                     hasToken;
     private       Set<String>                 roles;
     private       Set<String>                 permissions;
     private       Set<String>                 scope;
@@ -56,7 +55,7 @@ public class HttpMeta extends BaseHelper {
     private       boolean                     requireLogin;
     private       PermRolesMeta               permRolesMeta;
     private       boolean                     ignore              = false;
-    private       boolean                     clearCookie          = true;
+    private       boolean                     clearCookie         = true;
     private       UserDevicesDict.UserStatus  userStatus;
     @JsonIgnore
     private       LinkedList<Object>          exceptionObjectList = new LinkedList<>();
@@ -99,7 +98,7 @@ public class HttpMeta extends BaseHelper {
 
     @NonNull
     public Set<String> getScope() {
-        if (userId == null) return new HashSet<>();
+        if (token == null) return new HashSet<>();
         scope = Optional.ofNullable(scope).orElseGet(() -> {
             String s = token.getScope();
             if (s == null || s.equals("")) return new HashSet<>();
@@ -151,11 +150,6 @@ public class HttpMeta extends BaseHelper {
         export();
     }
 
-    public boolean setHasToken(boolean hasToken) {
-        this.hasToken = hasToken;
-        return hasToken;
-    }
-
     /**
      * post时生效
      * 从包装过的httpRequest中读取，读取body行为只进行一次，读取之后会备份body
@@ -179,11 +173,14 @@ public class HttpMeta extends BaseHelper {
     }
 
     public void setToken(AccessToken token) {
-        if (this.token == null) {
-            this.token    = token;
-            this.userId   = token.getUserId();
-            this.hasToken = true;
+        if (this.token == null && token != null) {
+            this.token  = token;
+            this.userId = token.getUserId();
         }
+    }
+
+    public boolean hasToken() {
+        return this.token != null;
     }
 
     public HttpMeta(HttpServletRequest request, String ip, String uri, String api,

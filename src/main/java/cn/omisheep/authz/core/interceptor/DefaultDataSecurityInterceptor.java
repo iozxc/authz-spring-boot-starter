@@ -24,11 +24,14 @@ import java.util.*;
 public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterceptor {
 
     @Override
-    public String sqlChange(HttpMeta httpMeta, PermLibrary permLibrary, List<DataPermMeta> dataPermMetaList,
-                            Class<?> resultType, String sql) throws JSQLParserException {
+    public String sqlChange(HttpMeta httpMeta,
+                            PermLibrary permLibrary,
+                            List<DataPermMeta> dataPermMetaList,
+                            Class<?> resultType,
+                            String sql) throws JSQLParserException {
         if (dataPermMetaList.size() == 0) return sql;
 
-        Set<String> rolesByUserId = httpMeta.getRoles();
+        Set<String> rolesByUserId     = httpMeta.getRoles();
         Set<String> permissionsByRole = httpMeta.getPermissions();
 
         Iterator<String> iterator = dataPermMetaList.stream().filter(dataPermMeta -> {
@@ -55,10 +58,8 @@ public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterce
         sb.append(" ( ");
         while (iterator.hasNext()) {
             sb.append(iterator.next());
-            if (iterator.hasNext()) sb.append(" OR ");
-            else {
-                if (where != null) sb.append(" ) AND ").append(where);
-                else sb.append(" ) ");
+            if (iterator.hasNext()) {sb.append(" OR ");} else {
+                if (where != null) {sb.append(" ) AND ").append(where);} else sb.append(" ) ");
             }
         }
         ;
@@ -69,10 +70,13 @@ public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterce
     }
 
     @Override
-    public Object dataTrim(HttpMeta httpMeta, PermLibrary permLibrary, Map<String, FieldData> fieldDataMap,
-                           Class<?> resultType, Object obj) {
+    public Object dataTrim(HttpMeta httpMeta,
+                           PermLibrary permLibrary,
+                           Map<String, FieldData> fieldDataMap,
+                           Class<?> resultType,
+                           Object obj) {
         try {
-            Set<String> rolesByUserId = httpMeta.getRoles();
+            Set<String> rolesByUserId     = httpMeta.getRoles();
             Set<String> permissionsByRole = httpMeta.getPermissions();
 
             ArrayList<String> deleted = new ArrayList<>();

@@ -53,7 +53,9 @@ public class RequestMeta {
         return new Date(lastRequestTime);
     }
 
-    public RequestMeta(long now, String ip, Object userId) {
+    public RequestMeta(long now,
+                       String ip,
+                       Object userId) {
         this.ip     = ip;
         this.userId = userId;
         request(now, 1, 0, 0);
@@ -63,12 +65,16 @@ public class RequestMeta {
         return reliveTime <= now;
     }
 
-    public void relive(String method, String api, LimitMeta limitMeta) {
+    public void relive(String method,
+                       String api,
+                       LimitMeta limitMeta) {
         ban = false;
         callback.relive(method, api, ip, userId, limitMeta);
     }
 
-    public RequestMeta forbidden(String method, String api, LimitMeta limitMeta) {
+    public RequestMeta forbidden(String method,
+                                 String api,
+                                 LimitMeta limitMeta) {
         long       nowTime        = TimeUtils.nowTime();
         List<Long> punishmentTime = limitMeta.getPunishmentTime();
         if (punishmentTime == null) return this;
@@ -85,7 +91,10 @@ public class RequestMeta {
         return this;
     }
 
-    public boolean pushRequest(long now, int maxRequests, long window, long minInterval) {
+    public boolean pushRequest(long now,
+                               int maxRequests,
+                               long window,
+                               long minInterval) {
         if (requestTimeList.isEmpty() || requestTimeList.getLast() < now) {
             return request(now, maxRequests, window, minInterval);
         }
@@ -112,7 +121,8 @@ public class RequestMeta {
     }
 
 
-    public boolean pushRequest(long now, LimitMeta limitMeta) {
+    public boolean pushRequest(long now,
+                               LimitMeta limitMeta) {
         return pushRequest(now, limitMeta.getMaxRequests(), limitMeta.getWindow(), limitMeta.getMinInterval());
     }
 
@@ -123,7 +133,10 @@ public class RequestMeta {
      * @param minInterval 最小请求间隔时间
      * @return 访问是否成功
      */
-    public boolean request(long now, int maxRequests, long window, long minInterval) {
+    public boolean request(long now,
+                           int maxRequests,
+                           long window,
+                           long minInterval) {
         // 过了一个周期后，惩罚等级归零
         if (now - reliveTime > window) punishmentLevel = 0;
 

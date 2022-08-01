@@ -13,7 +13,7 @@ public class ClientDetails {
     /**
      * 接入的客户端的名称
      */
-    private String name;
+    private String clientName;
     /**
      * 回调地址
      */

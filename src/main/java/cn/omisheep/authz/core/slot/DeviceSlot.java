@@ -23,7 +23,9 @@ public class DeviceSlot implements Slot {
     }
 
     @Override
-    public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
+    public void chain(HttpMeta httpMeta,
+                      HandlerMethod handler,
+                      Error error) {
         if (!httpMeta.isRequireLogin()) return;
 
         if (httpMeta.getUserStatus() != null) {
@@ -37,7 +39,7 @@ public class DeviceSlot implements Slot {
             return;
         }
 
-        if (!httpMeta.isHasToken()) {
+        if (!httpMeta.hasToken()) {
             logs("Require Login", httpMeta);
             error.error(ExceptionStatus.REQUIRE_LOGIN);
             return;

@@ -44,9 +44,9 @@ public interface Cache {
          * @param ttl   存活时间 单位秒
          * @param value 值
          */
-        public CacheItem(long ttl, E value) {
-            if (ttl == INFINITE) this.expiration = -1;
-            else this.expiration = TimeUtils.nowTime() + ttl * 1000L;
+        public CacheItem(long ttl,
+                         E value) {
+            if (ttl == INFINITE) {this.expiration = -1;} else this.expiration = TimeUtils.nowTime() + ttl * 1000L;
             this.value = value;
         }
 
@@ -85,7 +85,9 @@ public interface Cache {
         private long expireAfterUpdateTime;
         private long expireAfterReadTime;
 
-        public CacheExpiry(long expireAfterCreateTime, long expireAfterUpdateTime, long expireAfterReadTime) {
+        public CacheExpiry(long expireAfterCreateTime,
+                           long expireAfterUpdateTime,
+                           long expireAfterReadTime) {
             this.expireAfterCreateTime = TimeUnit.MILLISECONDS.toNanos(expireAfterCreateTime);
             this.expireAfterUpdateTime = TimeUnit.MILLISECONDS.toNanos(expireAfterUpdateTime);
             this.expireAfterReadTime   = TimeUnit.MILLISECONDS.toNanos(expireAfterReadTime);
@@ -96,19 +98,25 @@ public interface Cache {
         }
 
         @Override
-        public long expireAfterCreate(@NonNull String s, @NonNull CacheItem eCacheItem, long currentTime) {
+        public long expireAfterCreate(@NonNull String s,
+                                      @NonNull CacheItem eCacheItem,
+                                      long currentTime) {
             return eCacheItem.expireAfterNanos(expireAfterCreateTime);
         }
 
         @Override
-        public long expireAfterUpdate(@NonNull String s, @NonNull CacheItem eCacheItem, long currentTime,
+        public long expireAfterUpdate(@NonNull String s,
+                                      @NonNull CacheItem eCacheItem,
+                                      long currentTime,
                                       @NonNegative long currentDuration) {
             return eCacheItem.expireAfterNanos(expireAfterUpdateTime);
 
         }
 
         @Override
-        public long expireAfterRead(@NonNull String s, @NonNull CacheItem eCacheItem, long currentTime,
+        public long expireAfterRead(@NonNull String s,
+                                    @NonNull CacheItem eCacheItem,
+                                    long currentTime,
                                     @NonNegative long currentDuration) {
             return eCacheItem.expireAfterNanos(expireAfterReadTime);
         }
@@ -157,7 +165,9 @@ public interface Cache {
      * @param ttl     秒，为-1时将继承之前的key的ttl ,  {@link Cache#INFINITE} 为永久存在
      * @param <E>     值的类型
      */
-    <E> void set(@NonNull String key, @Nullable E element, long ttl);
+    <E> void set(@NonNull String key,
+                 @Nullable E element,
+                 long ttl);
 
     /**
      * 批量插入，时间为永久
@@ -172,7 +182,9 @@ public interface Cache {
      * @param ttl     秒，为-1时将继承之前的key的ttl ,  {@link Cache#INFINITE} 为永久存在
      * @param <E>     值的类型
      */
-    default <E> void setSneaky(@NonNull String key, @Nullable E element, long ttl) {
+    default <E> void setSneaky(@NonNull String key,
+                               @Nullable E element,
+                               long ttl) {
         set(key, element, ttl);
     }
 
@@ -183,7 +195,8 @@ public interface Cache {
      * @param element 值
      * @param <E>     Type
      */
-    default <E> void set(@NonNull String key, @Nullable E element) {
+    default <E> void set(@NonNull String key,
+                         @Nullable E element) {
         set(key, element, INFINITE);
     }
 
@@ -194,7 +207,10 @@ public interface Cache {
      * @param unit    存活的时间单位
      * @param <E>     值的类型
      */
-    default <E> void set(@NonNull String key, @Nullable E element, long number, @NonNull TimeUnit unit) {
+    default <E> void set(@NonNull String key,
+                         @Nullable E element,
+                         long number,
+                         @NonNull TimeUnit unit) {
         set(key, element, unit.toSeconds(number));
     }
 
@@ -205,7 +221,10 @@ public interface Cache {
      * @param unit    存活的时间单位
      * @param <E>     值的类型
      */
-    default <E> void setSneaky(@NonNull String key, @Nullable E element, long number, @NonNull TimeUnit unit) {
+    default <E> void setSneaky(@NonNull String key,
+                               @Nullable E element,
+                               long number,
+                               @NonNull TimeUnit unit) {
         set(key, element, unit.toSeconds(number));
     }
 
@@ -215,7 +234,9 @@ public interface Cache {
      * @param ttl     存活的时间 "字符串类型" example：1s、10s、1m、2d
      * @param <E>     值的类型
      */
-    default <E> void set(@NonNull String key, @Nullable E element, @NonNull String ttl) {
+    default <E> void set(@NonNull String key,
+                         @Nullable E element,
+                         @NonNull String ttl) {
         set(key, element, TimeUtils.parseTimeValueToSecond(ttl));
     }
 
@@ -239,7 +260,8 @@ public interface Cache {
      * @return value
      */
     @Nullable
-    default <T> T get(@NonNull String key, @NonNull Class<T> requiredType) {
+    default <T> T get(@NonNull String key,
+                      @NonNull Class<T> requiredType) {
         return castValue(get(key), requiredType);
     }
 
@@ -249,7 +271,8 @@ public interface Cache {
     }
 
     @NonNull
-    default <T> Map<String, T> getByPattern(@NonNull String pattern, @NonNull Class<T> requiredType) {
+    default <T> Map<String, T> getByPattern(@NonNull String pattern,
+                                            @NonNull Class<T> requiredType) {
         return get(keysAndLoad(pattern), requiredType);
     }
 
@@ -257,7 +280,8 @@ public interface Cache {
         return new ArrayList<>(get(keysAndLoad(pattern)).values());
     }
 
-    default <T> List<T> listByPattern(@NonNull String pattern, @NonNull Class<T> requiredType) {
+    default <T> List<T> listByPattern(@NonNull String pattern,
+                                      @NonNull Class<T> requiredType) {
         return new ArrayList<>(get(keysAndLoad(pattern), requiredType).values());
     }
 
@@ -274,7 +298,8 @@ public interface Cache {
      * @param <T>          需要转换的类型
      * @return values
      */
-    @NonNull <T> Map<String, T> get(@NonNull Set<String> keys, @NonNull Class<T> requiredType);
+    @NonNull <T> Map<String, T> get(@NonNull Set<String> keys,
+                                    @NonNull Class<T> requiredType);
 
     /**
      * @param key 需要删除的key
@@ -286,13 +311,32 @@ public interface Cache {
      */
     void del(@NonNull Set<String> keys);
 
+    /**
+     * @param keys keys
+     */
     default void del(@NonNull Collection<String> keys) {
-        if (keys instanceof Set) del((Set<String>) keys);
-        else del(new HashSet<>(keys));
+        if (keys instanceof Set) {del((Set<String>) keys);} else del(new HashSet<>(keys));
     }
 
+    /**
+     * @param keys keys
+     */
     default void del(@NonNull String... keys) {
         del(CollectionUtils.ofSet(keys));
+    }
+
+    /**
+     * @param keys keys
+     */
+    default void delSneaky(@NonNull Collection<String> keys) {
+        del(keys);
+    }
+
+    /**
+     * @param key key
+     */
+    default void delSneaky(@NonNull String key) {
+        delSneaky(Collections.singletonList(key));
     }
 
     @NonNull

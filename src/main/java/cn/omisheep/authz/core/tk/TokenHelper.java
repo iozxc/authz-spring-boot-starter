@@ -108,7 +108,9 @@ public class TokenHelper extends BaseHelper {
      * @param deviceType 设备系统类型
      * @return TokenPair
      */
-    public static TokenPair createTokenPair(Object userId, String deviceType, String deviceId) {
+    public static TokenPair createTokenPair(Object userId,
+                                            String deviceType,
+                                            String deviceId) {
         return createTokenPair(userId, deviceType, deviceId, null, null, null);
     }
 
@@ -123,17 +125,20 @@ public class TokenHelper extends BaseHelper {
      * @param grantType  授权类型
      * @return TokenPair
      */
-    public static TokenPair createTokenPair(Object userId, String deviceType,
-                                            String deviceId, String clientId,
-                                            String scope, GrantType grantType) {
+    public static TokenPair createTokenPair(Object userId,
+                                            String deviceType,
+                                            String deviceId,
+                                            String clientId,
+                                            String scope,
+                                            GrantType grantType) {
         Date now                  = TimeUtils.now();
         Date toAccessExpiredTime  = TimeUtils.datePlus(now, accessTime);
         Date toRefreshExpiredTime = TimeUtils.datePlus(now, refreshTime);
 
-        String accessTokenId  = UUIDBits.getUUIDBits(tokenIdBits);
-        String refreshTokenId = UUIDBits.getUUIDBits(tokenIdBits);
+        String id            = UUIDBits.getUUIDBits(tokenIdBits);
+        String accessTokenId = UUIDBits.getUUIDBits(tokenIdBits);
         return createTokenPair(userId, deviceType, deviceId, clientId, scope, grantType,
-                               accessTokenId, refreshTokenId,
+                               accessTokenId, id,
                                toAccessExpiredTime, toRefreshExpiredTime);
     }
 
@@ -148,17 +153,22 @@ public class TokenHelper extends BaseHelper {
      * @param scope                授权范围
      * @param grantType            授权类型
      * @param accessTokenId        accessToken id
-     * @param refreshTokenId       refreshToken id
+     * @param id                   id
      * @param toAccessExpiredTime  accessToken过期时间
      * @param toRefreshExpiredTime refreshToken过期时间
      * @return TokenPair
      */
-    public static TokenPair createTokenPair(Object userId, String deviceType, String deviceId,
+    public static TokenPair createTokenPair(Object userId,
+                                            String deviceType,
+                                            String deviceId,
                                             String clientId,
-                                            String scope, GrantType grantType,
-                                            String accessTokenId, String refreshTokenId,
-                                            Date toAccessExpiredTime, Date toRefreshExpiredTime) {
-        AccessToken accessToken = createAccessToken(userId, deviceType, deviceId, accessTokenId, refreshTokenId,
+                                            String scope,
+                                            GrantType grantType,
+                                            String accessTokenId,
+                                            String id,
+                                            Date toAccessExpiredTime,
+                                            Date toRefreshExpiredTime) {
+        AccessToken accessToken = createAccessToken(userId, deviceType, deviceId, accessTokenId, id,
                                                     toAccessExpiredTime, clientId, scope, grantType);
         RefreshToken refreshToken = createRefreshToken(accessToken, toRefreshExpiredTime);
 
@@ -166,44 +176,51 @@ public class TokenHelper extends BaseHelper {
     }
 
 
-    private static AccessToken createAccessToken(Object userId, String deviceType, String deviceId,
-                                                 String accessTokenId, String refreshTokenId, Date expiresAt,
-                                                 String clientId, String scope,
+    private static AccessToken createAccessToken(Object userId,
+                                                 String deviceType,
+                                                 String deviceId,
+                                                 String accessTokenId,
+                                                 String id,
+                                                 Date expiresAt,
+                                                 String clientId,
+                                                 String scope,
                                                  GrantType grantType) {
         Claims claims = Jwts.claims();
         claims.put(USER_ID, userId);
+        claims.put(ID, id);
 
         if (clientId != null) { // oauth
-            if (scope != null) claims.put(SCOPE, scope);
             if (grantType != null) claims.put(GRANT_TYPE, grantType.getType());
+            if (scope != null) claims.put(SCOPE, scope);
             claims.put(CLIENT_ID, clientId);
         } else {
             claims.put(DEVICE_ID, deviceId);
             claims.put(DEVICE_TYPE, deviceType);
         }
-        claims.put(REFRESH_TOKEN_ID, refreshTokenId);
+
         JwtBuilder jwtBuilder = Jwts.builder().setClaims(claims) // 设置 claims
                 .setId(accessTokenId).compressWith(codec).setExpiration(expiresAt);
         if (secretKey != null) {
             jwtBuilder.signWith(secretKey, alg);
         }
         String tokenVal = jwtBuilder.compact();
-        return new AccessToken(tokenVal.substring(tokenVal.indexOf(".") + 1), accessTokenId, refreshTokenId,
+        return new AccessToken(id, tokenVal.substring(tokenVal.indexOf(".") + 1), accessTokenId,
                                (int) Math.min(accessTime / 1000, Integer.MAX_VALUE),
                                expiresAt.getTime(), grantType, clientId, scope, userId, deviceType, deviceId);
     }
 
-    private static RefreshToken createRefreshToken(AccessToken accessToken, Date expiresAt) {
+    private static RefreshToken createRefreshToken(AccessToken accessToken,
+                                                   Date expiresAt) {
         Claims claims = Jwts.claims();
         claims.put(USER_ID, accessToken.getUserId());
         claims.put(CLIENT_ID, accessToken.getClientId());
         JwtBuilder jwtBuilder = Jwts.builder().setClaims(claims) // 设置 claims
-                .setId(accessToken.getRefreshTokenId()).setExpiration(expiresAt).compressWith(codec);
+                .setId(accessToken.getId()).setExpiration(expiresAt).compressWith(codec);
         if (secretKey != null) {
             jwtBuilder.signWith(secretKey, alg);
         }
         String tokenVal = jwtBuilder.compact();
-        return new RefreshToken(tokenVal.substring(tokenVal.indexOf(".") + 1), accessToken.getRefreshTokenId(),
+        return new RefreshToken(accessToken.getId(), tokenVal.substring(tokenVal.indexOf(".") + 1),
                                 (int) Math.min(refreshTime / 1000, Integer.MAX_VALUE), expiresAt.getTime(),
                                 accessToken.getUserId(), accessToken.getClientId());
     }
@@ -235,12 +252,12 @@ public class TokenHelper extends BaseHelper {
         Device device;
         if (clientId == null) {
             device = cache.get(
-                    USER_DEVICE_KEY_PREFIX.get() + refreshToken.getUserId() + SEPARATOR + refreshToken.getTokenId(),
+                    USER_DEVICE_KEY_PREFIX.get() + refreshToken.getUserId() + SEPARATOR + refreshToken.getId(),
                     Device.class);
 
         } else {
             device = cache.get(
-                    OAUTH_USER_DEVICE_KEY_PREFIX.get() + refreshToken.getUserId() + SEPARATOR + refreshToken.getTokenId(),
+                    OAUTH_USER_DEVICE_KEY_PREFIX.get() + refreshToken.getUserId() + SEPARATOR + refreshToken.getId(),
                     Device.class);
         }
 
@@ -252,8 +269,8 @@ public class TokenHelper extends BaseHelper {
 
         return createTokenPair(refreshToken.getUserId(), device.getDeviceType(), device.getDeviceId(),
                                device.getClientId(), device.getScope(), device.getGrantType(),
-                               device.getAccessTokenId(), refreshToken.getTokenId(), toAccessExpiredTime,
-                               new Date(refreshToken.getExpiredAt()));
+                               device.getAccessTokenId(), refreshToken.getId(), toAccessExpiredTime,
+                               new Date(refreshToken.getExpiresAt()));
     }
 
     /**
@@ -306,10 +323,10 @@ public class TokenHelper extends BaseHelper {
      */
     public static AccessToken parseAccessToken(String accessToken) throws AuthzException {
         Claims claims = parseToken(accessToken);
-        if (claims == null || claims.get(REFRESH_TOKEN_ID, String.class) == null) {
+        if (claims == null || claims.get(ID, String.class) == null) {
             throw new AuthzException(ExceptionStatus.TOKEN_EXCEPTION);
         }
-        return new AccessToken(accessToken, claims.getId(), claims.get(REFRESH_TOKEN_ID, String.class), null,
+        return new AccessToken(claims.get(ID, String.class), accessToken, claims.getId(), null,
                                claims.getExpiration().getTime(),
                                GrantType.grantType(claims.get(GRANT_TYPE, String.class)),
                                claims.get(CLIENT_ID, String.class),
@@ -339,9 +356,14 @@ public class TokenHelper extends BaseHelper {
 
 
     public static IssueToken createIssueToken(TokenPair tokenPair) {
-        return new IssueToken().setAccessToken(tokenPair.getAccessToken().getToken())
-                .setRefreshToken(tokenPair.getRefreshToken().getToken())
+        GrantType grantType = tokenPair.getAccessToken().getGrantType();
+        IssueToken token = new IssueToken().setAccessToken(tokenPair.getAccessToken().getToken())
                 .setScope(tokenPair.getAccessToken().getScope())
                 .setExpiresIn(tokenPair.getAccessToken().getExpiresIn());
+        if (!GrantType.CLIENT_CREDENTIALS.equals(grantType)) {
+            return token.setRefreshToken(tokenPair.getRefreshToken().getToken());
+        } else {
+            return token;
+        }
     }
 }

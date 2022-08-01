@@ -76,11 +76,13 @@ public abstract class RedisUtils {
         return new HashSet<>();
     }
 
-    public static boolean expire(String key, String timeVal) {
+    public static boolean expire(String key,
+                                 String timeVal) {
         return expire(key, TimeUtils.parseTimeValue(timeVal));
     }
 
-    public static boolean expire(String key, long ms) {
+    public static boolean expire(String key,
+                                 long ms) {
         try {
             if (ms > 0) {
                 redisTemplate.expire(key, Duration.ofMillis(ms));
@@ -101,7 +103,8 @@ public abstract class RedisUtils {
         return bool != null && bool;
     }
 
-    public static void publish(String channel, Message message) {
+    public static void publish(String channel,
+                               Message message) {
         LogUtils.debug("time: {} message: {}", TimeUtils.nowTime(), message);
         redisTemplate.convertAndSend(channel, message);
     }
@@ -109,11 +112,14 @@ public abstract class RedisUtils {
     // ================================ redisTemplate ================================ //
 
     public static class Obj {
-        public static void set(String key, Object value) {
+        public static void set(String key,
+                               Object value) {
             redisTemplate.opsForValue().set(key, value);
         }
 
-        public static void set(String key, Object value, long ttl) {
+        public static void set(String key,
+                               Object value,
+                               long ttl) {
             redisTemplate.opsForValue().set(key, value, ttl, TimeUnit.SECONDS);
         }
 
@@ -125,7 +131,8 @@ public abstract class RedisUtils {
             return redisTemplate.opsForValue().get(key);
         }
 
-        public static <E> E get(String key, Class<E> requiredType) {
+        public static <E> E get(String key,
+                                Class<E> requiredType) {
             return ClassUtils.castValue(redisTemplate.opsForValue().get(key), requiredType);
         }
 
@@ -146,7 +153,8 @@ public abstract class RedisUtils {
             return map;
         }
 
-        public static <E> Map<String, E> getToMap(Collection<String> key, Class<E> requiredType) {
+        public static <E> Map<String, E> getToMap(Collection<String> key,
+                                                  Class<E> requiredType) {
             List<?> objects = redisTemplate.opsForValue().multiGet(key);
             if (objects == null) return new HashMap<>();
             HashMap<String, E> map      = new HashMap<>();
@@ -169,7 +177,8 @@ public abstract class RedisUtils {
             }
         }
 
-        public static void update(String key, Object value) {
+        public static void update(String key,
+                                  Object value) {
             redisTemplate.opsForValue().set(key, value, 0);
         }
 

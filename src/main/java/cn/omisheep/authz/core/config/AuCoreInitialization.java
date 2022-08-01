@@ -42,7 +42,9 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
     public AuCoreInitialization(AuthzProperties properties,
                                 UserDevicesDict userDevicesDict,
-                                PermLibrary permLibrary, OpenAuthLibrary openAuthLibrary, Cache cache) {
+                                PermLibrary permLibrary,
+                                OpenAuthLibrary openAuthLibrary,
+                                Cache cache) {
         this.properties      = properties;
         this.userDevicesDict = userDevicesDict;
         this.cache           = cache;
@@ -131,9 +133,10 @@ public class AuCoreInitialization implements ApplicationContextAware {
         return null;
     }
 
-    private void initRSA(){
+    private void initRSA() {
         AuthzRSAManager.setTime(properties.getRsa().getRsaKeyRefreshWithPeriod());
-        if (properties.getRsa().isAuto() && (properties.getRsa().getCustomPrivateKey() == null || properties.getRsa().getCustomPublicKey() == null)) {
+        if (properties.getRsa().isAuto() && (properties.getRsa().getCustomPrivateKey() == null || properties.getRsa()
+                .getCustomPublicKey() == null)) {
             AuthzRSAManager.setAuto(true);
         } else {
             AuthzRSAManager.setAuto(false);
