@@ -7,19 +7,19 @@ import java.util.function.Supplier;
  * @since 1.0.0
  */
 public interface Constants {
-    String SCOPE                    = "cop";
-    String ACCESS_TOKEN_ID          = "aid";
-    String REFRESH_TOKEN_ID         = "rid";
-    String USER_ID                  = "uid";
-    String CLIENT_ID                = "cid";
-    String DEVICE_ID                = "did";
-    String DEVICE_TYPE              = "dtp";
-    String TOKEN_TYPE               = "ttp";
-    String LAST_REQUEST_TIME        = "lrt";
-    String ACCESS_TOKEN_EXPIRATION  = "aex";
-    String REFRESH_TOKEN_EXPIRATION = "rex";
-    String IP                       = "ip";
-    String GRANT_TYPE               = "gtp";
+    String SCOPE                = "cop";
+    String ACCESS_TOKEN_ID      = "aid";
+    String REFRESH_TOKEN_ID     = "rid";
+    String USER_ID              = "uid";
+    String CLIENT_ID            = "cid";
+    String DEVICE_ID            = "did";
+    String DEVICE_TYPE          = "dtp";
+    String LAST_REQUEST_TIME    = "lrt";
+    String IP                   = "ip";
+    String GRANT_TYPE           = "gtp";
+    String AUTHORIZED_TIME      = "aut";
+    String EXPIRES_TIME         = "ext";
+    String AUTHORIZED_DEVICE_ID = "adi";
 
     String SEPARATOR = ":";
     String COMMA     = ",";
@@ -31,19 +31,19 @@ public interface Constants {
     String HTTP_META = "AU_HTTP_META";
     String OPTIONS   = "OPTIONS";
 
-    Supplier<String> USER_DEVICE_KEY_PREFIX         = () -> AuthzAppVersion.values.get(
+    Supplier<String> USER_DEVICE_KEY_PREFIX       = () -> AuthzAppVersion.values.get(
             "USER_DEVICE_KEY_PREFIX");
-    Supplier<String> OAUTH_USER_DEVICE_KEY_PREFIX         = () -> AuthzAppVersion.values.get(
+    Supplier<String> OAUTH_USER_DEVICE_KEY_PREFIX = () -> AuthzAppVersion.values.get(
             "OAUTH_USER_DEVICE_KEY_PREFIX");
 
-    Supplier<String> USER_REQUEST_KEY_PREFIX        = () -> AuthzAppVersion.values.get(
+    Supplier<String> USER_REQUEST_KEY_PREFIX       = () -> AuthzAppVersion.values.get(
             "USER_REQUEST_KEY_PREFIX");
-    Supplier<String> OAUTH_USER_REQUEST_KEY_PREFIX        = () -> AuthzAppVersion.values.get(
+    Supplier<String> OAUTH_USER_REQUEST_KEY_PREFIX = () -> AuthzAppVersion.values.get(
             "OAUTH_USER_REQUEST_KEY_PREFIX");
 
-    Supplier<String> USER_ROLES_KEY_PREFIX          = () -> AuthzAppVersion.values.get(
+    Supplier<String> USER_ROLES_KEY_PREFIX = () -> AuthzAppVersion.values.get(
             "USER_ROLES_KEY_PREFIX");
-    Supplier<String> DASHBOARD_KEY_PREFIX           = () -> AuthzAppVersion.values.get(
+    Supplier<String> DASHBOARD_KEY_PREFIX  = () -> AuthzAppVersion.values.get(
             "DASHBOARD_KEY_PREFIX");
 
     Supplier<String> PERMISSIONS_BY_ROLE_KEY_PREFIX = () -> AuthzAppVersion.values.get(

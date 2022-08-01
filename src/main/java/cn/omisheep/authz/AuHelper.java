@@ -27,6 +27,7 @@ import cn.omisheep.authz.core.helper.OpenAuthHelper;
 import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.oauth.AuthorizationException;
 import cn.omisheep.authz.core.oauth.AuthorizationInfo;
+import cn.omisheep.authz.core.oauth.AuthorizedDeviceDetails;
 import cn.omisheep.authz.core.oauth.ClientDetails;
 import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.authz.core.tk.IssueToken;
@@ -293,44 +294,39 @@ public class AuHelper extends BaseHelper {
 
     /**
      * @param role 所指定的角色
-     * @return 判断当前请求用户是否有指定角色
-     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
+     * @return 判断当前请求用户是否有指定角色 若未登录返回false
      */
-    public static boolean hasRole(String... role) throws NotLoginException {
+    public static boolean hasRole(String... role) {
         return hasRoles(Arrays.asList(role));
     }
 
     /**
      * @param roles 所指定的角色
-     * @return 判断当前请求用户是否有指定角色
-     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
+     * @return 判断当前请求用户是否有指定角色 若未登录返回false
      */
-    public static boolean hasRoles(List<String> roles) throws NotLoginException {
+    public static boolean hasRoles(List<String> roles) {
         return AuthzStateHelper.hasRoles(roles);
     }
 
     /**
      * @param permission 所指定的权限
-     * @return 判断当前请求用户是否有指定角色
-     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
+     * @return 判断当前请求用户是否有指定角色 若未登录返回false
      */
-    public static boolean hasPermission(String... permission) throws NotLoginException {
+    public static boolean hasPermission(String... permission) {
         return hasPermissions(Arrays.asList(permission));
     }
 
     /**
      * @param permissions 所指定的权限
      * @return 判断当前请求用户是否有指定角色
-     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
      */
-    public static boolean hasPermissions(List<String> permissions) throws NotLoginException {
+    public static boolean hasPermissions(List<String> permissions) {
         return AuthzStateHelper.hasPermissions(permissions);
     }
 
     /**
      * @param scope 所指定的访问范围
      * @return 判断当前请求用户（oauth）是否有指定的访问权限
-     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
      */
     public static boolean hasScope(String... scope) {
         return AuthzStateHelper.hasScope(Arrays.asList(scope));
@@ -339,7 +335,6 @@ public class AuHelper extends BaseHelper {
     /**
      * @param scope 所指定的访问范围
      * @return 判断当前请求用户（oauth）是否有指定的访问权限
-     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
      */
     public static boolean hasScope(List<String> scope) {
         return AuthzStateHelper.hasScope(scope);
@@ -354,7 +349,7 @@ public class AuHelper extends BaseHelper {
      * @param total  数量
      */
     public static void addDeviceTypesTotalLimit(Collection<String> types, int total) throws NotLoginException {
-        addDeviceTypesTotalLimit(AuHelper.getUserId(), types, total);
+        addDeviceTypesTotalLimit(getUserId(), types, total);
     }
 
     /**
@@ -374,7 +369,7 @@ public class AuHelper extends BaseHelper {
      * @param count 数量
      */
     public static void changeMaximumDeviceTotal(int count) throws NotLoginException {
-        changeMaximumDeviceTotal(AuHelper.getUserId(), count);
+        changeMaximumDeviceTotal(getUserId(), count);
     }
 
     /**
@@ -385,7 +380,7 @@ public class AuHelper extends BaseHelper {
      * @param count  数量
      */
     public static void changeMaximumSameTypeDeviceCount(int count) throws NotLoginException {
-        changeMaximumSameTypeDeviceCount(AuHelper.getUserId(), count);
+        changeMaximumSameTypeDeviceCount(getUserId(), count);
     }
 
     /**
@@ -926,6 +921,30 @@ public class AuHelper extends BaseHelper {
          */
         public static String getRedirectUrl(@NonNull String clientId) {
             return OpenAuthHelper.findClient(clientId).getRedirectUrl();
+        }
+
+        public static void removeAuthorizedDevice(@NonNull String id) throws NotLoginException {
+            removeAuthorizedDevice(getUserId(), id);
+        }
+
+        public static void removeAuthorizedDevice(@NonNull Object userId, @NonNull String id) {
+            OpenAuthHelper.removeAuthorizedDevice(userId, id);
+        }
+
+        public static void removeAllAuthorizedDevice() throws NotLoginException {
+            removeAllAuthorizedDevice(getUserId());
+        }
+
+        public static void removeAllAuthorizedDevice(@NonNull Object userId) {
+            OpenAuthHelper.removeAllAuthorizedDevice(userId);
+        }
+
+        public static List<AuthorizedDeviceDetails> getAllAuthorizedDeviceDetails() throws NotLoginException {
+            return getAllAuthorizedDeviceDetails(getUserId());
+        }
+
+        public static List<AuthorizedDeviceDetails> getAllAuthorizedDeviceDetails(@NonNull Object userId) {
+            return OpenAuthHelper.getAllAuthorizedDeviceDetails(userId);
         }
 
         /**

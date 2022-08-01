@@ -20,6 +20,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.UserStatus.*;
+import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.*;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -45,7 +46,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         if (clientId == null) {
             device = cache.get(key(accessToken), Device.class);
         } else {
-            device = cache.get(oauthKey(accessToken), Device.class);
+            device = cache.get(UserDevicesDict.oauthKey(accessToken), Device.class);
         }
 
         // 设备未登录。需要重新登录
@@ -71,25 +72,24 @@ public class UserDevicesDictByCache implements UserDevicesDict {
 
         AccessToken  accessToken  = tokenPair.getAccessToken();
         RefreshToken refreshToken = tokenPair.getRefreshToken();
-        Long         expiredAt    = refreshToken.getExpiredAt();
         Integer      expiredIn    = refreshToken.getExpiredIn();
 
         Device device = new DefaultDevice()
-                .setExpiresAt(expiredAt)
                 .setAccessTokenId(accessToken.getTokenId());
 
         String clientId = accessToken.getClientId();
         if (clientId != null) {
             String    scope     = accessToken.getScope();
             GrantType grantType = accessToken.getGrantType();
-            device.setScope(scope).setGrantType(grantType).setClientId(clientId);
-            String key = oauthKey(accessToken);
+            device.setScope(scope).setGrantType(grantType).setClientId(clientId)
+                    .setAuthorizedDate(httpMeta.getNow()).setExpiresDate(new Date(refreshToken.getExpiredAt()));
+            String key = UserDevicesDict.oauthKey(accessToken);
             cache.set(key, device, expiredIn);
         } else {
             String deviceType = accessToken.getDeviceType();
             String deviceId   = accessToken.getDeviceId();
             String key        = key(accessToken);
-            String rKey       = requestKey(accessToken);
+            String rKey       = UserDevicesDict.requestKey(accessToken);
             device.setDeviceType(deviceType).setDeviceId(deviceId);
             cache.set(key, device, expiredIn);
             Async.run(() -> clean(accessToken.getUserId(), deviceType, deviceId, key, rKey));

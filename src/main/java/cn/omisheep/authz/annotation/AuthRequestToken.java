@@ -5,7 +5,7 @@ import org.springframework.core.annotation.AliasFor;
 import java.lang.annotation.*;
 
 /**
- * 利用参数登录、header登录、cookie登录，没有将走默认
+ * 利用参数登录、header登录、cookie登录，没有使用默认逻辑
  *
  * @author zhouxinchen
  * @since 1.2.0

@@ -33,12 +33,20 @@ public class AuthzMap implements Map<Object, Object> {
     }
 
     protected Date getDate(String name) {
-        long millis = Long.parseLong((String) map.get(name));
-        return new Date(millis);
+        try {
+            long millis = Long.parseLong((String) map.get(name));
+            return new Date(millis);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     protected Long getLong(String name) {
-        return Long.parseLong((String) map.get(name));
+        try {
+            return Long.parseLong((String) map.get(name));
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     protected void setDate(String name, Date d) {

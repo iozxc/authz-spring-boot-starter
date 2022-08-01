@@ -2,24 +2,35 @@ package cn.omisheep.authz.core.tk;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 /**
  * @author zhouxinchen
  * @since 1.2.0
  */
 @Data
+@Accessors(chain = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class IssueToken {
-    private String    accessToken;
-    private String    refreshToken;
-    private Integer   expiresIn;
-    private String    scope;
 
-    public IssueToken(TokenPair tokenPair) {
-        this.accessToken  = tokenPair.getAccessToken().getToken();
-        this.refreshToken = tokenPair.getRefreshToken().getToken();
-        this.scope        = tokenPair.getAccessToken().getScope();
-        this.expiresIn    = tokenPair.getAccessToken().getExpiresIn();
-    }
+    /**
+     * access token 的值
+     */
+    private String  accessToken;
+
+    /**
+     * refresh token 的值
+     */
+    private String  refreshToken;
+
+    /**
+     * 过期时间，时间到期请用 refreshToken 刷新获得新的accessToken和refreshToken
+     */
+    private Integer expiresIn;
+
+    /**
+     * 授权范围
+     */
+    private String  scope;
 
 }

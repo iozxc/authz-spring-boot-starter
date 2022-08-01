@@ -14,6 +14,8 @@ public class OAuthSlot implements Slot {
 
     @Override
     public void chain(HttpMeta httpMeta, HandlerMethod handler, Error error) {
+        String clientId = httpMeta.getToken().getClientId();
+        if (clientId==null) return;
         if (!OpenAuthDict.hasScope(httpMeta.getApi(), httpMeta.getMethod(), httpMeta.getScope())) {
             error.error(ExceptionStatus.SCOPE_EXCEPTION);
         }

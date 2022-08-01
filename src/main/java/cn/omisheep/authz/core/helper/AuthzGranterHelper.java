@@ -29,7 +29,7 @@ public class AuthzGranterHelper extends BaseHelper {
      */
     public static IssueToken grant(Object userId, String deviceType, String deviceId) {
         TokenPair tokenPair = TokenHelper.createTokenPair(userId, deviceType, deviceId);
-        if (grant(tokenPair, true)) return new IssueToken(tokenPair);
+        if (grant(tokenPair, true)) return TokenHelper.createIssueToken(tokenPair);
         return null;
     }
 
@@ -89,7 +89,7 @@ public class AuthzGranterHelper extends BaseHelper {
                 if (response != null) {
                     response.addCookie(TokenHelper.generateCookie(tokenPair.getAccessToken()));
                 }
-                return new IssueToken(tokenPair);
+                return TokenHelper.createIssueToken(tokenPair);
             }
             return null;
         } catch (ExpiredJwtException e) {

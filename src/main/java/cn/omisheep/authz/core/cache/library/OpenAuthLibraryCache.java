@@ -63,7 +63,7 @@ public class OpenAuthLibraryCache {
         return joinPoint.proceed();
     }
 
-    @Around("execution(* cn.omisheep.authz.core.oauth.OpenAuthLibrary+.createAuthorizationInfoCallback(String,cn.omisheep.authz.core.oauth.AuthorizationInfo)))")
+    @Around("execution(* cn.omisheep.authz.core.callback.AuthorizationCallback+.createAuthorizationCodeCallback(String,cn.omisheep.authz.core.oauth.AuthorizationInfo)))")
     public Object aroundCreateAuthorizationInfo(ProceedingJoinPoint joinPoint) throws Throwable {
         cache.set(AUTHORIZE_CODE_PREFIX + joinPoint.getArgs()[0],
                   joinPoint.getArgs()[1],

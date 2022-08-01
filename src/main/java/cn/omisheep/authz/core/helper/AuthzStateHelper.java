@@ -1,7 +1,5 @@
 package cn.omisheep.authz.core.helper;
 
-import cn.omisheep.authz.core.NotLoginException;
-import cn.omisheep.authz.core.ThreadWebEnvironmentException;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.tk.AccessToken;
@@ -44,29 +42,29 @@ public class AuthzStateHelper extends BaseHelper {
         }
     }
 
-    public static boolean hasRoles(@NonNull List<String> roles) throws NotLoginException {
+    public static boolean hasRoles(@NonNull List<String> roles) {
         try {
             return AUtils.getCurrentHttpMeta().getRoles().containsAll(roles);
-        } catch (ThreadWebEnvironmentException e) {
+        } catch (Exception e) {
             return false;
         }
     }
 
-    public static boolean hasPermissions(@NonNull List<String> permissions) throws NotLoginException {
+    public static boolean hasPermissions(@NonNull List<String> permissions) {
         try {
             return AUtils.getCurrentHttpMeta().getPermissions().containsAll(permissions);
-        } catch (ThreadWebEnvironmentException e) {
+        } catch (Exception e) {
             return false;
         }
     }
 
-    public static boolean hasScope(@NonNull List<String> scope) throws NotLoginException {
+    public static boolean hasScope(@NonNull List<String> scope) {
         try {
             if (scope.isEmpty()) return true;
             Set<String> userScope = AUtils.getCurrentHttpMeta().getScope();
             if (userScope.isEmpty()) return false;
             return userScope.containsAll(scope);
-        } catch (ThreadWebEnvironmentException e) {
+        } catch (Exception e) {
             return false;
         }
     }

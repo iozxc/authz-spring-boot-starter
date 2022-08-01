@@ -56,6 +56,7 @@ public class HttpMeta extends BaseHelper {
     private       boolean                     requireLogin;
     private       PermRolesMeta               permRolesMeta;
     private       boolean                     ignore              = false;
+    private       boolean                     clearCookie          = true;
     private       UserDevicesDict.UserStatus  userStatus;
     @JsonIgnore
     private       LinkedList<Object>          exceptionObjectList = new LinkedList<>();
@@ -179,8 +180,8 @@ public class HttpMeta extends BaseHelper {
 
     public void setToken(AccessToken token) {
         if (this.token == null) {
-            this.token  = token;
-            this.userId = token.getUserId();
+            this.token    = token;
+            this.userId   = token.getUserId();
             this.hasToken = true;
         }
     }

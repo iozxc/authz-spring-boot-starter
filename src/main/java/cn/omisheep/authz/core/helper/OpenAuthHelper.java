@@ -1,12 +1,12 @@
 package cn.omisheep.authz.core.helper;
 
 import cn.omisheep.authz.core.AuthzProperties;
+import cn.omisheep.authz.core.auth.deviced.Device;
+import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.callback.AuthorizationCallback;
 import cn.omisheep.authz.core.config.AuthzAppVersion;
-import cn.omisheep.authz.core.oauth.AuthorizationException;
-import cn.omisheep.authz.core.oauth.AuthorizationInfo;
-import cn.omisheep.authz.core.oauth.ClientDetails;
-import cn.omisheep.authz.core.oauth.OpenAuthLibrary;
+import cn.omisheep.authz.core.config.Constants;
+import cn.omisheep.authz.core.oauth.*;
 import cn.omisheep.authz.core.tk.GrantType;
 import cn.omisheep.authz.core.tk.IssueToken;
 import cn.omisheep.authz.core.tk.TokenHelper;
@@ -17,12 +17,11 @@ import cn.omisheep.commons.util.UUIDBits;
 import lombok.Setter;
 import org.apache.commons.lang.StringUtils;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static cn.omisheep.authz.core.config.Constants.AUTHORIZE_CODE_PREFIX;
+import static cn.omisheep.authz.core.config.Constants.WILDCARD;
 
 /**
  * @author zhouxinchen
@@ -61,10 +60,12 @@ public class OpenAuthHelper extends BaseHelper {
         TokenPair tokenPair = TokenHelper.createTokenPair(authorizationInfo);
         if (!AuthzGranterHelper.grant(tokenPair, false)) return null;
 
+
         if (authorizationCallback != null) {
-            authorizationCallback.authorize(authorizationInfo);
+            authorizationCallback.authorize(
+                    new AuthorizedDeviceDetails(authorizationInfo, tokenPair.getRefreshToken().getTokenId()));
         }
-        return new IssueToken(tokenPair);
+        return TokenHelper.createIssueToken(tokenPair);
     }
 
     public static String createAuthorizationCode(String clientId, String scope, String redirectUrl,
@@ -79,14 +80,13 @@ public class OpenAuthHelper extends BaseHelper {
                                                clientId + scope + System.currentTimeMillis() + UUIDBits.getUUIDBits(
                                                        16));
         if (authorizationCode == null) throw AuthorizationException.privilegeGrantFailed();
-        LocalDateTime now     = LocalDateTime.now();
-        Date          fromNow = Date.from(now.atZone(ZoneId.systemDefault()).toInstant());
-        Date expiredTime = Date.from(
-                LocalDateTime.now().plus(AuthzAppVersion.authorizationCodeTime, ChronoUnit.MILLIS).atZone(
-                        ZoneId.systemDefault()).toInstant());
-        AuthorizationInfo authorizationInfo = new AuthorizationInfo(clientId, scope, GrantType.AUTHORIZATION_CODE,
+        Date now         = TimeUtils.now();
+        Date expiredTime = TimeUtils.datePlus(now, AuthzAppVersion.authorizationCodeTime);
+
+        AuthorizationInfo authorizationInfo = new AuthorizationInfo(clientId, client.getName(), scope,
+                                                                    GrantType.AUTHORIZATION_CODE,
                                                                     AuthzAppVersion.authorizationCodeTime,
-                                                                    expiredTime.getTime(), userId);
+                                                                    expiredTime.getTime(), now.getTime(), userId);
         if (authorizationCallback != null) {
             authorizationCallback.createAuthorizationCodeCallback(authorizationCode, authorizationInfo);
         }
@@ -131,6 +131,32 @@ public class OpenAuthHelper extends BaseHelper {
     public static void deleteClient(String clientId) {
         if (clientId == null) return;
         openAuthLibrary.deleteClientById(clientId);
+    }
+
+    public static List<AuthorizedDeviceDetails> getAllAuthorizedDeviceDetails(Object userId) {
+        Set<String>         keys      = cache.keys(UserDevicesDict.oauthKey(userId, Constants.WILDCARD));
+        Map<String, Device> deviceMap = cache.get(keys, Device.class);
+        Iterator<String>    iterator  = keys.stream().map(k -> k.split(Constants.SEPARATOR)[6]).iterator();
+        return deviceMap.values().stream().map(v -> {
+                    if (v == null) return null;
+                    return new AuthorizedDeviceDetails(v, userId, iterator.next());
+                })
+                .filter(Objects::nonNull).collect(Collectors.toList());
+    }
+
+    public static void removeAuthorizedDevice(Object userId, String id) {
+        if (id.contains(WILDCARD)) return;
+        cache.del(UserDevicesDict.oauthKey(userId, id));
+    }
+
+    public static void removeAllAuthorizedDevice(Object userId) {
+        Set<String> keys = cache.keys(UserDevicesDict.oauthKey(userId, Constants.WILDCARD));
+        cache.del(keys);
+        if (authorizationCallback != null) {
+            for (String k : keys) {
+                authorizationCallback.removeAuthorization(k.split(Constants.SEPARATOR)[6]);
+            }
+        }
     }
 
 }

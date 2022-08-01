@@ -81,7 +81,7 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
             }
             if (!exceptionStatusList.isEmpty() || !exceptionObjectList.isEmpty()) {
                 ExceptionStatus status = exceptionStatusList.getFirst();
-                if (status != null && status.isClearToken()) {
+                if (httpMeta.isClearCookie() && status != null && status.isClearToken()) {
                     TokenHelper.clearCookie(response);
                 }
                 return authzExceptionHandler.handle(request, response, httpMeta, status, exceptionObjectList);

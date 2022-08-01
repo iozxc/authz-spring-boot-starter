@@ -46,10 +46,10 @@ public interface OpenAuthLibrary extends AuthorizationCallback {
     /**
      * 成功授权时的回调方法
      *
-     * @param authorizationInfo 授权信息
+     * @param authorizedDeviceDetails 授权信息
      */
     @Override
-    default void authorize(@NonNull AuthorizationInfo authorizationInfo) {
+    default void authorize(@NonNull AuthorizedDeviceDetails authorizedDeviceDetails) {
 
     }
 

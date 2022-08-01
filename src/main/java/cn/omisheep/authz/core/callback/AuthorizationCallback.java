@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core.callback;
 
 import cn.omisheep.authz.core.oauth.AuthorizationInfo;
+import cn.omisheep.authz.core.oauth.AuthorizedDeviceDetails;
 import org.springframework.lang.NonNull;
 
 /**
@@ -14,9 +15,18 @@ public interface AuthorizationCallback {
     /**
      * 成功授权时的回调方法
      *
-     * @param authorizationInfo 授权信息
+     * @param authorizedDeviceDetails 授权信息
      */
-    void authorize(@NonNull AuthorizationInfo authorizationInfo);
+    void authorize(@NonNull AuthorizedDeviceDetails authorizedDeviceDetails);
+
+    /**
+     * 删除授权时的回调方法
+     *
+     * @param id 授权信息id
+     */
+    default void removeAuthorization(@NonNull String id) {
+
+    }
 
     /**
      * 授权时的回调方法

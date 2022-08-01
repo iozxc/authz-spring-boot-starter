@@ -35,4 +35,16 @@ public class DefaultOpenAuthLibrary implements OpenAuthLibrary {
     public void registerClient(@NonNull ClientDetails clientDetails) {
         System.out.println(clientDetails); // todo
     }
+
+    @Override
+    public void createAuthorizationCodeCallback(@NonNull String authorizationCode,
+                                                @NonNull AuthorizationInfo authorizationInfo) {
+        System.out.println(authorizationCode);
+        System.out.println(authorizationInfo);
+    }
+
+    @Override
+    public void authorize(@NonNull AuthorizedDeviceDetails authorizedDeviceDetails) {
+        System.out.println(authorizedDeviceDetails);
+    }
 }

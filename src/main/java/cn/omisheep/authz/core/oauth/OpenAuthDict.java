@@ -29,16 +29,16 @@ public class OpenAuthDict {
     private static final Map<String, Map<String, Set<String>>> srcScope = Collections.unmodifiableMap(_srcScope);
 
     @Nullable
-    public Object modify(@NonNull AuthzModifier modifier) {
+    public Object modify(@NonNull AuthzModifier modifier) { //todo
         return null;
     }
 
     public static boolean hasScope(String path, String method, Set<String> scope) {
         Map<String, Set<String>> p = _srcScope.get(path);
-        if (p == null) return true;
+        if (p == null) return false;
         Set<String> requireScope = p.get(method);
         if (requireScope.isEmpty()) {
-            return true;
+            return false;
         }
         if (scope.isEmpty()) return false;
         return scope.containsAll(requireScope);
@@ -76,7 +76,10 @@ public class OpenAuthDict {
             if (oAuthScope != null) scope.addAll(Arrays.asList(oAuthScope.scope()));
             OAuthScopeBasic oAuthScopeBasic = AnnotatedElementUtils.getMergedAnnotation(value.getMethod(),
                                                                                         OAuthScopeBasic.class);
-            if (oAuthScopeBasic != null) scope.addAll(Arrays.asList(oAuthScopeBasic.scope()));
+            if (oAuthScopeBasic != null) {
+                scope.addAll(Arrays.asList(oAuthScopeBasic.scope()));
+                scope.add(defaultBasicScope);
+            }
 
             if (scope.isEmpty()) return;
             patterns.forEach(pattern -> mtds.forEach(method -> {

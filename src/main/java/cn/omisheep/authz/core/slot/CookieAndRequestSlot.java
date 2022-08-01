@@ -70,12 +70,15 @@ public class CookieAndRequestSlot implements Slot {
             if (tokenValue == null && !authRequestToken.param().equals("")) {
                 tokenValue = httpMeta.getRequest().getParameter(authRequestToken.param());
             }
+
+            if (tokenValue != null) httpMeta.setClearCookie(false);
         }
 
         if (tokenValue == null) {
             String s = HttpUtils.getCurrentRequestHeaders().get(headerName);
             if (s != null && s.startsWith(headerPrefix)) {
                 tokenValue = s.substring(headerPrefix.length());
+                if (tokenValue != null) httpMeta.setClearCookie(false);
             }
         }
 

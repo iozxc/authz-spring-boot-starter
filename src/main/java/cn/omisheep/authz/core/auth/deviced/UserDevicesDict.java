@@ -130,35 +130,35 @@ public interface UserDevicesDict {
     }
 
 
-    default String requestKey(AccessToken accessToken) {
+    static String requestKey(AccessToken accessToken) {
         return requestKey(accessToken.getUserId(), accessToken.getRefreshTokenId());
     }
 
-    default String requestKey(Object userId, String refreshTokenId) {
+    static String requestKey(Object userId, String refreshTokenId) {
         return Constants.USER_REQUEST_KEY_PREFIX.get() + userId + Constants.SEPARATOR + refreshTokenId;
     }
 
-    default String key(AccessToken accessToken) {
+    static String key(AccessToken accessToken) {
         return key(accessToken.getUserId(), accessToken.getRefreshTokenId());
     }
 
-    default String key(RefreshToken refreshToken) {
+    static String key(RefreshToken refreshToken) {
         return key(refreshToken.getUserId(), refreshToken.getTokenId());
     }
 
-    default String key(Object userId, String refreshTokenId) {
+    static String key(Object userId, String refreshTokenId) {
         return Constants.USER_DEVICE_KEY_PREFIX.get() + userId + Constants.SEPARATOR + refreshTokenId;
     }
 
-    default String oauthKey(AccessToken accessToken) {
+    static String oauthKey(AccessToken accessToken) {
         return oauthKey(accessToken.getUserId(), accessToken.getRefreshTokenId());
     }
 
-    default String oauthKey(Object userId, String refreshTokenId) {
+    static String oauthKey(Object userId, String refreshTokenId) {
         return Constants.OAUTH_USER_DEVICE_KEY_PREFIX.get() + userId + Constants.SEPARATOR + refreshTokenId;
     }
 
-    default boolean equalsDeviceByTypeAndId(Device device, String deviceType, String deviceId) {
+    static boolean equalsDeviceByTypeAndId(Device device, String deviceType, String deviceId) {
         if (device == null) return false;
         return StringUtils.equals(device.getDeviceType(), deviceType) && StringUtils.equals(device.getDeviceId(), deviceId);
     }

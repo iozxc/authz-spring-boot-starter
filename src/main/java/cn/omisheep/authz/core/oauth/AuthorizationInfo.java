@@ -14,9 +14,11 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class AuthorizationInfo {
     private final String    clientId;
+    private final String    clientName;
     private final String    scope;
     private final GrantType grantType;
     private final Long      expiresIn;
     private final Long      expiresAt;
+    private final Long      authorizedAt;
     private final Object    userId;
 }

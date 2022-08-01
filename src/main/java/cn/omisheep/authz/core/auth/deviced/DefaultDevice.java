@@ -3,10 +3,13 @@ package cn.omisheep.authz.core.auth.deviced;
 
 import cn.omisheep.authz.core.tk.GrantType;
 
+import java.util.Date;
+
 import static cn.omisheep.authz.core.config.Constants.*;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
+ * @version 1.2.0
  * @since 1.0.0
  */
 public class DefaultDevice extends AuthzMap implements Device {
@@ -24,17 +27,6 @@ public class DefaultDevice extends AuthzMap implements Device {
     @Override
     public Device setDeviceType(String type) {
         setValue(DEVICE_TYPE, type);
-        return this;
-    }
-
-    @Override
-    public Long getExpiresAt() {
-        return getLong(ACCESS_TOKEN_EXPIRATION);
-    }
-
-    @Override
-    public Device setExpiresAt(Long accessExpiresAt) {
-        setValue(ACCESS_TOKEN_EXPIRATION, String.valueOf(accessExpiresAt));
         return this;
     }
 
@@ -90,6 +82,28 @@ public class DefaultDevice extends AuthzMap implements Device {
     @Override
     public Device setClientId(String clientId) {
         setValue(CLIENT_ID, clientId);
+        return this;
+    }
+
+    @Override
+    public Date getAuthorizedDate() {
+        return getDate(AUTHORIZED_TIME);
+    }
+
+    @Override
+    public Device setAuthorizedDate(Date authorizedDate) {
+        setDate(AUTHORIZED_TIME, authorizedDate);
+        return this;
+    }
+
+    @Override
+    public Date getExpiresDate() {
+        return getDate(EXPIRES_TIME);
+    }
+
+    @Override
+    public Device setExpiresDate(Date expiresDate) {
+        setDate(EXPIRES_TIME, expiresDate);
         return this;
     }
 
