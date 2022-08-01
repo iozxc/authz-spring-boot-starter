@@ -1,9 +1,7 @@
 package cn.omisheep.authz.core.helper;
 
-import cn.omisheep.authz.core.AuthzException;
-import cn.omisheep.authz.core.ExceptionStatus;
-import cn.omisheep.authz.core.RefreshTokenExpiredException;
-import cn.omisheep.authz.core.ThreadWebEnvironmentException;
+import cn.omisheep.authz.AuHelper;
+import cn.omisheep.authz.core.*;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.tk.*;
 import cn.omisheep.authz.core.util.AUtils;
@@ -33,6 +31,16 @@ public class AuthzGranterHelper extends BaseHelper {
         TokenPair tokenPair = TokenHelper.createTokenPair(userId, deviceType, deviceId);
         if (grant(tokenPair, true)) return new IssueToken(tokenPair);
         return null;
+    }
+
+    public static IssueToken grant(Object userId) {
+        String deviceType;
+        try {
+            deviceType = AuHelper.getHttpMeta().getUserAgent();
+        } catch (ThreadWebEnvironmentException e) {
+            deviceType = "unknown";
+        }
+        return grant(userId, deviceType, null);
     }
 
     /**
@@ -123,37 +131,49 @@ public class AuthzGranterHelper extends BaseHelper {
     }
 
     public static void logout() {
-        userDevicesDict.removeCurrentDeviceFromCurrentUser();
+        userDevicesDict.removeCurrentDevice();
         clearCookie(null);
     }
 
     public static void logoutAll() {
-        userDevicesDict.removeAllDeviceFromCurrentUser();
-        clearCookie(null);
+        try {
+            userDevicesDict.removeAllDevice(AuHelper.getUserId());
+            clearCookie(null);
+        } catch (Exception e) {
+            // skip
+        }
     }
 
     public static void logout(@NonNull String deviceType) {
-        userDevicesDict.removeDeviceFromCurrentUserByDeviceType(deviceType);
-        clearCookie(null, deviceType);
+        try {
+            userDevicesDict.removeDevice(AuHelper.getUserId(), deviceType, null);
+            clearCookie(null, deviceType);
+        } catch (Exception e) {
+            // skip
+        }
     }
 
     public static void logout(@NonNull String deviceType, @Nullable String deviceId) {
-        userDevicesDict.removeDeviceFromCurrentUserByDeviceTypeAndDeviceId(deviceType, deviceId);
-        clearCookie(null, deviceType, deviceType);
+        try {
+            userDevicesDict.removeDevice(AuHelper.getUserId(), deviceType, deviceId);
+            clearCookie(null, deviceType, deviceType);
+        } catch (Exception e) {
+            // skip
+        }
     }
 
     public static void logoutAll(@NonNull Object userId) {
-        userDevicesDict.removeAllDeviceByUserId(userId);
+        userDevicesDict.removeAllDevice(userId);
         clearCookie(userId);
     }
 
     public static void logout(@NonNull Object userId, @NonNull String deviceType) {
-        userDevicesDict.removeDeviceByUserIdAndDeviceType(userId, deviceType);
+        userDevicesDict.removeDevice(userId, deviceType, null);
         clearCookie(userId, deviceType);
     }
 
     public static void logout(@NonNull Object userId, @NonNull String deviceType, @Nullable String deviceId) {
-        userDevicesDict.removeDeviceByUserIdAndDeviceTypeAndDeviceId(userId, deviceType, deviceId);
+        userDevicesDict.removeDevice(userId, deviceType, deviceId);
         clearCookie(userId, deviceType, deviceId);
     }
 

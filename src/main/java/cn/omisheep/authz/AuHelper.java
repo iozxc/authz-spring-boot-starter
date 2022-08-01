@@ -2,7 +2,7 @@ package cn.omisheep.authz;
 
 /*
                  _    _
-    /\          | |  | |
+    /\   v1.2   | |  | |
    /  \   _   _ | |_ | |__  _authz
   / /\ \ | | | || __|| '_ \ |_  /
  / ____ \| |_| || |_ | | | | / /
@@ -26,6 +26,7 @@ import cn.omisheep.authz.core.helper.BaseHelper;
 import cn.omisheep.authz.core.helper.OpenAuthHelper;
 import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.oauth.AuthorizationException;
+import cn.omisheep.authz.core.oauth.AuthorizationInfo;
 import cn.omisheep.authz.core.oauth.ClientDetails;
 import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.authz.core.tk.IssueToken;
@@ -42,6 +43,7 @@ import static cn.omisheep.authz.core.AuthzManager.modify;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
+ * @version 1.2
  * @since 1.0.0
  */
 @SuppressWarnings("all")
@@ -55,13 +57,7 @@ public class AuHelper extends BaseHelper {
      */
     @Nullable
     public static IssueToken login(@NonNull Object userId) {
-        String deviceType;
-        try {
-            deviceType = getHttpMeta().getUserAgent();
-        } catch (ThreadWebEnvironmentException e) {
-            deviceType = "unknown";
-        }
-        return login(userId, deviceType, null);
+        return AuthzGranterHelper.grant(userId);
     }
 
     /**
@@ -164,241 +160,6 @@ public class AuHelper extends BaseHelper {
     }
 
     /**
-     * <li>1.注册客户端 {@link #clientRegister(String, String)} -> 返回客户端信息（客户端id，客户端name，客户端密钥，重定向url）</li>
-     * <li>2.获取授权码 {@link #createAuthorizationCode(String, String, String)} -> 客户端id+登录用户+权限范围 、获得登录用户的授权码</li>
-     * <li>3.验证授权码 {@link #authorize(String, String, String)}-> 利用授权码去获得TokenPair</li>
-     *
-     * @since 1.2.0
-     */
-    public static class OpenAuth {
-
-        /**
-         * 不需要登录 <br>
-         * 验证授权码是否有效，成功返回TokenPair
-         *
-         * @param clientId          客户端id
-         * @param clientSecret      客户端密钥
-         * @param authorizationCode 授权码
-         * @return 授权后的tokenPair(accessToken以及refreshToken)
-         * @throws AuthorizationException 验证失败，客户端密码错误 或者 授权码失效(过期 或者 已使用)
-         */
-        @Nullable
-        public static IssueToken authorize(@NonNull String clientId, @NonNull String clientSecret,
-                                           @NonNull String authorizationCode) throws AuthorizationException {
-            return OpenAuthHelper.authorize(clientId, clientSecret, authorizationCode);
-        }
-
-        /**
-         * 若未登录，抛出 {@link  AuthorizationException } 授权失败
-         * 指定(客户端, 授权范围) -> 获得登录用户的授权码
-         * 获取授权码 <br>
-         * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
-         *
-         * @param clientId    客户端id
-         * @param scope       授予的权限范围
-         * @param redirectUrl 重定向url
-         * @return Authorization Code 授权码
-         * @throws AuthorizationException 授权失败
-         */
-        @NonNull
-        public static String createAuthorizationCode(@NonNull String clientId,
-                                                     @NonNull String scope,
-                                                     @NonNull String redirectUrl) throws AuthorizationException {
-            if (isLogin() && agreeAuthorize(clientId)) {
-                return OpenAuthHelper.createAuthorizationCode(clientId, scope, redirectUrl, getUserId());
-            }
-            throw AuthorizationException.privilegeGrantFailed();
-        }
-
-        /**
-         * 若未登录，抛出 {@link  AuthorizationException } 授权失败
-         * 指定(客户端, 授权范围-默认权限) -> 获得登录用户的授权码
-         * 获取授权码 <br>
-         * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
-         *
-         * @param clientId    客户端id
-         * @param redirectUrl 重定向url
-         * @return Authorization Code 授权码
-         * @throws AuthorizationException 授权失败
-         */
-        @NonNull
-        public static String createBasicScopeAuthorizationCode(@NonNull String clientId,
-                                                               @NonNull String redirectUrl) throws AuthorizationException {
-            if (isLogin() && agreeAuthorize(clientId)) {
-                return OpenAuthHelper.createBasicScopeAuthorizationCode(clientId, redirectUrl, getUserId());
-            }
-            throw AuthorizationException.privilegeGrantFailed();
-        }
-
-        /**
-         * 客户端id有效，能够授权
-         *
-         * @param clientId 客户端id
-         * @return 是否能够授权
-         */
-        public static boolean agreeAuthorize(@NonNull String clientId) {
-            return OpenAuthHelper.findClient(clientId) != null;
-        }
-
-        /**
-         * 根据clientId获取注册client的详细信息
-         *
-         * @param clientId 客户端id
-         * @return 客户端的详细信息（客户端id，客户端name，客户端密钥，重定向url）
-         */
-        public static ClientDetails findClient(@NonNull String clientId) {
-            return OpenAuthHelper.findClient(clientId);
-        }
-
-        /**
-         * 根据clientId获取注册client的RedirectUrl
-         *
-         * @param clientId 客户端id
-         * @return RedirectUrl 重定向地址
-         */
-        public static String getRedirectUrl(@NonNull String clientId) {
-            return OpenAuthHelper.findClient(clientId).getRedirectUrl();
-        }
-
-        /**
-         * 根据clientId注销client
-         *
-         * @param clientId 客户端id
-         */
-        public static void deleteClient(@NonNull String clientId) {
-            OpenAuthHelper.deleteClient(clientId);
-        }
-
-        /**
-         * 注册一个客户端
-         *
-         * @return 客户端的详细信息（客户端id，客户端name，客户端密钥，重定向url）
-         */
-        public static ClientDetails clientRegister() {
-            return OpenAuthHelper.clientRegister("DefaultClientName", null);
-        }
-
-        /**
-         * 注册一个客户端
-         *
-         * @param clientName  客户端名
-         * @param redirectUrl 回调地址
-         * @return 客户端的详细信息（客户端id，客户端name，客户端密钥，重定向url）
-         */
-        public static ClientDetails clientRegister(@NonNull String clientName, @NonNull String redirectUrl) {
-            return OpenAuthHelper.clientRegister(clientName, redirectUrl);
-        }
-
-        /**
-         * 注册一个客户端
-         *
-         * @param clientId    客户端id
-         * @param clientName  客户端名
-         * @param redirectUrl 回调地址
-         * @return 客户端的详细信息（客户端id，客户端name，客户端密钥，重定向url）
-         */
-        public static ClientDetails clientRegister(@NonNull String clientId, @NonNull String clientName,
-                                                   @NonNull String redirectUrl) {
-            return OpenAuthHelper.clientRegister(clientId, clientName, redirectUrl);
-        }
-
-        /**
-         * 注册一个客户端
-         *
-         * @param clientId     客户端id
-         * @param clientSecret 客户端密钥
-         * @param clientName   客户端名
-         * @param redirectUrl  回调地址
-         * @return 客户端的详细信息（客户端id，客户端name，客户端密钥，重定向url）
-         */
-        public static ClientDetails clientRegister(@NonNull String clientId, @NonNull String clientSecret,
-                                                   @NonNull String clientName, @NonNull String redirectUrl) {
-            return OpenAuthHelper.clientRegister(clientId, clientSecret, clientName, redirectUrl);
-        }
-
-    }
-
-    /**
-     * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
-     * count >= 1 or count = -1
-     *
-     * @param userId 用户id
-     * @param types  deviceType
-     * @param total  数量
-     */
-    public static void addDeviceTypesTotalLimit(
-            Collection<String> types, int total) throws NotLoginException {
-        addDeviceTypesTotalLimit(AuHelper.getUserId(), types, total);
-    }
-
-    /**
-     * 获得一个可修改的 DeviceTypesTotalLimit list
-     * count >= 1 or count = -1
-     *
-     * @param userId 用户id
-     */
-    public static List<DeviceCountInfo> getOrUpdateDeviceTypesTotalLimit(Object userId) {
-        return userDevicesDict.getOrUpdateDeviceTypesTotalLimit(userId);
-    }
-
-    /**
-     * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
-     * count >= 1
-     *
-     * @param count 数量
-     */
-    public static void changeMaximumDeviceTotal(int count) throws NotLoginException {
-        changeMaximumDeviceTotal(AuHelper.getUserId(), count);
-    }
-
-    /**
-     * 同类型设备最多登录数 默认 1个【count最小为1】，超出会挤出最长时间未访问的设备。
-     * count >= 1
-     *
-     * @param userId 用户id
-     * @param count  数量
-     */
-    public static void changeMaximumSameTypeDeviceCount(int count) throws NotLoginException {
-        changeMaximumSameTypeDeviceCount(AuHelper.getUserId(), count);
-    }
-
-    /**
-     * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
-     * count >= 1 or count = -1
-     *
-     * @param userId 用户id
-     * @param types  deviceType
-     * @param total  数量
-     */
-    public static void addDeviceTypesTotalLimit(Object userId,
-                                                Collection<String> types,
-                                                int total) {
-        userDevicesDict.addDeviceTypesTotalLimit(userId, types, total);
-    }
-
-    /**
-     * 同类型设备最多登录数 默认 1个【count最小为1】，超出会挤出最长时间未访问的设备。
-     * count >= 1
-     *
-     * @param userId 用户id
-     * @param count  数量
-     */
-    public static void changeMaximumSameTypeDeviceCount(Object userId, int count) {
-        userDevicesDict.changeMaximumSameTypeDeviceCount(userId, count);
-    }
-
-    /**
-     * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
-     * count >= 1
-     *
-     * @param userId 用户id
-     * @param count  数量
-     */
-    public static void changeMaximumDeviceTotal(Object userId, int count) {
-        userDevicesDict.changeMaximumDeviceTotal(userId, count);
-    }
-
-    /**
      * 查询所有用户信息，一个map userId->设备信息列表
      *
      * @return 一个map userId->设备信息列表
@@ -428,7 +189,7 @@ public class AuHelper extends BaseHelper {
      * @return 所有设备列表
      */
     @NonNull
-    public static List<Device> getAllDeviceFromCurrentUser() {
+    public static List<Device> getAllDeviceFromCurrentUser() throws NotLoginException {
         return userDevicesDict.listDevicesByUserId(getUserId());
     }
 
@@ -463,8 +224,12 @@ public class AuHelper extends BaseHelper {
                 device -> device.getDeviceType().equals(deviceType)).collect(Collectors.toList());
     }
 
-    public static void getGrantDevice() {
+    public static List<AuthorizationInfo> getAllAuthorizationInfo() throws NotLoginException {
+        return getAllAuthorizationInfo(getUserId());
+    }
 
+    public static List<AuthorizationInfo> getAllAuthorizationInfo(Object userId) {
+        return null;
     }
 
     // **************************************     状态&权限      ************************************** //
@@ -578,6 +343,83 @@ public class AuHelper extends BaseHelper {
      */
     public static boolean hasScope(List<String> scope) {
         return AuthzStateHelper.hasScope(scope);
+    }
+
+    /**
+     * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
+     * count >= 1 or count = -1
+     *
+     * @param userId 用户id
+     * @param types  deviceType
+     * @param total  数量
+     */
+    public static void addDeviceTypesTotalLimit(Collection<String> types, int total) throws NotLoginException {
+        addDeviceTypesTotalLimit(AuHelper.getUserId(), types, total);
+    }
+
+    /**
+     * 获得一个可修改的 DeviceTypesTotalLimit list
+     * count >= 1 or count = -1
+     *
+     * @param userId 用户id
+     */
+    public static List<DeviceCountInfo> getOrUpdateDeviceTypesTotalLimit(Object userId) {
+        return userDevicesDict.getOrUpdateDeviceTypesTotalLimit(userId);
+    }
+
+    /**
+     * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param count 数量
+     */
+    public static void changeMaximumDeviceTotal(int count) throws NotLoginException {
+        changeMaximumDeviceTotal(AuHelper.getUserId(), count);
+    }
+
+    /**
+     * 同类型设备最多登录数 默认 1个【count最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param userId 用户id
+     * @param count  数量
+     */
+    public static void changeMaximumSameTypeDeviceCount(int count) throws NotLoginException {
+        changeMaximumSameTypeDeviceCount(AuHelper.getUserId(), count);
+    }
+
+    /**
+     * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
+     * count >= 1 or count = -1
+     *
+     * @param userId 用户id
+     * @param types  deviceType
+     * @param total  数量
+     */
+    public static void addDeviceTypesTotalLimit(Object userId, Collection<String> types, int total) {
+        userDevicesDict.addDeviceTypesTotalLimit(userId, types, total);
+    }
+
+    /**
+     * 同类型设备最多登录数 默认 1个【count最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param userId 用户id
+     * @param count  数量
+     */
+    public static void changeMaximumSameTypeDeviceCount(Object userId, int count) {
+        userDevicesDict.changeMaximumSameTypeDeviceCount(userId, count);
+    }
+
+    /**
+     * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param userId 用户id
+     * @param count  数量
+     */
+    public static void changeMaximumDeviceTotal(Object userId, int count) {
+        userDevicesDict.changeMaximumDeviceTotal(userId, count);
     }
 
     // ************************************     【在线/活跃】      ************************************ //
@@ -988,6 +830,162 @@ public class AuHelper extends BaseHelper {
         Blacklist.User.remove(userId, deviceType, deviceId);
     }
 
+    // **************************************     OpenAuth 2.0      ************************************** //
+
+    /**
+     * <li>1.注册客户端 {@link #clientRegister(String, String)} -> 返回客户端信息（客户端id，客户端name，客户端密钥，重定向url）</li>
+     * <li>2.获取授权码 {@link #createAuthorizationCode(String, String, String)} -> 客户端id+登录用户+权限范围 、获得登录用户的授权码</li>
+     * <li>3.验证授权码 {@link #authorize(String, String, String)}-> 利用授权码去获得TokenPair</li>
+     *
+     * @since 1.2.0
+     */
+    public static class OpenAuth {
+
+        /**
+         * 不需要登录 <br>
+         * 验证授权码是否有效，成功返回TokenPair
+         *
+         * @param clientId          客户端id
+         * @param clientSecret      客户端密钥
+         * @param authorizationCode 授权码
+         * @return 授权后的tokenPair(accessToken以及refreshToken)
+         * @throws AuthorizationException 验证失败，客户端密码错误 或者 授权码失效(过期 或者 已使用)
+         */
+        @Nullable
+        public static IssueToken authorize(@NonNull String clientId, @NonNull String clientSecret,
+                                           @NonNull String authorizationCode) throws AuthorizationException {
+            return OpenAuthHelper.authorize(clientId, clientSecret, authorizationCode);
+        }
+
+        /**
+         * 若未登录，抛出 {@link  AuthorizationException } 授权失败
+         * 指定(客户端, 授权范围) -> 获得登录用户的授权码
+         * 获取授权码 <br>
+         * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
+         *
+         * @param clientId    客户端id
+         * @param scope       授予的权限范围
+         * @param redirectUrl 重定向url
+         * @return Authorization Code 授权码
+         * @throws AuthorizationException 授权失败
+         */
+        @NonNull
+        public static String createAuthorizationCode(@NonNull String clientId, @NonNull String scope,
+                                                     @NonNull String redirectUrl) throws AuthorizationException {
+            if (isLogin() && agreeAuthorize(clientId)) {
+                return OpenAuthHelper.createAuthorizationCode(clientId, scope, redirectUrl, getUserId());
+            }
+            throw AuthorizationException.privilegeGrantFailed();
+        }
+
+        /**
+         * 若未登录，抛出 {@link  AuthorizationException } 授权失败
+         * 指定(客户端, 授权范围-默认权限) -> 获得登录用户的授权码
+         * 获取授权码 <br>
+         * 若redirectUrl与所注册客户端的redirectUrl不一致，抛出异常
+         *
+         * @param clientId    客户端id
+         * @param redirectUrl 重定向url
+         * @return Authorization Code 授权码
+         * @throws AuthorizationException 授权失败
+         */
+        @NonNull
+        public static String createBasicScopeAuthorizationCode(@NonNull String clientId,
+                                                               @NonNull String redirectUrl) throws AuthorizationException {
+            if (isLogin() && agreeAuthorize(clientId)) {
+                return OpenAuthHelper.createBasicScopeAuthorizationCode(clientId, redirectUrl, getUserId());
+            }
+            throw AuthorizationException.privilegeGrantFailed();
+        }
+
+        /**
+         * 客户端id有效，能够授权
+         *
+         * @param clientId 客户端id
+         * @return 是否能够授权
+         */
+        public static boolean agreeAuthorize(@NonNull String clientId) {
+            return OpenAuthHelper.findClient(clientId) != null;
+        }
+
+        /**
+         * 根据clientId获取注册client的详细信息
+         *
+         * @param clientId 客户端id
+         * @return 客户端的详细信息（客户端id，客户端name，客户端密钥，重定向url）
+         */
+        public static ClientDetails findClient(@NonNull String clientId) {
+            return OpenAuthHelper.findClient(clientId);
+        }
+
+        /**
+         * 根据clientId获取注册client的RedirectUrl
+         *
+         * @param clientId 客户端id
+         * @return RedirectUrl 重定向地址
+         */
+        public static String getRedirectUrl(@NonNull String clientId) {
+            return OpenAuthHelper.findClient(clientId).getRedirectUrl();
+        }
+
+        /**
+         * 根据clientId注销client
+         *
+         * @param clientId 客户端id
+         */
+        public static void deleteClient(@NonNull String clientId) {
+            OpenAuthHelper.deleteClient(clientId);
+        }
+
+        /**
+         * 注册一个客户端
+         *
+         * @return 客户端的详细信息（客户端id，客户端name，客户端密钥，重定向url）
+         */
+        public static ClientDetails clientRegister() {
+            return OpenAuthHelper.clientRegister("DefaultClientName", null);
+        }
+
+        /**
+         * 注册一个客户端
+         *
+         * @param clientName  客户端名
+         * @param redirectUrl 回调地址
+         * @return 客户端的详细信息（客户端id，客户端name，客户端密钥，重定向url）
+         */
+        public static ClientDetails clientRegister(@NonNull String clientName, @NonNull String redirectUrl) {
+            return OpenAuthHelper.clientRegister(clientName, redirectUrl);
+        }
+
+        /**
+         * 注册一个客户端
+         *
+         * @param clientId    客户端id
+         * @param clientName  客户端名
+         * @param redirectUrl 回调地址
+         * @return 客户端的详细信息（客户端id，客户端name，客户端密钥，重定向url）
+         */
+        public static ClientDetails clientRegister(@NonNull String clientId, @NonNull String clientName,
+                                                   @NonNull String redirectUrl) {
+            return OpenAuthHelper.clientRegister(clientId, clientName, redirectUrl);
+        }
+
+        /**
+         * 注册一个客户端
+         *
+         * @param clientId     客户端id
+         * @param clientSecret 客户端密钥
+         * @param clientName   客户端名
+         * @param redirectUrl  回调地址
+         * @return 客户端的详细信息（客户端id，客户端name，客户端密钥，重定向url）
+         */
+        public static ClientDetails clientRegister(@NonNull String clientId, @NonNull String clientSecret,
+                                                   @NonNull String clientName, @NonNull String redirectUrl) {
+            return OpenAuthHelper.clientRegister(clientId, clientSecret, clientName, redirectUrl);
+        }
+
+    }
+
     // **************************************     RSA      ************************************** //
 
     /**
@@ -1129,8 +1127,7 @@ public class AuHelper extends BaseHelper {
          *
          * @param createAuthorizationCodeCallback 成功授权获得授权码时的回调函数
          */
-        public static void setAuthorizationCallback(
-                AuthorizationCallback authorizationCallback) {
+        public static void setAuthorizationCallback(AuthorizationCallback authorizationCallback) {
             OpenAuthHelper.setAuthorizationCallback(authorizationCallback);
         }
     }

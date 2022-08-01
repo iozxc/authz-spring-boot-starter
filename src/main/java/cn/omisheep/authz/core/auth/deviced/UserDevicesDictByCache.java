@@ -126,31 +126,12 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     @Override
-    public void removeAllDeviceByUserId(Object userId) {
+    public void removeAllDevice(Object userId) {
         Async.run(() -> cache.del(cache.keys(key(userId, Constants.WILDCARD))));
     }
 
     @Override
-    public void removeDeviceByUserIdAndDeviceType(Object userId, String deviceType) {
-        removeDevice(userId, deviceType);
-    }
-
-    @Override
-    public void removeDeviceByUserIdAndDeviceTypeAndDeviceId(Object userId, String deviceType,
-                                                             String deviceId) {
-        removeDevice(userId, deviceType, deviceId);
-    }
-
-    @Override
-    public void removeAllDeviceFromCurrentUser() {
-        try {
-            removeAllDeviceByUserId(AUtils.getCurrentHttpMeta().getToken().getUserId());
-        } catch (Exception ignored) {
-        }
-    }
-
-    @Override
-    public void removeCurrentDeviceFromCurrentUser() {
+    public void removeCurrentDevice() {
         try {
             cache.del(key(AuHelper.getToken()));
         } catch (Exception ignored) {
@@ -158,38 +139,12 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     @Override
-    public void removeDeviceFromCurrentUserByDeviceType(String deviceType) {
-        try {
-            removeDevice(AUtils.getCurrentHttpMeta().getToken().getUserId(), deviceType);
-        } catch (Exception ignored) {
-        }
-    }
-
-    @Override
-    public void removeDeviceFromCurrentUserByDeviceTypeAndDeviceId(String deviceType,
-                                                                   String deviceId) {
-        try {
-            removeDevice(AUtils.getCurrentHttpMeta().getToken().getUserId(), deviceType, deviceId);
-        } catch (Exception ignored) {
-        }
-    }
-
-    private void removeDevice(Object userId, String deviceType) {
+    public void removeDevice(Object userId, String deviceType, String deviceId) {
         if (deviceType == null || deviceType.equals("")) return;
         Map<String, Device> deviceMap = cache.get(cache.keys(key(userId, Constants.WILDCARD)), Device.class);
         Set<String> dels = deviceMap.entrySet().stream()
                 .filter(e -> StringUtils.equals(e.getValue().getDeviceType(), deviceType))
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
-        Async.run(() -> cache.del(dels));
-    }
-
-    private void removeDevice(Object userId, String deviceType, String deviceId) {
-        if (deviceType == null || deviceType.equals("")) return;
-        Map<String, Device> deviceMap = cache.get(cache.keys(key(userId, Constants.WILDCARD)), Device.class);
-        Set<String> dels = deviceMap.entrySet().stream()
-                .filter(e -> StringUtils.equals(e.getValue().getDeviceType(), deviceType)
-                        && StringUtils.equals(e.getValue().getDeviceType(), deviceId))
+                .filter(e -> deviceId == null || StringUtils.equals(e.getValue().getDeviceType(), deviceId))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
         Async.run(() -> cache.del(dels));

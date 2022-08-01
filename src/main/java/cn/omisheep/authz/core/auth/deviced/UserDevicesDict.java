@@ -60,19 +60,11 @@ public interface UserDevicesDict {
 
     void removeDeviceByTokenId(Object userId, String refreshTokenId);
 
-    void removeAllDeviceByUserId(Object userId);
+    void removeDevice(Object userId, String deviceType, String deviceId);
 
-    void removeDeviceByUserIdAndDeviceType(Object userId, String deviceType);
+    void removeAllDevice(Object userId);
 
-    void removeDeviceByUserIdAndDeviceTypeAndDeviceId(Object userId, String deviceType, String deviceId);
-
-    void removeAllDeviceFromCurrentUser();
-
-    void removeCurrentDeviceFromCurrentUser();
-
-    void removeDeviceFromCurrentUserByDeviceType(String deviceType);
-
-    void removeDeviceFromCurrentUserByDeviceTypeAndDeviceId(String deviceType, String deviceId);
+    void removeCurrentDevice();
 
     // =========================   查找   ========================= //
 
@@ -146,14 +138,6 @@ public interface UserDevicesDict {
         return Constants.USER_REQUEST_KEY_PREFIX.get() + userId + Constants.SEPARATOR + refreshTokenId;
     }
 
-    default String oauthRequestKey(AccessToken accessToken) {
-        return oauthRequestKey(accessToken.getUserId(), accessToken.getRefreshTokenId());
-    }
-
-    default String oauthRequestKey(Object userId, String refreshTokenId) {
-        return Constants.OAUTH_USER_REQUEST_KEY_PREFIX.get() + userId + Constants.SEPARATOR + refreshTokenId;
-    }
-
     default String key(AccessToken accessToken) {
         return key(accessToken.getUserId(), accessToken.getRefreshTokenId());
     }
@@ -170,39 +154,13 @@ public interface UserDevicesDict {
         return oauthKey(accessToken.getUserId(), accessToken.getRefreshTokenId());
     }
 
-    default String oauthKey(RefreshToken refreshToken) {
-        return oauthKey(refreshToken.getUserId(), refreshToken.getTokenId());
-    }
-
     default String oauthKey(Object userId, String refreshTokenId) {
         return Constants.OAUTH_USER_DEVICE_KEY_PREFIX.get() + userId + Constants.SEPARATOR + refreshTokenId;
     }
 
     default boolean equalsDeviceByTypeAndId(Device device, String deviceType, String deviceId) {
         if (device == null) return false;
-        return StringUtils.equals(device.getDeviceType(), deviceType) && StringUtils.equals(device.getDeviceId(),
-                                                                                            deviceId);
+        return StringUtils.equals(device.getDeviceType(), deviceType) && StringUtils.equals(device.getDeviceId(), deviceId);
     }
 
-    default boolean equalsDeviceById(Device device, Device otherDevice) {
-        if (device == null) return false;
-        return equalsDeviceById(device, otherDevice.getDeviceId());
-    }
-
-    default boolean equalsDeviceById(Device device, String deviceId) {
-        if (device == null) return false;
-        return device.getDeviceId() != null && StringUtils.equals(device.getDeviceId(), deviceId);
-    }
-
-    default boolean equalsDeviceByType(Device device, String deviceType) {
-        if (device == null) return false;
-        return StringUtils.equals(device.getDeviceType(), deviceType);
-    }
-
-    default boolean equalsDeviceByTypeOrId(Device device, Device otherDevice) {
-        if (device == null) return false;
-        return StringUtils.equals(device.getDeviceType(),
-                                  otherDevice.getDeviceType()) || (device.getDeviceId() != null && StringUtils.equals(
-                device.getDeviceId(), otherDevice.getDeviceId())); // null时不参与匹配
-    }
 }
