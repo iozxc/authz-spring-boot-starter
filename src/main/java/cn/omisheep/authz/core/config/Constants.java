@@ -26,6 +26,7 @@ public interface Constants {
     String WILDCARD  = "*";
     String CRLF      = "\n";
     String EMPTY     = "";
+    String SLASH     = "/";
 
     String   DASHBOARD_STATIC_PREFIX = "/authz-dashboard-static";
     String   DASHBOARD_API_PREFIX    = "/authz-api";
@@ -61,9 +62,9 @@ public interface Constants {
     Supplier<String> DASHBOARD_KEY_PREFIX = () -> AuthzAppVersion.values.get(
             "DASHBOARD_KEY_PREFIX");
 
-
     String USER_REQUEST   = "USER_REQUEST";
     String CONNECT_PREFIX = "authz:connect:";
 
     String[] METHODS = {"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE"};
+    String[] SUFFIX = {".css", ".js", ".html", ".png", ".jpg", ".gif", ".svg", ".ico"};
 }

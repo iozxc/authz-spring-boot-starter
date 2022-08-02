@@ -4,6 +4,7 @@ import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.util.AUtils;
+import cn.omisheep.authz.support.entity.Docs;
 import cn.omisheep.authz.support.http.annotation.Header;
 import cn.omisheep.authz.support.http.annotation.JSON;
 import cn.omisheep.authz.support.http.annotation.Param;
@@ -60,7 +61,7 @@ public class ApiHandler {
                         String path,
                         boolean auth) {
         HttpMeta httpMeta = (HttpMeta) request.getAttribute(Constants.HTTP_META);
-        String   apiPath  = path.substring("/v1".length());
+        String   apiPath  = path.substring(Docs.VERSION_PATH.length());
         ApiInfo  apiInfo  = api.get(apiPath);
         if (apiInfo == null || !apiInfo.getMethod().equals(httpMeta.getMethod())) {
             SupportUtils.forbid(response);

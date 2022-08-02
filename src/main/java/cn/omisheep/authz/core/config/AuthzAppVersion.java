@@ -152,8 +152,8 @@ public class AuthzAppVersion {
         v.put("port", port);
         v.put("contextPath", contextPath);
         v.put("baseUrl", baseUrl);
-        v.put("dashboardApiHelper", baseUrl + Constants.DASHBOARD_API_PREFIX + "/" + Docs.VERSION);
-        v.put("dashboardDocs", baseUrl + Constants.DASHBOARD_API_PREFIX + "/" + Docs.VERSION + "/docs");
+        v.put("dashboardApiHelper", baseUrl + Constants.DASHBOARD_API_PREFIX + Docs.VERSION_PATH);
+        v.put("dashboardDocs", baseUrl + Constants.DASHBOARD_API_PREFIX + Docs.VERSION_PATH + "/docs");
         v.put("supportCloud", supportCloud);
         v.put("os", osName);
         v.put("srcFolder", srcFolder);

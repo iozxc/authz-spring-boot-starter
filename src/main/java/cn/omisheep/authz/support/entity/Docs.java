@@ -22,10 +22,12 @@ import java.util.Map;
  */
 @Accessors(chain = true)
 public class Docs {
-    public static final String VERSION = "v1";
+
+    public static final String VERSION      = "v1";
+    public static final String VERSION_PATH = "/v1";
     @Getter
     @JsonProperty(index = 1)
-    private final       String authz   = AuthzVersion.getVersion();
+    private final       String authz        = AuthzVersion.getVersion();
 
     @Getter
     @JsonProperty(index = 2)
@@ -33,8 +35,7 @@ public class Docs {
 
     @Getter
     @JsonProperty(index = 3)
-    private final       Info   info;
-
+    private final Info info;
 
 
     public Docs(Info info) {

@@ -55,7 +55,7 @@ public class AuthzProperties {
     /**
      * 过滤后缀名，对dashboard有点用
      */
-    private String[] ignoreSuffix = new String[]{".css", ".js", ".html", ".png", ".jpg", ".gif", ".svg"};
+    private String[] ignoreSuffix = {".css", ".js", ".html", ".png", ".jpg", ".gif", ".svg", ".ico"};
 
     private TokenConfig token = new TokenConfig();
 
