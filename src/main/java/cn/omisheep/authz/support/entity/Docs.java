@@ -54,7 +54,8 @@ public class Docs {
 
     @JsonProperty(index = 6)
     public Map<String, Map<String, Map<String, Object>>> getPaths() {
-        HashMap<String, Map<String, Map<String, Object>>> map = new HashMap<>();
+        Map<String, Map<String, LimitMeta>>               rateLimitMetadata = Httpd.getRateLimitMetadata();
+        HashMap<String, Map<String, Map<String, Object>>> map               = new HashMap<>();
         PermissionDict.getRawParamMap().forEach((k, v) -> {
             Map<String, Map<String, Object>> m = map.computeIfAbsent(k, r -> new HashMap<>());
             v.forEach((_k, _v) -> {
@@ -62,6 +63,11 @@ public class Docs {
                 mm.put("paramInfo", _v);
                 mm.put("requireLogin", false);
                 mm.put("isAuth", false);
+                Map<String, LimitMeta> limitMetaMap = rateLimitMetadata.get(k);
+                if (limitMetaMap != null) {mm.put("hasRateLimit", limitMetaMap.containsKey(_k));}
+                else {
+                    mm.put("hasRateLimit", false);
+                }
             });
         });
         PermissionDict.getRolePermission().forEach((k, v) -> {

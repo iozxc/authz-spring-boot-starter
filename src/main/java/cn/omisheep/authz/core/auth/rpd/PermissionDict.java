@@ -347,9 +347,13 @@ public class PermissionDict {
                 }
                 case DELETE:
                 case DEL: {
-                    _authzMetadata.get(api)
-                            .get(method).removeApi();
-                    _certificatedMetadata.get(api).remove(method);
+                    _authzMetadata.get(api).get(method).removeApi();
+                    if (_authzMetadata.get(api).get(method).nonAll()) {
+                        _authzMetadata.get(api).remove(method);
+                    }
+                    if (_authzMetadata.get(api).isEmpty()) {
+                        _authzMetadata.remove(api);
+                    }
                     return Result.SUCCESS;
                 }
                 case GET:

@@ -210,22 +210,28 @@ public class Httpd {
 
     @Nullable
     public static synchronized Object modify(@NonNull AuthzModifier authzModifier) {
+        String path   = authzModifier.getApi();
+        String method = authzModifier.getMethod();
         try {
             switch (authzModifier.getOperate()) {
                 case ADD:
                 case MODIFY:
                 case UPDATE:
                     AuthzModifier.RateLimitInfo rateLimit = authzModifier.getRateLimit();
-                    LimitMeta limitMeta = new LimitMeta(rateLimit.getWindow(), rateLimit.getMaxRequests(),
+                    LimitMeta limitMeta = new LimitMeta(rateLimit.getWindow() + "ms", rateLimit.getMaxRequests(),
                                                         rateLimit.getPunishmentTime().toArray(new String[0]),
-                                                        rateLimit.getMinInterval(),
+                                                        rateLimit.getMinInterval() + "ms",
                                                         rateLimit.getAssociatedPatterns().toArray(new String[0]),
                                                         rateLimit.getCheckType());
-                    _rateLimitMetadata.get(authzModifier.getApi()).put(authzModifier.getMethod(), limitMeta);
-                    return limitMeta;
+                    _rateLimitMetadata.get(path).put(method, limitMeta);
+                    return Result.SUCCESS.data("rateLimit", limitMeta);
                 case DEL:
                 case DELETE:
-                    return _rateLimitMetadata.get(authzModifier.getApi()).remove(authzModifier.getMethod());
+                    _rateLimitMetadata.get(path).remove(method);
+                    if (_rateLimitMetadata.get(path).isEmpty()) {
+                        _rateLimitMetadata.remove(path);
+                    }
+                    return Result.SUCCESS;
                 case READ:
                 case GET:
                     return _rateLimitMetadata.get(authzModifier.getApi()).get(authzModifier.getMethod());
@@ -265,9 +271,26 @@ public class Httpd {
             }
         });
 
+        mapRet.forEach((key, value) -> getPatterns(key).forEach(patternValue -> {
+            setPathPattern(patternValue);
+            HashMap<String, RequestPool> userIdRequestPool = new HashMap<>();
+            HashMap<String, RequestPool> ipRequestPool     = new HashMap<>();
+
+            key.getMethodsCondition().getMethods().forEach(method -> {
+                userIdRequestPool.put(method.name(), new RequestPool());
+                ipRequestPool.put(method.name(), new RequestPool());
+            });
+
+            _ipRequestPools.computeIfAbsent(patternValue, r -> new ConcurrentHashMap<>()).putAll(
+                    ipRequestPool);
+            _userIdRequestPools.computeIfAbsent(patternValue, r -> new ConcurrentHashMap<>()).putAll(
+                    userIdRequestPool);
+        }));
+
         mapRet.forEach((key, value) -> {
-            Set<RequestMethod> methods   = key.getMethodsCondition().getMethods();
-            RateLimit          rateLimit = value.getMethodAnnotation(RateLimit.class);
+            Set<RequestMethod> methods = key.getMethodsCondition().getMethods();
+
+            RateLimit rateLimit = value.getMethodAnnotation(RateLimit.class);
             if (rateLimit != null) {
                 LimitMeta limitMeta = new LimitMeta(rateLimit.window(),
                                                     rateLimit.maxRequests(),
@@ -295,22 +318,6 @@ public class Httpd {
                                     });
                         });
             }
-
-            getPatterns(key).forEach(patternValue -> {
-                setPathPattern(patternValue);
-                HashMap<String, Httpd.RequestPool> userIdRequestPool = new HashMap<>();
-                HashMap<String, Httpd.RequestPool> ipRequestPool     = new HashMap<>();
-
-                key.getMethodsCondition().getMethods().forEach(method -> {
-                    userIdRequestPool.put(method.name(), new Httpd.RequestPool());
-                    ipRequestPool.put(method.name(), new Httpd.RequestPool());
-                });
-
-                _ipRequestPools.computeIfAbsent(patternValue, r -> new ConcurrentHashMap<>()).putAll(
-                        ipRequestPool);
-                _userIdRequestPools.computeIfAbsent(patternValue, r -> new ConcurrentHashMap<>()).putAll(
-                        userIdRequestPool);
-            });
         });
 
         ignoreSuffix = properties.getIgnoreSuffix();

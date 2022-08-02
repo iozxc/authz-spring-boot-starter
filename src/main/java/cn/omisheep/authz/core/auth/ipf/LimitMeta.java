@@ -2,13 +2,14 @@ package cn.omisheep.authz.core.auth.ipf;
 
 import cn.omisheep.authz.annotation.RateLimit;
 import cn.omisheep.authz.core.config.Constants;
-import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.commons.util.TimeUtils;
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.base.Objects;
+import lombok.Data;
 import lombok.Getter;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -41,14 +42,20 @@ public class LimitMeta {
         Collections.sort(this.punishmentTime);
         this.minInterval = TimeUtils.parseTimeValue(minInterval);
         if (associatedPatterns.length > 0) {
-            this.associatedPatterns = new ArrayList<>();
+            ArrayList<AssociatedPattern> ap = new ArrayList<>();
             for (String info : associatedPatterns) {
-                AssociatedPattern associatedPattern = new AssociatedPattern(info);
-                int               i                 = this.associatedPatterns.indexOf(associatedPattern);
-                if (i == -1) {this.associatedPatterns.add(associatedPattern);} else {
-                    AssociatedPattern existedAssociatedPattern = this.associatedPatterns.get(i);
+                AssociatedPattern associatedPattern = AssociatedPattern.of(info);
+                if (associatedPattern == null) continue;
+                int i = ap.indexOf(associatedPattern);
+                if (i == -1) {ap.add(associatedPattern);} else {
+                    AssociatedPattern existedAssociatedPattern = ap.get(i);
                     existedAssociatedPattern.mergeMethods(associatedPattern);
                 }
+            }
+            if (!ap.isEmpty()) {
+                this.associatedPatterns = ap;
+            } else {
+                this.associatedPatterns = null;
             }
         } else {this.associatedPatterns = null;}
     }
@@ -70,27 +77,47 @@ public class LimitMeta {
     }
 
     @Getter
+    @Data
     public static class AssociatedPattern {
         private final Set<String> methods;
         private final String      pattern;
 
-        public AssociatedPattern(String info) {
-            String[] split = info.split(Constants.BLANK);
+        public static AssociatedPattern of(String info) {
+            String      pattern;
+            Set<String> methods;
+            String[]    split = info.split(Constants.BLANK);
             if (split.length > 1) {
-                this.pattern = split[split.length - 1];
-                this.methods = Arrays.stream(Arrays.copyOf(split, split.length - 1))
-                        .map(String::toUpperCase)
-                        .map(this::mtsFn)
-                        .flatMap(Arrays::stream)
-                        .collect(Collectors.toSet());
+                pattern = split[split.length - 1];
+                if (!pattern.endsWith("*")) {
+                    ConcurrentHashMap<String, Httpd.RequestPool> map = Httpd.getIpRequestPools().get(pattern);
+                    if (map == null) return null;
+                    methods = new HashSet<>(map.keySet());
+                } else {
+                    methods = getMethods(pattern);
+                }
+                if (methods == null || methods.isEmpty()) return null;
             } else {
-                this.pattern = split[0];
-                this.methods = CollectionUtils.ofSet("GET");
+                pattern = split[0];
+                methods = getMethods(pattern);
+                if (methods == null) return null;
             }
-
+            return new AssociatedPattern(methods, pattern);
         }
 
-        public String[] mtsFn(String mts) {
+        private static Set<String> getMethods(String pattern) {
+            String _p = pattern.substring(0, pattern.lastIndexOf("*"));
+
+            Map<String, ConcurrentHashMap<String, Httpd.RequestPool>> map = Httpd.getIpRequestPools();
+            Set<String> collect = Httpd.getIpRequestPools().keySet()
+                    .stream()
+                    .filter(v -> v.startsWith(_p))
+                    .flatMap(v -> map.get(v).keySet().stream())
+                    .collect(Collectors.toSet());
+            if (collect.isEmpty()) return null;
+            return new HashSet<>(collect);
+        }
+
+        public static String[] mtsFn(String mts) {
             if (mts.equals("*")) {return Constants.METHODS;} else return new String[]{mts};
         }
 

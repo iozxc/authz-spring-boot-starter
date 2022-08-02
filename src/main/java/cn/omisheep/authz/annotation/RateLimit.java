@@ -1,11 +1,14 @@
 package cn.omisheep.authz.annotation;
 
+import cn.omisheep.commons.util.NamingUtils;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.Locale;
 
 /**
  * RateLimit 的注解配置，也可以使用json配置来完成对于某个api的配置或者对全局进行配置
@@ -94,6 +97,11 @@ public @interface RateLimit {
         @JsonValue
         public String getVal() {
             return val;
+        }
+
+        @JsonCreator
+        public static CheckType create(String p) {
+            return valueOf(NamingUtils.humpToUnderline(p).toUpperCase(Locale.ROOT));
         }
     }
 

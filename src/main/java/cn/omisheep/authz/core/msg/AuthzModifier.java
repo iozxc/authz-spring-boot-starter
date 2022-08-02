@@ -53,11 +53,11 @@ public class AuthzModifier {
 
     @Data
     public static class RateLimitInfo {
-        private String              window;
+        private long                window;
         private int                 maxRequests;
-        private List<String>        punishmentTime;
-        private String              minInterval;
-        private List<String>        associatedPatterns;
+        private List<String>        punishmentTime     = new ArrayList<>();
+        private long                minInterval;
+        private List<String>        associatedPatterns = new ArrayList<>();
         private RateLimit.CheckType checkType;
     }
 
