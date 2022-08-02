@@ -12,6 +12,8 @@ import cn.omisheep.commons.util.Assert;
 import cn.omisheep.commons.util.Async;
 import cn.omisheep.commons.util.TaskBuilder;
 import lombok.Data;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.io.File;
 import java.util.*;
@@ -71,6 +73,25 @@ public class AuthzAppVersion {
         private String appName;
         private String application;
         private String dashboard;
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+
+            if (!(o instanceof ConnectInfo)) return false;
+
+            ConnectInfo that = (ConnectInfo) o;
+
+            return new EqualsBuilder().append(getUrl(), that.getUrl())
+                    .append(getHost(), that.getHost())
+                    .append(getPort(), that.getPort())
+                    .isEquals();
+        }
+
+        @Override
+        public int hashCode() {
+            return new HashCodeBuilder(17, 37).append(getUrl()).append(getHost()).append(getPort()).toHashCode();
+        }
     }
 
     public static void init(String app) {
@@ -144,7 +165,7 @@ public class AuthzAppVersion {
     }
 
     public static Map<String, List<ConnectInfo>> getConnectInfo() {
-        List<ConnectInfo> connectInfo = listAllConnectInfo();
+        List<ConnectInfo> connectInfo = listAllConnectInfo().stream().distinct().collect(Collectors.toList());
         List<ConnectInfo> connectInfoWithSameApplication = connectInfo.stream().filter(
                 c -> c.application.equals(APPLICATION_NAME)).collect(Collectors.toList());
         List<ConnectInfo> connectInfoWithSameAppName = connectInfo.stream().filter(
@@ -214,7 +235,7 @@ public class AuthzAppVersion {
 
     public static void born() {
         Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL, new VersionMessage(-1, AuthzAppVersion.MD5)));
-        // authz:v1:connect:{MessageId} 30秒后过期  25秒ping一次
+        // authz:v1:connect:{MessageId} 30秒后过期  25秒一次
         TaskBuilder.schedule(() -> RedisUtils.Obj.set(CONNECT_PREFIX + Message.uuid, connectInfo, 30), 25,
                              TimeUnit.SECONDS);
     }

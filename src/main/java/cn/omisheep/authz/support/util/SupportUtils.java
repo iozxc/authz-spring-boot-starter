@@ -112,4 +112,8 @@ public abstract class SupportUtils {
             e.printStackTrace();
         }
     }
+
+    public static void forbid(HttpServletResponse response) {
+        response.setStatus(404);
+    }
 }

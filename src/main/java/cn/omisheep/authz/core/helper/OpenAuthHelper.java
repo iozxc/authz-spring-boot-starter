@@ -40,22 +40,11 @@ public class OpenAuthHelper extends BaseHelper {
     @Setter
     private static AuthorizationCallback authorizationCallback;
 
-    public static IssueToken authorizeByClient(String clientId,
-                                               String clientSecret,
-                                               String scope) throws AuthorizationException {
-        ClientDetails clientDetails = checkClient(clientId, clientSecret);
-
-        AuthorizationInfo authorizationInfo = new AuthorizationInfo(clientId, clientDetails.getClientName(), scope,
-                                                                    GrantType.CLIENT_CREDENTIALS, null, null,
-                                                                    null, null);
-
-        return authorize(authorizationInfo);
-    }
-
     public static IssueToken authorizeByCode(String clientId,
                                              String clientSecret,
                                              String authorizationCode) throws AuthorizationException {
         checkClient(clientId, clientSecret);
+
         String            key               = AUTHORIZE_CODE_PREFIX.get() + authorizationCode;
         AuthorizationInfo authorizationInfo = cache.get(key, AuthorizationInfo.class);
         cache.del(key);
@@ -77,6 +66,18 @@ public class OpenAuthHelper extends BaseHelper {
         if (userId == null) throw AuthorizationException.privilegeGrantFailed();
         AuthorizationInfo authorizationInfo = new AuthorizationInfo(clientId, clientDetails.getClientName(), scope,
                                                                     GrantType.PASSWORD, null, null, null, userId);
+
+        return authorize(authorizationInfo);
+    }
+
+    public static IssueToken authorizeByClient(String clientId,
+                                               String clientSecret,
+                                               String scope) throws AuthorizationException {
+        ClientDetails clientDetails = checkClient(clientId, clientSecret);
+
+        AuthorizationInfo authorizationInfo = new AuthorizationInfo(clientId, clientDetails.getClientName(), scope,
+                                                                    GrantType.CLIENT_CREDENTIALS, null, null,
+                                                                    null, null);
 
         return authorize(authorizationInfo);
     }

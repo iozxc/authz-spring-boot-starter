@@ -55,14 +55,19 @@ public class ApiHandler {
         }
     }
 
-    public void process(HttpServletRequest request, HttpServletResponse response, String path, boolean auth) {
+    public void process(HttpServletRequest request,
+                        HttpServletResponse response,
+                        String path,
+                        boolean auth) {
         HttpMeta httpMeta = (HttpMeta) request.getAttribute(Constants.HTTP_META);
         String   apiPath  = path.substring("/v1".length());
         ApiInfo  apiInfo  = api.get(apiPath);
         if (apiInfo == null || !apiInfo.getMethod().equals(httpMeta.getMethod())) {
+            SupportUtils.forbid(response);
             return;
         }
         if (apiInfo.requireLogin && !auth) {
+            SupportUtils.forbid(response);
             return;
         }
         Method      invoke     = apiInfo.getInvoke();
@@ -84,7 +89,8 @@ public class ApiHandler {
                 Param param = AnnotationUtils.getAnnotation(parameter, Param.class);
                 if (param != null) {
                     try {
-                        String requestParameter = request.getParameter(!Objects.equals(param.name(), "") ? param.name() : parameter.getName());
+                        String requestParameter = request.getParameter(
+                                !Objects.equals(param.name(), "") ? param.name() : parameter.getName());
                         objects.add(type.getConstructor(String.class).newInstance(requestParameter));
                     } catch (Exception e) {
                         objects.add(null);
@@ -94,7 +100,8 @@ public class ApiHandler {
                 Header header = AnnotationUtils.getAnnotation(parameter, Header.class);
                 if (header != null) {
                     try {
-                        String val = request.getHeader(!Objects.equals(header.name(), "") ? header.name() : parameter.getName());
+                        String val = request.getHeader(
+                                !Objects.equals(header.name(), "") ? header.name() : parameter.getName());
                         objects.add(type.getConstructor(String.class).newInstance(val));
                     } catch (Exception e) {
                         objects.add(null);

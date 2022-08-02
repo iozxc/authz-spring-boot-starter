@@ -13,11 +13,4 @@ public class Info {
     private String  description;
     private String  version;
     private String  title;
-    private License license = new License();
-
-    @Data
-    public static class License {
-        private String name = "Apache 2.0";
-        private String url  = "http://www.apache.org/licenses/LICENSE-2.0";
-    }
 }

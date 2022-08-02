@@ -26,25 +26,32 @@ public class Docs {
     @Getter
     @JsonProperty(index = 1)
     private final       String authz   = AuthzVersion.getVersion();
+
     @Getter
     @JsonProperty(index = 2)
+    private License license = new License();
+
+    @Getter
+    @JsonProperty(index = 3)
     private final       Info   info;
+
+
 
     public Docs(Info info) {
         this.info = info;
     }
 
-    @JsonProperty(index = 3)
+    @JsonProperty(index = 4)
     public Map<String, Object> getAppVersionInfo() {
         return AuthzAppVersion.getVersion();
     }
 
-    @JsonProperty(index = 4)
+    @JsonProperty(index = 5)
     public Map<String, List<Map<String, String>>> getControllers() {
         return PermissionDict.getControllerMetadata();
     }
 
-    @JsonProperty(index = 5)
+    @JsonProperty(index = 6)
     public Map<String, Map<String, Map<String, Object>>> getPaths() {
         HashMap<String, Map<String, Map<String, Object>>> map = new HashMap<>();
         PermissionDict.getRawParamMap().forEach((k, v) -> {
@@ -53,6 +60,7 @@ public class Docs {
                 Map<String, Object> mm = m.computeIfAbsent(_k, r -> new HashMap<>());
                 mm.put("paramInfo", _v);
                 mm.put("requireLogin", false);
+                mm.put("isAuth", false);
             });
         });
         PermissionDict.getRolePermission().forEach((k, v) -> {
@@ -60,6 +68,7 @@ public class Docs {
             v.forEach((_k, _v) -> {
                 Map<String, Object> mm = m.computeIfAbsent(_k, r -> new HashMap<>());
                 mm.put("auth", _v);
+                mm.put("isAuth", !_v.nonAll());
                 mm.put("requireLogin", !_v.non());
             });
         });
@@ -70,17 +79,17 @@ public class Docs {
         return map;
     }
 
-    @JsonProperty(index = 6)
+    @JsonProperty(index = 7)
     public Map<String, Map<String, LimitMeta>> getRateLimit() {
         return Collections.unmodifiableMap(Httpd.getRateLimitMetadata());
     }
 
-    @JsonProperty(index = 7)
+    @JsonProperty(index = 8)
     public Map<String, PermissionDict.ArgsMeta> getArgResource() {
         return PermissionDict.getArgs();
     }
 
-    @JsonProperty(index = 8)
+    @JsonProperty(index = 9)
     public List<AuthzAppVersion.ConnectInfo> conns() { // 实例
         return AuthzAppVersion.getConnectInfo().get(AuthzAppVersion.LOCAL_CONNECT);
     }

@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
@@ -73,25 +74,41 @@ public class PermRolesMeta {
     }
 
     public Set<Set<String>> getRequireRoles() {
-        if (role != null) return role.require;
+        if (this.role != null) return this.role.require;
         return null;
     }
 
     public void setRequireRoles(Set<Set<String>> requireRoles) {
-        if (requireRoles == null) return;
-        if (role == null) role = new Meta();
-        this.role.require = requireRoles;
+        if (requireRoles == null || requireRoles.isEmpty()) {
+            if (this.role != null) this.role.require = null;
+        } else {
+            Set<Set<String>> set = filter(requireRoles);
+            if (set.isEmpty()) {
+                if (this.role != null) this.role.require = null;
+                return;
+            }
+            if (this.role == null) this.role = new Meta();
+            this.role.require = set;
+        }
     }
 
     public Set<Set<String>> getExcludeRoles() {
-        if (role != null) return role.exclude;
+        if (this.role != null) return this.role.exclude;
         return null;
     }
 
     public void setExcludeRoles(Set<Set<String>> excludeRoles) {
-        if (excludeRoles == null) return;
-        if (role == null) role = new Meta();
-        this.role.exclude = excludeRoles;
+        if (excludeRoles == null || excludeRoles.isEmpty()) {
+            if (this.role != null) this.role.exclude = null;
+        } else {
+            Set<Set<String>> set = filter(excludeRoles);
+            if (set.isEmpty()) {
+                if (this.role != null) this.role.exclude = null;
+                return;
+            }
+            if (this.role == null) this.role = new Meta();
+            this.role.exclude = set;
+        }
     }
 
     public Set<Set<String>> getRequirePermissions() {
@@ -100,9 +117,17 @@ public class PermRolesMeta {
     }
 
     public void setRequirePermissions(Set<Set<String>> requirePermissions) {
-        if (requirePermissions == null) return;
-        if (permissions == null) permissions = new Meta();
-        this.permissions.require = requirePermissions;
+        if (requirePermissions == null || requirePermissions.isEmpty()) {
+            if (this.permissions != null) this.permissions.require = null;
+        } else {
+            Set<Set<String>> set = filter(requirePermissions);
+            if (set.isEmpty()) {
+                if (this.permissions != null) this.permissions.require = null;
+                return;
+            }
+            if (this.permissions == null) this.permissions = new Meta();
+            this.permissions.require = set;
+        }
     }
 
     public Set<Set<String>> getExcludePermissions() {
@@ -111,37 +136,70 @@ public class PermRolesMeta {
     }
 
     public void setExcludePermissions(Set<Set<String>> excludePermissions) {
-        if (excludePermissions == null) return;
-        if (permissions == null) permissions = new Meta();
-        this.permissions.exclude = excludePermissions;
+        if (excludePermissions == null || excludePermissions.isEmpty()) {
+            if (this.permissions != null) this.permissions.exclude = null;
+        } else {
+            Set<Set<String>> set = filter(excludePermissions);
+            if (set.isEmpty()) {
+                if (this.permissions != null) this.permissions.exclude = null;
+                return;
+            }
+            if (this.permissions == null) this.permissions = new Meta();
+            this.permissions.exclude = set;
+        }
+    }
+
+    private Set<Set<String>> filter(Set<Set<String>> set) {
+        return set.stream().map(s -> {
+                    Set<String> collect = s.stream().filter(Objects::nonNull)
+                            .map(v-> v.replaceAll("&nbsp;"," "))
+                            .map(String::trim)
+                            .filter(v -> !v.isEmpty())
+                            .collect(Collectors.toSet());
+                    if (!collect.isEmpty()) return collect;
+                    return null;
+                }).filter(Objects::nonNull)
+                .collect(Collectors.toSet());
     }
 
     public void setRequireRoles(Collection<String> requireRoles) {
-        if (requireRoles == null) return;
-        if (role == null) role = new Meta();
-        this.role.require = CollectionUtils.splitStrValsToSets(PermissionDict.getPermSeparator(),
-                                                               requireRoles.toArray(new String[]{}));
+        setRequireRoles(CollectionUtils.splitStrValsToSets(PermissionDict.getPermSeparator(),
+                                                           requireRoles.toArray(new String[]{})));
     }
 
     public void setExcludeRoles(Collection<String> excludeRoles) {
-        if (excludeRoles == null) return;
-        if (role == null) role = new Meta();
-        this.role.exclude = CollectionUtils.splitStrValsToSets(PermissionDict.getPermSeparator(),
-                                                               excludeRoles.toArray(new String[]{}));
+        setExcludeRoles(CollectionUtils.splitStrValsToSets(PermissionDict.getPermSeparator(),
+                                                           excludeRoles.toArray(new String[]{})));
     }
 
     public void setRequirePermissions(Collection<String> requirePermissions) {
-        if (requirePermissions == null) return;
-        if (permissions == null) permissions = new Meta();
-        this.permissions.require = CollectionUtils.splitStrValsToSets(PermissionDict.getPermSeparator(),
-                                                                      requirePermissions.toArray(new String[]{}));
+        setRequirePermissions(CollectionUtils.splitStrValsToSets(PermissionDict.getPermSeparator(),
+                                                                 requirePermissions.toArray(new String[]{})));
     }
 
     public void setExcludePermissions(Collection<String> excludePermissions) {
-        if (excludePermissions == null) return;
-        if (permissions == null) permissions = new Meta();
-        this.permissions.exclude = CollectionUtils.splitStrValsToSets(PermissionDict.getPermSeparator(),
-                                                                      excludePermissions.toArray(new String[]{}));
+        setExcludePermissions(CollectionUtils.splitStrValsToSets(PermissionDict.getPermSeparator(),
+                                                                 excludePermissions.toArray(new String[]{})));
+    }
+
+    public void setRole(Set<Set<String>> require,
+                        Set<Set<String>> exclude) {
+        if ((require == null || require.isEmpty()) && (exclude == null || exclude.isEmpty())) {
+            this.role = null;
+            return;
+        }
+        setRequireRoles(require);
+        setExcludeRoles(exclude);
+    }
+
+    public void setPermissions(Set<Set<String>> require,
+                               Set<Set<String>> exclude) {
+        if ((require == null || require.isEmpty()) && (exclude == null || exclude.isEmpty())) {
+            this.permissions = null;
+            return;
+        }
+        setRequirePermissions(require);
+        setExcludePermissions(exclude);
     }
 
     public void merge(PermRolesMeta other) {
@@ -150,7 +208,6 @@ public class PermRolesMeta {
         setRequireRoles(other.getRequireRoles());
         setExcludeRoles(other.getExcludeRoles());
     }
-
 
     @Override
     public String toString() {

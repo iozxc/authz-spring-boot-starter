@@ -9,10 +9,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -27,7 +24,7 @@ public class AuthzModifier {
     private Target                    target;
     private String                    method;
     private String                    api;
-    private String                    value;
+    private Object                    value;
     private Integer                   index;
     private List<String>              range;
     private List<String>              resources;
@@ -44,14 +41,14 @@ public class AuthzModifier {
 
     @Data
     public static class Role {
-        private List<String> require;
-        private List<String> exclude;
+        private Set<Set<String>> require;
+        private Set<Set<String>> exclude;
     }
 
     @Data
     public static class Permission {
-        private List<String> require;
-        private List<String> exclude;
+        private Set<Set<String>> require;
+        private Set<Set<String>> exclude;
     }
 
     @Data
@@ -125,6 +122,7 @@ public class AuthzModifier {
         RATE(10),
         BLACKLIST(11),
         OPEN_AUTH(12),
+        LOGIN(13),
         NON(0);
 
         public final int      i;
@@ -138,13 +136,11 @@ public class AuthzModifier {
 
         @JsonCreator
         public static Target create(String target) {
-            String u = target.toLowerCase(Locale.ROOT);
-            for (Target value : values()) {
-                if (value.contains(u)) {
-                    return value;
-                }
+            try {
+                return valueOf(target.toUpperCase(Locale.ROOT));
+            } catch (Exception e) {
+                return NON;
             }
-            return NON;
         }
 
         public boolean contains(String... with) {
@@ -184,28 +180,16 @@ public class AuthzModifier {
 
     public PermRolesMeta build() {
         PermRolesMeta permRolesMeta = new PermRolesMeta();
-        try {
-            permRolesMeta.setRequireRoles(role.require);
-            permRolesMeta.setExcludeRoles(role.exclude);
-        } catch (Exception ignored) {
+        if (role != null) {
+            permRolesMeta.setRole(role.require, role.exclude);
         }
-        try {
-            permRolesMeta.setRequirePermissions(permission.require);
-            permRolesMeta.setExcludePermissions(permission.exclude);
-        } catch (Exception ignored) {
+        if (permission != null) {
+            permRolesMeta.setPermissions(permission.require, permission.exclude);
+        }
+        if (permRolesMeta.non()) {
+            return null;
         }
         return permRolesMeta;
     }
 
-    public static PermRolesMeta build(List<String> requireRoles,
-                                      List<String> excludeRoles,
-                                      List<String> requirePermissions,
-                                      List<String> excludePermissions) {
-        PermRolesMeta permRolesMeta = new PermRolesMeta();
-        permRolesMeta.setRequireRoles(requireRoles);
-        permRolesMeta.setExcludeRoles(excludeRoles);
-        permRolesMeta.setRequirePermissions(requirePermissions);
-        permRolesMeta.setExcludePermissions(excludePermissions);
-        return permRolesMeta;
-    }
 }

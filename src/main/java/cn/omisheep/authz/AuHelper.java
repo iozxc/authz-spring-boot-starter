@@ -991,6 +991,7 @@ public class AuHelper extends BaseHelper {
          *
          * @param clientId     客户端id
          * @param clientSecret 客户端密钥
+         * @param scope        授权范围
          * @return 授权后的tokenPair(accessToken以及refreshToken)
          * @throws AuthorizationException 客户端密码错误
          */
