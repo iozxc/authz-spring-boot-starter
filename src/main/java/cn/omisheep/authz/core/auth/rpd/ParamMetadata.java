@@ -18,12 +18,12 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
 @JsonInclude(NON_EMPTY)
 public class ParamMetadata {
     private Class<?>                 paramType;
-    private List<PermRolesMeta.Meta> rolesMetaList;
-    private List<PermRolesMeta.Meta> permissionsMetaList;
+    private List<Meta> rolesMetaList;
+    private List<Meta> permissionsMetaList;
 
     public ParamMetadata(Class<?> paramType,
-                         List<PermRolesMeta.Meta> rolesMetaList,
-                         List<PermRolesMeta.Meta> permissionsMetaList) {
+                         List<Meta> rolesMetaList,
+                         List<Meta> permissionsMetaList) {
         this.paramType = paramType;
         if (rolesMetaList != null && !rolesMetaList.isEmpty()) this.rolesMetaList = rolesMetaList;
         if (permissionsMetaList != null && !permissionsMetaList.isEmpty()) this.permissionsMetaList = permissionsMetaList;
@@ -47,5 +47,6 @@ public class ParamMetadata {
             return val;
         }
     }
+
 
 }

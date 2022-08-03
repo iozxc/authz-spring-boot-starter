@@ -2,10 +2,7 @@ package cn.omisheep.authz.core.config;
 
 import cn.omisheep.authz.annotation.*;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.authz.core.auth.rpd.DataPermMeta;
-import cn.omisheep.authz.core.auth.rpd.FieldData;
-import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
-import cn.omisheep.authz.core.auth.rpd.PermissionDict;
+import cn.omisheep.authz.core.auth.rpd.*;
 import cn.omisheep.authz.core.util.ScanUtils;
 import cn.omisheep.commons.util.ClassUtils;
 import cn.omisheep.commons.util.CollectionUtils;
@@ -122,8 +119,8 @@ public class AuthzResourcesInit implements ImportSelector {
                     Roles roles = AnnotationUtils.getAnnotation(field, Roles.class);
                     Perms perms = AnnotationUtils.getAnnotation(field, Perms.class);
                     if (roles == null && perms == null) continue;
-                    PermRolesMeta.Meta rm = generateRolesMeta(roles);
-                    PermRolesMeta.Meta pm = generatePermMeta(perms);
+                    Meta rm = generateRolesMeta(roles);
+                    Meta pm = generatePermMeta(perms);
                     fmap.put(field.getName(), new FieldData(field.getType().getTypeName(), rm, pm));
                 }
 

@@ -2,10 +2,10 @@ package cn.omisheep.authz.core.auth.rpd;
 
 import cn.omisheep.commons.util.CollectionUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Data;
-import lombok.experimental.Accessors;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
@@ -19,51 +19,43 @@ public class PermRolesMeta {
 
     Meta role;
     Meta permissions;
+//
+//    @JsonInclude(NON_NULL)
+//    private Map<ParamMetadata.ParamType, Map<String, ParamMetadata>> paramPermissionsMetadata;
 
-    @JsonInclude(NON_NULL)
-    private Map<ParamMetadata.ParamType, Map<String, ParamMetadata>> paramPermissionsMetadata;
+//    @Data
+//    @Accessors(chain = true)
+//    @JsonInclude(NON_NULL)
+//    public static class Meta {
+//        private Set<Set<String>> require;
+//        private Set<Set<String>> exclude;
+//        private Set<String>      range; // scope of access
+//        private Set<String>      resources; // required protect resources
+//
+//        public boolean non() {
+//            return (require == null || require.size() == 0) && (exclude == null || exclude.size() == 0);
+//        }
+//
+//        @Override
+//        public String toString() {
+//            return (require != null ? "require: " + require : "") + (exclude != null ? "\t, exclude: " + exclude : "");
+//        }
+//    }
 
-    @Data
-    @Accessors(chain = true)
-    @JsonInclude(NON_NULL)
-    public static class Meta {
-        private Set<Set<String>> require;
-        private Set<Set<String>> exclude;
-        private Set<String>      range; // scope of access
-        private Set<String>      resources; // required protect resources
-
-        public boolean non() {
-            return (require == null || require.size() == 0) && (exclude == null || exclude.size() == 0);
-        }
-
-        @Override
-        public String toString() {
-            return (require != null ? "require: " + require : "") + (exclude != null ? "\t, exclude: " + exclude : "");
-        }
-    }
-
-    public Map<ParamMetadata.ParamType, Map<String, ParamMetadata>> getParamPermissionsMetadata() {
-        return paramPermissionsMetadata;
-    }
-
-    public void put(ParamMetadata.ParamType paramType,
-                    String name,
-                    ParamMetadata paramMetadata) {
-        if (paramPermissionsMetadata == null) paramPermissionsMetadata = new HashMap<>();
-        paramPermissionsMetadata
-                .computeIfAbsent(paramType, r -> new HashMap<>()).put(name, paramMetadata);
-    }
+//    public Map<ParamMetadata.ParamType, Map<String, ParamMetadata>> getParamPermissionsMetadata() {
+//        return paramPermissionsMetadata;
+//    }
 
     public boolean non() {
         return (role == null || role.non()) && (permissions == null || permissions.non());
     }
 
-    public boolean nonAll() {
-        return (role == null || role.non()) && (permissions == null || permissions.non())
-                && (paramPermissionsMetadata == null
-                || paramPermissionsMetadata.size() == 0
-                || paramPermissionsMetadata.values().stream().noneMatch(Objects::nonNull));
-    }
+//    public boolean nonAll() {
+//        return (role == null || role.non()) && (permissions == null || permissions.non())
+//                && (paramPermissionsMetadata == null
+//                || paramPermissionsMetadata.size() == 0
+//                || paramPermissionsMetadata.values().stream().noneMatch(Objects::nonNull));
+//    }
 
     public void removeApi() {
         role        = null;

@@ -3,7 +3,6 @@ package cn.omisheep.authz.core;
 import cn.omisheep.authz.core.auth.deviced.DeviceCountInfo;
 import cn.omisheep.authz.core.codec.Decryptor;
 import cn.omisheep.authz.core.codec.RSADecryptor;
-import cn.omisheep.authz.support.entity.User;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.logging.LogLevel;
@@ -314,6 +313,10 @@ public class AuthzProperties {
          */
         private String     password;
         /**
+         * 用户ip
+         */
+        private String     ip;
+        /**
          * 【-只only-允许】的iprange
          */
         private String     allow;
@@ -321,6 +324,13 @@ public class AuthzProperties {
          * 拒绝的iprange
          */
         private String     deny;
+
+        @Data
+        public static class User {
+            private String username;
+            private String password;
+            private String ip;
+        }
     }
 
     @Data

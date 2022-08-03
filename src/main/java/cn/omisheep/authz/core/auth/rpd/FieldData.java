@@ -11,6 +11,6 @@ import lombok.Data;
 @AllArgsConstructor
 public class FieldData {
     private String             className;
-    private PermRolesMeta.Meta roles;
-    private PermRolesMeta.Meta permissions;
+    private Meta roles;
+    private Meta permissions;
 }

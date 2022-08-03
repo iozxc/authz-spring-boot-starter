@@ -3,7 +3,9 @@ package cn.omisheep.authz.core.auth.ipf;
 import cn.omisheep.authz.core.AuthzException;
 import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
+import cn.omisheep.authz.core.auth.rpd.ParamMetadata;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
+import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.helper.BaseHelper;
@@ -51,8 +53,9 @@ public class HttpMeta extends BaseHelper {
     private       Set<String>                 roles;
     private       Set<String>                 permissions;
     private       Set<String>                 scope;
-    private       boolean                     requireProtect;
-    private       boolean                     requireLogin;
+    private       Boolean                     hasApiAuth;
+    private       Boolean                     hasParamAuth;
+    private       Boolean                     requireLogin;
     private       PermRolesMeta               permRolesMeta;
     private       boolean                     ignore              = false;
     private       boolean                     clearCookie         = true;
@@ -107,9 +110,17 @@ public class HttpMeta extends BaseHelper {
         return scope;
     }
 
+    public static HttpMeta currentHttpMeta() {
+        try {
+            return ((HttpMeta) HttpUtils.getCurrentRequest().getAttribute(Constants.HTTP_META));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public static AccessToken currentToken() {
         try {
-            return ((HttpMeta) HttpUtils.getCurrentRequest().getAttribute(Constants.HTTP_META)).token;
+            return currentHttpMeta().token;
         } catch (Exception e) {
             return null;
         }
@@ -138,11 +149,14 @@ public class HttpMeta extends BaseHelper {
         return this;
     }
 
-    public void log(String formatMsg, Object... args) {
+    public void log(String formatMsg,
+                    Object... args) {
         LogUtils.push(LogLevel.INFO, formatMsg, args);
     }
 
-    public void log(LogLevel logLevel, String formatMsg, Object... args) {
+    public void log(LogLevel logLevel,
+                    String formatMsg,
+                    Object... args) {
         LogUtils.push(logLevel, formatMsg, args);
     }
 
@@ -183,8 +197,12 @@ public class HttpMeta extends BaseHelper {
         return this.token != null;
     }
 
-    public HttpMeta(HttpServletRequest request, String ip, String uri, String api,
-                    String method, Date now) {
+    public HttpMeta(HttpServletRequest request,
+                    String ip,
+                    String uri,
+                    String api,
+                    String method,
+                    Date now) {
         this.request   = request;
         this.refer     = request.getHeader("Referer");
         this.ip        = ip;
@@ -202,4 +220,34 @@ public class HttpMeta extends BaseHelper {
         return false;
     }
 
+    public boolean isHasApiAuth() {
+        if (hasApiAuth != null) return hasApiAuth;
+        Map<String, PermRolesMeta> map = PermissionDict.getRolePermission().get(api);
+        if (map == null) {
+            hasApiAuth = false;
+        }
+        hasApiAuth = map.get(api) != null;
+        return hasApiAuth;
+    }
+
+    public boolean isHasParamAuth() {
+        if (hasParamAuth != null) return requireLogin;
+        Map<String, Map<ParamMetadata.ParamType, Map<String, ParamMetadata>>> map = PermissionDict.getParamPermission()
+                .get(api);
+        if (map == null) {
+            hasParamAuth = false;
+        }
+        hasParamAuth = map.get(method) != null;
+        return hasParamAuth;
+    }
+
+    public boolean isRequireLogin() {
+        if (requireLogin != null) return requireLogin;
+        Set<String> list = PermissionDict.getCertificatedMetadata().get(api);
+        if (list == null || list.isEmpty()) {
+            requireLogin = isHasApiAuth() || isHasParamAuth();
+        }
+        requireLogin = list.contains(method) || isHasApiAuth() || isHasParamAuth();
+        return requireLogin;
+    }
 }

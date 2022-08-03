@@ -1,6 +1,7 @@
 package cn.omisheep.authz.support.http;
 
 import cn.omisheep.authz.core.AuthzProperties;
+import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.util.IPUtils;
@@ -12,6 +13,7 @@ import cn.omisheep.authz.support.util.IPAddress;
 import cn.omisheep.authz.support.util.IPRange;
 import cn.omisheep.authz.support.util.IPRangeMeta;
 import cn.omisheep.authz.support.util.SupportUtils;
+import cn.omisheep.commons.util.UUIDBits;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 
@@ -21,6 +23,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -66,36 +70,68 @@ public class SupportServlet extends HttpServlet {
             log.error(e.getMessage(), e);
         }
 
-        users.addAll(dashboardConfig.getUsers());
+        users.addAll(dashboardConfig.getUsers().stream().map(User::new).collect(Collectors.toList()));
         String username = dashboardConfig.getUsername();
         String password = dashboardConfig.getPassword();
+        String ip       = dashboardConfig.getIp();
         if (!StringUtils.isEmpty(username) && !StringUtils.isEmpty(password)) {
-            users.add(new User().setUsername(username).setPassword(password));
+            users.add(new User(username, password, ip));
         }
     }
 
+    @SuppressWarnings("all")
     public static User login(String username,
-                             String password) {
+                             String password,
+                             String ip,
+                             Cache cache) {
         if (users.isEmpty()) {return null;}
         if (username == null || password == null) {return null;}
-        if (users.stream().anyMatch(
-                u -> StringUtils.equals(u.getUsername(), username) && StringUtils.equals(u.getPassword(), password))) {
-            return new User().setUsername(username).setPassword(password);
+
+        try {
+            if (users.stream().anyMatch(u -> StringUtils.equals(u.getUsername(), username)
+                    && StringUtils.equals(u.getPassword(), password))) {
+                User user = new User().setUsername(username)
+                        .setPassword(password)
+                        .setIp(HttpMeta.currentHttpMeta().getIp());
+                user.setUuid(UUIDBits.getUUIDBits(16));
+                HashMap<String, String> map = new HashMap<>();
+                map.put("username", user.getUsername());
+                map.put("ip", ip);
+                cache.set(Constants.DASHBOARD_KEY_PREFIX.get() + user.getUuid(), map, 1, TimeUnit.HOURS);
+                return user;
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
         }
-        return null;
     }
 
+    @SuppressWarnings("all")
     public static User auth(HttpServletRequest request,
                             Cache cache) {
-        String uuid1    = request.getHeader(UUID);
-        String uuid     = uuid1 != null ? uuid1 : request.getParameter(UUID);
-        Object username = cache.get(Constants.DASHBOARD_KEY_PREFIX.get() + uuid);
+        String ip;
+        try {
+            ip = HttpMeta.currentHttpMeta().getIp();
+            if (ip == null) return null;
+        } catch (Exception e) {
+            return null;
+        }
+        String uuid1 = request.getHeader(UUID);
+        String uuid  = uuid1 != null ? uuid1 : request.getParameter(UUID);
+        HashMap<String, String> map = (HashMap<String, String>) cache.get(
+                Constants.DASHBOARD_KEY_PREFIX.get() + uuid);
+        if (map == null) return null;
+        String username = map.get("username");
         if (username == null) {
-            String username1 = request.getParameter(USERNAME);
-            String password1 = request.getParameter(PASSWORD);
-            return login(username1, password1);
+            return login(request.getParameter(USERNAME),
+                         request.getParameter(PASSWORD), ip, cache);
         } else {
-            return new User().setUsername((String) username).setUuid(uuid);
+            if (StringUtils.equals(ip, map.get("ip"))) {
+                return new User().setUsername(username).setUuid(uuid);
+            } else {
+                cache.del(Constants.DASHBOARD_KEY_PREFIX.get() + uuid);
+                return null;
+            }
         }
     }
 
@@ -108,8 +144,8 @@ public class SupportServlet extends HttpServlet {
         if (contextPath == null) {contextPath = Constants.EMPTY;}
         String uri = contextPath + servletPath;
         String path;
-        if (Objects.equals(servletPath, Constants.DASHBOARD_HTML)
-                || Objects.equals(servletPath, Constants.DASHBOARD_LOGO)) {
+        if (Objects.equals(servletPath, Constants.DASHBOARD_HTML) || Objects.equals(servletPath,
+                                                                                    Constants.DASHBOARD_LOGO)) {
             path = servletPath;
         } else {
             path = requestURI.substring(contextPath.length() + servletPath.length());

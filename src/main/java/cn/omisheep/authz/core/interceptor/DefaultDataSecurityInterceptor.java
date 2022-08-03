@@ -4,7 +4,7 @@ import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.rpd.DataPermMeta;
 import cn.omisheep.authz.core.auth.rpd.FieldData;
-import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
+import cn.omisheep.authz.core.auth.rpd.Meta;
 import cn.omisheep.authz.core.util.ArgsParser;
 import cn.omisheep.commons.util.CollectionUtils;
 import net.sf.jsqlparser.JSQLParserException;
@@ -35,11 +35,11 @@ public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterce
         Set<String> permissionsByRole = httpMeta.getPermissions();
 
         Iterator<String> iterator = dataPermMetaList.stream().filter(dataPermMeta -> {
-            PermRolesMeta.Meta roles = dataPermMeta.getRoles();
+            Meta roles = dataPermMeta.getRoles();
             if (roles != null) {
                 return CollectionUtils.containsSub(roles.getRequire(), rolesByUserId);
             } else {
-                PermRolesMeta.Meta permissions = dataPermMeta.getPermissions();
+                Meta permissions = dataPermMeta.getPermissions();
                 if (permissions == null) return false;
                 return CollectionUtils.containsSub(permissions.getRequire(), permissionsByRole);
             }
@@ -82,8 +82,8 @@ public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterce
             ArrayList<String> deleted = new ArrayList<>();
 
             fieldDataMap.forEach((k, v) -> {
-                PermRolesMeta.Meta r = v.getRoles();
-                PermRolesMeta.Meta p = v.getPermissions();
+                Meta r = v.getRoles();
+                Meta p = v.getPermissions();
                 if ((r != null && r.getRequire() != null && !CollectionUtils.containsSub(r.getRequire(), rolesByUserId))
                         || (p != null && p.getRequire() != null && !CollectionUtils.containsSub(p.getRequire(),
                                                                                                 permissionsByRole))

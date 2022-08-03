@@ -2,14 +2,12 @@ package cn.omisheep.authz.support.entity;
 
 import cn.omisheep.authz.core.AuthzVersion;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
-import cn.omisheep.authz.core.auth.ipf.LimitMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.config.AuthzAppVersion;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,49 +52,54 @@ public class Docs {
 
     @JsonProperty(index = 6)
     public Map<String, Map<String, Map<String, Object>>> getPaths() {
-        Map<String, Map<String, LimitMeta>>               rateLimitMetadata = Httpd.getRateLimitMetadata();
-        HashMap<String, Map<String, Map<String, Object>>> map               = new HashMap<>();
-        PermissionDict.getRawParamMap().forEach((k, v) -> {
-            Map<String, Map<String, Object>> m = map.computeIfAbsent(k, r -> new HashMap<>());
-            v.forEach((_k, _v) -> {
-                Map<String, Object> mm = m.computeIfAbsent(_k, r -> new HashMap<>());
-                mm.put("paramInfo", _v);
-                mm.put("requireLogin", false);
-                mm.put("isAuth", false);
-                Map<String, LimitMeta> limitMetaMap = rateLimitMetadata.get(k);
-                if (limitMetaMap != null) {mm.put("hasRateLimit", limitMetaMap.containsKey(_k));}
-                else {
-                    mm.put("hasRateLimit", false);
-                }
-            });
-        });
-        PermissionDict.getRolePermission().forEach((k, v) -> {
-            Map<String, Map<String, Object>> m = map.computeIfAbsent(k, r -> new HashMap<>());
-            v.forEach((_k, _v) -> {
-                Map<String, Object> mm = m.computeIfAbsent(_k, r -> new HashMap<>());
-                mm.put("auth", _v);
-                mm.put("isAuth", !_v.nonAll());
-                mm.put("requireLogin", !_v.non());
-            });
-        });
-        PermissionDict.getCertificatedMetadata().forEach((k, v) -> {
-            Map<String, Map<String, Object>> m = map.computeIfAbsent(k, r -> new HashMap<>());
-            v.forEach(meth -> m.computeIfAbsent(meth, r -> new HashMap<>()).put("requireLogin", true));
-        });
+        HashMap<String, Map<String, Map<String, Object>>> map = new HashMap<>();
+        PermissionDict.getRawParamMap().forEach((api, v) -> v.forEach((method, paramTypeMapMap) -> {
+            Map<String, Object> mm = map.computeIfAbsent(api, r -> new HashMap<>())
+                    .computeIfAbsent(method, r -> new HashMap<>());
+            mm.put("paramInfo", paramTypeMapMap);
+            mm.put("requireLogin", false);
+            mm.put("hasAuth", false);
+            mm.put("hasRateLimit", false);
+            mm.put("hasParamAuth", false);
+        }));
+
+        Httpd.getRateLimitMetadata().forEach((api, v) -> v.forEach((method, rateLimit) -> {
+            Map<String, Object> mm = map.computeIfAbsent(api, r -> new HashMap<>())
+                    .computeIfAbsent(method, r -> new HashMap<>());
+            mm.put("hasRateLimit", true);
+            mm.put("rateLimit", rateLimit);
+        }));
+
+        PermissionDict.getRolePermission().forEach((api, v) -> v.forEach((method, permRolesMeta) -> {
+            Map<String, Object> mm = map.computeIfAbsent(api, r -> new HashMap<>())
+                    .computeIfAbsent(method, r -> new HashMap<>());
+            mm.put("auth", permRolesMeta);
+            mm.put("hasAuth", !permRolesMeta.non());
+            mm.put("requireLogin", !permRolesMeta.non());
+        }));
+
+        PermissionDict.getParamPermission().forEach((api, v) -> v.forEach((method, param) -> {
+            Map<String, Object> mm = map.computeIfAbsent(api, r -> new HashMap<>())
+                    .computeIfAbsent(method, r -> new HashMap<>());
+            mm.put("paramAuth", param);
+            mm.put("hasParamAuth", true);
+            mm.put("requireLogin", true);
+        }));
+
+        PermissionDict.getCertificatedMetadata()
+                .forEach((k, v) -> v.forEach(meth -> map.computeIfAbsent(k, r -> new HashMap<>())
+                        .computeIfAbsent(meth, r -> new HashMap<>())
+                        .put("requireLogin", true)));
+
         return map;
     }
 
     @JsonProperty(index = 7)
-    public Map<String, Map<String, LimitMeta>> getRateLimit() {
-        return Collections.unmodifiableMap(Httpd.getRateLimitMetadata());
-    }
-
-    @JsonProperty(index = 8)
     public Map<String, PermissionDict.ArgsMeta> getArgResource() {
         return PermissionDict.getArgs();
     }
 
-    @JsonProperty(index = 9)
+    @JsonProperty(index = 8)
     public List<AuthzAppVersion.ConnectInfo> conns() { // 实例
         return AuthzAppVersion.getConnectInfo().get(AuthzAppVersion.LOCAL_CONNECT);
     }

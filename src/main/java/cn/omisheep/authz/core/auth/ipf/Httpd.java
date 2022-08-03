@@ -223,11 +223,11 @@ public class Httpd {
                                                         rateLimit.getMinInterval() + "ms",
                                                         rateLimit.getAssociatedPatterns().toArray(new String[0]),
                                                         rateLimit.getCheckType());
-                    _rateLimitMetadata.get(path).put(method, limitMeta);
+                    _rateLimitMetadata.computeIfAbsent(path, r -> new HashMap<>()).put(method, limitMeta);
                     return Result.SUCCESS.data("rateLimit", limitMeta);
                 case DEL:
                 case DELETE:
-                    _rateLimitMetadata.get(path).remove(method);
+                    _rateLimitMetadata.computeIfAbsent(path, r -> new HashMap<>()).remove(method);
                     if (_rateLimitMetadata.get(path).isEmpty()) {
                         _rateLimitMetadata.remove(path);
                     }

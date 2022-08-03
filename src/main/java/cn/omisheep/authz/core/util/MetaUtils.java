@@ -2,6 +2,7 @@ package cn.omisheep.authz.core.util;
 
 import cn.omisheep.authz.annotation.Perms;
 import cn.omisheep.authz.annotation.Roles;
+import cn.omisheep.authz.core.auth.rpd.Meta;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.commons.util.CollectionUtils;
@@ -17,9 +18,9 @@ import java.util.Set;
  * @since 1.2.0
  */
 public class MetaUtils {
-    public static PermRolesMeta.Meta generatePermMeta(Perms p) {
+    public static Meta generatePermMeta(Perms p) {
         if (p == null) return null;
-        PermRolesMeta.Meta permsMeta = new PermRolesMeta.Meta();
+        Meta permsMeta = new Meta();
         boolean            flag      = false;
         if (p.require() != null && p.require().length != 0) {
             permsMeta.setRequire(CollectionUtils.splitStrValsToSets(Constants.COMMA, p.require()));
@@ -38,9 +39,9 @@ public class MetaUtils {
         return flag ? permsMeta : null;
     }
 
-    public static PermRolesMeta.Meta generateRolesMeta(Roles r) {
+    public static Meta generateRolesMeta(Roles r) {
         if (r == null) return null;
-        PermRolesMeta.Meta rolesMeta = new PermRolesMeta.Meta();
+        Meta rolesMeta = new Meta();
         boolean            flag      = false;
         if (r.require() != null && r.require().length != 0) {
             rolesMeta.setRequire(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.require()));

@@ -3,6 +3,8 @@ package cn.omisheep.authz.core.auth.rpd;
 import cn.omisheep.authz.annotation.*;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.auth.PermLibrary;
+import cn.omisheep.authz.core.auth.ipf.Httpd;
+import cn.omisheep.authz.core.auth.ipf.LimitMeta;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.config.AuInit;
 import cn.omisheep.authz.core.config.Constants;
@@ -35,8 +37,6 @@ import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
-import static cn.omisheep.authz.core.auth.rpd.ParamMetadata.ParamType.PATH_VARIABLE;
-import static cn.omisheep.authz.core.auth.rpd.ParamMetadata.ParamType.REQUEST_PARAM;
 import static cn.omisheep.authz.core.util.MetaUtils.*;
 
 /**
@@ -47,7 +47,9 @@ public class PermissionDict {
 
     private static final Map<String, List<Map<String, String>>> _controllerMetadata = new HashMap<>();
 
-    private static final Map<String, Map<String, PermRolesMeta>> _authzMetadata = new HashMap<>(); // api权限和api的参数权限
+    private static final Map<String, Map<String, PermRolesMeta>> _authzMetadata = new HashMap<>(); // api权限
+
+    private static final Map<String, Map<String, Map<ParamMetadata.ParamType, Map<String, ParamMetadata>>>> _authzParamMetadata = new HashMap<>(); // api的参数权限
 
     private static final Map<String, Set<String>> _certificatedMetadata = new HashMap<>(); // certificatedMetadata 哪些接口需要登录-若有role和perms，则同同理
 
@@ -72,37 +74,40 @@ public class PermissionDict {
     // ----------------------------------------- unModify ----------------------------------------- //
 
     @Getter
-    private static final Map<String, Map<String, PermRolesMeta>>                                       rolePermission           = Collections.unmodifiableMap(
+    private static final Map<String, Map<String, PermRolesMeta>>                                            rolePermission           = Collections.unmodifiableMap(
             _authzMetadata);
     @Getter
-    private static final Map<String, Map<String, String>>                                              resourcesNameAndTemplate = Collections.unmodifiableMap(
+    private static final Map<String, Map<String, Map<ParamMetadata.ParamType, Map<String, ParamMetadata>>>> paramPermission          = Collections.unmodifiableMap(
+            _authzParamMetadata);
+    @Getter
+    private static final Map<String, Map<String, String>>                                                   resourcesNameAndTemplate = Collections.unmodifiableMap(
             _authzResourcesNameAndTemplate);
     @Getter
-    private static final Map<String, List<DataPermMeta>>                                               dataPermission           = Collections.unmodifiableMap(
+    private static final Map<String, List<DataPermMeta>>                                                    dataPermission           = Collections.unmodifiableMap(
             _dataPermMetadata);
     @Getter
-    private static final Map<String, Map<String, FieldData>>                                           fieldsData               = Collections.unmodifiableMap(
+    private static final Map<String, Map<String, FieldData>>                                                fieldsData               = Collections.unmodifiableMap(
             _fieldMetadata);
     @Getter
-    private static final Map<String, ArgsMeta>                                                         args                     = Collections.unmodifiableMap(
+    private static final Map<String, ArgsMeta>                                                              args                     = Collections.unmodifiableMap(
             _argsMetadata);
     @Getter
-    private static final Map<String, Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>>> rawParamMap              =
+    private static final Map<String, Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>>>      rawParamMap              =
             Collections.unmodifiableMap(_rawMap);
     @Getter
-    private static final Map<String, Map<String, IPRangeMeta>>                                         iPRange                  = Collections.unmodifiableMap(
+    private static final Map<String, Map<String, IPRangeMeta>>                                              iPRange                  = Collections.unmodifiableMap(
             _ipRangeMeta);
     @Getter
-    private static final Map<String, Set<String>>                                                      certificatedMetadata     = Collections.unmodifiableMap(
+    private static final Map<String, Set<String>>                                                           certificatedMetadata     = Collections.unmodifiableMap(
             _certificatedMetadata);
     @Getter
-    private static final Set<IPRange>                                                                  globalAllow              = Collections.unmodifiableSet(
+    private static final Set<IPRange>                                                                       globalAllow              = Collections.unmodifiableSet(
             _globalAllow);
     @Getter
-    private static final Set<IPRange>                                                                  globalDeny               = Collections.unmodifiableSet(
+    private static final Set<IPRange>                                                                       globalDeny               = Collections.unmodifiableSet(
             _globalDeny);
     @Getter
-    private static final Map<String, List<Map<String, String>>>                                        controllerMetadata       = Collections.unmodifiableMap(
+    private static final Map<String, List<Map<String, String>>>                                             controllerMetadata       = Collections.unmodifiableMap(
             _controllerMetadata);
 
     public static boolean isSupportNative() {
@@ -169,6 +174,18 @@ public class PermissionDict {
     }
 
     // ----------------------------------------- func ----------------------------------------- //
+
+    public static void putParam(String api,
+                                String method,
+                                ParamMetadata.ParamType paramType,
+                                String name,
+                                ParamMetadata paramMetadata) {
+        _authzParamMetadata
+                .computeIfAbsent(api, r -> new HashMap<>())
+                .computeIfAbsent(method, r -> new HashMap<>())
+                .computeIfAbsent(paramType, r -> new HashMap<>())
+                .put(name, paramMetadata);
+    }
 
     @Nullable
     public static Object modify(@NonNull AuthzModifier authzModifier) {
@@ -278,18 +295,51 @@ public class PermissionDict {
         } catch (Exception e) {
             // skip
         }
+        boolean k = false;
+
+        try {
+            k = _certificatedMetadata.get(api).contains(method);
+        } catch (Exception e) {
+            // skip
+        }
+
+        Map<ParamMetadata.ParamType, Map<String, ParamMetadata>> paramAuth = null;
+
+        try {
+            paramAuth = _authzParamMetadata.get(api)
+                    .get(method);
+        } catch (Exception e) {
+            // skip
+        }
+        LimitMeta rateLimit = null;
+
+        try {
+            rateLimit = Httpd.getRateLimitMetadata().get(api)
+                    .get(method);
+        } catch (Exception e) {
+            // skip
+        }
+
         if (_v != null) {
             return Result.SUCCESS
                     .data("paramInfo", paramTypeMapMap)
                     .data("auth", _v)
-                    .data("isAuth", !_v.nonAll())
-                    .data("requireLogin", !_v.non());
+                    .data("hasAuth", !_v.non())
+                    .data("requireLogin", !_v.non() || k)
+                    .data("paramAuth", paramAuth)
+                    .data("rateLimit",rateLimit)
+                    .data("hasRateLimit",rateLimit!=null)
+                    .data("hasParamAuth", paramAuth != null);
         } else {
             return Result.SUCCESS
                     .data("paramInfo", paramTypeMapMap)
                     .data("auth", null)
-                    .data("isAuth", false)
-                    .data("requireLogin", false);
+                    .data("hasAuth", false)
+                    .data("paramAuth", paramAuth)
+                    .data("rateLimit",rateLimit)
+                    .data("hasRateLimit",rateLimit!=null)
+                    .data("hasParamAuth", paramAuth != null)
+                    .data("requireLogin", k);
         }
     }
 
@@ -336,7 +386,7 @@ public class PermissionDict {
                         PermRolesMeta permRolesMeta = metaMap.get(method);
                         if (permRolesMeta != null) {
                             if (build == null) permRolesMeta.removeApi();
-                            if (permRolesMeta.nonAll()) {
+                            if (permRolesMeta.non()) {
                                 metaMap.remove(method);
                             }
                         }
@@ -348,7 +398,7 @@ public class PermissionDict {
                 case DELETE:
                 case DEL: {
                     _authzMetadata.get(api).get(method).removeApi();
-                    if (_authzMetadata.get(api).get(method).nonAll()) {
+                    if (_authzMetadata.get(api).get(method).non()) {
                         _authzMetadata.get(api).remove(method);
                     }
                     if (_authzMetadata.get(api).isEmpty()) {
@@ -384,100 +434,101 @@ public class PermissionDict {
     public static Object modifyParam(AuthzModifier authzModifier) {
         lock.lock();
         try {
-            PermRolesMeta        meta   = _authzMetadata.get(authzModifier.getApi()).get(authzModifier.getMethod());
-            AuthzModifier.Target target = authzModifier.getTarget();
-
-            if (target == null &&
-                    (authzModifier.getOperate() == AuthzModifier.Operate.GET || authzModifier.getOperate() == AuthzModifier.Operate.READ)) {
-                if (authzModifier.getTarget() == null && authzModifier.getValue() == null) {
-                    return meta.getParamPermissionsMetadata();
-                }
-                HashMap<Object, Object>    map = new HashMap<>();
-                Map<String, ParamMetadata> m1  = meta.getParamPermissionsMetadata().get(PATH_VARIABLE);
-                Map<String, ParamMetadata> m2  = meta.getParamPermissionsMetadata().get(REQUEST_PARAM);
-                if (m1 != null && m1.containsKey(authzModifier.getValue())) {
-                    map.put(PATH_VARIABLE.getVal(),
-                            m1.get(authzModifier.getValue()));
-                }
-                if (m2 != null && m2.containsKey(authzModifier.getValue())) {
-                    map.put(REQUEST_PARAM.getVal(),
-                            m2.get(authzModifier.getValue()));
-                }
-                return map;
-            }
-
-            Object[] objects = getParamMetaList(meta, authzModifier);
-
-
-            ParamMetadata            paramMetadata = (ParamMetadata) objects[0];
-            List<PermRolesMeta.Meta> metaList      = (List<PermRolesMeta.Meta>) objects[1]; // 可能需要操作的list
-
-            if (metaList == null) {
-                return Result.FAIL;
-            }
-
-            switch (authzModifier.getOperate()) {
-                case ADD:
-                    PermRolesMeta.Meta _m;
-                    if (authzModifier.getTarget().contains("role")) {
-                        _m = authzModifier.build().role;
-                    } else {
-                        _m = authzModifier.build().permissions;
-                    }
-                    if (authzModifier.getIndex() != null) {
-                        metaList.add(authzModifier.getIndex(), _m);
-                    } else {
-                        metaList.add(_m);
-                    }
-                    if (authzModifier.getRange() != null) {
-                        _m.setRange(new HashSet<>(authzModifier.getRange()));
-                    }
-                    if (authzModifier.getResources() != null) {
-                        _m.setRange(new HashSet<>(authzModifier.getResources()));
-                    }
-                    return metaList;
-                case DEL:
-                case DELETE:
-                    if (authzModifier.getIndex() != null) {
-                        metaList.remove(metaList.get(authzModifier.getIndex()));
-                    } else {
-                        if (target == AuthzModifier.Target.PATH) {
-                            meta.getParamPermissionsMetadata().get(PATH_VARIABLE).remove(authzModifier.getValue());
-                        } else {
-                            meta.getParamPermissionsMetadata().get(REQUEST_PARAM).remove(authzModifier.getValue());
-                        }
-                    }
-                    return meta;
-                case MODIFY:
-                case UPDATE:
-                    PermRolesMeta build = authzModifier.build();
-                    PermRolesMeta.Meta m = metaList.get(authzModifier.getIndex());
-                    if (authzModifier.getTarget().contains("role")) {
-                        if (build.getRequireRoles() != null) {m.setRequire(build.getRequireRoles());}
-                        if (build.getExcludeRoles() != null) {m.setExclude(build.getExcludeRoles());}
-                    } else {
-                        if (build.getRequirePermissions() != null) {m.setRequire(build.getRequirePermissions());}
-                        if (build.getExcludePermissions() != null) {m.setExclude(build.getExcludePermissions());}
-                    }
-                    if (authzModifier.getRange() != null) {
-                        m.setRange(new HashSet<>(authzModifier.getRange()));
-                    }
-                    if (authzModifier.getResources() != null) {
-                        m.setResources(new HashSet<>(authzModifier.getResources()));
-                    }
-                    return m;
-                case GET:
-                case READ:
-                    if (authzModifier.getIndex() == null) {
-                        return paramMetadata;
-                    } else {
-                        return metaList.get(authzModifier.getIndex());
-                    }
-                case NON:
-                    return Result.SUCCESS;
-            }
-
-            return paramMetadata;
+//            PermRolesMeta        meta   = _authzMetadata.get(authzModifier.getApi()).get(authzModifier.getMethod());
+//            AuthzModifier.Target target = authzModifier.getTarget();
+//
+//            if (target == null &&
+//                    (authzModifier.getOperate() == AuthzModifier.Operate.GET || authzModifier.getOperate() == AuthzModifier.Operate.READ)) {
+//                if (authzModifier.getTarget() == null && authzModifier.getValue() == null) {
+//                    return meta.getParamPermissionsMetadata();
+//                }
+//                HashMap<Object, Object>    map = new HashMap<>();
+//                Map<String, ParamMetadata> m1  = meta.getParamPermissionsMetadata().get(PATH_VARIABLE);
+//                Map<String, ParamMetadata> m2  = meta.getParamPermissionsMetadata().get(REQUEST_PARAM);
+//                if (m1 != null && m1.containsKey(authzModifier.getValue())) {
+//                    map.put(PATH_VARIABLE.getVal(),
+//                            m1.get(authzModifier.getValue()));
+//                }
+//                if (m2 != null && m2.containsKey(authzModifier.getValue())) {
+//                    map.put(REQUEST_PARAM.getVal(),
+//                            m2.get(authzModifier.getValue()));
+//                }
+//                return map;
+//            }
+//
+//            Object[] objects = getParamMetaList(meta, authzModifier);
+//
+//
+//            ParamMetadata            paramMetadata = (ParamMetadata) objects[0];
+//            List<PermRolesMeta.Meta> metaList      = (List<PermRolesMeta.Meta>) objects[1]; // 可能需要操作的list
+//
+//            if (metaList == null) {
+//                return Result.FAIL;
+//            }
+//
+//            switch (authzModifier.getOperate()) {
+//                case ADD:
+//                    PermRolesMeta.Meta _m;
+//                    if (authzModifier.getTarget().contains("role")) {
+//                        _m = authzModifier.build().role;
+//                    } else {
+//                        _m = authzModifier.build().permissions;
+//                    }
+//                    if (authzModifier.getIndex() != null) {
+//                        metaList.add(authzModifier.getIndex(), _m);
+//                    } else {
+//                        metaList.add(_m);
+//                    }
+//                    if (authzModifier.getRange() != null) {
+//                        _m.setRange(new HashSet<>(authzModifier.getRange()));
+//                    }
+//                    if (authzModifier.getResources() != null) {
+//                        _m.setRange(new HashSet<>(authzModifier.getResources()));
+//                    }
+//                    return metaList;
+//                case DEL:
+//                case DELETE:
+//                    if (authzModifier.getIndex() != null) {
+//                        metaList.remove(metaList.get(authzModifier.getIndex()));
+//                    } else {
+//                        if (target == AuthzModifier.Target.PATH) {
+//                            meta.getParamPermissionsMetadata().get(PATH_VARIABLE).remove(authzModifier.getValue());
+//                        } else {
+//                            meta.getParamPermissionsMetadata().get(REQUEST_PARAM).remove(authzModifier.getValue());
+//                        }
+//                    }
+//                    return meta;
+//                case MODIFY:
+//                case UPDATE:
+//                    PermRolesMeta build = authzModifier.build();
+//                    PermRolesMeta.Meta m = metaList.get(authzModifier.getIndex());
+//                    if (authzModifier.getTarget().contains("role")) {
+//                        if (build.getRequireRoles() != null) {m.setRequire(build.getRequireRoles());}
+//                        if (build.getExcludeRoles() != null) {m.setExclude(build.getExcludeRoles());}
+//                    } else {
+//                        if (build.getRequirePermissions() != null) {m.setRequire(build.getRequirePermissions());}
+//                        if (build.getExcludePermissions() != null) {m.setExclude(build.getExcludePermissions());}
+//                    }
+//                    if (authzModifier.getRange() != null) {
+//                        m.setRange(new HashSet<>(authzModifier.getRange()));
+//                    }
+//                    if (authzModifier.getResources() != null) {
+//                        m.setResources(new HashSet<>(authzModifier.getResources()));
+//                    }
+//                    return m;
+//                case GET:
+//                case READ:
+//                    if (authzModifier.getIndex() == null) {
+//                        return paramMetadata;
+//                    } else {
+//                        return metaList.get(authzModifier.getIndex());
+//                    }
+//                case NON:
+//                    return Result.SUCCESS;
+//            }
+//
+//            return paramMetadata;
+            return Result.SUCCESS;
         } catch (Exception e) {
             return Result.FAIL;
         } finally {
@@ -485,151 +536,151 @@ public class PermissionDict {
         }
     }
 
-    private static Object[] getParamMetaList(PermRolesMeta meta,
-                                             AuthzModifier authzModifier) {
-        boolean       isAdd = authzModifier.getOperate() == AuthzModifier.Operate.ADD;
-        ParamMetadata paramMetadata;
-        if (meta == null) {
-            if (isAdd) {
-
-                Map<ParamMetadata.ParamType, Map<String, Class<?>>> paramTypeMapMap = _rawMap.get(
-                        authzModifier.getApi()).get(authzModifier.getMethod());
-
-                switch (authzModifier.getTarget().i) {
-                    case 2:
-                    case 3:
-                        Class<?> aClass1 = paramTypeMapMap.get(PATH_VARIABLE).get(authzModifier.getValue());
-                        if (aClass1 != null) {
-                            meta = _authzMetadata.computeIfAbsent(authzModifier.getApi(), r -> new HashMap<>())
-                                    .computeIfAbsent(authzModifier.getMethod(), r -> new PermRolesMeta());
-                            ParamMetadata pmd = new ParamMetadata();
-                            meta.put(PATH_VARIABLE,
-                                     (String) authzModifier.getValue(),
-                                     pmd.setParamType(aClass1));
-                        } else {
-                            return null;
-                        }
-                        break;
-                    case 4:
-                    case 5:
-                        Class<?> aClass2 = paramTypeMapMap.get(REQUEST_PARAM).get(authzModifier.getValue());
-                        if (aClass2 != null) {
-                            meta = _authzMetadata.computeIfAbsent(authzModifier.getApi(), r -> new HashMap<>())
-                                    .computeIfAbsent(authzModifier.getMethod(), r -> new PermRolesMeta());
-                            ParamMetadata pmd = new ParamMetadata();
-                            meta.put(REQUEST_PARAM,
-                                     (String) authzModifier.getValue(),
-                                     pmd.setParamType(aClass2));
-                        } else {
-                            return null;
-                        }
-                        break;
-                    default:
-                        return null;
-                }
-            } else {
-                return null;
-            }
-        }
-        switch (authzModifier.getTarget().i) {
-            case 2:
-                paramMetadata = meta.getParamPermissionsMetadata().get(PATH_VARIABLE)
-                        .computeIfAbsent((String) authzModifier.getValue(),
-                                         r -> new ParamMetadata().setParamType(
-                                                 _rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod()).get(
-                                                         PATH_VARIABLE).get(authzModifier.getValue())));
-                if (paramMetadata != null) {
-                    List<PermRolesMeta.Meta> rolesMetaList = paramMetadata.getRolesMetaList();
-                    if (rolesMetaList == null && isAdd) {
-                        rolesMetaList = new ArrayList<>();
-                        paramMetadata.setRolesMetaList(rolesMetaList);
-                    }
-                    return new Object[]{paramMetadata, paramMetadata.getRolesMetaList()};
-                } else {
-                    if (isAdd) {
-                        paramMetadata = meta.getParamPermissionsMetadata().get(PATH_VARIABLE).computeIfAbsent(
-                                (String) authzModifier.getValue(), r -> new ParamMetadata());
-                        paramMetadata.setRolesMetaList(new ArrayList<>());
-                        return new Object[]{paramMetadata, paramMetadata.getRolesMetaList()};
-                    } else {
-                        return null;
-                    }
-                }
-            case 3:
-                paramMetadata = meta.getParamPermissionsMetadata().get(PATH_VARIABLE).computeIfAbsent(
-                        (String) authzModifier.getValue(),
-                        r -> new ParamMetadata().setParamType(
-                                _rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod()).get(
-                                        PATH_VARIABLE).get(authzModifier.getValue())));
-                if (paramMetadata != null) {
-                    List<PermRolesMeta.Meta> permissionsMetaList = paramMetadata.getPermissionsMetaList();
-                    if (permissionsMetaList == null && isAdd) {
-                        permissionsMetaList = new ArrayList<>();
-                        paramMetadata.setPermissionsMetaList(permissionsMetaList);
-                    }
-                    return new Object[]{paramMetadata, paramMetadata.getPermissionsMetaList()};
-                } else {
-                    if (isAdd) {
-                        paramMetadata = meta.getParamPermissionsMetadata().get(PATH_VARIABLE).computeIfAbsent(
-                                (String) authzModifier.getValue(), r -> new ParamMetadata());
-                        paramMetadata.setPermissionsMetaList(new ArrayList<>());
-                        return new Object[]{paramMetadata, paramMetadata.getPermissionsMetaList()};
-
-                    } else {
-                        return null;
-                    }
-                }
-            case 4:
-                paramMetadata = meta.getParamPermissionsMetadata().get(REQUEST_PARAM).computeIfAbsent(
-                        (String) authzModifier.getValue(),
-                        r -> new ParamMetadata().setParamType(
-                                _rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod()).get(
-                                        REQUEST_PARAM).get(authzModifier.getValue())));
-                if (paramMetadata != null) {
-                    List<PermRolesMeta.Meta> rolesMetaList = paramMetadata.getRolesMetaList();
-                    if (rolesMetaList == null && isAdd) {
-                        rolesMetaList = new ArrayList<>();
-                        paramMetadata.setRolesMetaList(rolesMetaList);
-                    }
-                    return new Object[]{paramMetadata, paramMetadata.getRolesMetaList()};
-                } else {
-                    if (isAdd) {
-                        paramMetadata = meta.getParamPermissionsMetadata().get(REQUEST_PARAM).computeIfAbsent(
-                                (String) authzModifier.getValue(), r -> new ParamMetadata());
-                        paramMetadata.setRolesMetaList(new ArrayList<>());
-                        return new Object[]{paramMetadata, paramMetadata.getRolesMetaList()};
-                    } else {
-                        return null;
-                    }
-                }
-            case 5:
-                paramMetadata = meta.getParamPermissionsMetadata().get(REQUEST_PARAM).computeIfAbsent(
-                        (String) authzModifier.getValue(),
-                        r -> new ParamMetadata().setParamType(
-                                _rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod()).get(
-                                        REQUEST_PARAM).get(authzModifier.getValue())));
-                if (paramMetadata != null) {
-                    List<PermRolesMeta.Meta> permissionsMetaList = paramMetadata.getPermissionsMetaList();
-                    if (permissionsMetaList == null && isAdd) {
-                        permissionsMetaList = new ArrayList<>();
-                        paramMetadata.setPermissionsMetaList(permissionsMetaList);
-                    }
-                    return new Object[]{paramMetadata, paramMetadata.getPermissionsMetaList()};
-
-                } else {
-                    if (isAdd) {
-                        paramMetadata = meta.getParamPermissionsMetadata().get(REQUEST_PARAM).computeIfAbsent(
-                                (String) authzModifier.getValue(), r -> new ParamMetadata());
-                        paramMetadata.setPermissionsMetaList(new ArrayList<>());
-                        return new Object[]{paramMetadata, paramMetadata.getPermissionsMetaList()};
-
-                    } else {
-                        return null;
-                    }
-                }
-        }
-        return null;
-    }
+//    private static Object[] getParamMetaList(PermRolesMeta meta,
+//                                             AuthzModifier authzModifier) {
+//        boolean       isAdd = authzModifier.getOperate() == AuthzModifier.Operate.ADD;
+//        ParamMetadata paramMetadata;
+//        if (meta == null) {
+//            if (isAdd) {
+//
+//                Map<ParamMetadata.ParamType, Map<String, Class<?>>> paramTypeMapMap = _rawMap.get(
+//                        authzModifier.getApi()).get(authzModifier.getMethod());
+//
+//                switch (authzModifier.getTarget().i) {
+//                    case 2:
+//                    case 3:
+//                        Class<?> aClass1 = paramTypeMapMap.get(PATH_VARIABLE).get(authzModifier.getValue());
+//                        if (aClass1 != null) {
+//                            meta = _authzMetadata.computeIfAbsent(authzModifier.getApi(), r -> new HashMap<>())
+//                                    .computeIfAbsent(authzModifier.getMethod(), r -> new PermRolesMeta());
+//                            ParamMetadata pmd = new ParamMetadata();
+//                            meta.put(PATH_VARIABLE,
+//                                     (String) authzModifier.getValue(),
+//                                     pmd.setParamType(aClass1));
+//                        } else {
+//                            return null;
+//                        }
+//                        break;
+//                    case 4:
+//                    case 5:
+//                        Class<?> aClass2 = paramTypeMapMap.get(REQUEST_PARAM).get(authzModifier.getValue());
+//                        if (aClass2 != null) {
+//                            meta = _authzMetadata.computeIfAbsent(authzModifier.getApi(), r -> new HashMap<>())
+//                                    .computeIfAbsent(authzModifier.getMethod(), r -> new PermRolesMeta());
+//                            ParamMetadata pmd = new ParamMetadata();
+//                            meta.put(REQUEST_PARAM,
+//                                     (String) authzModifier.getValue(),
+//                                     pmd.setParamType(aClass2));
+//                        } else {
+//                            return null;
+//                        }
+//                        break;
+//                    default:
+//                        return null;
+//                }
+//            } else {
+//                return null;
+//            }
+//        }
+//        switch (authzModifier.getTarget().i) {
+//            case 2:
+//                paramMetadata = meta.getParamPermissionsMetadata().get(PATH_VARIABLE)
+//                        .computeIfAbsent((String) authzModifier.getValue(),
+//                                         r -> new ParamMetadata().setParamType(
+//                                                 _rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod()).get(
+//                                                         PATH_VARIABLE).get(authzModifier.getValue())));
+//                if (paramMetadata != null) {
+//                    List<PermRolesMeta.Meta> rolesMetaList = paramMetadata.getRolesMetaList();
+//                    if (rolesMetaList == null && isAdd) {
+//                        rolesMetaList = new ArrayList<>();
+//                        paramMetadata.setRolesMetaList(rolesMetaList);
+//                    }
+//                    return new Object[]{paramMetadata, paramMetadata.getRolesMetaList()};
+//                } else {
+//                    if (isAdd) {
+//                        paramMetadata = meta.getParamPermissionsMetadata().get(PATH_VARIABLE).computeIfAbsent(
+//                                (String) authzModifier.getValue(), r -> new ParamMetadata());
+//                        paramMetadata.setRolesMetaList(new ArrayList<>());
+//                        return new Object[]{paramMetadata, paramMetadata.getRolesMetaList()};
+//                    } else {
+//                        return null;
+//                    }
+//                }
+//            case 3:
+//                paramMetadata = meta.getParamPermissionsMetadata().get(PATH_VARIABLE).computeIfAbsent(
+//                        (String) authzModifier.getValue(),
+//                        r -> new ParamMetadata().setParamType(
+//                                _rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod()).get(
+//                                        PATH_VARIABLE).get(authzModifier.getValue())));
+//                if (paramMetadata != null) {
+//                    List<PermRolesMeta.Meta> permissionsMetaList = paramMetadata.getPermissionsMetaList();
+//                    if (permissionsMetaList == null && isAdd) {
+//                        permissionsMetaList = new ArrayList<>();
+//                        paramMetadata.setPermissionsMetaList(permissionsMetaList);
+//                    }
+//                    return new Object[]{paramMetadata, paramMetadata.getPermissionsMetaList()};
+//                } else {
+//                    if (isAdd) {
+//                        paramMetadata = meta.getParamPermissionsMetadata().get(PATH_VARIABLE).computeIfAbsent(
+//                                (String) authzModifier.getValue(), r -> new ParamMetadata());
+//                        paramMetadata.setPermissionsMetaList(new ArrayList<>());
+//                        return new Object[]{paramMetadata, paramMetadata.getPermissionsMetaList()};
+//
+//                    } else {
+//                        return null;
+//                    }
+//                }
+//            case 4:
+//                paramMetadata = meta.getParamPermissionsMetadata().get(REQUEST_PARAM).computeIfAbsent(
+//                        (String) authzModifier.getValue(),
+//                        r -> new ParamMetadata().setParamType(
+//                                _rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod()).get(
+//                                        REQUEST_PARAM).get(authzModifier.getValue())));
+//                if (paramMetadata != null) {
+//                    List<PermRolesMeta.Meta> rolesMetaList = paramMetadata.getRolesMetaList();
+//                    if (rolesMetaList == null && isAdd) {
+//                        rolesMetaList = new ArrayList<>();
+//                        paramMetadata.setRolesMetaList(rolesMetaList);
+//                    }
+//                    return new Object[]{paramMetadata, paramMetadata.getRolesMetaList()};
+//                } else {
+//                    if (isAdd) {
+//                        paramMetadata = meta.getParamPermissionsMetadata().get(REQUEST_PARAM).computeIfAbsent(
+//                                (String) authzModifier.getValue(), r -> new ParamMetadata());
+//                        paramMetadata.setRolesMetaList(new ArrayList<>());
+//                        return new Object[]{paramMetadata, paramMetadata.getRolesMetaList()};
+//                    } else {
+//                        return null;
+//                    }
+//                }
+//            case 5:
+//                paramMetadata = meta.getParamPermissionsMetadata().get(REQUEST_PARAM).computeIfAbsent(
+//                        (String) authzModifier.getValue(),
+//                        r -> new ParamMetadata().setParamType(
+//                                _rawMap.get(authzModifier.getApi()).get(authzModifier.getMethod()).get(
+//                                        REQUEST_PARAM).get(authzModifier.getValue())));
+//                if (paramMetadata != null) {
+//                    List<PermRolesMeta.Meta> permissionsMetaList = paramMetadata.getPermissionsMetaList();
+//                    if (permissionsMetaList == null && isAdd) {
+//                        permissionsMetaList = new ArrayList<>();
+//                        paramMetadata.setPermissionsMetaList(permissionsMetaList);
+//                    }
+//                    return new Object[]{paramMetadata, paramMetadata.getPermissionsMetaList()};
+//
+//                } else {
+//                    if (isAdd) {
+//                        paramMetadata = meta.getParamPermissionsMetadata().get(REQUEST_PARAM).computeIfAbsent(
+//                                (String) authzModifier.getValue(), r -> new ParamMetadata());
+//                        paramMetadata.setPermissionsMetaList(new ArrayList<>());
+//                        return new Object[]{paramMetadata, paramMetadata.getPermissionsMetaList()};
+//
+//                    } else {
+//                        return null;
+//                    }
+//                }
+//        }
+//        return null;
+//    }
 
     public static Object modifyData(AuthzModifier authzModifier) {
         try {
@@ -973,17 +1024,17 @@ public class PermissionDict {
                     BatchAuthority batchAuthority = param.getParameterAnnotation(BatchAuthority.class);
 
                     if (rolesByParam != null || permsByParam != null || batchAuthority != null) {
-                        ArrayList<PermRolesMeta.Meta> rolesMetaList = new ArrayList<>();
-                        ArrayList<PermRolesMeta.Meta> permsMetaList = new ArrayList<>();
-                        PermRolesMeta.Meta            vr            = generateRolesMeta(rolesByParam);
-                        PermRolesMeta.Meta            vp            = generatePermMeta(permsByParam);
+                        ArrayList<Meta> rolesMetaList = new ArrayList<>();
+                        ArrayList<Meta> permsMetaList = new ArrayList<>();
+                        Meta            vr            = generateRolesMeta(rolesByParam);
+                        Meta            vp            = generatePermMeta(permsByParam);
                         if (vr != null) rolesMetaList.add(vr);
                         if (vp != null) permsMetaList.add(vp);
 
                         if (batchAuthority != null) {
                             Roles[] rs = batchAuthority.roles();
                             for (Roles r : rs) {
-                                PermRolesMeta.Meta v = generateRolesMeta(r);
+                                Meta v = generateRolesMeta(r);
                                 if (v != null) {
                                     rolesMetaList.add(v);
                                     if (v.getRequire() != null) v.getRequire().forEach(toBeLoadedRoles::addAll);
@@ -992,16 +1043,13 @@ public class PermissionDict {
                             }
                             Perms[] ps = batchAuthority.perms();
                             for (Perms p : ps) {
-                                PermRolesMeta.Meta v = generatePermMeta(p);
+                                Meta v = generatePermMeta(p);
                                 if (v != null) permsMetaList.add(v);
                             }
                         }
 
-                        PermRolesMeta meta = _authzMetadata.computeIfAbsent(patternValue, r -> new HashMap<>())
-                                .computeIfAbsent(method, r -> new PermRolesMeta());
-                        meta.put(type, paramName,
-                                 new ParamMetadata(paramType, rolesMetaList, permsMetaList)
-                        );
+                        putParam(patternValue, method, type, paramName,
+                                 new ParamMetadata(paramType, rolesMetaList, permsMetaList));
                     }
 
                 }

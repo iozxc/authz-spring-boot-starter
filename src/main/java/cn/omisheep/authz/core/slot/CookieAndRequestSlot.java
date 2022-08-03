@@ -29,7 +29,7 @@ import static cn.omisheep.authz.core.config.Constants.USER_ID;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-@Order(2)
+@Order(1)
 @SuppressWarnings("all")
 public class CookieAndRequestSlot implements Slot {
 

@@ -17,8 +17,8 @@ import java.util.stream.Collectors;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DataPermMeta {
 
-    private PermRolesMeta.Meta        roles;
-    private PermRolesMeta.Meta        permissions;
+    private Meta        roles;
+    private Meta        permissions;
     private String                    condition;
     private Rule                      rule;
     private Map<String, List<String>> argsMap;
