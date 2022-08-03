@@ -52,7 +52,7 @@ public class PermissionDict {
     /**
      * api的参数权限
      */
-    private static final Map<String, Map<String, Map<ParamMetadata.ParamType, Map<String, ParamMetadata>>>> _authzParamMetadata = new HashMap<>();
+    private static final Map<String, Map<String, Map<String, ParamMetadata>>> _authzParamMetadata = new HashMap<>();
 
     /**
      * certificatedMetadata 哪些接口需要登录-若有role和perms，则同同理
@@ -107,40 +107,40 @@ public class PermissionDict {
     // ----------------------------------------- unModify ----------------------------------------- //
 
     @Getter
-    private static final Map<String, Map<String, PermRolesMeta>>                                            rolePermission           = Collections.unmodifiableMap(
+    private static final Map<String, Map<String, PermRolesMeta>>                                       rolePermission           = Collections.unmodifiableMap(
             _authzMetadata);
     @Getter
-    private static final Map<String, Map<String, Map<ParamMetadata.ParamType, Map<String, ParamMetadata>>>> paramPermission          = Collections.unmodifiableMap(
+    private static final Map<String, Map<String, Map<String, ParamMetadata>>>                          paramPermission          = Collections.unmodifiableMap(
             _authzParamMetadata);
     @Getter
-    private static final Map<String, Map<String, String>>                                                   resourcesNameAndTemplate = Collections.unmodifiableMap(
+    private static final Map<String, Map<String, String>>                                              resourcesNameAndTemplate = Collections.unmodifiableMap(
             _authzResourcesNameAndTemplate);
     @Getter
-    private static final Map<String, List<DataPermRolesMeta>>                                               dataPermission           = Collections.unmodifiableMap(
+    private static final Map<String, List<DataPermRolesMeta>>                                          dataPermission           = Collections.unmodifiableMap(
             _dataPermMetadata);
     @Getter
-    private static final Map<String, Map<String, FieldDataPermRolesMeta>>                                   fieldsData               = Collections.unmodifiableMap(
+    private static final Map<String, Map<String, FieldDataPermRolesMeta>>                              fieldsData               = Collections.unmodifiableMap(
             _fieldMetadata);
     @Getter
-    private static final Map<String, ArgsMeta>                                                              args                     = Collections.unmodifiableMap(
+    private static final Map<String, ArgsMeta>                                                         args                     = Collections.unmodifiableMap(
             _argsMetadata);
     @Getter
-    private static final Map<String, Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>>>      rawParamMap              =
+    private static final Map<String, Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>>> rawParamMap              =
             Collections.unmodifiableMap(_rawParamMap);
     @Getter
-    private static final Map<String, Map<String, IPRangeMeta>>                                              iPRange                  = Collections.unmodifiableMap(
+    private static final Map<String, Map<String, IPRangeMeta>>                                         iPRange                  = Collections.unmodifiableMap(
             _ipRangeMeta);
     @Getter
-    private static final Map<String, Set<String>>                                                           certificatedMetadata     = Collections.unmodifiableMap(
+    private static final Map<String, Set<String>>                                                      certificatedMetadata     = Collections.unmodifiableMap(
             _certificatedMetadata);
     @Getter
-    private static final Set<IPRange>                                                                       globalAllow              = Collections.unmodifiableSet(
+    private static final Set<IPRange>                                                                  globalAllow              = Collections.unmodifiableSet(
             _globalAllow);
     @Getter
-    private static final Set<IPRange>                                                                       globalDeny               = Collections.unmodifiableSet(
+    private static final Set<IPRange>                                                                  globalDeny               = Collections.unmodifiableSet(
             _globalDeny);
     @Getter
-    private static final Map<String, List<Map<String, String>>>                                             controllerMetadata       = Collections.unmodifiableMap(
+    private static final Map<String, List<Map<String, String>>>                                        controllerMetadata       = Collections.unmodifiableMap(
             _controllerMetadata);
 
     public static boolean isSupportNative() {
@@ -151,13 +151,11 @@ public class PermissionDict {
 
     public static void putParam(String api,
                                 String method,
-                                ParamMetadata.ParamType paramType,
                                 String name,
                                 ParamMetadata paramMetadata) {
         _authzParamMetadata
                 .computeIfAbsent(api, r -> new HashMap<>())
                 .computeIfAbsent(method, r -> new HashMap<>())
-                .computeIfAbsent(paramType, r -> new HashMap<>())
                 .put(name, paramMetadata);
     }
 
@@ -215,7 +213,7 @@ public class PermissionDict {
             // skip
         }
 
-        Map<ParamMetadata.ParamType, Map<String, ParamMetadata>> paramAuth = null;
+        Map<String, ParamMetadata> paramAuth = null;
 
         try {
             paramAuth = _authzParamMetadata.get(api)
@@ -880,8 +878,8 @@ public class PermissionDict {
 
                     if (authParam == null && batchAuthParam == null) continue;
 
-                    Class<?> paramType = param.getParameter().getType();
-                    if (ValueMatcher.checkType(paramType).isOther()) {
+                    Class<?> clz = param.getParameter().getType();
+                    if (ValueMatcher.checkType(clz).isOther()) {
                         continue;
                     }
 
@@ -918,10 +916,10 @@ public class PermissionDict {
 
                     Map<String, Class<?>> rawParamMap = rawParamTypeMapMap
                             .computeIfAbsent(type, r -> new HashMap<>());
-                    rawParamMap.put(paramName, paramType);
+                    rawParamMap.put(paramName, clz);
 
-                    putParam(patternValue, method, type, paramName,
-                             ParamMetadata.of(paramType, paramPermRolesMetas));
+                    putParam(patternValue, method, paramName,
+                             ParamMetadata.of(clz, type, paramPermRolesMetas));
 
 
                 }

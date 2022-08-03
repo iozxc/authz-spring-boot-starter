@@ -240,7 +240,7 @@ public class HttpMeta extends BaseHelper {
 
     public boolean isHasParamAuth() {
         if (hasParamAuth != null) return requireLogin;
-        Map<String, Map<ParamMetadata.ParamType, Map<String, ParamMetadata>>> map = PermissionDict.getParamPermission()
+        Map<String, Map<String, ParamMetadata>> map = PermissionDict.getParamPermission()
                 .get(api);
         if (map == null) {
             hasParamAuth = false;

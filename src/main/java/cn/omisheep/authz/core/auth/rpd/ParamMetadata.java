@@ -24,13 +24,15 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
 @Accessors(chain = true)
 @JsonInclude(NON_EMPTY)
 public class ParamMetadata {
-    private Class<?>                 paramType;
+    private Class<?>                 clz;
+    private ParamType                paramType;
     private List<ParamPermRolesMeta> paramMetaList;
 
-    public static ParamMetadata of(Class<?> paramType,
+    public static ParamMetadata of(Class<?> clz,
+                                   ParamType paramType,
                                    List<ParamPermRolesMeta> paramMetaList) {
         if (paramMetaList == null || paramMetaList.isEmpty()) return null;
-        return new ParamMetadata(paramType, paramMetaList);
+        return new ParamMetadata(clz, paramType, paramMetaList);
     }
 
     public enum ParamType {

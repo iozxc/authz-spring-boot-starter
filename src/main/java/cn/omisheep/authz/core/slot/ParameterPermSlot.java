@@ -42,7 +42,7 @@ public class ParameterPermSlot implements Slot {
                       HandlerMethod handler,
                       Error error) {
         if (!httpMeta.isHasParamAuth()) return;
-        Map<ParamMetadata.ParamType, Map<String, ParamMetadata>> paramPeMap = PermissionDict.getParamPermission()
+        Map<String, ParamMetadata> paramPeMap = PermissionDict.getParamPermission()
                 .get(httpMeta.getApi())
                 .get(httpMeta.getMethod());
 
@@ -80,7 +80,8 @@ public class ParameterPermSlot implements Slot {
 
             ParamMetadata paramMetadata = null;
             try {
-                paramMetadata = paramPeMap.get(type).get(paramName);
+                paramMetadata = paramPeMap.get(paramName);
+                if (paramMetadata.getParamType().equals(type)) continue;
             } catch (Exception e) {
                 continue;
             }
