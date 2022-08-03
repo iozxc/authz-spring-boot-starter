@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core.auth.rpd;
 
 import cn.omisheep.commons.util.CollectionUtils;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.Collection;
@@ -17,95 +18,78 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 @JsonInclude(NON_NULL)
 public class PermRolesMeta {
 
-    Meta role;
+    Meta roles;
     Meta permissions;
-//
-//    @JsonInclude(NON_NULL)
-//    private Map<ParamMetadata.ParamType, Map<String, ParamMetadata>> paramPermissionsMetadata;
-
-//    @Data
-//    @Accessors(chain = true)
-//    @JsonInclude(NON_NULL)
-//    public static class Meta {
-//        private Set<Set<String>> require;
-//        private Set<Set<String>> exclude;
-//        private Set<String>      range; // scope of access
-//        private Set<String>      resources; // required protect resources
-//
-//        public boolean non() {
-//            return (require == null || require.size() == 0) && (exclude == null || exclude.size() == 0);
-//        }
-//
-//        @Override
-//        public String toString() {
-//            return (require != null ? "require: " + require : "") + (exclude != null ? "\t, exclude: " + exclude : "");
-//        }
-//    }
-
-//    public Map<ParamMetadata.ParamType, Map<String, ParamMetadata>> getParamPermissionsMetadata() {
-//        return paramPermissionsMetadata;
-//    }
 
     public boolean non() {
-        return (role == null || role.non()) && (permissions == null || permissions.non());
+        return (roles == null || roles.non()) && (permissions == null || permissions.non());
     }
 
-//    public boolean nonAll() {
-//        return (role == null || role.non()) && (permissions == null || permissions.non())
-//                && (paramPermissionsMetadata == null
-//                || paramPermissionsMetadata.size() == 0
-//                || paramPermissionsMetadata.values().stream().noneMatch(Objects::nonNull));
-//    }
-
-    public void removeApi() {
-        role        = null;
-        permissions = null;
+    public PermRolesMeta clear() {
+        this.roles       = null;
+        this.permissions = null;
+        return this;
     }
 
     public PermRolesMeta() {
     }
 
     public Set<Set<String>> getRequireRoles() {
-        if (this.role != null) return this.role.require;
+        if (this.roles != null) return this.roles.require;
         return null;
-    }
-
-    public void setRequireRoles(Set<Set<String>> requireRoles) {
-        if (requireRoles == null || requireRoles.isEmpty()) {
-            if (this.role != null) this.role.require = null;
-        } else {
-            Set<Set<String>> set = filter(requireRoles);
-            if (set.isEmpty()) {
-                if (this.role != null) this.role.require = null;
-                return;
-            }
-            if (this.role == null) this.role = new Meta();
-            this.role.require = set;
-        }
     }
 
     public Set<Set<String>> getExcludeRoles() {
-        if (this.role != null) return this.role.exclude;
+        if (this.roles != null) return this.roles.exclude;
         return null;
-    }
-
-    public void setExcludeRoles(Set<Set<String>> excludeRoles) {
-        if (excludeRoles == null || excludeRoles.isEmpty()) {
-            if (this.role != null) this.role.exclude = null;
-        } else {
-            Set<Set<String>> set = filter(excludeRoles);
-            if (set.isEmpty()) {
-                if (this.role != null) this.role.exclude = null;
-                return;
-            }
-            if (this.role == null) this.role = new Meta();
-            this.role.exclude = set;
-        }
     }
 
     public Set<Set<String>> getRequirePermissions() {
         if (permissions != null) return permissions.require;
         return null;
+    }
+
+    public Set<Set<String>> getExcludePermissions() {
+        if (permissions != null) return permissions.exclude;
+        return null;
+    }
+
+    @JsonIgnore
+    public Meta getRoles() {
+        return roles;
+    }
+
+    @JsonIgnore
+    public Meta getPermissions() {
+        return permissions;
+    }
+
+    public void setRequireRoles(Set<Set<String>> requireRoles) {
+        if (requireRoles == null || requireRoles.isEmpty()) {
+            if (this.roles != null) this.roles.require = null;
+        } else {
+            Set<Set<String>> set = filter(requireRoles);
+            if (set.isEmpty()) {
+                if (this.roles != null) this.roles.require = null;
+                return;
+            }
+            if (this.roles == null) this.roles = new Meta();
+            this.roles.require = set;
+        }
+    }
+
+    public void setExcludeRoles(Set<Set<String>> excludeRoles) {
+        if (excludeRoles == null || excludeRoles.isEmpty()) {
+            if (this.roles != null) this.roles.exclude = null;
+        } else {
+            Set<Set<String>> set = filter(excludeRoles);
+            if (set.isEmpty()) {
+                if (this.roles != null) this.roles.exclude = null;
+                return;
+            }
+            if (this.roles == null) this.roles = new Meta();
+            this.roles.exclude = set;
+        }
     }
 
     public void setRequirePermissions(Set<Set<String>> requirePermissions) {
@@ -120,11 +104,6 @@ public class PermRolesMeta {
             if (this.permissions == null) this.permissions = new Meta();
             this.permissions.require = set;
         }
-    }
-
-    public Set<Set<String>> getExcludePermissions() {
-        if (permissions != null) return permissions.exclude;
-        return null;
     }
 
     public void setExcludePermissions(Set<Set<String>> excludePermissions) {
@@ -144,7 +123,7 @@ public class PermRolesMeta {
     private Set<Set<String>> filter(Set<Set<String>> set) {
         return set.stream().map(s -> {
                     Set<String> collect = s.stream().filter(Objects::nonNull)
-                            .map(v-> v.replaceAll("&nbsp;"," "))
+                            .map(v -> v.replaceAll("&nbsp;", " "))
                             .map(String::trim)
                             .filter(v -> !v.isEmpty())
                             .collect(Collectors.toSet());
@@ -174,14 +153,24 @@ public class PermRolesMeta {
                                                                  excludePermissions.toArray(new String[]{})));
     }
 
-    public void setRole(Set<Set<String>> require,
-                        Set<Set<String>> exclude) {
+    public void setRoles(Meta role) {
+        if (role == null) return;
+        this.setRoles(role.require, role.exclude);
+    }
+
+    public void setRoles(Set<Set<String>> require,
+                         Set<Set<String>> exclude) {
         if ((require == null || require.isEmpty()) && (exclude == null || exclude.isEmpty())) {
-            this.role = null;
+            this.roles = null;
             return;
         }
         setRequireRoles(require);
         setExcludeRoles(exclude);
+    }
+
+    public void setPermissions(Meta permissions) {
+        if (permissions == null) return;
+        setPermissions(permissions.require, permissions.exclude);
     }
 
     public void setPermissions(Set<Set<String>> require,
@@ -194,17 +183,33 @@ public class PermRolesMeta {
         setExcludePermissions(exclude);
     }
 
-    public void merge(PermRolesMeta other) {
-        setExcludePermissions(other.getExcludePermissions());
-        setRequirePermissions(other.getRequirePermissions());
-        setRequireRoles(other.getRequireRoles());
-        setExcludeRoles(other.getExcludeRoles());
+    public PermRolesMeta merge(PermRolesMeta other) {
+        if (other == null) return this;
+        if (permissions == null) {
+            setExcludePermissions(other.getExcludePermissions());
+            setRequirePermissions(other.getRequirePermissions());
+        } else {
+            Set<Set<String>> requirePermissions = other.getRequirePermissions();
+            if (requirePermissions != null) permissions.require.addAll(requirePermissions);
+            Set<Set<String>> excludePermissions = other.getExcludePermissions();
+            if (excludePermissions != null) permissions.exclude.addAll(excludePermissions);
+        }
+        if (roles == null) {
+            setRequireRoles(other.getRequireRoles());
+            setExcludeRoles(other.getExcludeRoles());
+        } else {
+            Set<Set<String>> requireRoles = other.getRequireRoles();
+            if (requireRoles != null) roles.require.addAll(requireRoles);
+            Set<Set<String>> excludeRoles = other.getExcludeRoles();
+            if (excludeRoles != null) roles.exclude.addAll(excludeRoles);
+        }
+        return this;
     }
 
     @Override
     public String toString() {
-        return (role != null ? "( role> " + role + " )" : "") +
-                (permissions != null ? "\t, ( permissions> " + permissions + " )" : "");
+        return (roles != null ? "( role : " + roles + " )" : "") +
+                (permissions != null ? "\t, ( permissions : " + permissions + " )" : "");
     }
 
 }

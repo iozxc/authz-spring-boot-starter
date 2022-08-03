@@ -3,6 +3,7 @@ package cn.omisheep.authz.core.config;
 import cn.omisheep.authz.annotation.*;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.rpd.*;
+import cn.omisheep.authz.core.util.MetaUtils;
 import cn.omisheep.authz.core.util.ScanUtils;
 import cn.omisheep.commons.util.ClassUtils;
 import cn.omisheep.commons.util.CollectionUtils;
@@ -14,10 +15,8 @@ import org.springframework.lang.NonNull;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static cn.omisheep.authz.core.util.MetaUtils.generatePermMeta;
-import static cn.omisheep.authz.core.util.MetaUtils.generateRolesMeta;
+import static cn.omisheep.authz.core.util.MetaUtils.*;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -25,50 +24,22 @@ import static cn.omisheep.authz.core.util.MetaUtils.generateRolesMeta;
  */
 public class AuthzResourcesInit implements ImportSelector {
 
-    private DataPermMeta generateDataPermMeta(Perms perms) {
-        DataPermMeta dataPermMeta  = DataPermMeta.of(perms.condition());
-        Arg[]        conditionArgs = perms.args();
-        for (Arg arg : conditionArgs) {
-            String   resource     = arg.resource();
-            String[] resourceArgs = arg.args();
-            dataPermMeta.addArg(resource, resourceArgs);
-        }
-        dataPermMeta.setPermissions(generatePermMeta(perms).setResources(null));
-        return dataPermMeta;
-    }
-
-    private DataPermMeta generateDataRolesMeta(Roles roles) {
-        DataPermMeta dataPermMeta  = DataPermMeta.of(roles.condition());
-        Arg[]        conditionArgs = roles.args();
-        for (Arg arg : conditionArgs) {
-            String   resource     = arg.resource();
-            String[] resourceArgs = arg.args();
-            dataPermMeta.addArg(resource, resourceArgs);
-        }
-        dataPermMeta.setRoles(generateRolesMeta(roles).setResources(null));
-        return dataPermMeta;
-    }
-
     private Object[] dataPerm(String className) {
         try {
-            Class<?>       aClass         = Class.forName(className);
-            List<Roles>    rolesList      = new ArrayList<>();
-            List<Perms>    permsList      = new ArrayList<>();
-            Roles          roles          = AnnotationUtils.getAnnotation(aClass, Roles.class);
-            Perms          perms          = AnnotationUtils.getAnnotation(aClass, Perms.class);
-            BatchAuthority batchAuthority = AnnotationUtils.getAnnotation(aClass, BatchAuthority.class);
-            rolesList.add(roles);
-            permsList.add(perms);
-            if (batchAuthority != null) {
-                rolesList.addAll(Arrays.asList(batchAuthority.roles()));
-                permsList.addAll(Arrays.asList(batchAuthority.perms()));
+            Class<?>       aClass        = Class.forName(className);
+            List<AuthData> authDataList  = new ArrayList<>();
+            AuthData       authData      = AnnotationUtils.getAnnotation(aClass, AuthData.class);
+            BatchAuthData  batchAuthData = AnnotationUtils.getAnnotation(aClass, BatchAuthData.class);
+            authDataList.add(authData);
+            if (batchAuthData != null) {
+                authDataList.addAll(Arrays.asList(batchAuthData.value()));
             }
 
-            List<DataPermMeta> dataPermMetaList = Stream.concat(
-                    rolesList.stream().filter(Objects::nonNull).map(this::generateDataRolesMeta),
-                    permsList.stream().filter(Objects::nonNull).map(this::generateDataPermMeta)).collect(
-                    Collectors.toList());
-            return new Object[]{className, dataPermMetaList};
+            List<DataPermRolesMeta> dataPermRolesMetaList = authDataList.stream()
+                    .filter(Objects::nonNull)
+                    .map(MetaUtils::generateDataRolesMeta)
+                    .collect(Collectors.toList());
+            return new Object[]{className, dataPermRolesMetaList};
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -86,42 +57,48 @@ public class AuthzResourcesInit implements ImportSelector {
         if (annotationAttributes != null) entityBasePackages = (String[]) annotationAttributes.get("entity");
         Set<String> entityClasses = CollectionUtils.newSet(ScanUtils.scan(Object.class, entityBasePackages));
 
-        HashMap<String, List<DataPermMeta>> map = new HashMap<>();
-        entityClasses.stream().map(this::dataPerm).filter(Objects::nonNull).forEach(
-                o -> map.put((String) o[0], (List<DataPermMeta>) o[1]));
+        HashMap<String, List<DataPermRolesMeta>> map = new HashMap<>();
+        entityClasses.stream()
+                .map(this::dataPerm)
+                .filter(Objects::nonNull)
+                .forEach(o -> map.put((String) o[0], (List<DataPermRolesMeta>) o[1]));
 
         String[] argsBasePackages = new String[0];
         if (annotationAttributes != null) argsBasePackages = (String[]) annotationAttributes.get("args");
-        HashMap<String, PermissionDict.ArgsMeta> argMap = new HashMap<>();
-        Arrays.stream(argsBasePackages).forEach(basePackage -> ClassUtils.getClassSet(basePackage).forEach(
-                type -> Arrays.stream(type.getMethods()).filter(
-                        method -> method.isAnnotationPresent(ArgResource.class)).forEach(method -> {
-                    String name = AnnotationUtils.getAnnotation(method, ArgResource.class).name();
-                    if (Objects.equals(name, "")) name = method.getName();
-                    argMap.put(name, PermissionDict.ArgsMeta.of(type, method));
-                })));
-        argMap.put("token", PermissionDict.ArgsMeta.of(HttpMeta.class, "currentToken"));
-        argMap.put("userId", PermissionDict.ArgsMeta.of(HttpMeta.class, "currentUserId"));
+        HashMap<String, ArgsMeta> argMap = new HashMap<>();
+        Arrays.stream(argsBasePackages)
+                .forEach(basePackage -> ClassUtils.getClassSet(basePackage)
+                        .forEach(type -> Arrays.stream(type.getMethods())
+                                .filter(method -> method.isAnnotationPresent(ArgResource.class))
+                                .forEach(method -> {
+                                    String name = AnnotationUtils.getAnnotation(method, ArgResource.class).name();
+                                    if (Objects.equals(name, "")) name = method.getName();
+                                    argMap.put(name, ArgsMeta.of(type, method));
+                                })));
+        argMap.put("httpMeta", ArgsMeta.of(HttpMeta.class, "currentHttpMeta"));
+        argMap.put("token", ArgsMeta.of(HttpMeta.class, "currentToken"));
+        argMap.put("userId", ArgsMeta.of(HttpMeta.class, "currentUserId"));
         PermissionDict.initArgs(entityClasses, ge(entityClasses), map, argMap);
 
         return new String[0];
     }
 
 
-    private Map<String, Map<String, FieldData>> ge(Set<String> entityClasses) {
-        Map<String, Map<String, FieldData>> map = new HashMap<>();
+    private Map<String, Map<String, FieldDataPermRolesMeta>> ge(Set<String> entityClasses) {
+        Map<String, Map<String, FieldDataPermRolesMeta>> map = new HashMap<>();
         for (String clz : entityClasses) {
             try {
-                Class<?>               aClass = Class.forName(clz);
-                Map<String, FieldData> fmap   = map.computeIfAbsent(clz, r -> new HashMap<>());
+                Class<?>                            aClass = Class.forName(clz);
+                Map<String, FieldDataPermRolesMeta> fmap   = map.computeIfAbsent(clz, r -> new HashMap<>());
 
                 for (Field field : aClass.getDeclaredFields()) {
-                    Roles roles = AnnotationUtils.getAnnotation(field, Roles.class);
-                    Perms perms = AnnotationUtils.getAnnotation(field, Perms.class);
-                    if (roles == null && perms == null) continue;
-                    Meta rm = generateRolesMeta(roles);
-                    Meta pm = generatePermMeta(perms);
-                    fmap.put(field.getName(), new FieldData(field.getType().getTypeName(), rm, pm));
+                    AuthField authField = AnnotationUtils.getAnnotation(field, AuthField.class);
+                    if (authField == null) continue;
+                    FieldDataPermRolesMeta fieldDataPermRolesMeta = generateDataFiledRolesMeta(
+                            field.getType().getTypeName(),
+                            authField);
+                    if (fieldDataPermRolesMeta == null) continue;
+                    fmap.put(field.getName(), fieldDataPermRolesMeta);
                 }
 
             } catch (Exception ignored) {

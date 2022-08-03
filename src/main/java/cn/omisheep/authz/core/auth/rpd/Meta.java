@@ -16,10 +16,9 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 @Accessors(chain = true)
 @JsonInclude(NON_NULL)
 public class Meta {
+
     Set<Set<String>> require;
     Set<Set<String>> exclude;
-    Set<String>      range; // scope of access
-    Set<String>      resources; // required protect resources
 
     public boolean non() {
         return (require == null || require.size() == 0) && (exclude == null || exclude.size() == 0);
@@ -29,4 +28,5 @@ public class Meta {
     public String toString() {
         return (require != null ? "require: " + require : "") + (exclude != null ? "\t, exclude: " + exclude : "");
     }
+
 }

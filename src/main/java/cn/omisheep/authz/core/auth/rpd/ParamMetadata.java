@@ -1,11 +1,16 @@
 package cn.omisheep.authz.core.auth.rpd;
 
+import cn.omisheep.commons.util.NamingUtils;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonValue;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 import java.util.List;
+import java.util.Locale;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
 
@@ -14,22 +19,18 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
  * @since 1.0.0
  */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Accessors(chain = true)
 @JsonInclude(NON_EMPTY)
 public class ParamMetadata {
     private Class<?>                 paramType;
-    private List<Meta> rolesMetaList;
-    private List<Meta> permissionsMetaList;
+    private List<ParamPermRolesMeta> paramMetaList;
 
-    public ParamMetadata(Class<?> paramType,
-                         List<Meta> rolesMetaList,
-                         List<Meta> permissionsMetaList) {
-        this.paramType = paramType;
-        if (rolesMetaList != null && !rolesMetaList.isEmpty()) this.rolesMetaList = rolesMetaList;
-        if (permissionsMetaList != null && !permissionsMetaList.isEmpty()) this.permissionsMetaList = permissionsMetaList;
-    }
-
-    public ParamMetadata() {
+    public static ParamMetadata of(Class<?> paramType,
+                                   List<ParamPermRolesMeta> paramMetaList) {
+        if (paramMetaList == null || paramMetaList.isEmpty()) return null;
+        return new ParamMetadata(paramType, paramMetaList);
     }
 
     public enum ParamType {
@@ -39,6 +40,11 @@ public class ParamMetadata {
         @JsonValue
         private final String val;
 
+        @JsonCreator
+        public static ParamType create(String target) {
+            return valueOf(NamingUtils.humpToUnderline(target).toUpperCase(Locale.ROOT));
+        }
+
         ParamType(String val) {
             this.val = val;
         }
@@ -47,6 +53,5 @@ public class ParamMetadata {
             return val;
         }
     }
-
 
 }

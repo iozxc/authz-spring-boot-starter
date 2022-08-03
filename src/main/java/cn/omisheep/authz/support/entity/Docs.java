@@ -2,6 +2,7 @@ package cn.omisheep.authz.support.entity;
 
 import cn.omisheep.authz.core.AuthzVersion;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
+import cn.omisheep.authz.core.auth.rpd.ArgsMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.config.AuthzAppVersion;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -95,7 +96,7 @@ public class Docs {
     }
 
     @JsonProperty(index = 7)
-    public Map<String, PermissionDict.ArgsMeta> getArgResource() {
+    public Map<String, ArgsMeta> getArgResource() {
         return PermissionDict.getArgs();
     }
 

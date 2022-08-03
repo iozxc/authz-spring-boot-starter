@@ -181,7 +181,7 @@ public class AuthzModifier {
     public PermRolesMeta build() {
         PermRolesMeta permRolesMeta = new PermRolesMeta();
         if (role != null) {
-            permRolesMeta.setRole(role.require, role.exclude);
+            permRolesMeta.setRoles(role.require, role.exclude);
         }
         if (permission != null) {
             permRolesMeta.setPermissions(permission.require, permission.exclude);

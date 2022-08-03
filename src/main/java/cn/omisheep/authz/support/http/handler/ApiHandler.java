@@ -1,7 +1,7 @@
 package cn.omisheep.authz.support.http.handler;
 
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.authz.core.auth.rpd.PermissionDict;
+import cn.omisheep.authz.core.auth.rpd.ArgsHandler;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.support.entity.Docs;
@@ -50,7 +50,7 @@ public class ApiHandler {
 
         @JsonProperty(index = 4)
         public Object getReturn() {
-            Map<String, String> map = PermissionDict.parseTypeForTemplate(invoke.getReturnType().getTypeName());
+            Map<String, String> map = ArgsHandler.parseTypeForTemplate(invoke.getReturnType().getTypeName());
             if (map.isEmpty()) return invoke.getReturnType().getTypeName();
             return map;
         }

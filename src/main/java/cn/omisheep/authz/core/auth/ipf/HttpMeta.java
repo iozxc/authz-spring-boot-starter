@@ -10,11 +10,13 @@ import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.helper.BaseHelper;
 import cn.omisheep.authz.core.tk.AccessToken;
+import cn.omisheep.authz.core.util.IPUtils;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.CollectionUtils;
 import cn.omisheep.web.utils.HttpUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.springframework.boot.logging.LogLevel;
 import org.springframework.util.StringUtils;
@@ -33,37 +35,41 @@ import static cn.omisheep.authz.core.util.LogUtils.export;
  * @since 1.0.0
  */
 @Data
+@NoArgsConstructor
 @SuppressWarnings("all")
 public class HttpMeta extends BaseHelper {
 
     @JsonIgnore
-    private final HttpServletRequest          request;
-    private final String                      ip;
-    private final String                      uri;
-    private final String                      api;
-    private       String                      servletPath;
-    private       String                      path;
-    private final String                      method;
-    private final String                      userAgent;
-    private final String                      refer;
-    private       String                      body;
-    private final Date                        now;
-    private       AccessToken                 token;
-    private       Object                      userId;
-    private       Set<String>                 roles;
-    private       Set<String>                 permissions;
-    private       Set<String>                 scope;
-    private       Boolean                     hasApiAuth;
-    private       Boolean                     hasParamAuth;
-    private       Boolean                     requireLogin;
-    private       PermRolesMeta               permRolesMeta;
-    private       boolean                     ignore              = false;
-    private       boolean                     clearCookie         = true;
-    private       UserDevicesDict.UserStatus  userStatus;
+    private HttpServletRequest request;
+    private String             ip;
+    private String             uri;
+    private String             api;
+    private String             servletPath;
+    private String             path;
+    private String             method;
+    private String             userAgent;
+    private String             refer;
+    private String             body;
+
+    private AccessToken token;
+    private Object      userId;
+    private Set<String> roles;
+    private Set<String> permissions;
+    private Set<String> scope;
+
+    private PermRolesMeta permRolesMeta;
+    private Boolean       hasApiAuth;
+    private Boolean       hasParamAuth;
+    private Boolean       requireLogin;
+
     @JsonIgnore
-    private       LinkedList<Object>          exceptionObjectList = new LinkedList<>();
+    private boolean                     clearCookie         = true;
+    private UserDevicesDict.UserStatus  userStatus;
     @JsonIgnore
-    private       LinkedList<ExceptionStatus> exceptionStatusList = new LinkedList<>();
+    private LinkedList<Object>          exceptionObjectList = new LinkedList<>();
+    @JsonIgnore
+    private LinkedList<ExceptionStatus> exceptionStatusList = new LinkedList<>();
+    private Date                        now                 = new Date();
 
     public HttpMeta setRoles(Set<String> roles) {
         if (roles == null) return this;
@@ -198,19 +204,19 @@ public class HttpMeta extends BaseHelper {
     }
 
     public HttpMeta(HttpServletRequest request,
-                    String ip,
                     String uri,
                     String api,
                     String method,
-                    Date now) {
-        this.request   = request;
-        this.refer     = request.getHeader("Referer");
-        this.ip        = ip;
-        this.uri       = uri;
-        this.api       = api;
-        this.method    = method.toUpperCase();
-        this.userAgent = request.getHeader("user-agent");
-        this.now       = now;
+                    String path) {
+        this.request     = request;
+        this.refer       = request.getHeader("Referer");
+        this.ip          = IPUtils.getIp(request);
+        this.method      = method.toUpperCase();
+        this.userAgent   = request.getHeader("user-agent");
+        this.servletPath = request.getServletPath();
+        this.uri         = uri;
+        this.api         = api;
+        this.path        = path;
     }
 
     public boolean isMethod(String method) {
@@ -225,8 +231,10 @@ public class HttpMeta extends BaseHelper {
         Map<String, PermRolesMeta> map = PermissionDict.getRolePermission().get(api);
         if (map == null) {
             hasApiAuth = false;
+            return hasApiAuth;
         }
-        hasApiAuth = map.get(api) != null;
+        PermRolesMeta permRolesMeta = map.get(method);
+        hasApiAuth = permRolesMeta != null && !permRolesMeta.non();
         return hasApiAuth;
     }
 
@@ -236,6 +244,7 @@ public class HttpMeta extends BaseHelper {
                 .get(api);
         if (map == null) {
             hasParamAuth = false;
+            return hasParamAuth;
         }
         hasParamAuth = map.get(method) != null;
         return hasParamAuth;
@@ -246,6 +255,7 @@ public class HttpMeta extends BaseHelper {
         Set<String> list = PermissionDict.getCertificatedMetadata().get(api);
         if (list == null || list.isEmpty()) {
             requireLogin = isHasApiAuth() || isHasParamAuth();
+            return requireLogin;
         }
         requireLogin = list.contains(method) || isHasApiAuth() || isHasParamAuth();
         return requireLogin;

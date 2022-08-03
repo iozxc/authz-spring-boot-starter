@@ -1,8 +1,8 @@
 package cn.omisheep.authz.core.interceptor.mybatis;
 
 import cn.omisheep.authz.core.auth.PermLibrary;
-import cn.omisheep.authz.core.auth.rpd.DataPermMeta;
-import cn.omisheep.authz.core.auth.rpd.FieldData;
+import cn.omisheep.authz.core.auth.rpd.DataPermRolesMeta;
+import cn.omisheep.authz.core.auth.rpd.FieldDataPermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.interceptor.DataFinderSecurityInterceptor;
 import cn.omisheep.authz.core.util.AUtils;
@@ -40,20 +40,17 @@ import java.util.Map;
 @SuppressWarnings("all")
 public class DataSecurityInterceptorForMybatis implements Interceptor {
 
-    private ThreadLocal<ResultMap>        resultMapThreadLocal = new ThreadLocal<>();
-    private PermLibrary                   permLibrary;
-    private DataFinderSecurityInterceptor dataFinderSecurityInterceptor;
+    private final ThreadLocal<ResultMap>        resultMapThreadLocal = new ThreadLocal<>();
+    private final PermLibrary                   permLibrary;
+    private final DataFinderSecurityInterceptor dataFinderSecurityInterceptor;
 
-    public DataSecurityInterceptorForMybatis() {
+    public DataSecurityInterceptorForMybatis(PermLibrary permLibrary,
+                                             DataFinderSecurityInterceptor dataFinderSecurityInterceptor) {
+        this.permLibrary                   = permLibrary;
+        this.dataFinderSecurityInterceptor = dataFinderSecurityInterceptor;
     }
 
     public Object intercept(Invocation invocation) throws Throwable {
-        if (dataFinderSecurityInterceptor == null) {
-            dataFinderSecurityInterceptor = AUtils.getBean(DataFinderSecurityInterceptor.class);
-        }
-        if (permLibrary == null) {
-            permLibrary = AUtils.getBean(PermLibrary.class);
-        }
         Object   target = invocation.getTarget();
         Object[] args   = invocation.getArgs();
         if (target instanceof Executor) {
@@ -64,26 +61,32 @@ public class DataSecurityInterceptorForMybatis implements Interceptor {
             try {
                 ResultMap resultMap = resultMapThreadLocal.get();
                 if (resultMap == null) return invocation.proceed();
-                else resultMapThreadLocal.set(null);
                 StatementHandler rsh      = (StatementHandler) target;
                 BoundSql         boundSql = rsh.getBoundSql();
                 Class<?>         type     = resultMap.getType();
                 if (PermissionDict.getDataPermission() == null) return invocation.proceed();
-                List<DataPermMeta> dataPermMetaList = PermissionDict.getDataPermission().get(type.getTypeName());
-                String             change           = dataFinderSecurityInterceptor.sqlChange(AUtils.getCurrentHttpMeta(), permLibrary, dataPermMetaList, type, boundSql.getSql());
+                List<DataPermRolesMeta> dataPermRolesMetaList = PermissionDict.getDataPermission()
+                        .get(type.getTypeName());
+                String change = dataFinderSecurityInterceptor.sqlChange(AUtils.getCurrentHttpMeta(), permLibrary,
+                                                                        dataPermRolesMetaList, type, boundSql.getSql());
                 ReflectUtils.setFieldValue(boundSql, "sql", change);
             } catch (Exception e) {
                 LogUtils.error(e);
+                resultMapThreadLocal.set(null);
                 return invocation.proceed();
             }
         }
         Object obj = invocation.proceed();
         if (PermissionDict.getFieldsData() == null) return obj;
-        Class<?> type = resultMapThreadLocal.get().getType();
         try {
-            if (obj instanceof Collection || obj.getClass().equals(type)) {
-                Map<String, FieldData> fieldDataMap = PermissionDict.getFieldsData().get(type.getTypeName());
-                obj = dataFinderSecurityInterceptor.dataTrim(AUtils.getCurrentHttpMeta(), permLibrary, fieldDataMap, type, obj);
+            Class<?> type = resultMapThreadLocal.get().getType();
+            if (obj.getClass().equals(type) || obj instanceof Collection) {
+                Map<String, FieldDataPermRolesMeta> fieldDataMap = PermissionDict.getFieldsData()
+                        .get(type.getTypeName());
+                obj = dataFinderSecurityInterceptor.dataTrim(AUtils.getCurrentHttpMeta(), permLibrary, fieldDataMap,
+                                                             type, obj);
+                resultMapThreadLocal.set(null);
+                return obj;
             }
         } catch (Exception e) {
             LogUtils.error(e);

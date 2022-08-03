@@ -43,8 +43,8 @@ public class APIPermSlot implements Slot {
         boolean     e2    = CollectionUtils.isEmpty(permRolesMeta.getExcludeRoles());
         if (!e1 || !e2) {
             roles = httpMeta.getRoles();
-            if (!e1 && !CollectionUtils.containsSub(permRolesMeta.getRequireRoles(), roles)
-                    || !e2 && CollectionUtils.containsSub(permRolesMeta.getExcludeRoles(), roles)) {
+            if (!CollectionUtils.containsSub(permRolesMeta.getRequireRoles(), roles)
+                    || CollectionUtils.containsSub(permRolesMeta.getExcludeRoles(), roles)) {
                 logs("Forbid : permissions exception", httpMeta, permRolesMeta);
                 error.error(ExceptionStatus.PERM_EXCEPTION);
                 return;
@@ -61,13 +61,13 @@ public class APIPermSlot implements Slot {
             for (String role : Optional.ofNullable(roles).orElse(new HashSet<>())) {
                 Set<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
                 if (permissionsByRole != null) perms.addAll(permissionsByRole);
-                if (!e4 && CollectionUtils.containsSub(permRolesMeta.getExcludePermissions(), permissionsByRole)) {
+                if (CollectionUtils.containsSub(permRolesMeta.getExcludePermissions(), permissionsByRole)) {
                     logs("Forbid : permissions exception", httpMeta, permRolesMeta);
                     error.error(ExceptionStatus.PERM_EXCEPTION);
                     return;
                 }
             }
-            if (!e3 && !CollectionUtils.containsSub(permRolesMeta.getRequirePermissions(), perms)) {
+            if (!CollectionUtils.containsSub(permRolesMeta.getRequirePermissions(), perms)) {
                 logs("Forbid : permissions exception", httpMeta, permRolesMeta);
                 error.error(ExceptionStatus.PERM_EXCEPTION);
                 return;

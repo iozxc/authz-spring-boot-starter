@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.util;
 
-import cn.omisheep.authz.core.auth.rpd.DataPermMeta;
-import cn.omisheep.authz.core.auth.rpd.PermissionDict;
+import cn.omisheep.authz.core.auth.rpd.ArgsHandler;
+import cn.omisheep.authz.core.auth.rpd.DataPermRolesMeta;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -40,7 +40,7 @@ public abstract class ArgsParser {
         }
         String   obj     = matcher.group(1);
         String[] trace   = obj.split("\\.");
-        Object   convert = convert(trace, PermissionDict.argsHandle(trace[0]));
+        Object   convert = convert(trace, ArgsHandler.handle(trace[0]));
         if (isArrayOrCollection(convert)) {
             String arrString = parseAndToString(convert);
             if (arrString == null) return argName;
@@ -52,9 +52,9 @@ public abstract class ArgsParser {
         }
     }
 
-    public static String parse(DataPermMeta dataPermMeta) {
+    public static String parse(DataPermRolesMeta dataPermRolesMeta) {
         StringBuilder stringBuilder = new StringBuilder();
-        String        condition     = dataPermMeta.getCondition();
+        String        condition     = dataPermRolesMeta.getCondition();
         int           index         = 0;
         int           i             = 0;
         char          op            = '#';
@@ -86,7 +86,7 @@ public abstract class ArgsParser {
                 if (k != -1) {
                     String   item  = condition.substring(index + 1, k);
                     String[] trace = item.split("\\.");
-                    stringBuilder.append(parseObject(op, trace, ref(trace[0], dataPermMeta)));
+                    stringBuilder.append(parseObject(op, trace, ref(trace[0], dataPermRolesMeta)));
                     index = k + 1;
                 } else {
                     return null;
@@ -124,18 +124,18 @@ public abstract class ArgsParser {
     }
 
     private static Object ref(String argName,
-                              DataPermMeta dataPermMeta) {
-        Map<String, List<String>> argsMap = dataPermMeta.getArgsMap();
+                              DataPermRolesMeta dataPermRolesMeta) {
+        Map<String, List<String>> argsMap = dataPermRolesMeta.getArgsMap();
         if (argsMap == null) return argsHandle(argName);
-        List<String> list = dataPermMeta.getArgsMap().get(argName);
+        List<String> list = dataPermRolesMeta.getArgsMap().get(argName);
         if (list == null || list.isEmpty()) return argsHandle(argName);
         ArrayList<Object> argsList = new ArrayList<>();
         for (int i = 0; i < list.size(); i++) {
             Matcher matcher = c.matcher(list.get(i));
             if (matcher.find()) {
-                argsList.add(ref(matcher.group(1), dataPermMeta));
+                argsList.add(ref(matcher.group(1), dataPermRolesMeta));
             } else {
-                List<Class<?>> paramType = PermissionDict.argType(argName);
+                List<Class<?>> paramType = ArgsHandler.argType(argName);
                 if (paramType == null) {
                     throw new RuntimeException("参数个数不匹配");
                 }
@@ -169,7 +169,7 @@ public abstract class ArgsParser {
 
     private static Object argsHandle(String argName,
                                      Object... otherArgs) {
-        return PermissionDict.argsHandle(argName, otherArgs);
+        return ArgsHandler.handle(argName, otherArgs);
     }
 
     private static final Pattern compile = Pattern.compile("(.*?)\\[(\\d+|\\*)]");

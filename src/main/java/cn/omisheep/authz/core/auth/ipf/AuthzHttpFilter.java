@@ -1,7 +1,6 @@
 package cn.omisheep.authz.core.auth.ipf;
 
 import cn.omisheep.authz.core.ExceptionStatus;
-import cn.omisheep.authz.core.util.IPUtils;
 import cn.omisheep.web.utils.BufferedServletRequestWrapper;
 import cn.omisheep.web.utils.HttpUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +12,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Date;
 
 import static cn.omisheep.authz.core.config.Constants.*;
 import static cn.omisheep.authz.core.util.Utils.isIgnoreSuffix;
@@ -43,11 +41,9 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
             request = new BufferedServletRequestWrapper(rrequest);
         }
 
-        String ip          = IPUtils.getIp(request);
         String uri         = request.getRequestURI();
         String method      = request.getMethod();
         String contextPath = request.getContextPath();
-        long   now         = new Date().getTime();
         String servletPath = request.getServletPath();
 
         HttpUtils.request.set(request);
@@ -55,23 +51,18 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
         if (isIgnoreSuffix(uri, Httpd.getIgnoreSuffix()) || (isDashboard && (servletPath.equals(
                 DASHBOARD_LOGO) || servletPath.startsWith(DASHBOARD_API_PREFIX) || servletPath.startsWith(
                 DASHBOARD_STATIC_PREFIX) || servletPath.startsWith(DASHBOARD_HTML)))) {
-            HttpMeta httpMeta = new HttpMeta(request, ip, uri, null, method, new Date());
-            httpMeta.setIgnore(true);
+            HttpMeta httpMeta = new HttpMeta(request, uri, null, method, uri);
             request.setAttribute(HTTP_META, httpMeta);
-            httpMeta.setServletPath(servletPath);
-            httpMeta.setPath(uri);
             filterChain.doFilter(request, response);
             return;
         }
 
         String   api      = Httpd.getPattern(method, servletPath);
-        HttpMeta httpMeta = new HttpMeta(request, ip, uri, api == null ? servletPath : api, method, new Date());
+        HttpMeta httpMeta = new HttpMeta(request, uri, api == null ? servletPath : api, method,servletPath);
         if (api == null) {
             httpMeta.error(ExceptionStatus.MISMATCHED_URL);
         }
 
-        httpMeta.setServletPath(servletPath);
-        httpMeta.setPath(servletPath);
         request.setAttribute(HTTP_META, httpMeta);
         filterChain.doFilter(request, response);
     }

@@ -15,7 +15,7 @@ public class FilterSlot implements Slot {
     public void chain(HttpMeta httpMeta,
                       HandlerMethod handler,
                       Error error) {
-        if (httpMeta.isMethod(OPTIONS) || httpMeta.isIgnore()) {
+        if (httpMeta.isMethod(OPTIONS) || httpMeta.getApi() == null) {
             error.error();
         }
     }

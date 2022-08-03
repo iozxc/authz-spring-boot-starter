@@ -2,8 +2,8 @@ package cn.omisheep.authz.core.interceptor;
 
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.authz.core.auth.rpd.DataPermMeta;
-import cn.omisheep.authz.core.auth.rpd.FieldData;
+import cn.omisheep.authz.core.auth.rpd.DataPermRolesMeta;
+import cn.omisheep.authz.core.auth.rpd.FieldDataPermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.Meta;
 import cn.omisheep.authz.core.util.ArgsParser;
 import cn.omisheep.commons.util.CollectionUtils;
@@ -26,29 +26,38 @@ public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterce
     @Override
     public String sqlChange(HttpMeta httpMeta,
                             PermLibrary permLibrary,
-                            List<DataPermMeta> dataPermMetaList,
+                            List<DataPermRolesMeta> dataPermRolesMetaList,
                             Class<?> resultType,
                             String sql) throws JSQLParserException {
-        if (dataPermMetaList.size() == 0) return sql;
+        if (dataPermRolesMetaList.size() == 0) return sql;
 
         Set<String> rolesByUserId     = httpMeta.getRoles();
         Set<String> permissionsByRole = httpMeta.getPermissions();
 
-        Iterator<String> iterator = dataPermMetaList.stream().filter(dataPermMeta -> {
-            Meta roles = dataPermMeta.getRoles();
-            if (roles != null) {
-                return CollectionUtils.containsSub(roles.getRequire(), rolesByUserId);
-            } else {
-                Meta permissions = dataPermMeta.getPermissions();
-                if (permissions == null) return false;
-                return CollectionUtils.containsSub(permissions.getRequire(), permissionsByRole);
+        Iterator<String> iterator = dataPermRolesMetaList.stream().filter(dataPermMeta -> {
+            boolean          flag         = false;
+            Set<Set<String>> requireRoles = dataPermMeta.getRequireRoles();
+            if (requireRoles != null) {
+                flag = flag || CollectionUtils.containsSub(requireRoles, rolesByUserId);
             }
+            Set<Set<String>> excludeRoles = dataPermMeta.getExcludeRoles();
+            if (requireRoles != null) {
+                flag = flag || !CollectionUtils.containsSub(excludeRoles, rolesByUserId);
+            }
+            Set<Set<String>> requirePermissions = dataPermMeta.getRequirePermissions();
+            if (requirePermissions != null) {
+                flag = flag || CollectionUtils.containsSub(requirePermissions, permissionsByRole);
+            }
+            Set<Set<String>> excludePermissions = dataPermMeta.getExcludePermissions();
+            if (requireRoles != null) {
+                flag = flag || !CollectionUtils.containsSub(excludePermissions, permissionsByRole);
+            }
+            return flag;
         }).map(d -> {
             return ArgsParser.parse(d);
         }).iterator();
 
         if (!iterator.hasNext()) return sql;
-
 
         Select      select     = (Select) CCJSqlParserUtil.parse(sql);
         PlainSelect selectBody = (PlainSelect) select.getSelectBody();
@@ -62,7 +71,6 @@ public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterce
                 if (where != null) {sb.append(" ) AND ").append(where);} else sb.append(" ) ");
             }
         }
-        ;
 
         Expression securityWhere = CCJSqlParserUtil.parseCondExpression(sb.toString());
 
@@ -72,7 +80,7 @@ public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterce
     @Override
     public Object dataTrim(HttpMeta httpMeta,
                            PermLibrary permLibrary,
-                           Map<String, FieldData> fieldDataMap,
+                           Map<String, FieldDataPermRolesMeta> fieldDataMap,
                            Class<?> resultType,
                            Object obj) {
         try {
@@ -84,13 +92,10 @@ public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterce
             fieldDataMap.forEach((k, v) -> {
                 Meta r = v.getRoles();
                 Meta p = v.getPermissions();
-                if ((r != null && r.getRequire() != null && !CollectionUtils.containsSub(r.getRequire(), rolesByUserId))
-                        || (p != null && p.getRequire() != null && !CollectionUtils.containsSub(p.getRequire(),
-                                                                                                permissionsByRole))
-                        || (r != null && r.getExclude() != null && CollectionUtils.containsSub(r.getExclude(),
-                                                                                               rolesByUserId))
-                        || (p != null && p.getExclude() != null && CollectionUtils.containsSub(p.getExclude(),
-                                                                                               permissionsByRole))
+                if ((!CollectionUtils.containsSub(r.getRequire(), rolesByUserId))
+                        || (!CollectionUtils.containsSub(p.getRequire(), permissionsByRole))
+                        || (CollectionUtils.containsSub(r.getExclude(), rolesByUserId))
+                        || (CollectionUtils.containsSub(p.getExclude(), permissionsByRole))
                 ) {
                     deleted.add(k);//任意一个没有满足则从字段中删除
                 }

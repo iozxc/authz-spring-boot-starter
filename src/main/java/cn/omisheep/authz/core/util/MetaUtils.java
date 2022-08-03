@@ -1,9 +1,7 @@
 package cn.omisheep.authz.core.util;
 
-import cn.omisheep.authz.annotation.Perms;
-import cn.omisheep.authz.annotation.Roles;
-import cn.omisheep.authz.core.auth.rpd.Meta;
-import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
+import cn.omisheep.authz.annotation.*;
+import cn.omisheep.authz.core.auth.rpd.*;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.commons.util.CollectionUtils;
 import lombok.SneakyThrows;
@@ -18,71 +16,58 @@ import java.util.Set;
  * @since 1.2.0
  */
 public class MetaUtils {
-    public static Meta generatePermMeta(Perms p) {
-        if (p == null) return null;
-        Meta permsMeta = new Meta();
-        boolean            flag      = false;
-        if (p.require() != null && p.require().length != 0) {
-            permsMeta.setRequire(CollectionUtils.splitStrValsToSets(Constants.COMMA, p.require()));
-            flag = true;
-        }
-        if (p.exclude() != null && p.exclude().length != 0) {
-            permsMeta.setExclude(CollectionUtils.splitStrValsToSets(Constants.COMMA, p.exclude()));
-            flag = true;
-        }
-        if (p.paramResources().length != 0) {
-            permsMeta.setResources(CollectionUtils.ofSet(p.paramResources()));
-        }
-        if (p.paramRange().length != 0) {
-            permsMeta.setRange(CollectionUtils.ofSet(p.paramRange()));
-        }
-        return flag ? permsMeta : null;
-    }
 
-    public static Meta generateRolesMeta(Roles r) {
+    public static ParamPermRolesMeta generateParamMeta(AuthParam r) {
         if (r == null) return null;
-        Meta rolesMeta = new Meta();
-        boolean            flag      = false;
-        if (r.require() != null && r.require().length != 0) {
-            rolesMeta.setRequire(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.require()));
-            flag = true;
+        ParamPermRolesMeta meta = new ParamPermRolesMeta();
+        if (r.requireRoles() != null && r.requireRoles().length != 0) {
+            meta.setRequireRoles(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.requireRoles()));
         }
-        if (r.exclude() != null && r.exclude().length != 0) {
-            rolesMeta.setExclude(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.exclude()));
-            flag = true;
+        if (r.excludeRoles() != null && r.excludeRoles().length != 0) {
+            meta.setExcludeRoles(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.excludeRoles()));
         }
-        if (r.paramResources().length != 0) {
-            rolesMeta.setResources(CollectionUtils.ofSet(r.paramResources()));
+        if (r.requirePermissions() != null && r.requirePermissions().length != 0) {
+            meta.setRequirePermissions(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.requirePermissions()));
         }
-        if (r.paramRange().length != 0) {
-            rolesMeta.setRange(CollectionUtils.ofSet(r.paramRange()));
+        if (r.excludePermissions() != null && r.excludePermissions().length != 0) {
+            meta.setExcludePermissions(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.excludePermissions()));
         }
-        return flag ? rolesMeta : null;
+        if (r.resources() != null && r.resources().length != 0) {
+            meta.setResources(CollectionUtils.ofSet(r.resources()));
+        }
+        if (r.range() != null && r.range().length != 0) {
+            meta.setRange(CollectionUtils.ofSet(r.range()));
+        }
+        return meta;
     }
 
-    public static PermRolesMeta generatePermRolesMeta(Perms p,
-                                                      Roles r) {
-        PermRolesMeta prm  = new PermRolesMeta();
-        boolean       flag = false;
-        if (p != null) {
-            if (p.require() != null && p.require().length != 0) {
-                prm.setRequirePermissions(CollectionUtils.splitStrValsToSets(Constants.COMMA, p.require()));
-            }
-            if (p.exclude() != null && p.exclude().length != 0) {
-                prm.setExcludePermissions(CollectionUtils.splitStrValsToSets(Constants.COMMA, p.exclude()));
-            }
-            flag = true;
+    public static void generateParamMeta(DataPermRolesMeta meta,
+                                         AuthData r) {
+        if (r.requireRoles() != null && r.requireRoles().length != 0) {
+            meta.setRequireRoles(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.requireRoles()));
         }
-        if (r != null) {
-            if (r.require() != null && r.require().length != 0) {
-                prm.setRequireRoles(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.require()));
-            }
-            if (r.exclude() != null && r.exclude().length != 0) {
-                prm.setExcludeRoles(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.exclude()));
-            }
-            flag = true;
+        if (r.excludeRoles() != null && r.excludeRoles().length != 0) {
+            meta.setExcludeRoles(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.excludeRoles()));
         }
-        return flag ? prm : null;
+        if (r.requirePermissions() != null && r.requirePermissions().length != 0) {
+            meta.setRequirePermissions(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.requirePermissions()));
+        }
+        if (r.excludePermissions() != null && r.excludePermissions().length != 0) {
+            meta.setExcludePermissions(CollectionUtils.splitStrValsToSets(Constants.COMMA, r.excludePermissions()));
+        }
+    }
+
+    public static PermRolesMeta generatePermRolesMeta(Set<Auth> auths) {
+        if (auths.isEmpty()) return null;
+        PermRolesMeta prm = new PermRolesMeta();
+        auths.forEach(auth -> prm.merge(
+                generatePermRolesMeta(auth.requireRoles(), auth.excludeRoles(), auth.requirePermissions(),
+                                      auth.excludePermissions())));
+        return !prm.non() ? prm : null;
+    }
+
+    public static PermRolesMeta generatePermRolesMeta(Auth auth) {
+        return generatePermRolesMeta(CollectionUtils.newSet(auth));
     }
 
     public static <A extends Annotation> A getAnnotation(Object value,
@@ -119,7 +104,6 @@ public class MetaUtils {
         }
     }
 
-
     @SuppressWarnings("all")
     @SneakyThrows
     public static Set<String> getPatterns(RequestMappingInfo info) {
@@ -128,6 +112,61 @@ public class MetaUtils {
         } catch (Exception e) {
             return (Set<String>) RequestMappingInfo.class.getMethod("getPatternValues").invoke(info);
         }
+    }
+
+    public static DataPermRolesMeta generateDataRolesMeta(AuthData authData) {
+        DataPermRolesMeta dataPermRolesMeta = DataPermRolesMeta.of(authData.condition());
+        Arg[]             conditionArgs     = authData.args();
+        for (Arg arg : conditionArgs) {
+            String   resource     = arg.resource();
+            String[] resourceArgs = arg.args();
+            dataPermRolesMeta.addArg(resource, resourceArgs);
+        }
+        generateParamMeta(dataPermRolesMeta, authData);
+        return dataPermRolesMeta;
+    }
+
+    public static FieldDataPermRolesMeta generateDataFiledRolesMeta(String className,
+                                                                    AuthField authField) {
+        if (authField == null) return null;
+        ParamPermRolesMeta meta = new ParamPermRolesMeta();
+        if (authField.requireRoles() != null && authField.requireRoles().length != 0) {
+            meta.setRequireRoles(CollectionUtils.splitStrValsToSets(Constants.COMMA, authField.requireRoles()));
+        }
+        if (authField.excludeRoles() != null && authField.excludeRoles().length != 0) {
+            meta.setExcludeRoles(CollectionUtils.splitStrValsToSets(Constants.COMMA, authField.excludeRoles()));
+        }
+        if (authField.requirePermissions() != null && authField.requirePermissions().length != 0) {
+            meta.setRequirePermissions(
+                    CollectionUtils.splitStrValsToSets(Constants.COMMA, authField.requirePermissions()));
+        }
+        if (authField.excludePermissions() != null && authField.excludePermissions().length != 0) {
+            meta.setExcludePermissions(
+                    CollectionUtils.splitStrValsToSets(Constants.COMMA, authField.excludePermissions()));
+        }
+
+        return FieldDataPermRolesMeta.of(className, meta);
+    }
+
+    public static PermRolesMeta generatePermRolesMeta(String[] requireRoles,
+                                                      String[] excludeRoles,
+                                                      String[] requirePermissions,
+                                                      String[] excludePermissions) {
+        PermRolesMeta prm = new PermRolesMeta();
+        if (requireRoles.length != 0) {
+            prm.setRequireRoles(CollectionUtils.splitStrValsToSets(Constants.COMMA, requireRoles));
+        }
+        if (excludeRoles.length != 0) {
+            prm.setExcludeRoles(CollectionUtils.splitStrValsToSets(Constants.COMMA, excludeRoles));
+        }
+
+        if (requirePermissions.length != 0) {
+            prm.setRequirePermissions(CollectionUtils.splitStrValsToSets(Constants.COMMA, requirePermissions));
+        }
+        if (excludePermissions.length != 0) {
+            prm.setExcludePermissions(CollectionUtils.splitStrValsToSets(Constants.COMMA, excludePermissions));
+        }
+        return !prm.non() ? prm : null;
     }
 
 }

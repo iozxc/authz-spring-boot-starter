@@ -49,6 +49,7 @@ import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.data.redis.connection.RedisConnectionCommands;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -132,6 +133,7 @@ public class AuthzAutoConfiguration {
         AuthzAppVersion.connectInfo = connectInfo;
     }
 
+    @Primary
     @Bean("authzCache")
     public Cache cache(AuthzProperties properties) {
         if (properties.getCache().isEnableRedis()) {
@@ -270,6 +272,7 @@ public class AuthzAutoConfiguration {
         return new AuthzMethodPermissionChecker(permLibrary, properties);
     }
 
+    @Primary
     @Bean
     public UserDevicesDict userDevicesDict(AuthzProperties properties,
                                            Cache cache) {
@@ -336,10 +339,11 @@ public class AuthzAutoConfiguration {
     @ConditionalOnExpression("T(org.apache.commons.lang.StringUtils).isNotEmpty('${authz.orm}')")
     public static class DataFilterAutoConfiguration {
         @Bean
+        @Primary
         @ConditionalOnProperty(name = "authz.orm", havingValue = "MYBATIS")
-        @ConditionalOnMissingBean
-        public DataSecurityInterceptorForMybatis dataSecurityInterceptorForMybatis() {
-            return new DataSecurityInterceptorForMybatis();
+        public DataSecurityInterceptorForMybatis dataSecurityInterceptorForMybatis(PermLibrary permLibrary,
+                                                                                   DataFinderSecurityInterceptor dataFinderSecurityInterceptor) {
+            return new DataSecurityInterceptorForMybatis(permLibrary, dataFinderSecurityInterceptor);
         }
 
         @Bean
@@ -362,6 +366,7 @@ public class AuthzAutoConfiguration {
                     .setVersion("1.0");
         }
 
+        @Primary
         @Bean("authz-docs")
         private Docs docs(Info info) {
             return new Docs(info);

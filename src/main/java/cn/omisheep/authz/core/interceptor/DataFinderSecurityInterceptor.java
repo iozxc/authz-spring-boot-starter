@@ -2,8 +2,8 @@ package cn.omisheep.authz.core.interceptor;
 
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.authz.core.auth.rpd.DataPermMeta;
-import cn.omisheep.authz.core.auth.rpd.FieldData;
+import cn.omisheep.authz.core.auth.rpd.DataPermRolesMeta;
+import cn.omisheep.authz.core.auth.rpd.FieldDataPermRolesMeta;
 
 import java.util.List;
 import java.util.Map;
@@ -14,7 +14,7 @@ import java.util.Map;
  */
 @SuppressWarnings("rawtypes")
 public interface DataFinderSecurityInterceptor {
-    String sqlChange(HttpMeta httpMeta, PermLibrary permLibrary, List<DataPermMeta> dataPermMetaList, Class<?> resultType, String sql) throws Exception;
+    String sqlChange(HttpMeta httpMeta, PermLibrary permLibrary, List<DataPermRolesMeta> dataPermRolesMetaList, Class<?> resultType, String sql) throws Exception;
 
-    Object dataTrim(HttpMeta httpMeta, PermLibrary permLibrary, Map<String, FieldData> fieldDataMap, Class<?> resultType, Object obj);
+    Object dataTrim(HttpMeta httpMeta, PermLibrary permLibrary, Map<String, FieldDataPermRolesMeta> fieldDataMap, Class<?> resultType, Object obj);
 }
