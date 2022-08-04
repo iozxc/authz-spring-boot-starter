@@ -17,6 +17,10 @@ import java.util.Set;
  */
 public class MetaUtils {
 
+    private MetaUtils() {
+        throw new UnsupportedOperationException();
+    }
+
     public static ParamPermRolesMeta generateParamMeta(AuthParam r) {
         if (r == null) return null;
         ParamPermRolesMeta meta = new ParamPermRolesMeta();

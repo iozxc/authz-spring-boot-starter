@@ -16,8 +16,6 @@ import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.TaskBuilder;
 import lombok.SneakyThrows;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.system.ApplicationHome;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.web.method.HandlerMethod;
@@ -78,16 +76,16 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
     @SneakyThrows
     public void init() {
-        AuthzAppVersion.init(properties.getApp());
+        AuthzAppVersion.init.get();
         AbstractHandlerMethodMapping<RequestMappingInfo> methodMapping =
                 (AbstractHandlerMethodMapping<RequestMappingInfo>) ctx.getBean("requestMappingHandlerMapping");
         Map<RequestMappingInfo, HandlerMethod> mapRet = methodMapping.getHandlerMethods();
 
         // init PermissionDict
-        PermissionDict.init(properties, ctx, permLibrary, cache, mapRet);
+        PermissionDict.init(ctx, permLibrary, cache, mapRet);
         LogUtils.debug("PermissionDict init success \n");
 
-        OpenAuthDict.init(properties, ctx, mapRet);
+        OpenAuthDict.init(ctx, mapRet);
         LogUtils.debug("OpenAuthDict init success \n");
 
         // init Httpd
@@ -107,30 +105,16 @@ public class AuCoreInitialization implements ApplicationContextAware {
 
         initVersionInfo();
         if (properties.getSys().isMd5check()) {
-            AuInit.log.info("project md5 => {}", AuthzAppVersion.getMd5());
+            AuInit.log.info("project md5 => {}", AuthzAppVersion.getJarMd5());
         }
     }
 
     private void initVersionInfo() {
         try {
-            AuthzAppVersion.setProjectPath(getJarPath());
-            AuthzAppVersion.setMd5check(properties.getSys().isMd5check());
-            if (properties.getCache().isEnableRedis()) {
-                AuthzAppVersion.born();
-            }
+            if (properties.getCache().isEnableRedis()) AuthzAppVersion.born();
         } catch (Exception e) {
             // skip
         }
-    }
-
-    @SneakyThrows
-    private String getJarPath() {
-        Object o = ctx.getBeansWithAnnotation(SpringBootApplication.class).values().stream().findAny().orElse(null);
-        if (o != null) {
-            ApplicationHome home = new ApplicationHome(o.getClass());
-            return home.getSource().getAbsolutePath();
-        }
-        return null;
     }
 
     private void initRSA() {

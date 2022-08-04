@@ -13,6 +13,10 @@ import java.io.IOException;
  */
 public class MD5Utils {
 
+    private MD5Utils() {
+        throw new UnsupportedOperationException();
+    }
+
     public static String compute(String path) {
         try {
             BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(path));

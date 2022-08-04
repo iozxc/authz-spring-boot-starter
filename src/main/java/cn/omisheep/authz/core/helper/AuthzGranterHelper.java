@@ -187,4 +187,8 @@ public class AuthzGranterHelper extends BaseHelper {
         clearCookie(userId, deviceType, deviceId);
     }
 
+    private AuthzGranterHelper() {
+        throw new UnsupportedOperationException();
+    }
+
 }

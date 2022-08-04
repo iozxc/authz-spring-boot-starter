@@ -10,7 +10,12 @@ import javax.servlet.http.HttpServletRequest;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-public abstract class ExceptionUtils {
+public class ExceptionUtils {
+
+    private ExceptionUtils() {
+        throw new UnsupportedOperationException();
+    }
+
     private static final String AUTHZ_EXCEPTION = "AUTHZ_EXCEPTION";
 
     public static void error(ExceptionStatus exceptionStatus,

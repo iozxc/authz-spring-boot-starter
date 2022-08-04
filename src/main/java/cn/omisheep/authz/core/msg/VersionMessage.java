@@ -60,7 +60,7 @@ public class VersionMessage implements Message {
 
     private static boolean failureMd5Check(VersionMessage message) {
         if (AuthzAppVersion.isMd5check()) {
-            return !Objects.equals(message.md5, AuthzAppVersion.getMd5());
+            return !Objects.equals(message.md5, AuthzAppVersion.getJarMd5());
         } else {
             return false;
         }

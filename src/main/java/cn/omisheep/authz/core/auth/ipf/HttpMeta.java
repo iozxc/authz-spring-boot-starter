@@ -111,7 +111,7 @@ public class HttpMeta extends BaseHelper {
         scope = Optional.ofNullable(scope).orElseGet(() -> {
             String s = token.getScope();
             if (s == null || s.equals("")) return new HashSet<>();
-            return CollectionUtils.ofSet(s.split(AuthzAppVersion.scopeSeparator));
+            return CollectionUtils.ofSet(s.split(AuthzAppVersion.SCOPE_SEPARATOR.get()));
         });
         return scope;
     }
@@ -242,11 +242,11 @@ public class HttpMeta extends BaseHelper {
         if (hasParamAuth != null) return requireLogin;
         Map<String, Map<String, ParamMetadata>> map = PermissionDict.getParamPermission()
                 .get(api);
-        if (map == null) {
+        if (map == null || map.get(method) == null) {
             hasParamAuth = false;
             return hasParamAuth;
         }
-        hasParamAuth = map.get(method) != null;
+        hasParamAuth = map.get(method).values().stream().anyMatch(v -> v.hasParamAuth());
         return hasParamAuth;
     }
 

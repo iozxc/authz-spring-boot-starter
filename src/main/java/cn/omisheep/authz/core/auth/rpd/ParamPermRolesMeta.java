@@ -12,8 +12,8 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ParamPermRolesMeta extends PermRolesMeta {
-    private Set<String> range; // scope of access
-    private Set<String> resources; // required protect resources
+    private Set<String>            range; // scope of access
+    private Set<String>            resources; // required protect resources
 
     public Set<String> getRange() {
         return range;

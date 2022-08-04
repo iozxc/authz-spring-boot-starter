@@ -74,6 +74,63 @@ public class AuthzProperties {
 
     private OtherConfig sys = new OtherConfig();
 
+    /**
+     * oauth配置
+     *
+     * @since 1.2.0
+     */
+    private OpenAuthConfig oauth = new OpenAuthConfig();
+
+    @Data
+    public static class OpenAuthConfig {
+
+        /**
+         * 授权码过期时间
+         */
+        private String authorizationCodeTime = "10m";
+
+        /**
+         * 默认授予的权限。
+         * 通过oauth授权登录的用户拥有的权限，`@OAuthScopeBasic`标识之后的额外scope
+         * 通过正常登录的用户不受scope的影响，能访问所有资源
+         */
+        private String defaultBasicScope = "basic";
+
+        /**
+         * scope分割符
+         */
+        private String scopeSeparator = " ";
+
+        /**
+         * 客户端Id长度 默认24
+         */
+        private int clientIdLength = 24;
+
+        /**
+         * 客户端密钥长度 默认30位
+         */
+        private int clientSecretLength = 30;
+
+        /**
+         * 授权码签名算法
+         */
+        private AuthorizationCodeAlgorithm algorithm = AuthorizationCodeAlgorithm.SHA1;
+
+        public enum AuthorizationCodeAlgorithm {
+            SHA_256("SHA-256"), SHA1("SHA1"), MD5("MD5");
+
+            private final String value;
+
+            AuthorizationCodeAlgorithm(String value) {
+                this.value = value;
+            }
+
+            public String getValue() {
+                return value;
+            }
+        }
+    }
+
     @Data
     public static class TokenConfig {
 
@@ -81,13 +138,6 @@ public class AuthzProperties {
          * 签名的私钥，若长度不够将自动填充，若为空，将不执行数字签名
          */
         private String key;
-
-        /**
-         * oauth配置
-         *
-         * @since 1.2.0
-         */
-        private OpenAuthConfig oauth = new OpenAuthConfig();
 
         /**
          * tokenId的长度
@@ -119,56 +169,6 @@ public class AuthzProperties {
          * refresh token有效时间，默认 30d ，单位 ms|s|m|h|d
          */
         private String refreshTime = "30d";
-
-        @Data
-        public static class OpenAuthConfig {
-
-            /**
-             * 授权码过期时间
-             */
-            private String authorizationCodeTime = "10m";
-
-            /**
-             * 默认授予的权限。
-             * 通过oauth授权登录的用户拥有的权限，`@OAuthScopeBasic`标识之后的额外scope
-             * 通过正常登录的用户不受scope的影响，能访问所有资源
-             */
-            private String defaultBasicScope = "basic";
-
-            /**
-             * scope分割符
-             */
-            private String scopeSeparator = " ";
-
-            /**
-             * 客户端Id长度 默认24
-             */
-            private int clientIdLength = 24;
-
-            /**
-             * 客户端密钥长度 默认30位
-             */
-            private int clientSecretLength = 30;
-
-            /**
-             * 授权码签名算法
-             */
-            private AuthorizationCodeAlgorithm algorithm = AuthorizationCodeAlgorithm.SHA1;
-
-            public enum AuthorizationCodeAlgorithm {
-                SHA_256("SHA-256"), SHA1("SHA1"), MD5("MD5");
-
-                private final String value;
-
-                AuthorizationCodeAlgorithm(String value) {
-                    this.value = value;
-                }
-
-                public String getValue() {
-                    return value;
-                }
-            }
-        }
 
     }
 

@@ -5,6 +5,11 @@ import cn.omisheep.authz.core.config.Constants;
 import javax.servlet.http.HttpServletRequest;
 
 public class IPUtils {
+
+    private IPUtils() {
+        throw new UnsupportedOperationException();
+    }
+
     public static String getIp(HttpServletRequest request) {
         String ip = request.getHeader(X_FORWARDED_FOR);
         if (ip == null || ip.length() == 0 || UNKNOWN.equalsIgnoreCase(ip)) {

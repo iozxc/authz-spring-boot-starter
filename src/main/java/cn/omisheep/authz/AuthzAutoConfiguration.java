@@ -28,24 +28,24 @@ import cn.omisheep.authz.core.oauth.OpenAuthLibrary;
 import cn.omisheep.authz.core.resolver.AuthzHandlerRegister;
 import cn.omisheep.authz.core.resolver.DecryptRequestBodyAdvice;
 import cn.omisheep.authz.core.util.LogUtils;
-import cn.omisheep.authz.core.util.Utils;
 import cn.omisheep.authz.support.entity.Cloud;
 import cn.omisheep.authz.support.entity.Docs;
 import cn.omisheep.authz.support.entity.Info;
 import cn.omisheep.authz.support.http.SupportServlet;
 import cn.omisheep.authz.support.http.annotation.ApiSupportScan;
-import cn.omisheep.commons.util.TimeUtils;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.*;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -60,11 +60,8 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
-import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 
 import static cn.omisheep.authz.core.config.Constants.DASHBOARD;
@@ -83,54 +80,22 @@ public class AuthzAutoConfiguration {
 
     @Autowired
     private void init(ConfigurableEnvironment environment,
+                      ApplicationContext ctx,
                       AuthzProperties properties) {
+        ctx.getBeansWithAnnotation(SpringBootApplication.class)
+                .values().stream().findAny()
+                .ifPresent(value -> AuthzAppVersion.mainClass = value.getClass());
+
+        AuthzAppVersion.environment = environment;
+        AuthzAppVersion.properties  = properties;
+
         LogUtils.setLogLevel(properties.getLog());
-        String name = environment.getProperty("spring.application.name");
 
-        String applicationName = StringUtils.hasText(name) ? name : "application";
-        AuthzAppVersion.APPLICATION_NAME = applicationName;
-        AuthzAppVersion.APP_NAME         = properties.getApp();
-
-        VersionMessage.CHANNEL = "AU:" + properties.getApp() + ":MODIFY_ID:" + applicationName;
+        VersionMessage.CHANNEL = "AU:" + properties.getApp() + ":MODIFY_ID:" + AuthzAppVersion.APPLICATION_NAME.get();
         CacheMessage.CHANNEL   = "AU:" + properties.getApp() + ":CACHE_DATA_UPDATE";
-        RequestMessage.CHANNEL = "AU:" + properties.getApp() + ":CONTEXT_CLOUD_APP_ID:" + applicationName;
+        RequestMessage.CHANNEL = "AU:" + properties.getApp() + ":CONTEXT_CLOUD_APP_ID:" + AuthzAppVersion.APPLICATION_NAME.get();
         LogUtils.debug("Version channel: 【 {} 】, Cache channel: 【 {} 】, Request channel: 【 {} 】",
                        VersionMessage.CHANNEL, CacheMessage.CHANNEL, RequestMessage.CHANNEL);
-
-        String host;
-        try {
-            host = InetAddress.getLocalHost().getHostAddress();
-        } catch (UnknownHostException e) {
-            host = "localhost";
-        }
-        String port        = environment.getProperty("server.port");
-        String contextPath = environment.getProperty("server.servlet.context-path");
-        if (!StringUtils.hasText(contextPath)) {
-            contextPath = "";
-        }
-        String baseUrl = Utils.format("{}:{}{}", host, port, contextPath);
-
-        AuthzAppVersion.host                  = host;
-        AuthzAppVersion.port                  = port;
-        AuthzAppVersion.contextPath           = contextPath;
-        AuthzAppVersion.baseUrl               = baseUrl;
-        AuthzAppVersion.supportCloud          = properties.getCache().isEnableRedis();
-        AuthzAppVersion.authorizationCodeTime = TimeUtils.parseTimeValue(
-                properties.getToken().getOauth().getAuthorizationCodeTime());
-        AuthzAppVersion.scopeSeparator        = properties.getToken().getOauth().getScopeSeparator();
-        AuthzAppVersion.ConnectInfo connectInfo = new AuthzAppVersion.ConnectInfo();
-        connectInfo.setApplication(AuthzAppVersion.APPLICATION_NAME);
-        connectInfo.setAppName(AuthzAppVersion.APP_NAME);
-        connectInfo.setContextPath(AuthzAppVersion.contextPath);
-        connectInfo.setUrl(Utils.format("{}:{}", host, port));
-        connectInfo.setHost(host);
-        connectInfo.setPort(port);
-        if (properties.getDashboard().isEnabled()) {
-            String u = baseUrl;
-            if (!baseUrl.endsWith("/")) {u = u + "/";}
-            connectInfo.setDashboard(u + "authz.html");
-        }
-        AuthzAppVersion.connectInfo = connectInfo;
     }
 
     @Primary

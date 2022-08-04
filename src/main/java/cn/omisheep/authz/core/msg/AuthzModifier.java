@@ -111,14 +111,17 @@ public class AuthzModifier {
      */
     public enum Target {
         API(1, "role", "permission"),
+
         PATH_VARIABLE_ROLE(2, "role"), PATH_VAR_ROLE(2, "role"),
         PATH_VARIABLE_PERMISSION(3, "permission"), PATH_VAR_PERMISSION(3, "permission"),
         REQUEST_PARAM_ROLE(4, "role"), PARAM_ROLE(4, "role"),
         REQUEST_PARAM_PERMISSION(5, "permission"), PARAM_PERMISSION(5, "permission"),
+
         DATA_ROW(6, "role", "permission"),
         DATA_COL(7, "role", "permission"),
         PATH(8, "role", "permission"),
         PARAM(9, "role", "permission"),
+        PARAMETER(9),
         RATE(10),
         BLACKLIST(11),
         OPEN_AUTH(12),

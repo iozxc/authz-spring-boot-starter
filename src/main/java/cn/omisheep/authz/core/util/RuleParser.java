@@ -8,7 +8,11 @@ import java.util.*;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-public abstract class RuleParser {
+public class RuleParser {
+
+    private RuleParser() {
+        throw new UnsupportedOperationException();
+    }
 
     public static String parseRuleToString(Rule rule) {
         String parse = parseRuleToStringNotTrim(rule);

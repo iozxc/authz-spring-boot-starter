@@ -1325,6 +1325,7 @@ public class AuHelper extends BaseHelper {
     }
 
     private AuHelper() {
+        throw new UnsupportedOperationException();
     }
 
 }

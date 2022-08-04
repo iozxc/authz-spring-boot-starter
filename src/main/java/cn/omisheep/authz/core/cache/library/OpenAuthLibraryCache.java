@@ -67,7 +67,7 @@ public class OpenAuthLibraryCache {
     public Object aroundCreateAuthorizationInfo(ProceedingJoinPoint joinPoint) throws Throwable {
         cache.set(AUTHORIZE_CODE_PREFIX.get() + joinPoint.getArgs()[0],
                   joinPoint.getArgs()[1],
-                  AuthzAppVersion.authorizationCodeTime);
+                  AuthzAppVersion.AUTHORIZATION_CODE_TIME.get());
         return joinPoint.proceed();
     }
 

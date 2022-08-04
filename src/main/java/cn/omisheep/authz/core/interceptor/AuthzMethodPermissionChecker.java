@@ -205,7 +205,7 @@ public class AuthzMethodPermissionChecker {
         HashSet<String>    set  = new HashSet<>();
         HashSet<GrantType> set2 = new HashSet<>();
         if (oAuthScopeBasic1 != null || oAuthScopeBasic2 != null) {
-            String defaultScope = properties.getToken().getOauth().getDefaultBasicScope();
+            String defaultScope = properties.getOauth().getDefaultBasicScope();
             if (defaultScope != null) {
                 set.addAll(Arrays.asList(defaultScope.split(" ")));
             }

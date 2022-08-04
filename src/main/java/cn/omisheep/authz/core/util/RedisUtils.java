@@ -30,7 +30,7 @@ import static cn.omisheep.commons.util.ClassUtils.castValue;
  */
 @SuppressWarnings({"unchecked", "rawtypes"})
 @Slf4j
-public abstract class RedisUtils {
+public class RedisUtils {
 
     // ================================ common ================================ //
 
@@ -207,6 +207,7 @@ public abstract class RedisUtils {
     }
 
     private RedisUtils() {
+        throw new UnsupportedOperationException();
     }
 
 }

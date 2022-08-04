@@ -3,6 +3,7 @@ package cn.omisheep.authz.core.oauth;
 import cn.omisheep.authz.annotation.OAuthScope;
 import cn.omisheep.authz.annotation.OAuthScopeBasic;
 import cn.omisheep.authz.core.AuthzProperties;
+import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.tk.GrantType;
 import cn.omisheep.web.entity.Result;
@@ -60,12 +61,12 @@ public class OpenAuthDict {
         return scope.containsAll(authInfo.scope);
     }
 
-    public static void init(AuthzProperties properties,
-                            ApplicationContext applicationContext,
+    public static void init(ApplicationContext applicationContext,
                             Map<RequestMappingInfo, HandlerMethod> mapRet) {
         HashMap<String, Set<String>>    cMap              = new HashMap<>();
         HashMap<String, Set<GrantType>> gMap              = new HashMap<>();
-        String                          defaultBasicScope = properties.getToken().getOauth().getDefaultBasicScope();
+        String                          defaultBasicScope = AuthzAppVersion.properties.getOauth()
+                .getDefaultBasicScope();
 
         applicationContext.getBeansWithAnnotation(OAuthScope.class).forEach((key, value) -> {
             String     name       = getTypeName(value);
@@ -150,6 +151,10 @@ public class OpenAuthDict {
             }
         }
         return Result.SUCCESS;
+    }
+
+    private OpenAuthDict() {
+        throw new UnsupportedOperationException();
     }
 
 }

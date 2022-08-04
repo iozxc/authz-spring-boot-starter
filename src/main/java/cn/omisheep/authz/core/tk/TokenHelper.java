@@ -50,6 +50,7 @@ public class TokenHelper extends BaseHelper {
     private static final String             prefix;
 
     private TokenHelper() {
+        throw new UnsupportedOperationException();
     }
 
     static {

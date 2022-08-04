@@ -21,7 +21,11 @@ import java.util.List;
  * @since 1.0.0
  */
 @Slf4j(topic = "authz.global.log")
-public abstract class LogUtils {
+public class LogUtils {
+
+    private LogUtils() {
+        throw new UnsupportedOperationException();
+    }
 
     @Setter
     private static       LogLevel                   logLevel;

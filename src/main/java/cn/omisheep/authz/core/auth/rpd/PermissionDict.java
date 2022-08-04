@@ -1,12 +1,12 @@
 package cn.omisheep.authz.core.auth.rpd;
 
 import cn.omisheep.authz.annotation.*;
-import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.ipf.LimitMeta;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.config.AuInit;
+import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.util.RedisUtils;
@@ -85,11 +85,6 @@ public class PermissionDict {
     private static final Map<String, Map<String, String>> _authzResourcesNameAndTemplate = new HashMap<>();
 
     /**
-     * 参数元信息
-     */
-    private static final Map<String, Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>>> _rawParamMap = new HashMap<>();
-
-    /**
      * 是否拦截本地ip
      */
     private static boolean _supportNative;
@@ -107,40 +102,38 @@ public class PermissionDict {
     // ----------------------------------------- unModify ----------------------------------------- //
 
     @Getter
-    private static final Map<String, Map<String, PermRolesMeta>>                                       rolePermission           = Collections.unmodifiableMap(
+    private static final Map<String, Map<String, PermRolesMeta>>              rolePermission           = Collections.unmodifiableMap(
             _authzMetadata);
     @Getter
-    private static final Map<String, Map<String, Map<String, ParamMetadata>>>                          paramPermission          = Collections.unmodifiableMap(
+    private static final Map<String, Map<String, Map<String, ParamMetadata>>> paramPermission          = Collections.unmodifiableMap(
             _authzParamMetadata);
     @Getter
-    private static final Map<String, Map<String, String>>                                              resourcesNameAndTemplate = Collections.unmodifiableMap(
+    private static final Map<String, Map<String, String>>                     resourcesNameAndTemplate = Collections.unmodifiableMap(
             _authzResourcesNameAndTemplate);
     @Getter
-    private static final Map<String, List<DataPermRolesMeta>>                                          dataPermission           = Collections.unmodifiableMap(
+    private static final Map<String, List<DataPermRolesMeta>>                 dataPermission           = Collections.unmodifiableMap(
             _dataPermMetadata);
     @Getter
-    private static final Map<String, Map<String, FieldDataPermRolesMeta>>                              fieldsData               = Collections.unmodifiableMap(
+    private static final Map<String, Map<String, FieldDataPermRolesMeta>>     fieldsData               = Collections.unmodifiableMap(
             _fieldMetadata);
     @Getter
-    private static final Map<String, ArgsMeta>                                                         args                     = Collections.unmodifiableMap(
+    private static final Map<String, ArgsMeta>                                args                     = Collections.unmodifiableMap(
             _argsMetadata);
+
     @Getter
-    private static final Map<String, Map<String, Map<ParamMetadata.ParamType, Map<String, Class<?>>>>> rawParamMap              =
-            Collections.unmodifiableMap(_rawParamMap);
-    @Getter
-    private static final Map<String, Map<String, IPRangeMeta>>                                         iPRange                  = Collections.unmodifiableMap(
+    private static final Map<String, Map<String, IPRangeMeta>>  iPRange              = Collections.unmodifiableMap(
             _ipRangeMeta);
     @Getter
-    private static final Map<String, Set<String>>                                                      certificatedMetadata     = Collections.unmodifiableMap(
+    private static final Map<String, Set<String>>               certificatedMetadata = Collections.unmodifiableMap(
             _certificatedMetadata);
     @Getter
-    private static final Set<IPRange>                                                                  globalAllow              = Collections.unmodifiableSet(
+    private static final Set<IPRange>                           globalAllow          = Collections.unmodifiableSet(
             _globalAllow);
     @Getter
-    private static final Set<IPRange>                                                                  globalDeny               = Collections.unmodifiableSet(
+    private static final Set<IPRange>                           globalDeny           = Collections.unmodifiableSet(
             _globalDeny);
     @Getter
-    private static final Map<String, List<Map<String, String>>>                                        controllerMetadata       = Collections.unmodifiableMap(
+    private static final Map<String, List<Map<String, String>>> controllerMetadata   = Collections.unmodifiableMap(
             _controllerMetadata);
 
     public static boolean isSupportNative() {
@@ -156,7 +149,15 @@ public class PermissionDict {
         _authzParamMetadata
                 .computeIfAbsent(api, r -> new HashMap<>())
                 .computeIfAbsent(method, r -> new HashMap<>())
-                .put(name, paramMetadata);
+                .computeIfAbsent(name, r -> paramMetadata)
+                .setParamMetaList(paramMetadata.getParamMetaList());
+    }
+
+    public static void putParam(String api,
+                                String method) {
+        _authzParamMetadata
+                .computeIfAbsent(api, r -> new HashMap<>())
+                .computeIfAbsent(method, r -> new HashMap<>());
     }
 
     @Nullable
@@ -192,13 +193,6 @@ public class PermissionDict {
 
     private static Result returnObj(String api,
                                     String method) {
-        Map<ParamMetadata.ParamType, Map<String, Class<?>>> paramTypeMapMap = null;
-        try {
-            paramTypeMapMap = getRawParamMap().get(api)
-                    .get(method);
-        } catch (Exception e) {
-            // skip
-        }
         PermRolesMeta _v = null;
         try {
             _v = _authzMetadata.get(api).get(method);
@@ -232,7 +226,6 @@ public class PermissionDict {
 
         if (_v != null) {
             return Result.SUCCESS
-                    .data("paramInfo", paramTypeMapMap)
                     .data("auth", _v)
                     .data("hasAuth", !_v.non())
                     .data("requireLogin", !_v.non() || k)
@@ -242,7 +235,6 @@ public class PermissionDict {
                     .data("hasParamAuth", paramAuth != null);
         } else {
             return Result.SUCCESS
-                    .data("paramInfo", paramTypeMapMap)
                     .data("auth", null)
                     .data("hasAuth", false)
                     .data("paramAuth", paramAuth)
@@ -732,6 +724,10 @@ public class PermissionDict {
     private static boolean isInit     = false;
     private static boolean isInitArgs = false;
 
+    private PermissionDict() {
+        throw new UnsupportedOperationException();
+    }
+
     public static void initArgs(Set<String> authzResourcesNames,
                                 Map<String, Map<String, FieldDataPermRolesMeta>> fieldMetadata,
                                 HashMap<String, List<DataPermRolesMeta>> map,
@@ -754,8 +750,7 @@ public class PermissionDict {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public static void init(AuthzProperties properties,
-                            ApplicationContext applicationContext,
+    public static void init(ApplicationContext applicationContext,
                             PermLibrary permLibrary,
                             Cache cache,
                             Map<RequestMappingInfo, HandlerMethod> mapRet) {
@@ -869,23 +864,13 @@ public class PermissionDict {
 
             // ------------- 初始化参数权限 --------------- //
             mtds.forEach(method -> patterns.forEach(patternValue -> {
-                Map<ParamMetadata.ParamType, Map<String, Class<?>>> rawParamTypeMapMap =
-                        _rawParamMap.computeIfAbsent(patternValue, r -> new HashMap<>())
-                                .computeIfAbsent(method, r -> new HashMap<>());
+                putParam(patternValue, method);
                 for (MethodParameter param : value.getMethodParameters()) {
-                    AuthParam      authParam      = param.getParameterAnnotation(AuthParam.class);
-                    BatchAuthParam batchAuthParam = param.getParameterAnnotation(BatchAuthParam.class);
-
-                    if (authParam == null && batchAuthParam == null) continue;
-
-                    Class<?> clz = param.getParameter().getType();
-                    if (ValueMatcher.checkType(clz).isOther()) {
-                        continue;
-                    }
-
+                    // ------------- 元信息初始化 --------------- //
                     RequestParam requestParam = param.getParameterAnnotation(RequestParam.class);
                     PathVariable pathVariable = param.getParameterAnnotation(PathVariable.class);
                     String       paramName    = param.getParameter().getName();
+                    Class<?>     clz          = param.getParameter().getType();
 
                     ParamMetadata.ParamType type;
                     if (pathVariable != null) {
@@ -895,6 +880,19 @@ public class PermissionDict {
                         type = ParamMetadata.ParamType.REQUEST_PARAM;
                         if (!requestParam.name().equals("")) paramName = requestParam.name();
                     } else {
+                        continue;
+                    }
+
+                    putParam(patternValue, method, paramName, ParamMetadata.of(clz, type, null));
+
+                    // ------------- 权限信息初始化 --------------- //
+
+                    AuthParam      authParam      = param.getParameterAnnotation(AuthParam.class);
+                    BatchAuthParam batchAuthParam = param.getParameterAnnotation(BatchAuthParam.class);
+
+                    if (authParam == null && batchAuthParam == null) continue;
+
+                    if (ValueMatcher.checkTypeByClass(clz).isOther()) {
                         continue;
                     }
 
@@ -914,24 +912,19 @@ public class PermissionDict {
 
                     if (paramPermRolesMetas.isEmpty()) continue;
 
-                    Map<String, Class<?>> rawParamMap = rawParamTypeMapMap
-                            .computeIfAbsent(type, r -> new HashMap<>());
-                    rawParamMap.put(paramName, clz);
-
                     putParam(patternValue, method, paramName,
                              ParamMetadata.of(clz, type, paramPermRolesMetas));
-
 
                 }
             }));
 
         });
 
-        _globalAllow.addAll(IPRangeMeta.parse(properties.getGlobalIpRange().getAllow()));
-        _globalDeny.addAll(IPRangeMeta.parse(properties.getGlobalIpRange().getDeny()));
-        _supportNative = properties.getGlobalIpRange().isSupportNative();
+        _globalAllow.addAll(IPRangeMeta.parse(AuthzAppVersion.properties.getGlobalIpRange().getAllow()));
+        _globalDeny.addAll(IPRangeMeta.parse(AuthzAppVersion.properties.getGlobalIpRange().getDeny()));
+        _supportNative = AuthzAppVersion.properties.getGlobalIpRange().isSupportNative();
 
-        if (properties.getCache().isEnableRedis()) {
+        if (AuthzAppVersion.properties.getCache().isEnableRedis()) {
             Async.run(() -> {
                 List<Set<String>> toBeLoadedRolesKeys = RedisUtils.Obj.get(
                         toBeLoadedRoles.stream()

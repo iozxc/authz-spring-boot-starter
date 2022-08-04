@@ -33,9 +33,10 @@ import static cn.omisheep.authz.core.config.Constants.WILDCARD;
 public class OpenAuthHelper extends BaseHelper {
 
     private OpenAuthHelper() {
+        throw new UnsupportedOperationException();
     }
 
-    private static final AuthzProperties.TokenConfig.OpenAuthConfig oauthConfig = properties.getToken().getOauth();
+    private static final AuthzProperties.OpenAuthConfig oauthConfig = properties.getOauth();
 
     @Setter
     private static AuthorizationCallback authorizationCallback;
@@ -119,17 +120,17 @@ public class OpenAuthHelper extends BaseHelper {
                                                        16));
         if (authorizationCode == null) throw AuthorizationException.privilegeGrantFailed();
         Date now         = TimeUtils.now();
-        Date expiredTime = TimeUtils.datePlus(now, AuthzAppVersion.authorizationCodeTime);
+        Date expiredTime = TimeUtils.datePlus(now, AuthzAppVersion.AUTHORIZATION_CODE_TIME.get());
 
         AuthorizationInfo authorizationInfo = new AuthorizationInfo(clientId, client.getClientName(), scope,
                                                                     GrantType.AUTHORIZATION_CODE,
-                                                                    AuthzAppVersion.authorizationCodeTime,
+                                                                    AuthzAppVersion.AUTHORIZATION_CODE_TIME.get(),
                                                                     expiredTime.getTime(), now.getTime(), userId);
         if (authorizationCallback != null) {
             authorizationCallback.createAuthorizationCodeCallback(authorizationCode, authorizationInfo);
         }
         cache.set(AUTHORIZE_CODE_PREFIX.get() + authorizationCode, authorizationInfo,
-                  AuthzAppVersion.authorizationCodeTime / 1000);
+                  AuthzAppVersion.AUTHORIZATION_CODE_TIME.get() / 1000);
         return authorizationCode;
     }
 

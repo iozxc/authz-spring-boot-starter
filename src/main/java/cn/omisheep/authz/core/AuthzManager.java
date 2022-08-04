@@ -17,8 +17,11 @@ import org.springframework.lang.Nullable;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-@SuppressWarnings("rawtypes")
 public class AuthzManager extends BaseHelper {
+
+    private AuthzManager() {
+        throw new UnsupportedOperationException();
+    }
 
     @Nullable
     public static Object op(@NonNull AuthzModifier authzModifier) {

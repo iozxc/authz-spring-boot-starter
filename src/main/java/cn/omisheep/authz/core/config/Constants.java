@@ -46,8 +46,6 @@ public interface Constants {
 
     Supplier<String> USER_REQUEST_KEY_PREFIX       = () -> AuthzAppVersion.values.get(
             "USER_REQUEST_KEY_PREFIX");
-    Supplier<String> OAUTH_USER_REQUEST_KEY_PREFIX = () -> AuthzAppVersion.values.get(
-            "OAUTH_USER_REQUEST_KEY_PREFIX");
 
     Supplier<String> ROLES_BY_USER_KEY_PREFIX       = () -> AuthzAppVersion.values.get(
             "ROLES_BY_USER_KEY_PREFIX");

@@ -3,6 +3,7 @@ package cn.omisheep.authz.support.entity;
 import cn.omisheep.authz.core.AuthzVersion;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.rpd.ArgsMeta;
+import cn.omisheep.authz.core.auth.rpd.ParamMetadata;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.config.AuthzAppVersion;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -54,14 +55,16 @@ public class Docs {
     @JsonProperty(index = 6)
     public Map<String, Map<String, Map<String, Object>>> getPaths() {
         HashMap<String, Map<String, Map<String, Object>>> map = new HashMap<>();
-        PermissionDict.getRawParamMap().forEach((api, v) -> v.forEach((method, paramTypeMapMap) -> {
+
+        PermissionDict.getParamPermission().forEach((api, v) -> v.forEach((method, param) -> {
             Map<String, Object> mm = map.computeIfAbsent(api, r -> new HashMap<>())
                     .computeIfAbsent(method, r -> new HashMap<>());
-            mm.put("paramInfo", paramTypeMapMap);
-            mm.put("requireLogin", false);
-            mm.put("hasAuth", false);
+            boolean b = param != null && param.values().stream().anyMatch(ParamMetadata::hasParamAuth);
+            mm.put("paramAuth", param);
+            mm.put("hasParamAuth", b);
+            mm.put("requireLogin", b);
             mm.put("hasRateLimit", false);
-            mm.put("hasParamAuth", false);
+            mm.put("hasAuth", false);
         }));
 
         Httpd.getRateLimitMetadata().forEach((api, v) -> v.forEach((method, rateLimit) -> {
@@ -77,14 +80,6 @@ public class Docs {
             mm.put("auth", permRolesMeta);
             mm.put("hasAuth", !permRolesMeta.non());
             mm.put("requireLogin", !permRolesMeta.non());
-        }));
-
-        PermissionDict.getParamPermission().forEach((api, v) -> v.forEach((method, param) -> {
-            Map<String, Object> mm = map.computeIfAbsent(api, r -> new HashMap<>())
-                    .computeIfAbsent(method, r -> new HashMap<>());
-            mm.put("paramAuth", param);
-            mm.put("hasParamAuth", true);
-            mm.put("requireLogin", true);
         }));
 
         PermissionDict.getCertificatedMetadata()
@@ -105,13 +100,4 @@ public class Docs {
         return AuthzAppVersion.getConnectInfo().get(AuthzAppVersion.LOCAL_CONNECT);
     }
 
-//    @JsonProperty(index = 6)
-//    public Map<String, Object> getBlacklist() {
-//        return Blacklist.readAll();
-//    }
-
-//    @JsonProperty(index = 9)
-//    public String[] getIgnoreSuffix() {
-//        return httpd.getIgnoreSuffix().clone();
-//    }
 }

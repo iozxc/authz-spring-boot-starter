@@ -23,8 +23,11 @@ import java.util.stream.Stream;
  * @since 1.0.0
  */
 @SuppressWarnings("all")
-public abstract class ArgsParser {
+public class ArgsParser {
 
+    private ArgsParser() {
+        throw new UnsupportedOperationException();
+    }
 
     private static final Pattern c = Pattern.compile("[#$]?\\{(.*?)}");
 

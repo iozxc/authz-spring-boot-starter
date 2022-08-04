@@ -323,4 +323,8 @@ public class Httpd {
         ignoreSuffix = properties.getIgnoreSuffix();
     }
 
+    private Httpd() {
+        throw new UnsupportedOperationException();
+    }
+
 }

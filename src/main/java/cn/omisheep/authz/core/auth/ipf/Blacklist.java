@@ -513,4 +513,8 @@ public class Blacklist {
         return Result.SUCCESS;
     }
 
+    private Blacklist() {
+        throw new UnsupportedOperationException();
+    }
+
 }

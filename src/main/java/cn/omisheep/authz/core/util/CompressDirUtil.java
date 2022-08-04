@@ -14,6 +14,10 @@ import java.util.zip.ZipOutputStream;
  */
 public class CompressDirUtil {
 
+    private CompressDirUtil() {
+        throw new UnsupportedOperationException();
+    }
+
     public static boolean compressFileToZip(String compresspath) {
         boolean bool = false;
         try {

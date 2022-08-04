@@ -49,42 +49,31 @@ public class ParameterPermSlot implements Slot {
         Set<String> roles       = null;
         Set<String> permissions = null;
 
-        Map<String, String> pathVariables = (Map<String, String>) httpMeta.getRequest().getAttribute(
-                HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
-
         for (MethodParameter parameter : handler.getMethodParameters()) {
             RequestParam requestParam = AnnotationUtils.getAnnotation(parameter.getParameter(), RequestParam.class);
             PathVariable pathVariable = AnnotationUtils.getAnnotation(parameter.getParameter(), PathVariable.class);
 
-            String   paramName = parameter.getParameter().getName();
-            Class<?> paramType = parameter.getParameter().getType();
+            if (requestParam == null && pathVariable == null) continue;
 
-            ParamMetadata.ParamType type  = null;
             String                  value = null;
 
-            // 找到参数的类型和值
+            String paramName = parameter.getParameter().getName();
+
+            // 找到参数的值
             if (pathVariable != null) {
-                type = ParamMetadata.ParamType.PATH_VARIABLE;
                 if (!pathVariable.name().equals("")) paramName = pathVariable.name();
+                Map<String, String> pathVariables = (Map<String, String>) httpMeta.getRequest().getAttribute(
+                        HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
                 value = pathVariables.get(paramName);
-            } else if (requestParam != null) {
-                type = ParamMetadata.ParamType.REQUEST_PARAM;
+            } else {
                 if (!requestParam.name().equals("")) paramName = requestParam.name();
                 value = httpMeta.getRequest().getParameter(paramName);
             }
 
-            // 类型匹配
-            if (type == null) continue;
-
             if (value == null) continue; // value不为空
 
-            ParamMetadata paramMetadata = null;
-            try {
-                paramMetadata = paramPeMap.get(paramName);
-                if (paramMetadata.getParamType().equals(type)) continue;
-            } catch (Exception e) {
-                continue;
-            }
+            ParamMetadata paramMetadata = paramPeMap.get(paramName);
+
             if (paramMetadata == null) continue; // 且需要保护
 
             List<ParamPermRolesMeta> paramMetaList = paramMetadata.getParamMetaList();
@@ -107,9 +96,12 @@ public class ParameterPermSlot implements Slot {
             boolean next_resources = true;
             boolean next_range     = true;
 
+            String                 paramTypeName = parameter.getParameter().getType().getTypeName();
+            ValueMatcher.ValueType valueType     = paramMetadata.getValueMatchType();
+
             label_resources:
             for (ParamPermRolesMeta meta : resourcesMeta) {
-                if (ValueMatcher.match(meta.getResources(), value, paramType)) { // 值是否匹配，若匹配上
+                if (ValueMatcher.match(meta.getResources(), value, paramTypeName, valueType)) { // 值是否匹配，若匹配上
                     if (!CollectionUtils.containsSub(meta.getRequireRoles(), roles)
                             || CollectionUtils.containsSub(meta.getExcludeRoles(), roles)
                             || !CollectionUtils.containsSub(meta.getRequirePermissions(), permissions)
@@ -129,7 +121,7 @@ public class ParameterPermSlot implements Slot {
                         || CollectionUtils.containsSub(meta.getRequirePermissions(), permissions)
                         || !CollectionUtils.containsSub(meta.getExcludePermissions(), permissions)) { // 判断是否权限匹配
                     next_range = false; // 如果有匹配上过role，那么就不能无损通过，则需要判断值是否在内
-                    if (ValueMatcher.match(meta.getRange(), value, paramType)) {
+                    if (ValueMatcher.match(meta.getRange(), value, paramTypeName, valueType)) {
                         flag = true; // 有一个匹配上就让过
                         break label_range;
                     }

@@ -13,7 +13,11 @@ import static cn.omisheep.authz.core.config.AuInit.log;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-public abstract class Utils {
+public class Utils {
+
+    private Utils() {
+        throw new UnsupportedOperationException();
+    }
 
     private static final Pattern JSON_RSA_PATTERN = Pattern.compile("\\{.*\".*\".*:.*\"(.*)\".*}");
 
