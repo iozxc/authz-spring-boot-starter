@@ -172,7 +172,6 @@ public class AuthzProperties {
 
     }
 
-
     @Data
     public static class UserConfig {
 
@@ -351,7 +350,7 @@ public class AuthzProperties {
         private String gcPeriod;
 
         /**
-         * 没啥用，可能以后会有用
+         * jar包md5检查
          */
         private boolean md5check = false;
 

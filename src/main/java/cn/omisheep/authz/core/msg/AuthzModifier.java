@@ -4,6 +4,7 @@ import cn.omisheep.authz.annotation.RateLimit;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.Rule;
 import cn.omisheep.authz.core.oauth.OpenAuthDict;
+import cn.omisheep.commons.util.NamingUtils;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
@@ -20,24 +21,32 @@ import java.util.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AuthzModifier {
 
-    private Operate                   operate;
-    private Target                    target;
-    private String                    method;
-    private String                    api;
-    private Object                    value;
-    private Integer                   index;
-    private List<String>              range;
-    private List<String>              resources;
+    // 通用
+    private Operate    operate;
+    private Target     target;
+    private String     method;
+    private String     api;
+    private Object     value;
+    private Integer    index;
+    private Role       role;
+    private Permission permission;
+
+    // param
+    private Set<String> range;
+    private Set<String> resources;
+
+    // data
     private String                    className;
     private String                    fieldName;
     private String                    condition;
     private Rule                      rule;
     private Map<String, List<String>> argsMap;
-    private Role                      role;
-    private Permission                permission;
-    private RateLimitInfo             rateLimit;
-    private BlacklistInfo             blacklistInfo;
-    private OpenAuthDict.OAuthInfo    oauth;
+
+    // rateLimit
+    private RateLimitInfo rateLimit;
+
+    private BlacklistInfo          blacklistInfo;
+    private OpenAuthDict.OAuthInfo oauth;
 
     @Data
     public static class Role {
@@ -100,55 +109,26 @@ public class AuthzModifier {
         }
     }
 
-    /**
-     * API
-     * PATH_VARIABLE_ROLE(PATH_VARIABLE_ROLE)
-     * PATH_VARIABLE_PERMISSION(PATH_VAR_PERMISSION)
-     * REQUEST_PARAM_ROLE(PARAM_ROLE)
-     * REQUEST_PARAM_PERMISSION(PARAM_PERMISSION)
-     * DATA_ROW
-     * DATA_COL
-     */
     public enum Target {
-        API(1, "role", "permission"),
-
-        PATH_VARIABLE_ROLE(2, "role"), PATH_VAR_ROLE(2, "role"),
-        PATH_VARIABLE_PERMISSION(3, "permission"), PATH_VAR_PERMISSION(3, "permission"),
-        REQUEST_PARAM_ROLE(4, "role"), PARAM_ROLE(4, "role"),
-        REQUEST_PARAM_PERMISSION(5, "permission"), PARAM_PERMISSION(5, "permission"),
-
-        DATA_ROW(6, "role", "permission"),
-        DATA_COL(7, "role", "permission"),
-        PATH(8, "role", "permission"),
-        PARAM(9, "role", "permission"),
-        PARAMETER(9),
-        RATE(10),
-        BLACKLIST(11),
-        OPEN_AUTH(12),
-        LOGIN(13),
-        NON(0);
-
-        public final int      i;
-        final        String[] with;
-
-        Target(int i,
-               String... with) {
-            this.i    = i;
-            this.with = with;
-        }
+        API,
+        PARAMETER,
+        DATA_COL,
+        DATA_ROW,
+        RATE,
+        BLACKLIST,
+        OPEN_AUTH,
+        LOGIN,
+        NON;
 
         @JsonCreator
         public static Target create(String target) {
             try {
-                return valueOf(target.toUpperCase(Locale.ROOT));
+                return valueOf(NamingUtils.humpToUnderline(target).toUpperCase(Locale.ROOT));
             } catch (Exception e) {
                 return NON;
             }
         }
 
-        public boolean contains(String... with) {
-            return Arrays.asList(this.with).containsAll(Arrays.asList(with));
-        }
     }
 
     public enum Operate {
@@ -194,5 +174,27 @@ public class AuthzModifier {
         }
         return permRolesMeta;
     }
+
+    public void setRequireRoles(Set<Set<String>> requireRoles) {
+        if (this.role == null) this.role = new Role();
+        this.role.require = requireRoles;
+    }
+
+    public void setExcludeRoles(Set<Set<String>> excludeRoles) {
+        if (this.role == null) this.role = new Role();
+        this.role.exclude = excludeRoles;
+    }
+
+    public void setRequirePermissions(Set<Set<String>> requirePermissions) {
+        if (this.permission == null) this.permission = new Permission();
+        this.permission.require = requirePermissions;
+    }
+
+
+    public void setExcludePermissions(Set<Set<String>> excludePermissions) {
+        if (this.permission == null) this.permission = new Permission();
+        this.permission.exclude = excludePermissions;
+    }
+
 
 }

@@ -28,34 +28,37 @@ public class VersionMessage implements Message {
     public VersionMessage() {
     }
 
-    public VersionMessage(int version,
-                          String md5) {
+    public VersionMessage(int version) {
         this.version = version;
-        this.md5     = md5;
+        if (AuthzAppVersion.isMd5check()) {
+            this.md5 = AuthzAppVersion.getJarMd5();
+        }
     }
 
     public VersionMessage(AuthzModifier authzModifier,
-                          int version,
-                          String md5) {
+                          int version) {
         this.authzModifier = authzModifier;
         this.version       = version;
-        this.md5           = md5;
+        if (AuthzAppVersion.isMd5check()) {
+            this.md5 = AuthzAppVersion.getJarMd5();
+        }
     }
 
     public VersionMessage(List<AuthzModifier> changelog,
-                          int version,
-                          String md5) {
+                          int version) {
         this.authzModifierList = changelog;
         this.version           = version;
-        this.md5               = md5;
+        if (AuthzAppVersion.isMd5check()) {
+            this.md5 = AuthzAppVersion.getJarMd5();
+        }
     }
 
     // 忽略条件
     public static boolean ignore(VersionMessage message) {
         return message == null // 消息为空
                 || Message.uuid.equals(message.getId()) // 自己的消息
-                || !message.context.equals(CHANNEL); // 不在一个频道
-//                || failureMd5Check(message); // md5检查失败
+                || !message.context.equals(CHANNEL)// 不在一个频道
+                || failureMd5Check(message); // md5检查失败
     }
 
     private static boolean failureMd5Check(VersionMessage message) {

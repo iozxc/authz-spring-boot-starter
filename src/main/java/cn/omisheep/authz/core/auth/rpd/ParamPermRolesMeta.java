@@ -2,6 +2,7 @@ package cn.omisheep.authz.core.auth.rpd;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.Accessors;
 
 import java.util.Set;
 
@@ -11,9 +12,10 @@ import java.util.Set;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
+@Accessors(chain = true)
 public class ParamPermRolesMeta extends PermRolesMeta {
-    private Set<String>            range; // scope of access
-    private Set<String>            resources; // required protect resources
+    private Set<String> range; // scope of access
+    private Set<String> resources; // required protect resources
 
     public Set<String> getRange() {
         return range;
@@ -41,5 +43,13 @@ public class ParamPermRolesMeta extends PermRolesMeta {
     @Override
     public Set<Set<String>> getExcludePermissions() {
         return super.getExcludePermissions();
+    }
+
+    @Override
+    public ParamPermRolesMeta clear() {
+        super.clear();
+        range     = null;
+        resources = null;
+        return this;
     }
 }

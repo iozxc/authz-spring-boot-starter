@@ -59,7 +59,9 @@ public class Docs {
         PermissionDict.getParamPermission().forEach((api, v) -> v.forEach((method, param) -> {
             Map<String, Object> mm = map.computeIfAbsent(api, r -> new HashMap<>())
                     .computeIfAbsent(method, r -> new HashMap<>());
-            boolean b = param != null && param.values().stream().anyMatch(ParamMetadata::hasParamAuth);
+            boolean b = param != null && !param.isEmpty() && param.values()
+                    .stream()
+                    .anyMatch(ParamMetadata::hasParamAuth);
             mm.put("paramAuth", param);
             mm.put("hasParamAuth", b);
             mm.put("requireLogin", b);

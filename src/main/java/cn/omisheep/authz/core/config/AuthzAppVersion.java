@@ -301,7 +301,7 @@ public class AuthzAppVersion {
 
     public static void born() {
         Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL,
-                                           new VersionMessage(-1, AuthzAppVersion.JAR_MD5.get())));
+                                           new VersionMessage(-1)));
         // authz:v1:connect:{MessageId} 30秒后过期  25秒一次
         TaskBuilder.schedule(AuthzAppVersion::ping, 25, TimeUnit.SECONDS);
     }
@@ -318,13 +318,12 @@ public class AuthzAppVersion {
         AuthzAppVersion.changeLog.add(authzModifier);
         int v = AuthzAppVersion.version.incrementAndGet();
         Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL,
-                                           new VersionMessage(authzModifier, v, AuthzAppVersion.JAR_MD5.get())));
+                                           new VersionMessage(authzModifier, v)));
     }
 
     public static void send() {
         Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL,
-                                           new VersionMessage(changeLog, AuthzAppVersion.version.get(),
-                                                              AuthzAppVersion.JAR_MD5.get()).setTag(true)));
+                                           new VersionMessage(changeLog, AuthzAppVersion.version.get()).setTag(true)));
     }
 
 }
