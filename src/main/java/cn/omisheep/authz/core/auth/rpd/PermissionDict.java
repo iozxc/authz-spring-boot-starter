@@ -207,6 +207,7 @@ public class PermissionDict {
             hasParamAuth = paramAuth != null && !paramAuth.isEmpty() && paramAuth.values()
                     .stream()
                     .anyMatch(ParamMetadata::hasParamAuth);
+            k            = k || hasParamAuth;
         } catch (Exception e) {
             // skip
         }
@@ -252,6 +253,22 @@ public class PermissionDict {
                     if (login) {
                         _certificatedMetadata.computeIfAbsent(api, r -> new HashSet<>()).add(method);
                     } else {
+                        try {
+                            Map<String, ParamMetadata> paramAuth = _authzParamMetadata.get(api).get(method);
+                            boolean hasParamAuth = paramAuth != null && !paramAuth.isEmpty() && paramAuth.values()
+                                    .stream()
+                                    .anyMatch(ParamMetadata::hasParamAuth);
+                            Map<String, PermRolesMeta> metaMap = _authzMetadata.get(api);
+                            boolean                    hasAuth;
+                            if (metaMap == null) {hasAuth = false;} else {
+                                PermRolesMeta meta = metaMap.get(method);
+                                hasAuth = (meta != null && !meta.non());
+                            }
+                            if (hasAuth || hasParamAuth) return Result.FAIL.data();
+                        } catch (Exception e) {
+                            return Result.FAIL.data();
+                        }
+
                         if (_certificatedMetadata.containsKey(api)) {
                             _certificatedMetadata.get(api).remove(method);
                         }
@@ -296,7 +313,7 @@ public class PermissionDict {
                     if (_authzMetadata.get(api).isEmpty()) {
                         _authzMetadata.remove(api);
                     }
-                    return Result.SUCCESS;
+                    return returnObj(api, method);
                 }
                 case GET:
                 case READ:
