@@ -37,9 +37,9 @@ import static cn.omisheep.authz.core.config.Constants.CONNECT_PREFIX;
 public class AuthzAppVersion {
 
     private static       boolean                  loading      = false;
-    public static final  AtomicInteger            version      = new AtomicInteger(0);
-    public static final  ArrayList<AuthzModifier> changeLog    = new ArrayList<>();
-    public static final  ArrayList<AuthzModifier> cache        = new ArrayList<>();
+    private static final AtomicInteger            version      = new AtomicInteger(0);
+    private static final ArrayList<AuthzModifier> changeLog    = new ArrayList<>();
+    private static final ArrayList<AuthzModifier> cache        = new ArrayList<>();
     private static final Map<String, String>      _values      = new HashMap<>();
     private static final Map<String, Object>      _values_obj  = new HashMap<>();
     public static final  Map<String, String>      values       = Collections.unmodifiableMap(_values);
