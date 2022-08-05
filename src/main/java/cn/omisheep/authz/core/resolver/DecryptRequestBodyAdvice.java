@@ -3,7 +3,7 @@ package cn.omisheep.authz.core.resolver;
 
 import cn.omisheep.authz.annotation.Decrypt;
 import cn.omisheep.authz.core.codec.DecryptHandler;
-import cn.omisheep.authz.core.util.Utils;
+import cn.omisheep.authz.core.util.FormatUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
@@ -92,7 +92,7 @@ public class DecryptRequestBodyAdvice implements RequestBodyAdvice {
                 decryptHandler.decryptJSON(object, decrypt);
                 decryptedText = JSON.toJSONString(object);
             } else {
-                decryptedText = decryptHandler.decrypt(Utils.parse_RSA_JSON(content), decrypt);
+                decryptedText = decryptHandler.decrypt(FormatUtils.parseRSAJson(content), decrypt);
             }
 
             if (decryptedText == null || decryptedText == "") {

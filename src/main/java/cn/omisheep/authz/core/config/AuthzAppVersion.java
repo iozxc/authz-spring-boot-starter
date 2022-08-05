@@ -6,7 +6,7 @@ import cn.omisheep.authz.core.AuthzVersion;
 import cn.omisheep.authz.core.msg.*;
 import cn.omisheep.authz.core.util.MD5Utils;
 import cn.omisheep.authz.core.util.RedisUtils;
-import cn.omisheep.authz.core.util.Utils;
+import cn.omisheep.authz.core.util.FormatUtils;
 import cn.omisheep.authz.support.entity.Docs;
 import cn.omisheep.commons.util.Assert;
 import cn.omisheep.commons.util.Async;
@@ -83,9 +83,9 @@ public class AuthzAppVersion {
 
     public static Supplier<String> BASE_URL
             = () -> _values.computeIfAbsent("BASE_URL",
-                                            r -> Utils.format("{}:{}{}", HOST.get(),
-                                                              PORT.get(),
-                                                              CONTEXT_PATH.get()));
+                                            r -> FormatUtils.format("{}:{}{}", HOST.get(),
+                                                                    PORT.get(),
+                                                                    CONTEXT_PATH.get()));
 
     public static final Supplier<Boolean> SUPPORT_REDIS = () -> properties.getCache().isEnableRedis();
 
@@ -102,7 +102,7 @@ public class AuthzAppVersion {
                 connectInfo.setApplication(APPLICATION_NAME.get());
                 connectInfo.setAppName(APP_NAME.get());
                 connectInfo.setContextPath(CONTEXT_PATH.get());
-                connectInfo.setUrl(Utils.format("{}:{}", HOST.get(), HOST.get()));
+                connectInfo.setUrl(FormatUtils.format("{}:{}", HOST.get(), HOST.get()));
                 connectInfo.setHost(HOST.get());
                 connectInfo.setPort(PORT.get());
                 if (properties.getDashboard().isEnabled()) {

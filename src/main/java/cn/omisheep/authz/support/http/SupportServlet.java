@@ -5,7 +5,7 @@ import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.util.IPUtils;
-import cn.omisheep.authz.core.util.Utils;
+import cn.omisheep.authz.core.util.FormatUtils;
 import cn.omisheep.authz.support.entity.Docs;
 import cn.omisheep.authz.support.entity.User;
 import cn.omisheep.authz.support.http.handler.ApiHandler;
@@ -252,7 +252,7 @@ public class SupportServlet extends HttpServlet {
             response.setContentType("text/html; charset=utf-8");
         }
 
-        if (Utils.isIgnoreSuffix(fileName, Constants.SUFFIX)) {
+        if (FormatUtils.isIgnoreSuffix(fileName, Constants.SUFFIX)) {
             byte[] bytes = SupportUtils.readByteArrayFromResource(filePath);
             if (bytes != null) {
                 response.getOutputStream().write(bytes);

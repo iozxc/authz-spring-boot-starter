@@ -6,7 +6,9 @@ package cn.omisheep.authz.core;
  */
 @SuppressWarnings("serial")
 public class PermissionException extends AuthzException {
+
     public PermissionException() {
         super(ExceptionStatus.PERM_EXCEPTION);
     }
+
 }

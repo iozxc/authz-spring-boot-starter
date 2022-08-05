@@ -33,6 +33,10 @@ import static cn.omisheep.commons.util.ClassUtils.castValue;
 @Slf4j
 public class RedisUtils {
 
+    private RedisUtils() {
+        throw new UnsupportedOperationException();
+    }
+
     // ================================ common ================================ //
 
     /**
@@ -272,10 +276,6 @@ public class RedisUtils {
         if (timeout == null || timeout.isZero()) {
             properties.setTimeout(Duration.ofSeconds(10));
         }
-    }
-
-    private RedisUtils() {
-        throw new UnsupportedOperationException();
     }
 
 }

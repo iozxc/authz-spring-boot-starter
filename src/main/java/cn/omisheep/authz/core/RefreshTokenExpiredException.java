@@ -6,7 +6,9 @@ package cn.omisheep.authz.core;
  */
 @SuppressWarnings("serial")
 public class RefreshTokenExpiredException extends AuthzException {
+
     public RefreshTokenExpiredException() {
         super(ExceptionStatus.REFRESH_TOKEN_EXPIRED_EXCEPTION);
     }
+
 }

@@ -15,7 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 import static cn.omisheep.authz.core.config.Constants.*;
-import static cn.omisheep.authz.core.util.Utils.isIgnoreSuffix;
+import static cn.omisheep.authz.core.util.FormatUtils.isIgnoreSuffix;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]

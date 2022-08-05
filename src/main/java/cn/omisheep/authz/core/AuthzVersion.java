@@ -7,7 +7,9 @@ import cn.omisheep.commons.util.Color;
  * @since 1.1.2
  */
 public class AuthzVersion {
+
     private AuthzVersion() {
+        throw new UnsupportedOperationException();
     }
 
     public static String getVersion() {

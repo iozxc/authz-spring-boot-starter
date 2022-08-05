@@ -13,6 +13,11 @@ import java.util.Set;
  * @since 1.2.0
  */
 public class ScanUtils {
+
+    private ScanUtils() {
+        throw new UnsupportedOperationException();
+    }
+
     public static String[] scan(Class<?> clz,
                                 String... packages) {
         ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
@@ -25,4 +30,5 @@ public class ScanUtils {
                         .forEach(classes::add));
         return classes.toArray(new String[0]);
     }
+
 }

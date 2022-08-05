@@ -20,7 +20,7 @@ import static cn.omisheep.authz.core.util.ValueMatcher.ValueType.RANGE;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-public abstract class ValueMatcher {
+public class ValueMatcher {
 
     private ValueMatcher() {
         throw new UnsupportedOperationException();

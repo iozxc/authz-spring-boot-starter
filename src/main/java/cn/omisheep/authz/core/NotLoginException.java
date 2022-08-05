@@ -6,7 +6,9 @@ package cn.omisheep.authz.core;
  */
 @SuppressWarnings("serial")
 public class NotLoginException extends AuthzException {
+
     public NotLoginException() {
         super(ExceptionStatus.REQUIRE_LOGIN);
     }
+
 }

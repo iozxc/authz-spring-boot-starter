@@ -4,7 +4,6 @@ import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.tk.AccessToken;
-import cn.omisheep.commons.util.StringUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +46,7 @@ public class LogUtils {
     public static void debug(String msg,
                              Object... args) {
         if (logLevel.ordinal() <= LogLevel.DEBUG.ordinal() && log.isInfoEnabled(MARKER)) {
-            log.info(MARKER, DEBUG, StringUtils.format(msg, args));
+            log.info(MARKER, DEBUG, FormatUtils.format(msg, args));
         }
     }
 
@@ -142,16 +141,9 @@ public class LogUtils {
 
         @Override
         public String toString() {
-            return format(format, objects);
+            return FormatUtils.format(format, objects);
         }
 
-        private static String format(String formatMsg,
-                                     Object... args) {
-            for (Object arg : args) {
-                formatMsg = formatMsg.replaceFirst("\\{}", String.valueOf(arg));
-            }
-            return formatMsg;
-        }
     }
 
     public static void logs(String status,

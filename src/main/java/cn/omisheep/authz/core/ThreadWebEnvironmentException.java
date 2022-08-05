@@ -6,7 +6,9 @@ package cn.omisheep.authz.core;
  */
 @SuppressWarnings("serial")
 public class ThreadWebEnvironmentException extends AuthzException {
+
     public ThreadWebEnvironmentException() {
         super(ExceptionStatus.WEB_ENVIRONMENT);
     }
+
 }

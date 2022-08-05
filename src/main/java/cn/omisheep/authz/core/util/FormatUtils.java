@@ -1,27 +1,24 @@
 package cn.omisheep.authz.core.util;
 
 import cn.omisheep.commons.util.StringUtils;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import cn.omisheep.commons.util.web.JSONUtils;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static cn.omisheep.authz.core.config.AuInit.log;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-public class Utils {
+public class FormatUtils {
 
-    private Utils() {
+    private FormatUtils() {
         throw new UnsupportedOperationException();
     }
 
     private static final Pattern JSON_RSA_PATTERN = Pattern.compile("\\{.*\".*\".*:.*\"(.*)\".*}");
 
-    public static String parse_RSA_JSON(String json) {
+    public static String parseRSAJson(String json) {
         Matcher matcher = JSON_RSA_PATTERN.matcher(json);
         if (matcher.find()) {
             return matcher.group(1);
@@ -30,12 +27,7 @@ public class Utils {
     }
 
     public static String beautifulJson(Object o) {
-        try {
-            return new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(o);
-        } catch (JsonProcessingException e) {
-            log.error("JsonProcessingException => {}", e.getMessage());
-            return "";
-        }
+        return JSONUtils.toPrettyJSONString(o);
     }
 
     public static String format(String format,
