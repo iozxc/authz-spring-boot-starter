@@ -206,7 +206,7 @@ public class TokenHelper extends BaseHelper {
         }
         String tokenVal = jwtBuilder.compact();
         return new AccessToken(id, tokenVal.substring(tokenVal.indexOf(".") + 1), accessTokenId,
-                               (int) Math.min(accessTime / 1000, Integer.MAX_VALUE),
+                               accessTime,
                                expiresAt.getTime(), grantType, clientId, scope, userId, deviceType, deviceId);
     }
 
@@ -222,7 +222,7 @@ public class TokenHelper extends BaseHelper {
         }
         String tokenVal = jwtBuilder.compact();
         return new RefreshToken(accessToken.getId(), tokenVal.substring(tokenVal.indexOf(".") + 1),
-                                (int) Math.min(refreshTime / 1000, Integer.MAX_VALUE), expiresAt.getTime(),
+                                refreshTime, expiresAt.getTime(),
                                 accessToken.getUserId(), accessToken.getClientId());
     }
 

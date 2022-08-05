@@ -27,6 +27,10 @@ public class Types {
         return (String) typeNameLookup.get(type);
     }
 
+    public static String typeNameFor(ResolvedType type) {
+        return typeNameFor(type.getErasedType());
+    }
+
     public static boolean isBaseType(String typeName) {
         return baseTypes.contains(typeName);
     }
@@ -64,7 +68,7 @@ public class Types {
                 .put(BigInteger.class, "biginteger")
                 .put(Currency.class, "string")
                 .put(UUID.class, "uuid")
-                .put(MultipartFile.class, "file")
+                .put(MultipartFile.class, "__file")
                 .build();
     }
 

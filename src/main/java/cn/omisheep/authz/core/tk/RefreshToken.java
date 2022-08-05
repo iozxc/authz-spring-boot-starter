@@ -22,9 +22,9 @@ public class RefreshToken {
     private final String token;
 
     /**
-     * 多少时间过期
+     * 多少时间过期 毫秒
      */
-    private final Integer expiresIn;
+    private final Long expiresIn;
 
     /**
      * 过期时间戳

@@ -2,6 +2,7 @@ package cn.omisheep.authz.support.http.api;
 
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.cache.Cache;
+import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.support.entity.User;
 import cn.omisheep.authz.support.http.ApiSupport;
 import cn.omisheep.authz.support.http.SupportServlet;
@@ -10,8 +11,6 @@ import cn.omisheep.authz.support.http.annotation.JSON;
 import cn.omisheep.authz.support.http.annotation.Mapping;
 import cn.omisheep.authz.support.http.annotation.Post;
 import cn.omisheep.web.entity.Result;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author zhouxinchen
@@ -38,15 +37,27 @@ public class UserApiSupport implements ApiSupport {
         }
     }
 
-    @Get(value = "/check-login", requireLogin = false, desc = "登录检查")
-    public Result checkLogin(HttpServletRequest request) {
+    @Get(value = "/check-status", requireLogin = false, desc = "状态检查")
+    public Result checkLogin(HttpMeta httpMeta) {
         if (!SupportServlet.requireLogin()) return Result.SUCCESS.data();
-        User auth = SupportServlet.auth(request, cache);
-        if (auth != null) {
-            return Result.SUCCESS.data(auth.getUsername());
+        User user = SupportServlet.connectPkg(httpMeta.getRequest(), httpMeta.getIp(), cache);
+        if (user != null) {
+            return Result.SUCCESS.data();
         } else {
             return Result.FAIL.data();
         }
+    }
+
+    @Get(value = "/logout", desc = "退出登录")
+    public Result logout(User user) {
+        if (!SupportServlet.requireLogin()) return Result.SUCCESS.data();
+        cache.del(Constants.DASHBOARD_KEY_PREFIX.get() + user.getUuid());
+        return Result.SUCCESS.data();
+    }
+
+    @Get(value = "/expiration-time", requireLogin = false, desc = "失效时间")
+    public Result expirationTime() {
+        return Result.SUCCESS.data(SupportServlet.getUnresponsiveExpirationTime());
     }
 
 }

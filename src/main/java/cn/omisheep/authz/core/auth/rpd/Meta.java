@@ -15,11 +15,12 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 @Data
 @Accessors(chain = true)
 @JsonInclude(NON_NULL)
-public class Meta {
+public class Meta implements Non {
 
     Set<Set<String>> require;
     Set<Set<String>> exclude;
 
+    @Override
     public boolean non() {
         return (require == null || require.size() == 0) && (exclude == null || exclude.size() == 0);
     }

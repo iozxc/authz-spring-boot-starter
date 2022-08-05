@@ -13,7 +13,9 @@ import cn.omisheep.authz.support.util.IPAddress;
 import cn.omisheep.authz.support.util.IPRange;
 import cn.omisheep.authz.support.util.IPRangeMeta;
 import cn.omisheep.authz.support.util.SupportUtils;
+import cn.omisheep.commons.util.TimeUtils;
 import cn.omisheep.commons.util.UUIDBits;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 
@@ -23,7 +25,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -46,6 +47,8 @@ public class SupportServlet extends HttpServlet {
     private static final String        USERNAME         = "username";
     private static final String        PASSWORD         = "password";
     private static final Set<User>     users            = new HashSet<>();
+    @Getter
+    private static       long          unresponsiveExpirationTime;
 
     public static boolean requireLogin() {
         return !users.isEmpty();
@@ -71,12 +74,16 @@ public class SupportServlet extends HttpServlet {
         }
 
         users.addAll(dashboardConfig.getUsers().stream().map(User::new).collect(Collectors.toList()));
-        String username = dashboardConfig.getUsername();
-        String password = dashboardConfig.getPassword();
-        String ip       = dashboardConfig.getIp();
+        String                                                username    = dashboardConfig.getUsername();
+        String                                                password    = dashboardConfig.getPassword();
+        String                                                ip          = dashboardConfig.getIp();
+        AuthzProperties.DashboardConfig.DashboardPermission[] permissions = dashboardConfig.getPermissions();
         if (!StringUtils.isEmpty(username) && !StringUtils.isEmpty(password)) {
-            users.add(new User(username, password, ip));
+            users.add(new User(username, password, ip, permissions));
         }
+
+        SupportServlet.unresponsiveExpirationTime = TimeUtils.parseTimeValue(
+                dashboardConfig.getUnresponsiveExpirationTime());
     }
 
     @SuppressWarnings("all")
@@ -88,16 +95,16 @@ public class SupportServlet extends HttpServlet {
         if (username == null || password == null) {return null;}
 
         try {
-            if (users.stream().anyMatch(u -> StringUtils.equals(u.getUsername(), username)
-                    && StringUtils.equals(u.getPassword(), password))) {
-                User user = new User().setUsername(username)
-                        .setPassword(password)
-                        .setIp(HttpMeta.currentHttpMeta().getIp());
-                user.setUuid(UUIDBits.getUUIDBits(16));
-                HashMap<String, String> map = new HashMap<>();
-                map.put("username", user.getUsername());
-                map.put("ip", ip);
-                cache.set(Constants.DASHBOARD_KEY_PREFIX.get() + user.getUuid(), map, 1, TimeUnit.HOURS);
+            Optional<User> any = users.stream().filter(u -> StringUtils.equals(u.getUsername(), username)
+                    && StringUtils.equals(u.getPassword(), password)).findAny();
+            if (any.isPresent()) {
+
+                User user = any.get().clone()
+                        .setIp(HttpMeta.currentHttpMeta().getIp())
+                        .setUuid(UUIDBits.getUUIDBits(16));
+
+                cache.set(Constants.DASHBOARD_KEY_PREFIX.get() + user.getUuid(), user,
+                          unresponsiveExpirationTime);
                 return user;
             }
             return null;
@@ -108,32 +115,48 @@ public class SupportServlet extends HttpServlet {
 
     @SuppressWarnings("all")
     public static User auth(HttpServletRequest request,
+                            String ip,
                             Cache cache) {
-        String ip;
-        try {
-            ip = HttpMeta.currentHttpMeta().getIp();
-            if (ip == null) return null;
-        } catch (Exception e) {
-            return null;
-        }
-        String uuid1 = request.getHeader(UUID);
-        String uuid  = uuid1 != null ? uuid1 : request.getParameter(UUID);
-        HashMap<String, String> map = (HashMap<String, String>) cache.get(
-                Constants.DASHBOARD_KEY_PREFIX.get() + uuid);
-        if (map == null) return null;
-        String username = map.get("username");
-        if (username == null) {
+        User user = getUser(request, ip, cache);
+
+        if (user == null) {
             return login(request.getParameter(USERNAME),
                          request.getParameter(PASSWORD), ip, cache);
+        }
+
+        return user;
+    }
+
+    public static User getUser(HttpServletRequest request,
+                               String ip,
+                               Cache cache) {
+        if (ip == null) return null;
+        String uuid1 = request.getHeader(UUID);
+        String uuid  = uuid1 != null ? uuid1 : request.getParameter(UUID);
+        if (uuid == null) return null;
+        User user = cache.get(Constants.DASHBOARD_KEY_PREFIX.get() + uuid, User.class);
+        if (user == null) return null;
+        if (StringUtils.equals(ip, user.getIp())) {
+            return user;
         } else {
-            if (StringUtils.equals(ip, map.get("ip"))) {
-                return new User().setUsername(username).setUuid(uuid);
-            } else {
-                cache.del(Constants.DASHBOARD_KEY_PREFIX.get() + uuid);
-                return null;
-            }
+            cache.del(Constants.DASHBOARD_KEY_PREFIX.get() + uuid);
+            return null;
         }
     }
+
+    public static User connectPkg(HttpServletRequest request,
+                                  String ip,
+                                  Cache cache) {
+        User user = getUser(request, ip, cache);
+
+        if (user == null) {
+            return null;
+        } else {
+            cache.expire(Constants.DASHBOARD_KEY_PREFIX.get() + user.getUuid(), unresponsiveExpirationTime);
+            return user;
+        }
+    }
+
 
     @Override
     public void service(HttpServletRequest request,
@@ -153,7 +176,8 @@ public class SupportServlet extends HttpServlet {
 
         response.setCharacterEncoding("utf-8");
 
-        if (!checkIp(request, response)) {
+        String ip = IPUtils.getIp(request);
+        if (!checkIp(ip, response)) {
             return; // 检查ip
         }
         if (gotoIndex(contextPath, path, request, response)) {
@@ -161,17 +185,18 @@ public class SupportServlet extends HttpServlet {
         }
 
         if (Constants.DASHBOARD_API_PREFIX.equals(servletPath) && path.startsWith(Docs.VERSION_PATH)) {
-            apiHandler.process(request, response, path, !requireLogin || auth(request, cache) != null);
+            User user = auth(request, ip, cache);
+            apiHandler.process(request, response, path, !requireLogin || user != null, user);
             return;
         }
 
         returnResourceFile(path, uri, request, response);
     }
 
-    private boolean checkIp(HttpServletRequest request,
+    private boolean checkIp(String ip,
                             HttpServletResponse response) throws IOException {
         try {
-            if (!isPermittedRequest(request)) {
+            if (!isPermittedRequest(ip)) {
                 nopermit(response);
                 return false;
             }

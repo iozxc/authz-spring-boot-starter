@@ -42,7 +42,11 @@ public class RedisUtils {
      * @return 匹配上的keys
      */
     public static Set<String> keys(String pattern) {
-        return redisTemplate.keys(pattern);
+        try {
+            return redisTemplate.keys(pattern);
+        } catch (Exception e) {
+            return new HashSet<>();
+        }
     }
 
     /**
@@ -53,25 +57,30 @@ public class RedisUtils {
      */
     @SneakyThrows
     public static Set<String> scan(String pattern) {
-        RedisConnectionFactory connectionFactory = redisTemplate.getConnectionFactory();
-        if (connectionFactory == null) return new HashSet<>();
-        Set<String>     keys       = new HashSet<>();
-        RedisConnection connection = connectionFactory.getConnection();
-        Cursor<byte[]>  scan;
-        if (connection instanceof JedisClusterConnection || connection instanceof LettuceClusterConnection) {
-            RedisClusterConnection clusterConnection = connectionFactory.getClusterConnection();
-            for (RedisClusterNode next : clusterConnection.clusterGetNodes()) {
-                scan = clusterConnection.scan(next, ScanOptions.scanOptions().match(pattern).count(SCAN_COUNT).build());
+        try {
+            RedisConnectionFactory connectionFactory = redisTemplate.getConnectionFactory();
+            if (connectionFactory == null) return new HashSet<>();
+            Set<String>     keys       = new HashSet<>();
+            RedisConnection connection = connectionFactory.getConnection();
+            Cursor<byte[]>  scan;
+            if (connection instanceof JedisClusterConnection || connection instanceof LettuceClusterConnection) {
+                RedisClusterConnection clusterConnection = connectionFactory.getClusterConnection();
+                for (RedisClusterNode next : clusterConnection.clusterGetNodes()) {
+                    scan = clusterConnection.scan(next,
+                                                  ScanOptions.scanOptions().match(pattern).count(SCAN_COUNT).build());
+                    while (scan.hasNext()) keys.add(new String(scan.next()));
+                    scan.close();
+                }
+                return keys;
+            }
+            if (connection instanceof JedisConnection || connection instanceof LettuceConnection) {
+                scan = connection.scan(ScanOptions.scanOptions().match(pattern).count(SCAN_COUNT).build());
                 while (scan.hasNext()) keys.add(new String(scan.next()));
                 scan.close();
+                return keys;
             }
-            return keys;
-        }
-        if (connection instanceof JedisConnection || connection instanceof LettuceConnection) {
-            scan = connection.scan(ScanOptions.scanOptions().match(pattern).count(SCAN_COUNT).build());
-            while (scan.hasNext()) keys.add(new String(scan.next()));
-            scan.close();
-            return keys;
+        } catch (Exception e) {
+            // skip
         }
         return new HashSet<>();
     }
@@ -94,19 +103,31 @@ public class RedisUtils {
     }
 
     public static long ttl(String key) {
-        Long expire = redisTemplate.getExpire(key);
-        return expire != null ? expire : -2;
+        try {
+            Long expire = redisTemplate.getExpire(key);
+            return expire != null ? expire : -2;
+        } catch (Exception e) {
+            return -2;
+        }
     }
 
     public static boolean hasKey(String key) {
-        Boolean bool = redisTemplate.hasKey(key);
-        return bool != null && bool;
+        try {
+            Boolean bool = redisTemplate.hasKey(key);
+            return bool != null && bool;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public static void publish(String channel,
                                Message message) {
-        LogUtils.debug("time: {} message: {}", TimeUtils.nowTime(), message);
-        redisTemplate.convertAndSend(channel, message);
+        try {
+            LogUtils.debug("time: {} message: {}", TimeUtils.nowTime(), message);
+            redisTemplate.convertAndSend(channel, message);
+        } catch (Exception e) {
+            // skip
+        }
     }
 
     // ================================ redisTemplate ================================ //
@@ -114,72 +135,118 @@ public class RedisUtils {
     public static class Obj {
         public static void set(String key,
                                Object value) {
-            redisTemplate.opsForValue().set(key, value);
+            try {
+                redisTemplate.opsForValue().set(key, value);
+            } catch (Exception e) {
+                // skip
+            }
         }
 
         public static void set(String key,
                                Object value,
-                               long ttl) {
-            redisTemplate.opsForValue().set(key, value, ttl, TimeUnit.SECONDS);
+                               long ms) {
+            try {
+                redisTemplate.opsForValue().set(key, value, ms, TimeUnit.MILLISECONDS);
+            } catch (Exception e) {
+                // skip
+            }
         }
 
         public static void set(Map<String, ?> map) {
-            redisTemplate.opsForValue().multiSet(map);
+            try {
+                redisTemplate.opsForValue().multiSet(map);
+            } catch (Exception e) {
+                // skip
+            }
         }
 
         public static Object get(String key) {
-            return redisTemplate.opsForValue().get(key);
+            try {
+                return redisTemplate.opsForValue().get(key);
+            } catch (Exception e) {
+                return null;
+            }
         }
 
         public static <E> E get(String key,
                                 Class<E> requiredType) {
-            return ClassUtils.castValue(redisTemplate.opsForValue().get(key), requiredType);
+            try {
+                return ClassUtils.castValue(redisTemplate.opsForValue().get(key), requiredType);
+            } catch (Exception e) {
+                return null;
+            }
         }
 
         public static List get(Collection<String> key) {
-            List objects = redisTemplate.opsForValue().multiGet(key);
-            if (objects == null) return new ArrayList<>();
-            return objects;
+            try {
+                List objects = redisTemplate.opsForValue().multiGet(key);
+                if (objects == null) return new ArrayList<>();
+                return objects;
+            } catch (Exception e) {
+                return new ArrayList();
+            }
         }
 
         public static Map<String, Object> getToMap(Collection<String> key) {
-            List<?> objects = redisTemplate.opsForValue().multiGet(key);
-            if (objects == null) return new HashMap<>();
-            HashMap<String, Object> map      = new HashMap<>();
-            Iterator<String>        iterator = key.iterator();
-            for (Object value : objects) {
-                map.put(iterator.next(), value);
+            try {
+                List<?> objects = redisTemplate.opsForValue().multiGet(key);
+                if (objects == null) return new HashMap<>();
+                HashMap<String, Object> map      = new HashMap<>();
+                Iterator<String>        iterator = key.iterator();
+                for (Object value : objects) {
+                    map.put(iterator.next(), value);
+                }
+                return map;
+            } catch (Exception e) {
+                return new HashMap<>();
             }
-            return map;
+
         }
 
         public static <E> Map<String, E> getToMap(Collection<String> key,
                                                   Class<E> requiredType) {
-            List<?> objects = redisTemplate.opsForValue().multiGet(key);
-            if (objects == null) return new HashMap<>();
-            HashMap<String, E> map      = new HashMap<>();
-            Iterator<String>   iterator = key.iterator();
-            for (Object value : objects) {
-                map.put(iterator.next(), castValue(value, requiredType));
+            try {
+                List<?> objects = redisTemplate.opsForValue().multiGet(key);
+                if (objects == null) return new HashMap<>();
+                HashMap<String, E> map      = new HashMap<>();
+                Iterator<String>   iterator = key.iterator();
+                for (Object value : objects) {
+                    map.put(iterator.next(), castValue(value, requiredType));
+                }
+                return map;
+            } catch (Exception e) {
+                return new HashMap<>();
             }
-            return map;
         }
 
         public static void del(String key) {
-            if (key != null && !key.equals("")) {
-                redisTemplate.delete(key);
+            try {
+                if (key != null && !key.equals("")) {
+                    redisTemplate.delete(key);
+                }
+            } catch (Exception e) {
+                // skip
             }
         }
 
         public static void del(Collection<String> collection) {
-            if (collection != null && collection.size() > 0) {
-                redisTemplate.delete(collection);
+            try {
+                if (collection != null && collection.size() > 0) {
+                    redisTemplate.delete(collection);
+                }
+            } catch (Exception e) {
+                // skip
             }
+
         }
 
         public static void update(String key,
                                   Object value) {
-            redisTemplate.opsForValue().set(key, value, 0);
+            try {
+                redisTemplate.opsForValue().set(key, value, 0);
+            } catch (Exception e) {
+                // skip
+            }
         }
 
     }
@@ -198,7 +265,7 @@ public class RedisUtils {
             Object execute = redisTemplate.execute((RedisCallback<Object>) RedisConnectionCommands::ping);
             Assert.state(execute != null && execute.equals("PONG"), "请配置redis并确保其能够正常连接");
         } catch (Exception e) {
-            log.error("请配置redis并确保其能够正常连接");
+            // skip
         }
 
         if (timeout == null || timeout.isZero()) {

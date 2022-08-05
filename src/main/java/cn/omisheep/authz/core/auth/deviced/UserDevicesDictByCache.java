@@ -65,14 +65,14 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         return SUCCESS;
     }
 
-    // @since 1.2.0 优化了登录以及验证逻辑，略微提速
+    // @since 1.2.0 优化了登录以及验证逻辑
     @Override
     public void addUser(TokenPair tokenPair,
                         HttpMeta httpMeta) {
         if (tokenPair == null || tokenPair.getAccessToken() == null || tokenPair.getRefreshToken() == null) {return;}
 
         AccessToken accessToken = tokenPair.getAccessToken();
-        Integer     expiredIn;
+        Long        expiredIn;
         Date        expiresAt;
         if (GrantType.CLIENT_CREDENTIALS.equals(accessToken.getGrantType())) {
             expiresAt = new Date(accessToken.getExpiresAt());
@@ -221,7 +221,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     @Override
     public void request(HttpMeta httpMeta) {
         try {
-            AccessToken token           = httpMeta.getToken();
+            AccessToken token = httpMeta.getToken();
             if (token.getClientId() == null) {
                 Async.run(() -> cache.setSneaky(requestKey(token),
                                                 new DefaultRequestDetails()

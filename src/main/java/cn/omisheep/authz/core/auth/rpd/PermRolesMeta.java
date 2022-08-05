@@ -16,11 +16,12 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
  * @since 1.0.0
  */
 @JsonInclude(NON_NULL)
-public class PermRolesMeta {
+public class PermRolesMeta implements Non {
 
     Meta roles;
     Meta permissions;
 
+    @Override
     public boolean non() {
         return (roles == null || roles.non()) && (permissions == null || permissions.non());
     }

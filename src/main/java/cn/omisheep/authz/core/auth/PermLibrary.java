@@ -1,6 +1,6 @@
 package cn.omisheep.authz.core.auth;
 
-import java.util.Set;
+import java.util.Collection;
 
 /**
  * @param <K> userId类型
@@ -15,7 +15,7 @@ public interface PermLibrary<K> {
      * @param userId role
      * @return 权限
      */
-    Set<String> getRolesByUserId(K userId);
+    Collection<String> getRolesByUserId(K userId);
 
     /**
      * 根据role获取该role的权限
@@ -23,6 +23,6 @@ public interface PermLibrary<K> {
      * @param role role
      * @return 权限
      */
-    Set<String> getPermissionsByRole(String role);
+    Collection<String> getPermissionsByRole(String role);
 
 }
