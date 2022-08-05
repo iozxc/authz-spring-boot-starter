@@ -3,16 +3,8 @@ package cn.omisheep.authz.support.util;
 import com.google.common.base.Objects;
 
 /**
- * This class represents an IP Range, which are represented by an IP address and and a subnet mask. The standards
- * describing modern routing protocols often refer to the extended-network-prefix-length rather than the subnet mask.
- * The prefix length is equal to the number of contiguous one-bits in the traditional subnet mask. This means that
- * specifying the network address 130.5.5.25 with a subnet mask of 255.255.255.0 can also be expressed as 130.5.5.25/24.
- * The prefix-length notation is more compact and easier to understand than writing out the mask in its traditional
- * dotted-decimal format.
- *
- * @author Marcel Dullaart
- * @see IPAddress
- * @since 1.0
+ * @author zhouxinchen[1269670415@qq.com]
+ * @since 1.2.0
  */
 public class IPRange {
 

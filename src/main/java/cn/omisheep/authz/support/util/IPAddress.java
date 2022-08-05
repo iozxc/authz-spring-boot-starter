@@ -5,8 +5,8 @@ import cn.omisheep.authz.core.util.LogUtils;
 import java.util.NoSuchElementException;
 
 /**
- * @author Marcel Dullaart
- * @since 1.0
+ * @author zhouxinchen[1269670415@qq.com]
+ * @since 1.2.0
  */
 public class IPAddress implements Cloneable {
 

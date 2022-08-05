@@ -12,9 +12,13 @@ import java.nio.charset.StandardCharsets;
  * @since 1.0.0
  */
 @Slf4j
-public abstract class SupportUtils {
+public class SupportUtils {
 
     public final static int DEFAULT_BUFFER_SIZE = 1024 * 4;
+
+    private SupportUtils() {
+        throw new UnsupportedOperationException();
+    }
 
     public static String read(InputStream in) {
         InputStreamReader reader;
