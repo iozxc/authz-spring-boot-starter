@@ -4,7 +4,7 @@ import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.rpd.DataPermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.FieldDataPermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
-import cn.omisheep.authz.core.cache.library.AutoRefreshCache;
+import cn.omisheep.authz.core.cache.library.L2RefreshCacheSupport;
 import cn.omisheep.authz.core.interceptor.DataFinderSecurityInterceptor;
 import cn.omisheep.authz.core.AuthzContext;
 import cn.omisheep.authz.core.util.LogUtils;
@@ -53,7 +53,7 @@ public class DataSecurityInterceptorForMybatis implements Interceptor {
     }
 
     public Object intercept(Invocation invocation) throws Throwable {
-        if (AutoRefreshCache.isLibrary()) return invocation.proceed();
+        if (L2RefreshCacheSupport.isLibrary()) return invocation.proceed();
         Object   target = invocation.getTarget();
         Object[] args   = invocation.getArgs();
         if (target instanceof Executor) {

@@ -26,11 +26,11 @@ public class PermLibraryCache {
         try {
             Object[] args = joinPoint.getArgs();
             // 给予当前线程提示，目前为PermLibrary调用环境
-            AutoRefreshCache.isLibrary.set(Boolean.TRUE);
+            L2RefreshCacheSupport.isLibrary.set(Boolean.TRUE);
             if (args.length != 1) return joinPoint.proceed();
             return handle(Constants.ROLES_BY_USER_KEY_PREFIX.get() + args[0], joinPoint);
         } finally {
-            AutoRefreshCache.isLibrary.set(Boolean.FALSE);
+            L2RefreshCacheSupport.isLibrary.set(Boolean.FALSE);
         }
 
     }
@@ -39,10 +39,10 @@ public class PermLibraryCache {
     public Object aroundPermissionsByRole(ProceedingJoinPoint joinPoint) throws Throwable {
         try {
             // 给予当前线程提示，目前为PermLibrary调用环境
-            AutoRefreshCache.isLibrary.set(Boolean.TRUE);
+            L2RefreshCacheSupport.isLibrary.set(Boolean.TRUE);
             return handle(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + joinPoint.getArgs()[0], joinPoint);
         } finally {
-            AutoRefreshCache.isLibrary.set(Boolean.FALSE);
+            L2RefreshCacheSupport.isLibrary.set(Boolean.FALSE);
         }
     }
 
@@ -52,7 +52,7 @@ public class PermLibraryCache {
             try {
                 return cache.get(key);
             } finally {
-                AutoRefreshCache.refresh(key, joinPoint);
+                L2RefreshCacheSupport.refresh(key, joinPoint);
             }
         } else {
             Object result = joinPoint.proceed();

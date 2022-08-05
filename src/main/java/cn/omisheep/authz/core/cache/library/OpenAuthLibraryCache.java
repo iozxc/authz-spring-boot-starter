@@ -30,7 +30,7 @@ public class OpenAuthLibraryCache {
     @Around("execution(* cn.omisheep.authz.core.oauth.OpenAuthLibrary+.init())")
     public Object aroundInit(ProceedingJoinPoint joinPoint) throws Throwable {
         try {
-            AutoRefreshCache.isLibrary.set(Boolean.TRUE);
+            L2RefreshCacheSupport.isLibrary.set(Boolean.TRUE);
             List<ClientDetails>            initList = (List<ClientDetails>) joinPoint.proceed();
             HashMap<String, ClientDetails> map      = new HashMap<>(initList.size());
             for (ClientDetails clientDetails : initList) {
@@ -39,7 +39,7 @@ public class OpenAuthLibraryCache {
             cache.set(map);
             return initList;
         } finally {
-            AutoRefreshCache.isLibrary.set(Boolean.FALSE);
+            L2RefreshCacheSupport.isLibrary.set(Boolean.FALSE);
         }
 
     }
@@ -49,7 +49,7 @@ public class OpenAuthLibraryCache {
         String key = Constants.CLINT_PREFIX.get() + joinPoint.getArgs()[0];
         try {
             if (cache.notKey(key)) {
-                AutoRefreshCache.isLibrary.set(Boolean.TRUE);
+                L2RefreshCacheSupport.isLibrary.set(Boolean.TRUE);
                 Object result = joinPoint.proceed();
                 cache.set(key, result);
                 return result;
@@ -57,8 +57,8 @@ public class OpenAuthLibraryCache {
                 return cache.get(key);
             }
         } finally {
-            AutoRefreshCache.isLibrary.set(Boolean.FALSE);
-            AutoRefreshCache.refresh(key, joinPoint);
+            L2RefreshCacheSupport.isLibrary.set(Boolean.FALSE);
+            L2RefreshCacheSupport.refresh(key, joinPoint);
         }
     }
 
@@ -66,10 +66,10 @@ public class OpenAuthLibraryCache {
     public Object aroundDeleteClientById(ProceedingJoinPoint joinPoint) throws Throwable {
         try {
             cache.del(Constants.CLINT_PREFIX.get() + joinPoint.getArgs()[0]);
-            AutoRefreshCache.isLibrary.set(Boolean.TRUE);
+            L2RefreshCacheSupport.isLibrary.set(Boolean.TRUE);
             return joinPoint.proceed();
         } finally {
-            AutoRefreshCache.isLibrary.set(Boolean.FALSE);
+            L2RefreshCacheSupport.isLibrary.set(Boolean.FALSE);
         }
 
     }
@@ -77,13 +77,13 @@ public class OpenAuthLibraryCache {
     @Around("execution(* cn.omisheep.authz.core.oauth.OpenAuthLibrary+.registerClient(cn.omisheep.authz.core.oauth.ClientDetails)))")
     public Object aroundRegisterClient(ProceedingJoinPoint joinPoint) throws Throwable {
         try {
-            AutoRefreshCache.isLibrary.set(Boolean.TRUE);
+            L2RefreshCacheSupport.isLibrary.set(Boolean.TRUE);
             ClientDetails clientDetails = (ClientDetails) joinPoint.getArgs()[0];
             String        key           = Constants.CLINT_PREFIX.get() + clientDetails.getClientId();
             cache.set(key, clientDetails);
             return joinPoint.proceed();
         } finally {
-            AutoRefreshCache.isLibrary.set(Boolean.FALSE);
+            L2RefreshCacheSupport.isLibrary.set(Boolean.FALSE);
         }
 
     }
@@ -94,10 +94,10 @@ public class OpenAuthLibraryCache {
             cache.set(AUTHORIZE_CODE_PREFIX.get() + joinPoint.getArgs()[0],
                       joinPoint.getArgs()[1],
                       AuthzAppVersion.AUTHORIZATION_CODE_TIME.get());
-            AutoRefreshCache.isLibrary.set(Boolean.TRUE);
+            L2RefreshCacheSupport.isLibrary.set(Boolean.TRUE);
             return joinPoint.proceed();
         } finally {
-            AutoRefreshCache.isLibrary.set(Boolean.FALSE);
+            L2RefreshCacheSupport.isLibrary.set(Boolean.FALSE);
         }
 
     }
