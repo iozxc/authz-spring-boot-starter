@@ -8,6 +8,7 @@ import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.commons.util.CollectionUtils;
 import org.springframework.web.method.HandlerMethod;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -39,9 +40,8 @@ public class APIPermSlot implements Slot {
         if (permRolesMeta.non()) return;
 
         Set<String> roles = null;
-        boolean     e1    = CollectionUtils.isEmpty(permRolesMeta.getRequireRoles());
-        boolean     e2    = CollectionUtils.isEmpty(permRolesMeta.getExcludeRoles());
-        if (!e1 || !e2) {
+        if (!CollectionUtils.isEmpty(permRolesMeta.getRequireRoles())
+                || !CollectionUtils.isEmpty(permRolesMeta.getExcludeRoles())) {
             roles = httpMeta.getRoles();
             if (!CollectionUtils.containsSub(permRolesMeta.getRequireRoles(), roles)
                     || CollectionUtils.containsSub(permRolesMeta.getExcludeRoles(), roles)) {
@@ -51,15 +51,11 @@ public class APIPermSlot implements Slot {
             }
         }
 
-        boolean e3 = CollectionUtils.isEmpty(permRolesMeta.getRequirePermissions());
-        boolean e4 = CollectionUtils.isEmpty(permRolesMeta.getExcludePermissions());
-        if (!e3 || !e4) {
-            if (e1 && e2) {
-                roles = httpMeta.getRoles();
-            }
+        if (!CollectionUtils.isEmpty(permRolesMeta.getRequirePermissions())
+                || !CollectionUtils.isEmpty(permRolesMeta.getExcludePermissions())) {
             HashSet<String> perms = new HashSet<>(); // 用户所拥有的权限
-            for (String role : Optional.ofNullable(roles).orElse(new HashSet<>())) {
-                Set<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
+            for (String role : Optional.ofNullable(httpMeta.getRoles()).orElse(new HashSet<>())) {
+                Collection<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
                 if (permissionsByRole != null) perms.addAll(permissionsByRole);
                 if (CollectionUtils.containsSub(permRolesMeta.getExcludePermissions(), permissionsByRole)) {
                     logs("Forbid : permissions exception", httpMeta, permRolesMeta);

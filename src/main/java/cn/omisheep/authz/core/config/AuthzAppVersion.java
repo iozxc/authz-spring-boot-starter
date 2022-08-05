@@ -308,7 +308,7 @@ public class AuthzAppVersion {
 
     public static void ping() {
         try {
-            RedisUtils.Obj.set(CONNECT_PREFIX + Message.uuid, CONNECT_INFO.get(), 30);
+            RedisUtils.Obj.set(CONNECT_PREFIX + Message.uuid, CONNECT_INFO.get(), 30000);
         } catch (Exception e) {
             // skip
         }

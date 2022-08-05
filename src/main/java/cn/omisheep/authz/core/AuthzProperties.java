@@ -229,7 +229,7 @@ public class AuthzProperties {
     public static class CacheConfig {
 
         /**
-         * 是否开启redis缓存（两级缓存）
+         * 是否开启redis缓存（双层缓存）
          * L2
          */
         private boolean enableRedis = false;
@@ -298,37 +298,53 @@ public class AuthzProperties {
         /**
          * 是否开启dashboard
          */
-        private boolean    enabled = false;
+        private boolean    enabled  = false;
         /**
          * 登录用户，可与username，password共用
          */
-        private List<User> users   = new ArrayList<>();
+        private List<User> users    = new ArrayList<>();
         /**
          * 用户名
          */
-        private String     username;
+        private String     username = "authz";
         /**
          * 用户密码
          */
-        private String     password;
+        private String     password = "authz";
+
+        /**
+         * 用户拥有的权限，默认为所有，可以设置为API（只能修改API的权限）、PARAMETER（只能修改参数的权限）
+         */
+        private DashboardPermission[] permissions = {DashboardPermission.ALL};
+
+        /**
+         * 未响应过期时间 默认10分钟
+         */
+        private String unresponsiveExpirationTime = "10m";
+
         /**
          * 用户ip
          */
-        private String     ip;
+        private String ip;
         /**
          * 【-只only-允许】的iprange
          */
-        private String     allow;
+        private String allow;
         /**
          * 拒绝的iprange
          */
-        private String     deny;
+        private String deny;
 
         @Data
         public static class User {
-            private String username;
-            private String password;
-            private String ip;
+            private String                username;
+            private String                password;
+            private String                ip;
+            private DashboardPermission[] permissions;
+        }
+
+        public enum DashboardPermission {
+            API, PARAMETER, DATA_COL, DATA_ROW, RATE, BLACKLIST, OPEN_AUTH, LOGIN, DOCS, REQUEST, ALL;
         }
     }
 

@@ -5,6 +5,7 @@ import cn.omisheep.authz.core.auth.rpd.ArgsHandler;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.util.AUtils;
 import cn.omisheep.authz.support.entity.Docs;
+import cn.omisheep.authz.support.entity.User;
 import cn.omisheep.authz.support.http.annotation.Header;
 import cn.omisheep.authz.support.http.annotation.JSON;
 import cn.omisheep.authz.support.http.annotation.Param;
@@ -59,7 +60,8 @@ public class ApiHandler {
     public void process(HttpServletRequest request,
                         HttpServletResponse response,
                         String path,
-                        boolean auth) {
+                        boolean auth,
+                        User user) {
         HttpMeta httpMeta = (HttpMeta) request.getAttribute(Constants.HTTP_META);
         String   apiPath  = path.substring(Docs.VERSION_PATH.length());
         ApiInfo  apiInfo  = api.get(apiPath);
@@ -118,6 +120,8 @@ public class ApiHandler {
                     objects.add(request.getSession());
                 } else if (HttpMeta.class.equals(type)) {
                     objects.add(httpMeta);
+                } else if (User.class.equals(type)) {
+                    objects.add(user);
                 } else {
                     objects.add(AUtils.getBean(type));
                 }

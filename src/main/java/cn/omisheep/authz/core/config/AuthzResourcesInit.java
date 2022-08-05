@@ -71,13 +71,15 @@ public class AuthzResourcesInit implements ImportSelector {
                         .forEach(type -> Arrays.stream(type.getMethods())
                                 .filter(method -> method.isAnnotationPresent(ArgResource.class))
                                 .forEach(method -> {
-                                    String name = AnnotationUtils.getAnnotation(method, ArgResource.class).name();
+                                    ArgResource argResource = AnnotationUtils.getAnnotation(method, ArgResource.class);
+                                    String      name        = argResource.name();
                                     if (Objects.equals(name, "")) name = method.getName();
-                                    argMap.put(name, ArgsMeta.of(type, method));
+                                    argMap.put(name,
+                                               ArgsMeta.of(type, method).setDescription(argResource.description()));
                                 })));
-        argMap.put("httpMeta", ArgsMeta.of(HttpMeta.class, "currentHttpMeta"));
-        argMap.put("token", ArgsMeta.of(HttpMeta.class, "currentToken"));
-        argMap.put("userId", ArgsMeta.of(HttpMeta.class, "currentUserId"));
+        argMap.put("httpMeta", ArgsMeta.of(HttpMeta.class, "currentHttpMeta").setDescription("当前请求的HttpMeta"));
+        argMap.put("token", ArgsMeta.of(HttpMeta.class, "currentToken").setDescription("当前请求的Token"));
+        argMap.put("userId", ArgsMeta.of(HttpMeta.class, "currentUserId").setDescription("当前请求的userId"));
         PermissionDict.initArgs(entityClasses, ge(entityClasses), map, argMap);
 
         return new String[0];

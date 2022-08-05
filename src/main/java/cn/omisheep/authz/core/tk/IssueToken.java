@@ -16,21 +16,21 @@ public class IssueToken {
     /**
      * access token 的值
      */
-    private String  accessToken;
+    private String accessToken;
 
     /**
      * refresh token 的值
      */
-    private String  refreshToken;
+    private String refreshToken;
 
     /**
-     * 过期时间，时间到期请用 refreshToken 刷新获得新的accessToken和refreshToken
+     * 过期时间 毫秒，时间到期请用 refreshToken 刷新获得新的accessToken和refreshToken
      */
-    private Integer expiresIn;
+    private Long expiresIn;
 
     /**
      * 授权范围
      */
-    private String  scope;
+    private String scope;
 
 }

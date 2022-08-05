@@ -29,9 +29,9 @@ public class AccessToken {
     private final String tokenId;
 
     /**
-     * 多少时间过期
+     * 多少时间过期 毫秒
      */
-    private final Integer expiresIn;
+    private final Long expiresIn;
 
     /**
      * 过期时间戳

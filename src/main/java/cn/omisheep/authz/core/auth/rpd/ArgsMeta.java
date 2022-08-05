@@ -4,6 +4,8 @@ import cn.omisheep.authz.core.util.LogUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.base.Objects;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -12,6 +14,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Getter
+@Accessors(chain = true)
 public class ArgsMeta {
     final Class<?>            type;
     final Method              method;
@@ -20,6 +23,8 @@ public class ArgsMeta {
     final Class<?>            returnType;
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     final Map<String, String> returnTypeTemplate;
+    @Setter
+    String description = "";
 
     private ArgsMeta(Class<?> type,
                      Method method) {

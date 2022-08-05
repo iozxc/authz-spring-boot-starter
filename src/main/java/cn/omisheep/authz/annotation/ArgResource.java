@@ -16,7 +16,7 @@ import java.lang.annotation.*;
 public @interface ArgResource {
 
     /**
-     * 不写默认为方法名，且同一方法的不同参数资源可能会被覆盖
+     * 不写默认为方法名，同名会被覆盖
      *
      * @return 全局唯一
      */
@@ -24,11 +24,16 @@ public @interface ArgResource {
     String value() default "";
 
     /**
-     * 不写默认为方法名，且同一方法的不同参数资源可能会被覆盖
+     * 不写默认为方法名，同名会被覆盖
      *
      * @return 全局唯一
      */
     @AliasFor("value")
     String name() default "";
+
+    /**
+     * @return 描述
+     */
+    String description() default "";
 
 }
