@@ -3,7 +3,7 @@ package cn.omisheep.authz.support.http.handler;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.rpd.ArgsHandler;
 import cn.omisheep.authz.core.config.Constants;
-import cn.omisheep.authz.core.util.AUtils;
+import cn.omisheep.authz.core.AuthzContext;
 import cn.omisheep.authz.support.entity.Docs;
 import cn.omisheep.authz.support.entity.User;
 import cn.omisheep.authz.support.http.annotation.Header;
@@ -78,7 +78,7 @@ public class ApiHandler {
 
         try {
             if (parameters == null || parameters.length == 0) {
-                SupportUtils.toJSON(response, invoke.invoke(AUtils.getBean(invoke.getDeclaringClass())));
+                SupportUtils.toJSON(response, invoke.invoke(AuthzContext.getBean(invoke.getDeclaringClass())));
                 return;
             }
             ArrayList<Object> objects = new ArrayList<>();
@@ -123,10 +123,10 @@ public class ApiHandler {
                 } else if (User.class.equals(type)) {
                     objects.add(user);
                 } else {
-                    objects.add(AUtils.getBean(type));
+                    objects.add(AuthzContext.getBean(type));
                 }
             }
-            SupportUtils.toJSON(response, invoke.invoke(AUtils.getBean(invoke.getDeclaringClass()), objects.toArray()));
+            SupportUtils.toJSON(response, invoke.invoke(AuthzContext.getBean(invoke.getDeclaringClass()), objects.toArray()));
         } catch (Exception e) {
             // skip
         }

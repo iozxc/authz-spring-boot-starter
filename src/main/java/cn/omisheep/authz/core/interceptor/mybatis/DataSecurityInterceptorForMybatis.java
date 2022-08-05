@@ -4,8 +4,9 @@ import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.rpd.DataPermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.FieldDataPermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
+import cn.omisheep.authz.core.cache.library.AutoRefreshCache;
 import cn.omisheep.authz.core.interceptor.DataFinderSecurityInterceptor;
-import cn.omisheep.authz.core.util.AUtils;
+import cn.omisheep.authz.core.AuthzContext;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.ReflectUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -40,9 +41,10 @@ import java.util.Map;
 @SuppressWarnings("all")
 public class DataSecurityInterceptorForMybatis implements Interceptor {
 
-    private final ThreadLocal<ResultMap>        resultMapThreadLocal = new ThreadLocal<>();
+    private final ThreadLocal<ResultMap>        resultMapThreadLocal = ThreadLocal.withInitial(() -> null);
     private final PermLibrary                   permLibrary;
     private final DataFinderSecurityInterceptor dataFinderSecurityInterceptor;
+
 
     public DataSecurityInterceptorForMybatis(PermLibrary permLibrary,
                                              DataFinderSecurityInterceptor dataFinderSecurityInterceptor) {
@@ -51,6 +53,7 @@ public class DataSecurityInterceptorForMybatis implements Interceptor {
     }
 
     public Object intercept(Invocation invocation) throws Throwable {
+        if (AutoRefreshCache.isLibrary()) return invocation.proceed();
         Object   target = invocation.getTarget();
         Object[] args   = invocation.getArgs();
         if (target instanceof Executor) {
@@ -67,26 +70,33 @@ public class DataSecurityInterceptorForMybatis implements Interceptor {
                 if (PermissionDict.getDataPermission() == null) return invocation.proceed();
                 List<DataPermRolesMeta> dataPermRolesMetaList = PermissionDict.getDataPermission()
                         .get(type.getTypeName());
-                String change = dataFinderSecurityInterceptor.sqlChange(AUtils.getCurrentHttpMeta(), permLibrary,
+                String change = dataFinderSecurityInterceptor.sqlChange(AuthzContext.getCurrentHttpMeta(), permLibrary,
                                                                         dataPermRolesMetaList, type, boundSql.getSql());
+                System.out.println(change);
                 ReflectUtils.setFieldValue(boundSql, "sql", change);
             } catch (Exception e) {
                 LogUtils.error(e);
-                resultMapThreadLocal.set(null);
                 return invocation.proceed();
             }
         }
         Object obj = invocation.proceed();
-        if (PermissionDict.getFieldsData() == null) return obj;
+        if (PermissionDict.getFieldsData() == null || obj == null) return obj;
         try {
-            Class<?> type = resultMapThreadLocal.get().getType();
-            if (obj.getClass().equals(type) || obj instanceof Collection) {
-                Map<String, FieldDataPermRolesMeta> fieldDataMap = PermissionDict.getFieldsData()
-                        .get(type.getTypeName());
-                obj = dataFinderSecurityInterceptor.dataTrim(AUtils.getCurrentHttpMeta(), permLibrary, fieldDataMap,
-                                                             type, obj);
-                resultMapThreadLocal.set(null);
-                return obj;
+            if (resultMapThreadLocal.get() != null) {
+                Class<?> type = resultMapThreadLocal.get().getType();
+                if (type.equals(obj.getClass()) || obj instanceof Collection) {
+                    if (obj instanceof Collection) {
+                        if (((Collection) obj).size() == 0) {
+                            return obj;
+                        }
+                    }
+                    Map<String, FieldDataPermRolesMeta> fieldDataMap = PermissionDict.getFieldsData()
+                            .get(type.getTypeName());
+                    obj = dataFinderSecurityInterceptor.dataTrim(AuthzContext.getCurrentHttpMeta(), permLibrary,
+                                                                 fieldDataMap,
+                                                                 type, obj);
+                    return obj;
+                }
             }
         } catch (Exception e) {
             LogUtils.error(e);

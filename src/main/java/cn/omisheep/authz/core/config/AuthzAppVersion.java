@@ -141,7 +141,7 @@ public class AuthzAppVersion {
         _values.put("APP", APP_NAME.get());
 
         _values.put("USER_DEVICE_KEY_PREFIX", "authz:" + APP_NAME.get() + ":user:device:");
-        _values.put("USER_REQUEST_KEY_PREFIX", "authz:" + APP_NAME.get() + ":user:request");
+        _values.put("USER_REQUEST_KEY_PREFIX", "authz:" + APP_NAME.get() + ":user:request:");
 
         _values.put("OAUTH_USER_DEVICE_KEY_PREFIX", "authz:" + APP_NAME.get() + ":oauth:user:device:");
 

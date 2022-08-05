@@ -52,4 +52,9 @@ public class ParamPermRolesMeta extends PermRolesMeta {
         resources = null;
         return this;
     }
+
+    @Override
+    public boolean non() {
+        return super.non() || (range == null || range.isEmpty()) && (resources == null || resources.isEmpty());
+    }
 }

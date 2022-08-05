@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.codec;
 
 import cn.omisheep.authz.annotation.Decrypt;
-import cn.omisheep.authz.core.util.AUtils;
+import cn.omisheep.authz.core.AuthzContext;
 import cn.omisheep.commons.util.StringUtils;
 import com.alibaba.fastjson.JSONObject;
 
@@ -35,9 +35,9 @@ public class DecryptHandler {
                           Class<? extends Decryptor> decryptorClass) {
         Decryptor decryptor;
         if (RSADecryptor.class != decryptorClass) {
-            decryptor = AUtils.getBean(decryptorClass);
+            decryptor = AuthzContext.getBean(decryptorClass);
         } else {
-            decryptor = AUtils.getBean(defaultDecryptor);
+            decryptor = AuthzContext.getBean(defaultDecryptor);
         }
         return decryptor.decrypt(decryptText);
     }

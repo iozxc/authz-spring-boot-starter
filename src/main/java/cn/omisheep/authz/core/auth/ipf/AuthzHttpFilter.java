@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core.auth.ipf;
 
 import cn.omisheep.authz.core.ExceptionStatus;
+import cn.omisheep.authz.core.AuthzContext;
 import cn.omisheep.web.utils.BufferedServletRequestWrapper;
 import cn.omisheep.web.utils.HttpUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -54,15 +55,16 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
             HttpMeta httpMeta = new HttpMeta(request, uri, null, method, uri);
             request.setAttribute(HTTP_META, httpMeta);
             filterChain.doFilter(request, response);
+            AuthzContext.httpMeta.set(httpMeta);
             return;
         }
 
         String   api      = Httpd.getPattern(method, servletPath);
-        HttpMeta httpMeta = new HttpMeta(request, uri, api == null ? servletPath : api, method,servletPath);
+        HttpMeta httpMeta = new HttpMeta(request, uri, api == null ? servletPath : api, method, servletPath);
         if (api == null) {
             httpMeta.error(ExceptionStatus.MISMATCHED_URL);
         }
-
+        AuthzContext.httpMeta.set(httpMeta);
         request.setAttribute(HTTP_META, httpMeta);
         filterChain.doFilter(request, response);
     }

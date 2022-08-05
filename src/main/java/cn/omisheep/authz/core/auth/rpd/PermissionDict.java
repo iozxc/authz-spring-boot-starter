@@ -9,6 +9,7 @@ import cn.omisheep.authz.core.config.AuInit;
 import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.msg.AuthzModifier;
+import cn.omisheep.authz.core.schema.Model;
 import cn.omisheep.authz.core.util.RedisUtils;
 import cn.omisheep.authz.core.util.ValueMatcher;
 import cn.omisheep.authz.support.util.IPRange;
@@ -83,6 +84,8 @@ public class PermissionDict {
      * 资源模版
      */
     private static final Map<String, Map<String, String>> _authzResourcesNameAndTemplate = new HashMap<>();
+
+    private static final Map<String, Model> _authzResourcesModel = new HashMap<>();
 
     /**
      * 是否拦截本地ip
@@ -355,11 +358,34 @@ public class PermissionDict {
                     ParamMetadata paramMetadata = _authzParamMetadata.get(path)
                             .get(method)
                             .get(name);
+                    PermRolesMeta build = authzModifier.build();
+                    if (paramMetadata.getParamMetaList() == null) {
+                        if (build != null && !build.non()) {
+                            ParamPermRolesMeta meta = new ParamPermRolesMeta().setRange(authzModifier.getRange())
+                                    .setResources(authzModifier.getResources());
+                            meta.merge(build);
+                            if (!meta.non()) {
+                                paramMetadata.setParamMetaList(new ArrayList<>());
+                                paramMetadata.getParamMetaList().add(meta);
+                                return Result.SUCCESS.data(meta);
+                            } else {
+                                return Result.FAIL.data();
+                            }
+                        } else {
+                            return Result.FAIL.data();
+                        }
+                    }
                     ParamPermRolesMeta meta = paramMetadata.getParamMetaList().get(index);
-                    if (meta == null) return Result.FAIL;
-
-                    meta.merge(authzModifier.build());
+                    if (meta == null) return Result.FAIL.data();
+                    meta.merge(build);
                     meta.setRange(authzModifier.getRange()).setResources(authzModifier.getResources());
+                    if (meta.non()) {
+                        paramMetadata.getParamMetaList().remove(index);
+                        if (paramMetadata.getParamMetaList().isEmpty()) {
+                            paramMetadata.setParamMetaList(null);
+                        }
+                        return Result.FAIL.data();
+                    }
                     return Result.SUCCESS.data(meta);
                 }
                 case DELETE:
@@ -477,7 +503,7 @@ public class PermissionDict {
                                                                                    r -> new HashMap<>())
                                 .computeIfAbsent(
                                         authzModifier.getFieldName(),
-                                        r -> new FieldDataPermRolesMeta());
+                                        r -> new FieldDataPermRolesMeta(className));
                         if (fieldData.getPermissions() != null) fd.setPermissions(fieldData.getPermissions());
                         if (fieldData.getRoles() != null) fd.setRoles(fieldData.getRoles());
                     }
@@ -732,10 +758,17 @@ public class PermissionDict {
                 HashMap<String, Set<String>> map      = new HashMap<>();
                 toBeLoadedRolesKeys.forEach(perms -> map.put(iterator.next(), perms));
                 map.forEach((role, v) -> {
-                    Set<String> permissions = permLibrary.getPermissionsByRole(role);
+                    Collection<String> permissions = permLibrary.getPermissionsByRole(role);
+
                     if (permissions != null) {
-                        cache.setSneaky(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role, permissions,
-                                        Cache.INFINITE);
+                        if (permissions instanceof Set) {
+                            cache.setSneaky(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role, (Set) permissions,
+                                            Cache.INFINITE);
+                        } else {
+                            cache.setSneaky(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role,
+                                            new HashSet<>(permissions),
+                                            Cache.INFINITE);
+                        }
                     }
                 });
             });

@@ -130,7 +130,7 @@ public class OpenAuthHelper extends BaseHelper {
             authorizationCallback.createAuthorizationCodeCallback(authorizationCode, authorizationInfo);
         }
         cache.set(AUTHORIZE_CODE_PREFIX.get() + authorizationCode, authorizationInfo,
-                  AuthzAppVersion.AUTHORIZATION_CODE_TIME.get() / 1000);
+                  AuthzAppVersion.AUTHORIZATION_CODE_TIME.get());
         return authorizationCode;
     }
 

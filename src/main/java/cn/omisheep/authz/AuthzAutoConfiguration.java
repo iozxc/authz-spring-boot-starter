@@ -355,7 +355,6 @@ public class AuthzAutoConfiguration {
             initParameters.put("deny", dashboard.getDeny());
             initParameters.entrySet().removeIf(e -> e.getValue() == null);
 
-            // 后台需要有人登录
             bean.setInitParameters(initParameters);
             return bean;
         }

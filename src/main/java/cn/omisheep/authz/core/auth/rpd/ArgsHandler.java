@@ -1,7 +1,7 @@
 package cn.omisheep.authz.core.auth.rpd;
 
 import cn.omisheep.authz.AuthzAutoConfiguration;
-import cn.omisheep.authz.core.util.AUtils;
+import cn.omisheep.authz.core.AuthzContext;
 import cn.omisheep.authz.core.util.LogUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -32,7 +32,7 @@ public class ArgsHandler {
             return null;
         }
         try {
-            Object bean = AUtils.getBean(meta.type);
+            Object bean = AuthzContext.getBean(meta.type);
             return meta.method.invoke(bean, otherArgs);
         } catch (Exception e) {
             try {

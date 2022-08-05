@@ -12,15 +12,15 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(chain = true)
 public class FieldDataPermRolesMeta extends PermRolesMeta {
-    private String className;
+    final String className;
 
     public static FieldDataPermRolesMeta of(String className,
                                             PermRolesMeta permRolesMeta) {
         if (permRolesMeta == null || permRolesMeta.non()) return null;
-        FieldDataPermRolesMeta fieldDataPermRolesMeta = new FieldDataPermRolesMeta();
-        fieldDataPermRolesMeta.className   = className;
+        FieldDataPermRolesMeta fieldDataPermRolesMeta = new FieldDataPermRolesMeta(className);
         fieldDataPermRolesMeta.roles       = permRolesMeta.roles;
         fieldDataPermRolesMeta.permissions = permRolesMeta.permissions;
         return fieldDataPermRolesMeta;
     }
+
 }

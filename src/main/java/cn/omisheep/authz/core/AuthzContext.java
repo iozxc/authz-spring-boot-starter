@@ -1,7 +1,5 @@
-package cn.omisheep.authz.core.util;
+package cn.omisheep.authz.core;
 
-import cn.omisheep.authz.core.NotLoginException;
-import cn.omisheep.authz.core.ThreadWebEnvironmentException;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.tk.AccessToken;
@@ -18,9 +16,12 @@ import java.util.Map;
  */
 @Slf4j
 @SuppressWarnings("all")
-public final class AUtils {
+public class AuthzContext {
 
-    private AUtils() {
+    public static final ThreadLocal<HttpMeta> httpMeta = ThreadLocal.withInitial(() -> null);
+
+    private AuthzContext() {
+        throw new UnsupportedOperationException();
     }
 
     private static ApplicationContext ctx;
@@ -49,6 +50,7 @@ public final class AUtils {
     @NonNull
     public static HttpMeta getCurrentHttpMeta() throws ThreadWebEnvironmentException {
         try {
+            if (httpMeta.get() != null) return httpMeta.get();
             HttpMeta currentHttpMeta = (HttpMeta) HttpUtils.getCurrentRequest().getAttribute(Constants.HTTP_META);
             if (currentHttpMeta == null) throw new ThreadWebEnvironmentException();
             return currentHttpMeta;

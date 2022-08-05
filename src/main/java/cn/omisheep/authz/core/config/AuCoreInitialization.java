@@ -12,7 +12,7 @@ import cn.omisheep.authz.core.codec.AuthzRSAManager;
 import cn.omisheep.authz.core.msg.Message;
 import cn.omisheep.authz.core.oauth.OpenAuthDict;
 import cn.omisheep.authz.core.oauth.OpenAuthLibrary;
-import cn.omisheep.authz.core.util.AUtils;
+import cn.omisheep.authz.core.AuthzContext;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.TaskBuilder;
 import lombok.SneakyThrows;
@@ -53,7 +53,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) {
         ctx = applicationContext;
-        AUtils.init(applicationContext);
+        AuthzContext.init(applicationContext);
         init();
         CallbackInit.callbackInit(applicationContext);
         chechPermLibrary();

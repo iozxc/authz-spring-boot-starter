@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
 import java.util.List;
@@ -21,15 +20,14 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
  * @since 1.0.0
  */
 @Data
-@NoArgsConstructor
 @Accessors(chain = true)
 @JsonInclude(NON_EMPTY)
 public class ParamMetadata {
     @JsonIgnore
-    private Class<?>                 clz;
-    private ValueMatcher.ValueType   valueMatchType;
-    private ParamType                paramType;
-    private List<ParamPermRolesMeta> paramMetaList;
+    private final Class<?>                 clz;
+    private final ValueMatcher.ValueType   valueMatchType;
+    private final ParamType                paramType;
+    private       List<ParamPermRolesMeta> paramMetaList;
 
     public String getValueType() {
         return ModelParser.simpleTypeName(clz);

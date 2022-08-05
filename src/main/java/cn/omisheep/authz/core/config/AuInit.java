@@ -2,11 +2,9 @@ package cn.omisheep.authz.core.config;
 
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.slot.SlotScan;
-import cn.omisheep.authz.core.util.AUtils;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Import;
 
 import java.nio.charset.StandardCharsets;
 
@@ -15,7 +13,6 @@ import java.nio.charset.StandardCharsets;
  * @since 1.0.0
  */
 @SlotScan("cn.omisheep.authz")
-@Import({AUtils.class})
 public class AuInit {
 
     public static final Logger log = LoggerFactory.getLogger(AuInit.class);

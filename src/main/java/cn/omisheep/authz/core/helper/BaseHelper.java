@@ -5,7 +5,7 @@ import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.oauth.OpenAuthLibrary;
-import cn.omisheep.authz.core.util.AUtils;
+import cn.omisheep.authz.core.AuthzContext;
 import org.springframework.context.ApplicationContext;
 
 /**
@@ -14,7 +14,7 @@ import org.springframework.context.ApplicationContext;
  */
 @SuppressWarnings("rawtypes")
 public abstract class BaseHelper {
-    protected static final ApplicationContext ctx             = AUtils.getCtx();
+    protected static final ApplicationContext ctx             = AuthzContext.getCtx();
     protected static final AuthzProperties    properties      = ctx.getBean(AuthzProperties.class);
     protected static final UserDevicesDict    userDevicesDict = ctx.getBean(UserDevicesDict.class);
     protected static final Cache              cache           = ctx.getBean("authzCache", Cache.class);

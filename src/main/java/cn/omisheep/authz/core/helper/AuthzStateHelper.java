@@ -3,7 +3,7 @@ package cn.omisheep.authz.core.helper;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.tk.AccessToken;
-import cn.omisheep.authz.core.util.AUtils;
+import cn.omisheep.authz.core.AuthzContext;
 import org.springframework.lang.NonNull;
 
 import java.util.List;
@@ -17,7 +17,7 @@ public class AuthzStateHelper extends BaseHelper {
 
     public static boolean isLogin() {
         try {
-            HttpMeta    currentHttpMeta = AUtils.getCurrentHttpMeta();
+            HttpMeta    currentHttpMeta = AuthzContext.getCurrentHttpMeta();
             AccessToken accessToken     = currentHttpMeta.getToken();
             if (accessToken == null) return false;
             UserDevicesDict.UserStatus userStatus = Optional.ofNullable(currentHttpMeta.getUserStatus()).orElseGet(
@@ -44,7 +44,7 @@ public class AuthzStateHelper extends BaseHelper {
     public static boolean hasRoles(@NonNull List<String> roles) {
         try {
             if (roles.isEmpty()) return true;
-            return AUtils.getCurrentHttpMeta().getRoles().containsAll(roles);
+            return AuthzContext.getCurrentHttpMeta().getRoles().containsAll(roles);
         } catch (Exception e) {
             return false;
         }
@@ -53,7 +53,7 @@ public class AuthzStateHelper extends BaseHelper {
     public static boolean hasPermissions(@NonNull List<String> permissions) {
         try {
             if (permissions.isEmpty()) return true;
-            return AUtils.getCurrentHttpMeta().getPermissions().containsAll(permissions);
+            return AuthzContext.getCurrentHttpMeta().getPermissions().containsAll(permissions);
         } catch (Exception e) {
             return false;
         }
@@ -62,7 +62,7 @@ public class AuthzStateHelper extends BaseHelper {
     public static boolean hasScope(@NonNull List<String> scope) {
         try {
             if (scope.isEmpty()) return true;
-            return AUtils.getCurrentHttpMeta().getScope().containsAll(scope);
+            return AuthzContext.getCurrentHttpMeta().getScope().containsAll(scope);
         } catch (Exception e) {
             return false;
         }

@@ -18,14 +18,12 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import static cn.omisheep.authz.core.config.Constants.USER_REQUEST;
 import static cn.omisheep.commons.util.ClassUtils.castValue;
 
 /**
- * 二级同步缓存
+ * 双层同步缓存
  *
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
@@ -34,7 +32,6 @@ import static cn.omisheep.commons.util.ClassUtils.castValue;
 public class L2Cache implements Cache {
 
     private final LoadingCache<String, CacheItem> cache;
-    private final AtomicInteger                   i = new AtomicInteger(0);
 
     private final ConcurrentSkipListSet<String> keyPatterns = new ConcurrentSkipListSet<>();
 
@@ -74,7 +71,7 @@ public class L2Cache implements Cache {
         if (cacheItem != null) return (Set<String>) cacheItem.value;
         Set<String> scan = RedisUtils.scan(pattern);
         if (pattern.startsWith(USER_REQUEST)) return scan;
-        RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.write(pattern, scan));
+        Async.run(() -> RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.write(pattern, scan)));
         if (!scan.isEmpty()) {
             cache.put(pattern, new CacheItem(scan));
             keyPatterns.add(pattern);
@@ -103,40 +100,47 @@ public class L2Cache implements Cache {
         return item.ttl();
     }
 
+    @Override
+    public void expire(@NonNull String key,
+                       long ms) {
+        if (ms == 0 || ms < -1) cache.invalidate(key);
+        CacheItem item = cache.get(key);
+        if (item != null) {
+            item.expiration = TimeUtils.nowTime() + ms;
+            RedisUtils.expire(key, ms);
+        }
+    }
+
     /**
      * @param key     键
      * @param element 值
-     * @param ttl     秒
+     * @param ttl     毫秒
      */
     @Override
     public <E> void set(@NonNull String key,
                         @Nullable E element,
                         long ttl) {
-        if (cache.asMap().get(key) == null) {
-            Async.run(() -> removePatterns(key));
-        }
         setSneaky(key, element, ttl);
-        RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.write(key));
+        Async.run(() -> RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.write(key)));
     }
 
     @Override
     public void set(@NonNull Map<String, ?> elements) {
-        for (String key : elements.keySet()) {
-            if (cache.asMap().get(key) == null) {
-                Async.run(() -> {
-                    List<String> list = KeyMatchUtils.matchPatterns(key, keyPatterns);
-                    list.forEach(keyPatterns::remove);
-                    cache.invalidateAll(list);
-                });
-            }
-        }
         HashMap<String, CacheItem> items = new HashMap<>();
-        elements.forEach((k, v) -> {
-            items.put(k, new CacheItem(v));
-        });
+        elements.forEach((k, v) -> items.put(k, new CacheItem(v)));
         cache.putAll(items);
-        RedisUtils.Obj.set(items);
-        RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.write(items.keySet()));
+
+        Async.run(() -> {
+            removePatterns(elements.keySet());
+            RedisUtils.Obj.set(items);
+            RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.write(items.keySet()));
+        });
+    }
+
+    @Override
+    public <E> void setSneaky(@NonNull String key,
+                              @Nullable E element) {
+        setSneaky(key, element, Cache.INFINITE);
     }
 
     @Override
@@ -144,30 +148,33 @@ public class L2Cache implements Cache {
                               @Nullable E element,
                               long number,
                               @NonNull TimeUnit unit) {
-        setSneaky(key, element, unit.toSeconds(number));
+        setSneaky(key, element, unit.toMillis(number));
     }
 
     @Override
     public <E> void setSneaky(@NonNull String key,
                               @Nullable E element,
-                              long ttl) {
-        if (ttl < -1 || ttl == 0) return;
-        CacheItem item = new CacheItem(ttl, element);
+                              long ms) {
+        if (ms < -1 || ms == 0) return;
         try {
-            if (ttl == Cache.INFINITE) {
-                RedisUtils.Obj.update(key, item);
-            } else {
-                RedisUtils.Obj.set(key, item, ttl);
-            }
+            CacheItem item = new CacheItem(ms, element);
+            Async.run(() -> {
+                removePatterns(key);
+                if (ms == Cache.INFINITE) {
+                    RedisUtils.Obj.update(key, item);
+                } else {
+                    RedisUtils.Obj.set(key, item, ms);
+                }
+            });
+            cache.put(key, item);
         } catch (Exception e) {
             LogUtils.error(e);
-        } finally {
-            cache.put(key, item);
         }
     }
 
     @Override
     public @Nullable Object get(String key) {
+        cache.refresh(key);
         CacheItem item = cache.get(key);
         return item != null ? item.value : null;
     }
@@ -176,7 +183,10 @@ public class L2Cache implements Cache {
     public @NonNull Map<String, Object> get(Set<String> keys) {
         HashMap<String, Object> map = new HashMap<>();
         if (keys.isEmpty()) return map;
-        cache.getAll(keys).forEach((k, v) -> map.put(k, v.value));
+        cache.getAll(keys).forEach((k, v) -> {
+            cache.refresh(k);
+            map.put(k, v.value);
+        });
         return map;
     }
 
@@ -187,6 +197,7 @@ public class L2Cache implements Cache {
         if (keys.isEmpty()) return map;
         Map<String, CacheItem> items = cache.getAll(keys);
         items.forEach((k, v) -> {
+            cache.refresh(k);
             if (v.value == null) {
                 map.put(k, null);
             } else {
@@ -200,9 +211,9 @@ public class L2Cache implements Cache {
     public void del(@NonNull String key) {
         cache.invalidate(key);
         Async.run(() -> {
+            removePatterns(key);
             RedisUtils.Obj.del(key);
             RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.delete(key));
-            removePatterns(key);
         });
     }
 
@@ -215,11 +226,6 @@ public class L2Cache implements Cache {
             RedisUtils.publish(CacheMessage.CHANNEL, CacheMessage.delete(keys));
             removePatterns(keys);
         });
-    }
-
-    @Override
-    public void delSneaky(@NonNull Collection<String> keys) {
-        cache.invalidateAll(keys);
     }
 
     @Override
@@ -238,25 +244,22 @@ public class L2Cache implements Cache {
             cache.put(pattern, new CacheItem(keys));
         } else {
             if (keys == null) return;
-            for (String key : keys) {
-                Object o   = RedisUtils.Obj.get(key);
-                long   ttl = RedisUtils.ttl(key);
-                if (ttl != -2) {
-                    if (cache.asMap().get(key) == null) {
-                        removePatterns(key);
-                    }
-                    cache.put(key, new CacheItem(ttl, o));
-                } else {cache.invalidate(key);}
-            }
+            removePatterns(keys);
+            HashMap<String, CacheItem> map       = new HashMap<>();
+            List<CacheItem>            valueList = RedisUtils.Obj.get(keys);
+            Iterator<CacheItem>        iterator  = valueList.iterator();
+            keys.forEach(k -> {
+                CacheItem next = iterator.next();
+                if (next == null) removePatterns(k);
+                map.put(k, next);
+            });
+            cache.putAll(map);
         }
     }
 
     private void delSync(Set<String> keys) {
         if (keys == null || keys.isEmpty()) return;
-        List<String> collect = keyPatterns.stream().filter(
-                k -> keys.stream().anyMatch(key -> KeyMatchUtils.stringMatch(k, key, false))).collect(
-                Collectors.toList());
-        cache.invalidateAll(collect);
+        removePatterns(keys);
         cache.invalidateAll(keys);
     }
 
@@ -269,8 +272,7 @@ public class L2Cache implements Cache {
     public void reload(@NonNull String... keys) {
         if (keys == null || keys.length == 0) return;
         List<String> list = Arrays.asList(keys);
-        cache.invalidateAll(list);
-        cache.getAll(list);
+        list.forEach(cache::refresh);
     }
 
     @Override

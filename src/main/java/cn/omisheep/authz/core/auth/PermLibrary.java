@@ -3,6 +3,8 @@ package cn.omisheep.authz.core.auth;
 import java.util.Collection;
 
 /**
+ * 为了防止循环调用，PermLibrary里面的所有sql不会被数据权限拦截 @1.2.0
+ *
  * @param <K> userId类型
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0

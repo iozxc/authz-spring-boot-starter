@@ -31,7 +31,7 @@ import cn.omisheep.authz.core.oauth.AuthorizedDeviceDetails;
 import cn.omisheep.authz.core.oauth.ClientDetails;
 import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.authz.core.tk.IssueToken;
-import cn.omisheep.authz.core.util.AUtils;
+import cn.omisheep.authz.core.AuthzContext;
 import cn.omisheep.commons.util.TimeUtils;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -271,7 +271,7 @@ public class AuHelper extends BaseHelper {
      */
     @NonNull
     public static HttpMeta getHttpMeta() throws ThreadWebEnvironmentException {
-        return AUtils.getCurrentHttpMeta();
+        return AuthzContext.getCurrentHttpMeta();
     }
 
     /**
@@ -280,7 +280,7 @@ public class AuHelper extends BaseHelper {
      */
     @NonNull
     public static AccessToken getToken() throws NotLoginException {
-        return AUtils.getCurrentToken();
+        return AuthzContext.getCurrentToken();
     }
 
     /**
@@ -289,7 +289,7 @@ public class AuHelper extends BaseHelper {
      */
     @Nullable
     public static Object getUserId() throws NotLoginException {
-        return AUtils.getCurrentToken().getUserId();
+        return AuthzContext.getCurrentToken().getUserId();
     }
 
     /**
@@ -298,7 +298,7 @@ public class AuHelper extends BaseHelper {
      */
     @Nullable
     public static String getDeviceType() throws NotLoginException {
-        return AUtils.getCurrentToken().getDeviceType();
+        return AuthzContext.getCurrentToken().getDeviceType();
     }
 
     /**
@@ -307,7 +307,7 @@ public class AuHelper extends BaseHelper {
      */
     @Nullable
     public static String getDeviceId() throws NotLoginException {
-        return AUtils.getCurrentToken().getDeviceId();
+        return AuthzContext.getCurrentToken().getDeviceId();
     }
 
     /**
@@ -316,7 +316,7 @@ public class AuHelper extends BaseHelper {
      */
     @Nullable
     public static String getClientId() throws NotLoginException {
-        return AUtils.getCurrentToken().getClientId();
+        return AuthzContext.getCurrentToken().getClientId();
     }
 
     /**

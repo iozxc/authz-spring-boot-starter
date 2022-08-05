@@ -4,6 +4,7 @@ import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.tk.AccessToken;
+import cn.omisheep.commons.util.StringUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -31,10 +32,23 @@ public class LogUtils {
     private static       LogLevel                   logLevel;
     private static final Marker                     MARKER = MarkerFactory.getMarker("cn.omisheep.authz");
     private static final ThreadLocal<List<LogMeta>> logs   = ThreadLocal.withInitial(ArrayList::new);
+    private static final String                     DEBUG  = "[DEBUG] {}";
 
     public static void info(String msg,
                             Object... args) {
         if (logLevel.ordinal() <= LogLevel.INFO.ordinal() && log.isInfoEnabled(MARKER)) log.info(MARKER, msg, args);
+    }
+
+    public static void warn(String msg,
+                            Object... args) {
+        if (logLevel.ordinal() <= LogLevel.WARN.ordinal() && log.isWarnEnabled(MARKER)) log.warn(MARKER, msg, args);
+    }
+
+    public static void debug(String msg,
+                             Object... args) {
+        if (logLevel.ordinal() <= LogLevel.DEBUG.ordinal() && log.isInfoEnabled(MARKER)) {
+            log.info(MARKER, DEBUG, StringUtils.format(msg, args));
+        }
     }
 
     public static void error(String msg,
@@ -56,16 +70,6 @@ public class LogUtils {
             log.error(MARKER, msg,
                       throwable);
         }
-    }
-
-    public static void warn(String msg,
-                            Object... args) {
-        if (logLevel.ordinal() <= LogLevel.WARN.ordinal() && log.isWarnEnabled(MARKER)) log.warn(MARKER, msg, args);
-    }
-
-    public static void debug(String msg,
-                             Object... args) {
-        if (logLevel.ordinal() <= LogLevel.DEBUG.ordinal() && log.isDebugEnabled(MARKER)) log.debug(MARKER, msg, args);
     }
 
     public static void push(String formatMsg,

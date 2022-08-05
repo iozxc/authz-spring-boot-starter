@@ -81,6 +81,14 @@ public class L1Cache implements cn.omisheep.authz.core.cache.Cache {
     }
 
     @Override
+    public void expire(@NonNull String key,
+                       long ms) {
+        if (ms == 0 || ms < -1) cache.invalidate(key);
+        CacheItem item = cache.getIfPresent(key);
+        if (item != null) item.expiration = TimeUtils.nowTime() + ms;
+    }
+
+    @Override
     public Object get(String key) {
         CacheItem<?> item = cache.getIfPresent(key);
         return item == null ? null : item.value;

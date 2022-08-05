@@ -4,7 +4,7 @@ import cn.omisheep.authz.AuHelper;
 import cn.omisheep.authz.core.*;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.tk.*;
-import cn.omisheep.authz.core.util.AUtils;
+import cn.omisheep.authz.core.AuthzContext;
 import cn.omisheep.web.utils.HttpUtils;
 import io.jsonwebtoken.ExpiredJwtException;
 import org.apache.commons.lang.ObjectUtils;
@@ -54,7 +54,7 @@ public class AuthzGranterHelper extends BaseHelper {
                                 boolean resp) {
         if (tokenPair == null) return false;
         try {
-            HttpMeta            httpMeta    = AUtils.getCurrentHttpMeta();
+            HttpMeta            httpMeta    = AuthzContext.getCurrentHttpMeta();
             AccessToken         accessToken = tokenPair.getAccessToken();
             HttpServletResponse response    = HttpUtils.getCurrentResponse();
             if (response != null) {
@@ -110,7 +110,7 @@ public class AuthzGranterHelper extends BaseHelper {
         if (userId == null) {
             TokenHelper.clearCookie(HttpUtils.getCurrentResponse());
         } else {
-            AccessToken token = AUtils.getCurrentToken();
+            AccessToken token = AuthzContext.getCurrentToken();
             if (token == null) return;
             if (ObjectUtils.equals(token.getUserId(), userId)) TokenHelper.clearCookie(HttpUtils.getCurrentResponse());
         }
@@ -118,7 +118,7 @@ public class AuthzGranterHelper extends BaseHelper {
 
     public static void clearCookie(Object userId,
                                    String deviceType) {
-        AccessToken token = AUtils.getCurrentToken();
+        AccessToken token = AuthzContext.getCurrentToken();
         if (token == null) return;
         if (userId == null) userId = token.getUserId();
         if (ObjectUtils.equals(token.getUserId(), userId) && StringUtils.equals(token.getDeviceType(),
@@ -128,7 +128,7 @@ public class AuthzGranterHelper extends BaseHelper {
     public static void clearCookie(Object userId,
                                    String deviceType,
                                    String deviceId) {
-        AccessToken token = AUtils.getCurrentToken();
+        AccessToken token = AuthzContext.getCurrentToken();
         if (token == null) return;
         if (userId == null) userId = token.getUserId();
         if (ObjectUtils.equals(token.getUserId(), userId) && StringUtils.equals(token.getDeviceType(),

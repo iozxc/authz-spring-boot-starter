@@ -86,8 +86,10 @@ public class HttpMeta extends BaseHelper {
     @NonNull
     public Set<String> getRoles() {
         if (userId == null) return new HashSet<>();
-        roles = Optional.ofNullable(roles)
-                .orElse(Optional.ofNullable(permLibrary.getRolesByUserId(userId)).orElse(new HashSet<>()));
+        if (roles == null) {
+            Collection<String> r = permLibrary.getRolesByUserId(userId);
+            if (r instanceof Set) {roles = (Set<String>) r;} else roles = new HashSet<>(r);
+        }
         return roles;
     }
 
@@ -97,7 +99,7 @@ public class HttpMeta extends BaseHelper {
         permissions = Optional.ofNullable(permissions).orElseGet(() -> {
             HashSet<String> perms = new HashSet<>();
             for (String role : Optional.ofNullable(getRoles()).orElse(new HashSet<>())) {
-                Set<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
+                Collection<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
                 if (permissionsByRole != null) perms.addAll(permissionsByRole);
             }
             return perms;

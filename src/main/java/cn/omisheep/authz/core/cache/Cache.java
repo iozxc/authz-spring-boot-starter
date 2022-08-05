@@ -18,6 +18,8 @@ import static cn.omisheep.commons.util.ClassUtils.castValue;
 
 
 /**
+ * 根据配置实现不同的缓存
+ *
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
@@ -32,9 +34,9 @@ public interface Cache {
 
     class CacheItem<E> {
         // 到期的时间，用毫秒表示
-        protected final long   expiration;
+        protected long   expiration;
         @Getter
-        protected       Object value;
+        protected Object value;
 
         public CacheItem() {
             this.expiration = INFINITE;
@@ -160,14 +162,23 @@ public interface Cache {
     long ttl(@NonNull String key);
 
     /**
+     * 设置key的过期时间
+     *
+     * @param key 键
+     * @param ms  秒
+     */
+    void expire(@NonNull String key,
+                long ms);
+
+    /**
      * @param key     键
      * @param element 值
-     * @param ttl     秒，为-1时将继承之前的key的ttl ,  {@link Cache#INFINITE} 为永久存在
+     * @param ms      毫秒，为-1时将继承之前的key的ttl ,  {@link Cache#INFINITE} 为永久存在
      * @param <E>     值的类型
      */
     <E> void set(@NonNull String key,
                  @Nullable E element,
-                 long ttl);
+                 long ms);
 
     /**
      * 批量插入，时间为永久
@@ -179,13 +190,13 @@ public interface Cache {
     /**
      * @param key     键
      * @param element 值
-     * @param ttl     秒，为-1时将继承之前的key的ttl ,  {@link Cache#INFINITE} 为永久存在
+     * @param ms      毫秒，为-1时将继承之前的key的ttl ,  {@link Cache#INFINITE} 为永久存在
      * @param <E>     值的类型
      */
     default <E> void setSneaky(@NonNull String key,
                                @Nullable E element,
-                               long ttl) {
-        set(key, element, ttl);
+                               long ms) {
+        set(key, element, ms);
     }
 
     /**
@@ -211,7 +222,7 @@ public interface Cache {
                          @Nullable E element,
                          long number,
                          @NonNull TimeUnit unit) {
-        set(key, element, unit.toSeconds(number));
+        set(key, element, unit.toMillis(number));
     }
 
     /**
@@ -225,7 +236,17 @@ public interface Cache {
                                @Nullable E element,
                                long number,
                                @NonNull TimeUnit unit) {
-        set(key, element, unit.toSeconds(number));
+        set(key, element, unit.toMillis(number));
+    }
+
+    /**
+     * @param key     键
+     * @param element 值
+     * @param <E>     值的类型
+     */
+    default <E> void setSneaky(@NonNull String key,
+                               @Nullable E element) {
+        set(key, element, INFINITE);
     }
 
     /**
@@ -237,7 +258,7 @@ public interface Cache {
     default <E> void set(@NonNull String key,
                          @Nullable E element,
                          @NonNull String ttl) {
-        set(key, element, TimeUtils.parseTimeValueToSecond(ttl));
+        set(key, element, TimeUtils.parseTimeValue(ttl));
     }
 
     /**

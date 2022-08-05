@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core.util;
 
+import cn.omisheep.authz.core.AuthzContext;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.msg.Message;
 import cn.omisheep.commons.util.Assert;
@@ -255,9 +256,9 @@ public class RedisUtils {
     private static final int                           SCAN_COUNT;
 
     static {
-        redisTemplate = AUtils.getBean("authzRedisTemplate", RedisTemplate.class);
-        RedisProperties properties      = AUtils.getBean(RedisProperties.class);
-        AuthzProperties authzProperties = AUtils.getBean(AuthzProperties.class);
+        redisTemplate = AuthzContext.getBean("authzRedisTemplate", RedisTemplate.class);
+        RedisProperties properties      = AuthzContext.getBean(RedisProperties.class);
+        AuthzProperties authzProperties = AuthzContext.getBean(AuthzProperties.class);
         SCAN_COUNT = authzProperties.getCache().getRedisScanCount();
         Duration timeout = properties.getTimeout();
 
