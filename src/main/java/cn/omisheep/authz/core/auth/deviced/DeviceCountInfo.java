@@ -12,10 +12,12 @@ import java.util.Set;
 @Data
 @Accessors(chain = true)
 public class DeviceCountInfo {
+
     private Set<String> types;
     private int         total;
 
     public int getTotal() {
         return Math.max(1, total);
     }
+
 }

@@ -18,6 +18,10 @@ import java.util.Map;
  */
 public class ArgsHandler {
 
+    private ArgsHandler() {
+        throw new UnsupportedOperationException();
+    }
+
     public static List<Class<?>> argParameterList(String argsName) {
         ArgsMeta meta = PermissionDict.getArgs().get(argsName);
         if (meta == null) return null;
@@ -25,7 +29,7 @@ public class ArgsHandler {
     }
 
     public static Object handle(String argName,
-                                    Object... otherArgs) {
+                                Object... otherArgs) {
         ArgsMeta meta = PermissionDict.getArgs().get(argName);
         if (meta == null) {
             LogUtils.error("arg {} is null", argName);

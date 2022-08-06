@@ -11,6 +11,7 @@ import cn.omisheep.authz.core.util.LogUtils;
 public class Pelcron {
 
     private Pelcron() {
+        throw new UnsupportedOperationException();
     }
 
     public static void GC() {

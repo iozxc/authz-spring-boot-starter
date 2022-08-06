@@ -38,4 +38,5 @@ public class DefaultRequestDetails extends AuthzMap implements RequestDetails {
         setValue(IP, ip);
         return this;
     }
+
 }

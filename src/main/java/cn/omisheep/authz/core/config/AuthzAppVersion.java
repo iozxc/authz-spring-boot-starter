@@ -36,6 +36,10 @@ import static cn.omisheep.authz.core.config.Constants.CONNECT_PREFIX;
  */
 public class AuthzAppVersion {
 
+    private AuthzAppVersion() {
+        throw new UnsupportedOperationException();
+    }
+
     private static       boolean                  loading      = false;
     private static final AtomicInteger            version      = new AtomicInteger(0);
     private static final ArrayList<AuthzModifier> changeLog    = new ArrayList<>();

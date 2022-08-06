@@ -15,6 +15,10 @@ import java.util.Optional;
  */
 public class AuthzStateHelper extends BaseHelper {
 
+    private AuthzStateHelper() {
+        throw new UnsupportedOperationException();
+    }
+
     public static boolean isLogin() {
         try {
             HttpMeta    currentHttpMeta = AuthzContext.getCurrentHttpMeta();

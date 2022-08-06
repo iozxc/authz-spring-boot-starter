@@ -25,6 +25,7 @@ public class AuthzRSAManager {
     private static String time;
 
     private AuthzRSAManager() {
+        throw new UnsupportedOperationException();
     }
 
     public static void setTime(String time) {

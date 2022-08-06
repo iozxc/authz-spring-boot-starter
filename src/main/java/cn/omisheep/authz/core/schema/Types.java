@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public class Types {
+
     private static final Set<String>                  baseTypes = Sets.newHashSet(
             "int", "date", "string", "double", "float", "boolean", "byte", "object", "long", "date-time", "__file",
             "biginteger", "bigdecimal", "uuid");

@@ -21,6 +21,10 @@ import javax.servlet.http.HttpServletResponse;
 @SuppressWarnings("all")
 public class AuthzGranterHelper extends BaseHelper {
 
+    private AuthzGranterHelper() {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * @param userId     用户id
      * @param deviceType 设备系统类型
@@ -185,10 +189,6 @@ public class AuthzGranterHelper extends BaseHelper {
                               @Nullable String deviceId) {
         userDevicesDict.removeDevice(userId, deviceType, deviceId);
         clearCookie(userId, deviceType, deviceId);
-    }
-
-    private AuthzGranterHelper() {
-        throw new UnsupportedOperationException();
     }
 
 }

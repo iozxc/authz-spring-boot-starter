@@ -13,6 +13,11 @@ import java.util.function.Predicate;
  * @since 1.2.0
  */
 public class ModelParser {
+
+    private ModelParser() {
+        throw new UnsupportedOperationException();
+    }
+
     private static final TypeResolver   typeResolver   = new TypeResolver();
     private static final MemberResolver memberResolver = new MemberResolver(typeResolver);
 

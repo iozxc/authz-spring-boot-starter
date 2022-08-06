@@ -10,4 +10,5 @@ public class RSADecryptor implements Decryptor {
     public String decrypt(String encryptText) {
         return AuthzRSAManager.decrypt(encryptText);
     }
+
 }

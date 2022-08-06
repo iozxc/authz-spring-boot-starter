@@ -13,6 +13,11 @@ import java.util.Map;
  * @since 1.1.1
  */
 public class CallbackInit {
+
+    private CallbackInit() {
+        throw new UnsupportedOperationException();
+    }
+
     private static ApplicationContext app;
 
     public static void rateLimitInit() {
