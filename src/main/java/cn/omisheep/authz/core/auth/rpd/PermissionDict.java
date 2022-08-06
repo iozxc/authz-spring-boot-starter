@@ -10,6 +10,7 @@ import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.schema.Model;
+import cn.omisheep.authz.core.schema.ModelParser;
 import cn.omisheep.authz.core.util.RedisUtils;
 import cn.omisheep.authz.core.util.ValueMatcher;
 import cn.omisheep.authz.support.util.IPRange;
@@ -81,10 +82,8 @@ public class PermissionDict {
     private static final Map<String, Map<String, IPRangeMeta>> _ipRangeMeta = new HashMap<>();
 
     /**
-     * 资源模版
+     * 资源模型
      */
-    private static final Map<String, Map<String, String>> _authzResourcesNameAndTemplate = new HashMap<>();
-
     private static final Map<String, Model> _authzResourcesModel = new HashMap<>();
 
     /**
@@ -110,9 +109,10 @@ public class PermissionDict {
     @Getter
     private static final Map<String, Map<String, Map<String, ParamMetadata>>> paramPermission          = Collections.unmodifiableMap(
             _authzParamMetadata);
+
     @Getter
-    private static final Map<String, Map<String, String>>                     resourcesNameAndTemplate = Collections.unmodifiableMap(
-            _authzResourcesNameAndTemplate);
+    private static final Map<String, Model>                                   authzResourcesModel      = Collections.unmodifiableMap(
+            _authzResourcesModel);
     @Getter
     private static final Map<String, List<DataPermRolesMeta>>                 dataPermission           = Collections.unmodifiableMap(
             _dataPermMetadata);
@@ -419,7 +419,7 @@ public class PermissionDict {
                 }
                 return Result.FAIL;
             }
-            if (_authzResourcesNameAndTemplate.get(className) == null) return Result.FAIL;
+            if (authzResourcesModel.get(className) == null) return Result.FAIL;
             if (authzModifier.getTarget() == AuthzModifier.Target.DATA_ROW) {
                 switch (authzModifier.getOperate()) {
                     case ADD:
@@ -544,7 +544,7 @@ public class PermissionDict {
         return permSeparator;
     }
 
-    private static boolean isInit     = false;
+    private static boolean isInit = false;
 
     private PermissionDict() {
         throw new UnsupportedOperationException();
@@ -556,12 +556,11 @@ public class PermissionDict {
                                 HashMap<String, ArgsMeta> args) {
         for (String authzResourcesName : authzResourcesNames) {
             try {
-                Map<String, String> fieldMap = _authzResourcesNameAndTemplate.computeIfAbsent(authzResourcesName,
-                                                                                              r -> new HashMap<>());
-                fieldMap.putAll(ArgsHandler.parseTypeForTemplate(authzResourcesName));
+                _authzResourcesModel.put(authzResourcesName, ModelParser.parse(Class.forName(authzResourcesName)));
             } catch (Exception ignored) {
             }
         }
+
         _fieldMetadata.putAll(fieldMetadata);
         _dataPermMetadata.putAll(map);
         _argsMetadata.putAll(args);

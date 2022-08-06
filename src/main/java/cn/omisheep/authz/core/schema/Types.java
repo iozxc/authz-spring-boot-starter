@@ -17,7 +17,7 @@ public class Types {
 
     private static final Set<String>                  baseTypes = Sets.newHashSet(
             "int", "date", "string", "double", "float", "boolean", "byte", "object", "long", "date-time", "__file",
-            "biginteger", "bigdecimal", "uuid");
+            "biginteger", "bigdecimal", "uuid", "void");
     private static final ImmutableMap<Object, Object> typeNameLookup;
 
     private Types() {
@@ -74,6 +74,7 @@ public class Types {
                 .put(Currency.class, "string")
                 .put(UUID.class, "uuid")
                 .put(MultipartFile.class, "__file")
+                .put(Void.TYPE, "void")
                 .build();
     }
 

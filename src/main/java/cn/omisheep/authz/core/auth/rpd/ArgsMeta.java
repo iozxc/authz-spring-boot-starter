@@ -1,6 +1,9 @@
 package cn.omisheep.authz.core.auth.rpd;
 
+import cn.omisheep.authz.core.schema.Model;
+import cn.omisheep.authz.core.schema.ModelParser;
 import cn.omisheep.authz.core.util.LogUtils;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.common.base.Objects;
 import lombok.Getter;
@@ -10,29 +13,32 @@ import lombok.experimental.Accessors;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Getter
 @Accessors(chain = true)
 public class ArgsMeta {
-    final Class<?>            type;
-    final Method              method;
+    @JsonIgnore
+    final Class<?>       type;
+    @JsonIgnore
+    final Method         method;
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    final List<Class<?>>      parameterList;
-    final Class<?>            returnType;
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    final Map<String, String> returnTypeTemplate;
+    final List<Class<?>> parameters;
+    @JsonIgnore
+    final Class<?>       returnType;
+    final Model          model;
+    final String         ref;
     @Setter
     String description = "";
 
     private ArgsMeta(Class<?> type,
                      Method method) {
-        this.type               = type;
-        this.method             = method;
-        this.returnType         = method.getReturnType();
-        this.parameterList      = Arrays.stream(method.getParameterTypes()).collect(Collectors.toList());
-        this.returnTypeTemplate = ArgsHandler.parseTypeForTemplate(this.returnType.getTypeName());
+        this.type       = type;
+        this.method     = method;
+        this.returnType = method.getReturnType();
+        this.parameters = Arrays.stream(method.getParameterTypes()).collect(Collectors.toList());
+        this.model      = ModelParser.parse(method.getReturnType());
+        this.ref        = method.toString();
     }
 
     public String getMethod() {

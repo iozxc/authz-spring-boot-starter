@@ -25,7 +25,7 @@ public class ArgsHandler {
     public static List<Class<?>> argParameterList(String argsName) {
         ArgsMeta meta = PermissionDict.getArgs().get(argsName);
         if (meta == null) return null;
-        return meta.parameterList;
+        return meta.parameters;
     }
 
     public static Object handle(String argName,

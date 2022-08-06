@@ -109,6 +109,9 @@ public class ModelParser {
                 }
             }
         } else if (mainType.isInstanceOf(Collection.class)) {
+            if (mainType.getTypeParameters().size() == 0) {
+                return modelMember;
+            }
             ResolvedType resolvedType = mainType.getTypeParameters().get(0);
             if (classStack.find(resolvedType.getErasedType()) != null) {
                 return modelMember;
@@ -183,10 +186,11 @@ public class ModelParser {
 
     private static ModelCollection parseModelCollection(ResolvedType mainType,
                                                         Predicate<Field> filter) {
-        ModelCollection modelCollection     = new ModelCollection(ResolvedTypes.simpleTypeName(mainType));
-        ResolvedType    resolvedType        = mainType.getTypeParameters().get(0);
-        Class<?>        parameterErasedType = resolvedType.getErasedType();
-        ClassStack      classStack          = new ClassStack(parameterErasedType);
+        ModelCollection modelCollection = new ModelCollection(ResolvedTypes.simpleTypeName(mainType));
+        if (mainType.getTypeParameters().size() == 0) return modelCollection;
+        ResolvedType resolvedType        = mainType.getTypeParameters().get(0);
+        Class<?>     parameterErasedType = resolvedType.getErasedType();
+        ClassStack   classStack          = new ClassStack(parameterErasedType);
         modelCollection.getItem().setTypeName(ResolvedTypes.simpleTypeName(resolvedType));
         if (Types.isBaseType(resolvedType)) {
             return modelCollection;
@@ -234,7 +238,10 @@ public class ModelParser {
 
     private static Model parseModel(ResolvedType mainType,
                                     Predicate<Field> filter) {
-        if (Types.isBaseType(mainType)) {
+
+        if (Types.isBaseType(mainType) || Types.isVoid(mainType) || mainType.getErasedType()
+                .getTypeName()
+                .startsWith("java.")) {
             return new Model(ResolvedTypes.simpleTypeName(mainType));
         } else {
             if (mainType.isArray()) {
