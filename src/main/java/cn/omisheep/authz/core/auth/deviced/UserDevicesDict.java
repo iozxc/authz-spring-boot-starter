@@ -74,9 +74,12 @@ public interface UserDevicesDict {
 
     // =========================   查找   ========================= //
 
+    boolean isLogin(Object userId,
+                    String id);
+
     DeviceDetails getDevice(Object userId,
-                     String deviceType,
-                     String deviceId);
+                            String deviceType,
+                            String deviceId);
 
     List<Object> listUserId();
 

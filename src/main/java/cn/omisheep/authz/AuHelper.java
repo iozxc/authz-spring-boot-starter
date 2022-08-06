@@ -219,6 +219,7 @@ public class AuHelper extends BaseHelper {
         return AuthzDeviceHelper.getDeviceByUserIdAndDeviceTypeAndDeviceId(userId, deviceType, deviceId);
     }
 
+
     /**
      * 当前访问用户的所有设备
      *
@@ -288,6 +289,27 @@ public class AuHelper extends BaseHelper {
      */
     public static boolean isLogin() {
         return AuthzStateHelper.isLogin();
+    }
+
+    /**
+     * @param id 登录标识
+     * @return 当前请求是否登录 true为登录、false为未登录
+     */
+    public static boolean isLoginById(String id) {
+        try {
+            return AuthzStateHelper.isLogin(getUserId(), id);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * @param id 登录标识
+     * @return 当前请求是否登录 true为登录、false为未登录
+     */
+    public static boolean isLoginById(Object userId,
+                                      String id) {
+        return AuthzStateHelper.isLogin(userId, id);
     }
 
     /**

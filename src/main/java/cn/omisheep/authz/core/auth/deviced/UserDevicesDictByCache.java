@@ -158,6 +158,12 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     @Override
+    public boolean isLogin(Object userId,
+                           String id) {
+        return !cache.notKey(key(userId, id));
+    }
+
+    @Override
     public void removeDevice(Object userId,
                              String deviceType,
                              String deviceId) {

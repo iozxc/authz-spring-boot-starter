@@ -19,6 +19,15 @@ public class AuthzStateHelper extends BaseHelper {
         throw new UnsupportedOperationException();
     }
 
+    public static boolean isLogin(Object userId,
+                                  String id) {
+        try {
+            return userDevicesDict.isLogin(userId, id);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public static boolean isLogin() {
         try {
             HttpMeta    currentHttpMeta = AuthzContext.getCurrentHttpMeta();
@@ -35,8 +44,6 @@ public class AuthzStateHelper extends BaseHelper {
                 case LOGIN_EXCEPTION:
                 case ACCESS_TOKEN_OVERDUE:
                     return false;
-                case SUCCESS:
-                    return true;
                 default:
                     return true;
             }
