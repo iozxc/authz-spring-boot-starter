@@ -17,6 +17,7 @@ import org.apache.commons.lang.StringUtils;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.UserStatus.*;
@@ -128,13 +129,19 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     @Override
-    public void removeDeviceByTid(Object userId,
-                                  String tid) {
+    public void removeAccessTokenByTid(Object userId,
+                                       String tid) {
         String key    = key(userId, tid);
         Device device = cache.get(key, Device.class);
         if (device == null) return;
         device.setAccessTokenId(null);
         cache.set(key, device);
+    }
+
+    @Override
+    public void removeDeviceById(Object userId,
+                                 String id) {
+        cache.del(key(userId, id));
     }
 
     @Override
@@ -165,14 +172,25 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     @Override
-    public Device getDevice(Object userId,
-                            String deviceType,
-                            String deviceId) {
+    public DeviceDetails getDevice(Object userId,
+                                   String deviceType,
+                                   String deviceId) {
         Set<String> keys = cache.keys(key(userId, Constants.WILDCARD));
         if (keys.isEmpty()) return null;
         Map<String, Device> deviceMap = cache.get(keys, Device.class);
-        return deviceMap.values().stream()
-                .filter(device -> equalsDeviceByTypeAndId(device, deviceType, deviceId)).findAny().orElse(null);
+        Optional<Map.Entry<String, Device>> _item = deviceMap.entrySet().stream()
+                .filter(d -> equalsDeviceByTypeAndId(d.getValue(), deviceType, deviceId))
+                .findAny();
+        if (!_item.isPresent()) {
+            return null;
+        } else {
+            Supplier<RequestDetails> requestDetailsSupplier = () -> {
+                String[] split = _item.get().getKey().split(Constants.SEPARATOR);
+                return cache.get(requestKey(userId, split[split.length - 1]),
+                                 RequestDetails.class);
+            };
+            return new DeviceDetails().setDevice(_item.get().getValue()).setSupplier(requestDetailsSupplier);
+        }
     }
 
     @Override
@@ -183,22 +201,21 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     @Override
-    public List<Device> listDevicesByUserId(Object userId) {
+    public List<DeviceDetails> listDevicesByUserId(Object userId) {
         Set<String> keys = cache.keys(key(userId, Constants.WILDCARD));
         if (keys.isEmpty()) return new ArrayList<>(0);
-        return new ArrayList<>(cache.get(keys, Device.class).values());
-    }
+        Map<String, Device> deviceMap = cache.get(keys, Device.class);
 
-    @Override
-    public List<Object> listActiveUsers(long ms) {
-        long now = TimeUtils.nowTime();
-        Set<String> rKeys = cache.keys(
-                requestKey(Constants.WILDCARD, Constants.WILDCARD));
-        Map<String, RequestDetails> requestDetailsMap = cache.get(rKeys, RequestDetails.class);
-        if (requestDetailsMap.isEmpty()) return new ArrayList<>(0);
-        return requestDetailsMap.entrySet().stream()
-                .filter(e -> (now - e.getValue().getLastRequestTimeLong()) < ms)
-                .map(e -> e.getKey().split(Constants.SEPARATOR)[4]).distinct().collect(Collectors.toList());
+        ArrayList<DeviceDetails> deviceDetails = new ArrayList<>();
+        deviceMap.forEach((k, v) -> {
+            Supplier<RequestDetails> requestDetailsSupplier = () -> {
+                String[] split = k.split(Constants.SEPARATOR);
+                return cache.get(requestKey(userId, split[split.length - 1]),
+                                 RequestDetails.class);
+            };
+            deviceDetails.add(new DeviceDetails().setDevice(v).setSupplier(requestDetailsSupplier));
+        });
+        return deviceDetails;
     }
 
     @Override
@@ -227,10 +244,9 @@ public class UserDevicesDictByCache implements UserDevicesDict {
                 .filter(e -> (now - e.getValue().getLastRequestTime().getTime()) < ms)
                 .map(e -> {
                     String[] split = e.getKey().split(Constants.SEPARATOR);
-                    return new DeviceDetails().setIssueTokenId(split[5])
+                    return new DeviceDetails().setId(split[5])
                             .setUserId(split[4]).setRequest(e.getValue());
                 }).collect(Collectors.toList());
-
     }
 
     @Override

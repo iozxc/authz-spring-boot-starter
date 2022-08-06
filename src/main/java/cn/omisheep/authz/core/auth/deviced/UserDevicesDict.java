@@ -58,8 +58,11 @@ public interface UserDevicesDict {
 
     // =========================   登出   ========================= //
 
-    void removeDeviceByTid(Object userId,
-                           String tid);
+    void removeAccessTokenByTid(Object userId,
+                                String tid);
+
+    void removeDeviceById(Object userId,
+                          String tid);
 
     void removeDevice(Object userId,
                       String deviceType,
@@ -71,23 +74,15 @@ public interface UserDevicesDict {
 
     // =========================   查找   ========================= //
 
-    Device getDevice(Object userId,
+    DeviceDetails getDevice(Object userId,
                      String deviceType,
                      String deviceId);
 
     List<Object> listUserId();
 
-    List<Device> listDevicesByUserId(Object userId);
+    List<DeviceDetails> listDevicesByUserId(Object userId);
 
     // =========================   活跃用户   ========================= //
-
-    /**
-     * 所有【在线/活跃】用户id
-     *
-     * @param ms 毫秒数
-     * @return 用户id数组
-     */
-    List<Object> listActiveUsers(long ms);
 
     /**
      * 所有用户【在线/活跃】 设备
@@ -104,7 +99,7 @@ public interface UserDevicesDict {
      * @return 【在线/活跃】设备数组
      */
     List<DeviceDetails> listActiveUserDevices(Object userId,
-                                       long ms);
+                                              long ms);
 
     // =========================   other   ========================= //
 

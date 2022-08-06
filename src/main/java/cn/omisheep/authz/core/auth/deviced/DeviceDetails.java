@@ -2,10 +2,13 @@ package cn.omisheep.authz.core.auth.deviced;
 
 import cn.omisheep.authz.core.tk.GrantType;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.Getter;
 import lombok.experimental.Accessors;
 
 import java.util.Date;
+import java.util.function.Supplier;
 
 /**
  * 仅用于包装数据返回给用户
@@ -18,18 +21,64 @@ import java.util.Date;
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class DeviceDetails {
 
-    private String issueTokenId;
-    private Date   lastRequestTime;
-    private String lastRequestIp;
-    private String deviceType;
-    private String deviceId;
+    /**
+     * 用户id
+     */
     private Object userId;
 
-    private String    clientId;
-    private String    scope;
+    /**
+     * 最后一次请求时间
+     */
+    private Date lastRequestTime;
+
+    /**
+     * 最后一次请求ip
+     */
+    private String lastRequestIp;
+
+    /**
+     * 设备类型
+     */
+    private String deviceType;
+
+    /**
+     * 设备id
+     */
+    private String deviceId;
+
+
+    /**
+     * 客户端id
+     */
+    private String clientId;
+
+    /**
+     * 授权范围
+     */
+    private String scope;
+
+    /**
+     * 授权类型
+     */
     private GrantType grantType;
 
+    /**
+     * 过期时间
+     */
     private Date expires;
+
+    /**
+     * 登录标识
+     */
+    private String Id;
+
+    /**
+     * 是否登录
+     */
+    private boolean isLogin;
+
+    @Getter(AccessLevel.PRIVATE)
+    private Supplier<RequestDetails> supplier;
 
     public DeviceDetails setDevice(Device device) {
         this.deviceType = device.getDeviceType();
@@ -42,11 +91,28 @@ public class DeviceDetails {
     }
 
     public DeviceDetails setRequest(RequestDetails request) {
-        this.lastRequestTime = request.getLastRequestTime();
-        this.lastRequestIp   = request.getIp();
-        this.deviceType      = request.getDeviceType();
-        this.deviceId        = request.getDeviceId();
+        _setRequest(request);
+        this.deviceType = request.getDeviceType();
+        this.deviceId   = request.getDeviceId();
         return this;
     }
 
+    private void _setRequest(RequestDetails request) {
+        this.lastRequestTime = request.getLastRequestTime();
+        this.lastRequestIp   = request.getIp();
+    }
+
+    public Date getLastRequestTime() {
+        if (lastRequestTime == null) {
+            _setRequest(supplier.get());
+        }
+        return lastRequestTime;
+    }
+
+    public String getLastRequestIp() {
+        if (lastRequestIp == null) {
+            _setRequest(supplier.get());
+        }
+        return lastRequestIp;
+    }
 }

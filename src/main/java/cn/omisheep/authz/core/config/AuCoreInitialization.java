@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core.config;
 
+import cn.omisheep.authz.core.AuthzContext;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.AuthzVersion;
 import cn.omisheep.authz.core.auth.DefaultPermLibrary;
@@ -12,7 +13,7 @@ import cn.omisheep.authz.core.codec.AuthzRSAManager;
 import cn.omisheep.authz.core.msg.Message;
 import cn.omisheep.authz.core.oauth.OpenAuthDict;
 import cn.omisheep.authz.core.oauth.OpenAuthLibrary;
-import cn.omisheep.authz.core.AuthzContext;
+import cn.omisheep.authz.core.schema.ModelParser;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.TaskBuilder;
 import lombok.SneakyThrows;
@@ -100,6 +101,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
         }
 
         openAuthLibrary.init();
+        AuthzAppVersion.userIdType = ModelParser.getUserIdType(permLibrary);
 
         AuInit.log.info("Started Authz Message id: {}", Message.uuid);
 

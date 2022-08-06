@@ -9,10 +9,10 @@ package cn.omisheep.authz;
 /_/    \_\\__,_| \__||_| |_|/___|
  */
 
+import cn.omisheep.authz.core.AuthzContext;
 import cn.omisheep.authz.core.NotLoginException;
 import cn.omisheep.authz.core.RefreshTokenExpiredException;
 import cn.omisheep.authz.core.ThreadWebEnvironmentException;
-import cn.omisheep.authz.core.auth.deviced.Device;
 import cn.omisheep.authz.core.auth.deviced.DeviceCountInfo;
 import cn.omisheep.authz.core.auth.deviced.DeviceDetails;
 import cn.omisheep.authz.core.auth.ipf.Blacklist;
@@ -29,14 +29,12 @@ import cn.omisheep.authz.core.oauth.AuthorizedDeviceDetails;
 import cn.omisheep.authz.core.oauth.ClientDetails;
 import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.authz.core.tk.IssueToken;
-import cn.omisheep.authz.core.AuthzContext;
 import cn.omisheep.commons.util.TimeUtils;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static cn.omisheep.authz.core.AuthzManager.modify;
 
@@ -58,7 +56,7 @@ public class AuHelper extends BaseHelper {
      * 登录成功之后会默认返回Cookie，过期时间为AccessToken的过期时间，若不需要，请自行删除
      *
      * @param userId 用户id - 不为null
-     * @return 授权后的tokenPair(accessToken以及refreshToken)，返回空则登录失败
+     * @return 授权后的IssueToken(accessToken以及refreshToken)，返回空则登录失败
      */
     @Nullable
     public static IssueToken login(@NonNull Object userId) {
@@ -71,7 +69,7 @@ public class AuHelper extends BaseHelper {
      *
      * @param userId     用户id - 不为null
      * @param deviceType 设备系统类型 - 不为null 默认为unknown
-     * @return 授权后的tokenPair(accessToken以及refreshToken)，返回空则登录失败
+     * @return 授权后的IssueToken(accessToken以及refreshToken)，返回空则登录失败
      */
     @Nullable
     public static IssueToken login(@NonNull Object userId,
@@ -86,7 +84,7 @@ public class AuHelper extends BaseHelper {
      * @param userId     用户id - 不为null
      * @param deviceType 设备系统类型 - 不为null
      * @param deviceId   设备id - 可为null 且为 "" 时于 null等价
-     * @return 授权后的tokenPair(accessToken以及refreshToken)，返回空则登录失败
+     * @return 授权后的IssueToken(accessToken以及refreshToken)，返回空则登录失败
      */
     @Nullable
     public static IssueToken login(@NonNull Object userId,
@@ -109,6 +107,27 @@ public class AuHelper extends BaseHelper {
     public static IssueToken refreshToken(@NonNull String refreshToken) throws RefreshTokenExpiredException {
         return AuthzGranterHelper.refreshToken(refreshToken);
     }
+
+    /**
+     * 根据登录标识退出登录
+     *
+     * @param id 登录标识
+     */
+    public static void logoutById(String id) {
+        AuthzGranterHelper.logoutById(getUserId(), id);
+    }
+
+    /**
+     * 根据登录标识退出登录
+     *
+     * @param userId 用户id
+     * @param id     登录标识
+     */
+    public static void logoutById(Object userId,
+                                  String id) {
+        AuthzGranterHelper.logoutById(userId, id);
+    }
+
 
     /**
      * 注销当前用户当前设备
@@ -183,23 +202,21 @@ public class AuHelper extends BaseHelper {
      * @return 一个map userId->设备信息列表
      */
     @NonNull
-    public static Map<Object, List<Device>> getAllUsersDevices() {
-        HashMap<Object, List<Device>> map = new HashMap<>();
-        AuHelper.getAllUserId().forEach(userId -> map.put(userId, AuHelper.getAllDeviceByUserId(userId)));
-        return map;
+    public static Map<Object, List<DeviceDetails>> getAllUsersDevices() {
+        return AuthzDeviceHelper.getAllUsersDevices();
     }
 
     /**
      * 获得指定设备信息
      *
      * @param userId 指定userId
-     * @return 所有设备信息
+     * @return 设备信息
      */
     @Nullable
-    public static Device getDeviceByUserIdAndDeviceTypeAndDeviceId(@NonNull Object userId,
-                                                                   @NonNull String deviceType,
-                                                                   @Nullable String deviceId) {
-        return userDevicesDict.getDevice(userId, deviceType, deviceId);
+    public static DeviceDetails getDeviceByUserIdAndDeviceTypeAndDeviceId(@NonNull Object userId,
+                                                                          @NonNull String deviceType,
+                                                                          @Nullable String deviceId) {
+        return AuthzDeviceHelper.getDeviceByUserIdAndDeviceTypeAndDeviceId(userId, deviceType, deviceId);
     }
 
     /**
@@ -208,8 +225,8 @@ public class AuHelper extends BaseHelper {
      * @return 所有设备列表
      */
     @NonNull
-    public static List<Device> getAllDeviceFromCurrentUser() throws NotLoginException {
-        return userDevicesDict.listDevicesByUserId(getUserId());
+    public static List<DeviceDetails> getAllDeviceFromCurrentUser() throws NotLoginException {
+        return AuthzDeviceHelper.getAllDeviceFromCurrentUser();
     }
 
     /**
@@ -217,7 +234,7 @@ public class AuHelper extends BaseHelper {
      */
     @NonNull
     public static List<Object> getAllUserId() {
-        return userDevicesDict.listUserId();
+        return AuthzDeviceHelper.getAllUserId();
     }
 
     /**
@@ -227,8 +244,8 @@ public class AuHelper extends BaseHelper {
      * @return 所有设备信息
      */
     @NonNull
-    public static List<Device> getAllDeviceByUserId(@NonNull Object userId) {
-        return userDevicesDict.listDevicesByUserId(userId);
+    public static List<DeviceDetails> getAllDeviceByUserId(@NonNull Object userId) {
+        return AuthzDeviceHelper.getAllDeviceByUserId(userId);
     }
 
     /**
@@ -238,20 +255,29 @@ public class AuHelper extends BaseHelper {
      * @return 所有设备信息
      */
     @NonNull
-    public static List<Device> getAllDeviceByUserIdAndDeviceType(@NonNull Object userId,
-                                                                 @NonNull String deviceType) {
-        return userDevicesDict.listDevicesByUserId(userId).stream().filter(
-                device -> device.getDeviceType().equals(deviceType)).collect(Collectors.toList());
+    public static List<DeviceDetails> getAllDeviceByUserIdAndDeviceType(@NonNull Object userId,
+                                                                        @NonNull String deviceType) {
+        return AuthzDeviceHelper.getAllDeviceByUserIdAndDeviceType(userId, deviceType);
     }
 
+    /**
+     * 得到当前用户所有授设备信息信息
+     *
+     * @return 所有授设备信息信息
+     * @throws NotLoginException 未登录
+     */
     @NonNull
-    public static List<AuthorizedDeviceDetails> getAllAuthorizationInfo() throws NotLoginException {
-        return getAllAuthorizationInfo(getUserId());
+    public static List<AuthorizedDeviceDetails> getAllAuthorizedDeviceDetails() throws NotLoginException {
+        return getAllAuthorizedDeviceDetails(getUserId());
     }
 
-
+    /**
+     * 得到当前用户所有授设备信息信息
+     *
+     * @return 所有授设备信息信息
+     */
     @NonNull
-    public static List<AuthorizedDeviceDetails> getAllAuthorizationInfo(Object userId) {
+    public static List<AuthorizedDeviceDetails> getAllAuthorizedDeviceDetails(Object userId) {
         return OpenAuthHelper.getAllAuthorizedDeviceDetails(userId);
     }
 
@@ -471,7 +497,7 @@ public class AuHelper extends BaseHelper {
      */
     public static boolean checkUserIsActive(@NonNull Object userId,
                                             @NonNull String time) {
-        return userDevicesDict.listActiveUserDevices(userId, TimeUtils.parseTimeValue(time)).size() > 0;
+        return AuthzDeviceHelper.checkUserIsActive(userId, time);
     }
 
     /**
@@ -483,75 +509,86 @@ public class AuHelper extends BaseHelper {
      */
     public static boolean checkUserIsActive(@NonNull Object userId,
                                             long ms) {
-        return userDevicesDict.listActiveUserDevices(userId, ms).size() > 0;
+        return AuthzDeviceHelper.checkUserIsActive(userId, ms);
     }
 
     /**
      * 所有【在线/活跃】（默认60秒内）用户数量
      *
-     * @return 用户id数组
+     * @return 用户id列表
      */
-    public static int getNumberOfActiveUsers() {
-        return userDevicesDict.listActiveUsers(60000L).size();
+    public static int getNumberOfActiveUser() {
+        return getActiveUserIdList(60000L).size();
     }
 
     /**
      * 所有【在线/活跃】用户数量
      *
      * @param time 时间间隔
-     * @return 用户id数组
+     * @return 用户id列表
      */
-    public static int getNumberOfActiveUsers(@NonNull String time) {
-        return userDevicesDict.listActiveUsers(TimeUtils.parseTimeValue(time)).size();
+    public static int getNumberOfActiveUser(@NonNull String time) {
+        return getActiveUserIdList(time).size();
     }
 
     /**
      * 所有【在线/活跃】用户数量
      *
      * @param ms 时间间隔(ms)
-     * @return 用户id数组
+     * @return 用户id列表
      */
-    public static int getNumberOfActiveUsers(long ms) {
-        return userDevicesDict.listActiveUsers(ms).size();
+    public static int getNumberOfActiveUser(long ms) {
+        return getActiveUserIdList(ms).size();
     }
 
     /**
      * 所有【在线/活跃】（默认60秒内）用户Id数组
      *
-     * @return 用户id数组
+     * @return 用户id列表
      */
     @NonNull
-    public static List<Object> getActiveUsers() {
-        return userDevicesDict.listActiveUsers(60000L);
+    public static List<Object> getActiveUserIdList() {
+        return getActiveUserIdList(60000L);
     }
 
     /**
-     * 所有【在线/活跃】用户Id数组
+     * 所有【在线/活跃】用户Id列表
      *
      * @param time 时间间隔
-     * @return 用户id数组
+     * @return 用户id列表
      */
     @NonNull
-    public static List<Object> getActiveUsers(@NonNull String time) {
-        return userDevicesDict.listActiveUsers(TimeUtils.parseTimeValue(time));
+    public static List<Object> getActiveUserIdList(@NonNull String time) {
+        return AuthzDeviceHelper.getActiveUserIdList(time);
     }
 
     /**
-     * 所有【在线/活跃】用户Id数组
+     * 所有【在线/活跃】用户Id列表
      *
      * @param ms 时间间隔(ms)
-     * @return 用户id数组
+     * @return 用户id列表
      */
     @NonNull
-    public static List<Object> getActiveUsers(long ms) {
-        return userDevicesDict.listActiveUsers(ms);
+    public static List<Object> getActiveUserIdList(long ms) {
+        return AuthzDeviceHelper.getActiveUserIdList(ms);
+    }
+
+    /**
+     * 所有【在线/活跃】用户详细设备信息 （默认60秒内）
+     *
+     * @param ms 时间间隔(ms)
+     * @return 用户设备列表
+     */
+    @NonNull
+    public static List<DeviceDetails> getActiveDevices() {
+        return AuthzDeviceHelper.getActiveDevices(60000L);
     }
 
     /**
      * 所有【在线/活跃】用户详细设备信息
      *
      * @param ms 时间间隔(ms)
-     * @return 用户设备list
+     * @return 用户设备列表
      */
     @NonNull
     public static List<DeviceDetails> getActiveDevices(long ms) {
@@ -562,10 +599,10 @@ public class AuHelper extends BaseHelper {
      * 所有【在线/活跃】用户详细设备信息
      *
      * @param time 时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒
-     * @return 用户设备list
+     * @return 用户设备列表
      */
     @NonNull
-    public static List<DeviceDetails> getActiveDevices(String time) {
+    public static List<DeviceDetails> getActiveDevices(@NonNull String time) {
         return AuthzDeviceHelper.getActiveDevices(time);
     }
 
@@ -949,7 +986,8 @@ public class AuHelper extends BaseHelper {
     /**
      * <li>1.注册客户端 {@link #clientRegister(String, String)} -> 返回客户端信息（客户端id，客户端name，客户端密钥，重定向url）</li>
      * <li>2.获取授权码 {@link #createAuthorizationCode(String, String, String)} -> 客户端id+登录用户+权限范围 、获得登录用户的授权码</li>
-     * <li>3.验证授权码 {@link #authorize(String, String, String)}-> 利用授权码去获得TokenPair</li>
+     * <li>3.验证授权码 {@link #authorizeByCode(String, String, String)}-> 利用授权码去获得IssueToken</li>
+     * <li>or 3.登录授权 {@link #authorizeByPasswrod(String, String, String)}-> 登录即可获得IssueToken</li>
      *
      * @since 1.2.0
      */
@@ -958,12 +996,12 @@ public class AuHelper extends BaseHelper {
         /**
          * 授权码登录 （授权类型 authorization_code）- 不需要登录 <br>
          * <p>
-         * 验证授权码是否有效，成功返回TokenPair
+         * 验证授权码是否有效，成功返回IssueToken
          *
          * @param clientId          客户端id
          * @param clientSecret      客户端密钥
          * @param authorizationCode 授权码
-         * @return 授权后的tokenPair(accessToken以及refreshToken)
+         * @return 授权后的IssueToken(accessToken以及refreshToken)
          * @throws AuthorizationException 验证失败，客户端密码错误 或者 授权码失效(过期 或者 已使用)
          */
         @Nullable
@@ -980,7 +1018,7 @@ public class AuHelper extends BaseHelper {
          * @param clientSecret 客户端密钥
          * @param scope        授权范围
          * @param userId       userId
-         * @return 授权后的tokenPair(accessToken以及refreshToken)
+         * @return 授权后的IssueToken(accessToken以及refreshToken)
          * @throws AuthorizationException 验证失败，客户端密码错误 或 未登录
          */
         @Nullable
@@ -997,7 +1035,7 @@ public class AuHelper extends BaseHelper {
          * @param clientId     客户端id
          * @param clientSecret 客户端密钥
          * @param scope        授权范围
-         * @return 授权后的tokenPair(accessToken以及refreshToken)
+         * @return 授权后的IssueToken(accessToken以及refreshToken)
          * @throws AuthorizationException 验证失败，客户端密码错误 或 未登录
          */
         @Nullable
@@ -1010,12 +1048,12 @@ public class AuHelper extends BaseHelper {
         /**
          * 客户端登录 （授权类型 client_credentials）- 不需要登录 <br>
          * <p>
-         * 成功返回TokenPair
+         * 成功返回IssueToken
          *
          * @param clientId     客户端id
          * @param clientSecret 客户端密钥
          * @param scope        授权范围
-         * @return 授权后的tokenPair(accessToken以及refreshToken)
+         * @return 授权后的IssueToken(accessToken以及refreshToken)
          * @throws AuthorizationException 客户端密码错误
          */
         @Nullable

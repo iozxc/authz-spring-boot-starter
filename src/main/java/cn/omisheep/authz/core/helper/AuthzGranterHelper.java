@@ -140,6 +140,12 @@ public class AuthzGranterHelper extends BaseHelper {
                 token.getDeviceId(), deviceId)) {clearCookie();}
     }
 
+    public static void logoutById(Object userId,
+                                  String id) {
+        userDevicesDict.removeDeviceById(userId, id);
+        clearCookie(null);
+    }
+
     public static void logout() {
         userDevicesDict.removeCurrentDevice();
         clearCookie(null);

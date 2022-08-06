@@ -101,7 +101,7 @@ public class CookieAndRequestSlot implements Slot {
                 try {
                     if (e instanceof ExpiredJwtException) {
                         Claims claims = ((ExpiredJwtException) e).getClaims();
-                        userDevicesDict.removeDeviceByTid(claims.get(USER_ID),
+                        userDevicesDict.removeAccessTokenByTid(claims.get(USER_ID),
                                                           claims.get(ID, String.class));
                         httpMeta.setUserStatus(ACCESS_TOKEN_OVERDUE);
                     } else {

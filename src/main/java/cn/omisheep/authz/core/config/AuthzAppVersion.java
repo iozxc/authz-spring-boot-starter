@@ -64,6 +64,7 @@ public class AuthzAppVersion {
     public static Class<?>                mainClass = AuthzAppVersion.class;
     public static ConfigurableEnvironment environment;
     public static AuthzProperties         properties;
+    public static Class<?>                userIdType;
 
     private static final Supplier<Boolean> md5check = () -> properties.getSys().isMd5check();
 

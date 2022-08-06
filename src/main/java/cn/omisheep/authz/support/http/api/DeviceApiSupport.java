@@ -1,6 +1,8 @@
 package cn.omisheep.authz.support.http.api;
 
 import cn.omisheep.authz.AuHelper;
+import cn.omisheep.authz.core.config.AuthzAppVersion;
+import cn.omisheep.authz.core.helper.AuthzGranterHelper;
 import cn.omisheep.authz.support.http.ApiSupport;
 import cn.omisheep.authz.support.http.annotation.Get;
 import cn.omisheep.authz.support.http.annotation.Mapping;
@@ -21,12 +23,24 @@ public class DeviceApiSupport implements ApiSupport {
 
     @Get(value = "/active-users-count", desc = "当前在线用户数量")
     public Result activeUsersCount(@Param String time) {
-        return Result.SUCCESS.data(AuHelper.getNumberOfActiveUsers(time));
+        return Result.SUCCESS.data(AuHelper.getNumberOfActiveUser(time));
     }
 
     @Get(value = "/active-users", desc = "当前在线用户的详细设备信息")
     public Result activeUsers(@Param String time) {
         return Result.SUCCESS.data(AuHelper.getActiveDevices(time));
+    }
+
+    @Get(value = "/logout", desc = "当前在线用户的详细设备信息")
+    public Result logout(@Param String userId,
+                         @Param String id) {
+        try {
+            Object _userId = AuthzAppVersion.userIdType.getConstructor(String.class).newInstance(userId);
+            AuthzGranterHelper.logoutById(_userId, id);
+            return Result.SUCCESS.data();
+        } catch (Exception e) {
+            return Result.FAIL.data();
+        }
     }
 
 }

@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core.schema;
 
+import cn.omisheep.authz.core.auth.PermLibrary;
 import com.fasterxml.classmate.*;
 import com.fasterxml.classmate.members.ResolvedField;
 import com.fasterxml.classmate.util.ClassStack;
@@ -62,6 +63,23 @@ public class ModelParser {
         return ResolvedTypes.simpleTypeName(typeResolver.resolve(type));
     }
 
+    public static Class<?> getUserIdType(Object o) {
+        try {
+            ResolvedType       resolve               = typeResolver.resolve(o.getClass());
+            List<ResolvedType> implementedInterfaces = resolve.getParentClass().getImplementedInterfaces();
+            Optional<ResolvedType> first = implementedInterfaces.stream()
+                    .filter(v -> v.isInstanceOf(PermLibrary.class))
+                    .findFirst();
+            if (!first.isPresent()) {
+                return Object.class;
+            } else {
+                return first.get().getTypeParameters().get(0).getErasedType();
+            }
+        } catch (Exception e) {
+            return Object.class;
+        }
+    }
+
     private static ResolvedTypeWithMembers memberResolve(ResolvedType resolvedType) {
         return memberResolver.resolve(resolvedType, stdAnnotationConfiguration,
                                       stdAnnotationOverrides);
@@ -120,7 +138,7 @@ public class ModelParser {
             modelMember.setItem(new ModelObject());
             if (Types.isBaseType(mainType) || Types.isVoid(mainType) || mainType.getErasedType()
                     .getTypeName()
-                    .startsWith("java.")){
+                    .startsWith("java.")) {
                 modelMember.getItem().typeName = ResolvedTypes.simpleTypeName(resolvedType);
                 return modelMember;
             }
