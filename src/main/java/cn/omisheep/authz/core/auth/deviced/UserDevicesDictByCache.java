@@ -202,20 +202,35 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     @Override
-    public List<Device> listActiveUserDevices(Object userId,
-                                              long ms) {
-        long now = TimeUtils.nowTime();
-        Set<String> rKeys = cache.keys(
-                requestKey(Constants.WILDCARD, Constants.WILDCARD));
+    public List<DeviceDetails> listActiveUserDevices(Object userId,
+                                                     long ms) {
+        if ((userId + "").contains("*") || (userId + "").contains("?")) {
+            return new ArrayList<>();
+        }
+        return _listActiveUserDevices(requestKey(userId, Constants.WILDCARD), ms);
+    }
+
+    @Override
+    public List<DeviceDetails> listActiveUserDevices(long ms) {
+        return _listActiveUserDevices(requestKey(Constants.WILDCARD, Constants.WILDCARD), ms);
+    }
+
+    private List<DeviceDetails> _listActiveUserDevices(String requestKey,
+                                                       long ms) {
+        long        now   = TimeUtils.nowTime();
+        Set<String> rKeys = cache.keys(requestKey);
+        if (rKeys.isEmpty()) return new ArrayList<>(0);
+
         Map<String, RequestDetails> requestDetailsMap = cache.get(rKeys, RequestDetails.class);
-        Set<String> keys = requestDetailsMap.entrySet().stream()
+
+        return requestDetailsMap.entrySet().stream()
                 .filter(e -> (now - e.getValue().getLastRequestTime().getTime()) < ms)
                 .map(e -> {
                     String[] split = e.getKey().split(Constants.SEPARATOR);
-                    return Constants.USER_REQUEST_KEY_PREFIX + split[4] + Constants.SEPARATOR + split[5];
-                }).collect(Collectors.toSet());
-        if (keys.isEmpty()) return new ArrayList<>(0);
-        return new ArrayList<>(cache.get(keys, Device.class).values());
+                    return new DeviceDetails().setIssueTokenId(split[5])
+                            .setUserId(split[4]).setRequest(e.getValue());
+                }).collect(Collectors.toList());
+
     }
 
     @Override
@@ -223,13 +238,12 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         try {
             AccessToken token = httpMeta.getToken();
             if (token.getClientId() == null) {
-                Async.run(() -> cache.setSneaky(requestKey(token),
-                                                new DefaultRequestDetails()
-                                                        .setLastRequestTime(httpMeta.getNow())
-                                                        .setIp(httpMeta.getIp()),
-                                                2, TimeUnit.DAYS
-                          )
-                );
+                DefaultRequestDetails requestDetails = (DefaultRequestDetails) new DefaultRequestDetails()
+                        .setLastRequestTime(httpMeta.getNow())
+                        .setIp(httpMeta.getIp())
+                        .setDeviceType(token.getDeviceType())
+                        .setDeviceId(token.getDeviceId());
+                Async.run(() -> cache.setSneaky(requestKey(token), requestDetails, 2, TimeUnit.DAYS));
             }
         } catch (Exception ignored) {
         }

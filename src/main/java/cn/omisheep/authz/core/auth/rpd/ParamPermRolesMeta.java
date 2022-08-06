@@ -14,6 +14,7 @@ import java.util.Set;
 @Data
 @Accessors(chain = true)
 public class ParamPermRolesMeta extends PermRolesMeta {
+
     private Set<String> range; // scope of access
     private Set<String> resources; // required protect resources
 
@@ -54,7 +55,14 @@ public class ParamPermRolesMeta extends PermRolesMeta {
     }
 
     @Override
+    public ParamPermRolesMeta merge(PermRolesMeta other) {
+        super.merge(other);
+        return this;
+    }
+
+    @Override
     public boolean non() {
         return super.non() || (range == null || range.isEmpty()) && (resources == null || resources.isEmpty());
     }
+
 }

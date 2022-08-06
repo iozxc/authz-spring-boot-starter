@@ -196,5 +196,4 @@ public class AuthzModifier {
         this.permission.exclude = excludePermissions;
     }
 
-
 }

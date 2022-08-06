@@ -34,6 +34,7 @@ import cn.omisheep.authz.support.entity.Info;
 import cn.omisheep.authz.support.http.SupportServlet;
 import cn.omisheep.authz.support.http.annotation.ApiSupportScan;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
@@ -91,9 +92,9 @@ public class AuthzAutoConfiguration {
 
         LogUtils.setLogLevel(properties.getLog());
 
-        VersionMessage.CHANNEL = "AU:" + properties.getApp() + ":MODIFY_ID:" + AuthzAppVersion.APPLICATION_NAME.get();
-        CacheMessage.CHANNEL   = "AU:" + properties.getApp() + ":CACHE_DATA_UPDATE";
-        RequestMessage.CHANNEL = "AU:" + properties.getApp() + ":CONTEXT_CLOUD_APP_ID:" + AuthzAppVersion.APPLICATION_NAME.get();
+        VersionMessage.CHANNEL = "AUTHZ:" + properties.getApp() + ":MODIFY_ID:" + AuthzAppVersion.APPLICATION_NAME.get();
+        CacheMessage.CHANNEL   = "AUTHZ:" + properties.getApp() + ":CACHE_DATA_UPDATE";
+        RequestMessage.CHANNEL = "AUTHZ:" + properties.getApp() + ":CONTEXT_CLOUD_APP_ID:" + AuthzAppVersion.APPLICATION_NAME.get();
         LogUtils.debug("Version channel: 【 {} 】, Cache channel: 【 {} 】, Request channel: 【 {} 】",
                        VersionMessage.CHANNEL, CacheMessage.CHANNEL, RequestMessage.CHANNEL);
     }
@@ -123,6 +124,7 @@ public class AuthzAutoConfiguration {
             jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer(Object.class);
             jackson2JsonRedisSerializer.setObjectMapper(
                     new ObjectMapper().setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY)
+                            .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
                             .activateDefaultTyping(LaissezFaireSubTypeValidator.instance,
                                                    ObjectMapper.DefaultTyping.NON_FINAL));
         }
@@ -328,7 +330,7 @@ public class AuthzAutoConfiguration {
             return new Info()
                     .setDescription("Authz Documentation")
                     .setTitle("Authz Documentation")
-                    .setVersion("1.0");
+                    .setVersion("1.0-beta1");
         }
 
         @Primary

@@ -46,7 +46,7 @@ public interface Device extends Map<Object, Object>, java.io.Serializable {
 
     Device setAuthorizedDate(Date authorizedDate);
 
-    // clientId
+    // 过期时间
     Date getExpiresDate();
 
     Device setExpiresDate(Date expiresDate);

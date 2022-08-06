@@ -6,7 +6,7 @@ import java.util.Date;
  * @author zhouxinchen
  * @since 1.2.0
  */
-public interface RequestDetails {
+public interface RequestDetails extends Device {
 
     Date getLastRequestTime();
 

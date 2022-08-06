@@ -17,6 +17,7 @@ import org.springframework.web.method.HandlerMethod;
  * (300)      APIPermSlot              <br>
  * (400)      ParameterPermSlot        <br>
  * (Int:max)  LogSlot                  <br>
+ * (Int:max)  SuccessSlot              <br>
  *
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
@@ -31,5 +32,7 @@ public interface Slot {
         return false;
     }
 
-    void chain(HttpMeta httpMeta, HandlerMethod handler, Error error);
+    void chain(HttpMeta httpMeta,
+               HandlerMethod handler,
+               Error error);
 }

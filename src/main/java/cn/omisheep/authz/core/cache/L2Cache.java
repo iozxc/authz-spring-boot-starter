@@ -57,7 +57,14 @@ public class L2Cache implements Cache {
                 HashMap<String, CacheItem> map       = new HashMap<>();
                 List<CacheItem>            valueList = RedisUtils.Obj.get(list);
                 Iterator<CacheItem>        iterator  = valueList.iterator();
-                list.forEach(k -> map.put(k, iterator.next()));
+                list.forEach(k -> {
+                    CacheItem next = iterator.next();
+                    if (next == null) {
+                        map.put(k, new CacheItem(null));
+                    } else {
+                        map.put(k, next);
+                    }
+                });
                 return map;
             }
         });

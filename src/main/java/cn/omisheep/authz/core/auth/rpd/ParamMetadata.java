@@ -23,6 +23,7 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_EMPTY;
 @Accessors(chain = true)
 @JsonInclude(NON_EMPTY)
 public class ParamMetadata {
+
     @JsonIgnore
     private final Class<?>                 clz;
     private final ValueMatcher.ValueType   valueMatchType;
@@ -77,6 +78,5 @@ public class ParamMetadata {
             return val;
         }
     }
-
 
 }

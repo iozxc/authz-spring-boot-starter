@@ -104,23 +104,23 @@ public class PermissionDict {
     // ----------------------------------------- unModify ----------------------------------------- //
 
     @Getter
-    private static final Map<String, Map<String, PermRolesMeta>>              rolePermission           = Collections.unmodifiableMap(
+    private static final Map<String, Map<String, PermRolesMeta>>              rolePermission  = Collections.unmodifiableMap(
             _authzMetadata);
     @Getter
-    private static final Map<String, Map<String, Map<String, ParamMetadata>>> paramPermission          = Collections.unmodifiableMap(
+    private static final Map<String, Map<String, Map<String, ParamMetadata>>> paramPermission = Collections.unmodifiableMap(
             _authzParamMetadata);
 
     @Getter
-    private static final Map<String, Model>                                   authzResourcesModel      = Collections.unmodifiableMap(
+    private static final Map<String, Model>                               authzResourcesModel = Collections.unmodifiableMap(
             _authzResourcesModel);
     @Getter
-    private static final Map<String, List<DataPermRolesMeta>>                 dataPermission           = Collections.unmodifiableMap(
+    private static final Map<String, List<DataPermRolesMeta>>             dataPermission      = Collections.unmodifiableMap(
             _dataPermMetadata);
     @Getter
-    private static final Map<String, Map<String, FieldDataPermRolesMeta>>     fieldsData               = Collections.unmodifiableMap(
+    private static final Map<String, Map<String, FieldDataPermRolesMeta>> fieldsData          = Collections.unmodifiableMap(
             _fieldMetadata);
     @Getter
-    private static final Map<String, ArgsMeta>                                args                     = Collections.unmodifiableMap(
+    private static final Map<String, ArgsMeta>                            args                = Collections.unmodifiableMap(
             _argsMetadata);
 
     @Getter
@@ -362,8 +362,7 @@ public class PermissionDict {
                     if (paramMetadata.getParamMetaList() == null) {
                         if (build != null && !build.non()) {
                             ParamPermRolesMeta meta = new ParamPermRolesMeta().setRange(authzModifier.getRange())
-                                    .setResources(authzModifier.getResources());
-                            meta.merge(build);
+                                    .setResources(authzModifier.getResources()).merge(build);
                             if (!meta.non()) {
                                 paramMetadata.setParamMetaList(new ArrayList<>());
                                 paramMetadata.getParamMetaList().add(meta);
@@ -375,16 +374,23 @@ public class PermissionDict {
                             return Result.FAIL.data();
                         }
                     }
-                    ParamPermRolesMeta meta = paramMetadata.getParamMetaList().get(index);
-                    if (meta == null) return Result.FAIL.data();
-                    meta.merge(build);
-                    meta.setRange(authzModifier.getRange()).setResources(authzModifier.getResources());
+
+
+                    ParamPermRolesMeta meta = new ParamPermRolesMeta().merge(build)
+                            .setRange(authzModifier.getRange())
+                            .setResources(authzModifier.getResources());
                     if (meta.non()) {
                         paramMetadata.getParamMetaList().remove(index);
                         if (paramMetadata.getParamMetaList().isEmpty()) {
                             paramMetadata.setParamMetaList(null);
                         }
                         return Result.FAIL.data();
+                    } else {
+                        if (paramMetadata.getParamMetaList().size() <= index) {
+                            paramMetadata.getParamMetaList().add(meta);
+                        } else {
+                            paramMetadata.getParamMetaList().set(index, meta);
+                        }
                     }
                     return Result.SUCCESS.data(meta);
                 }
@@ -393,6 +399,10 @@ public class PermissionDict {
                     ParamMetadata paramMetadata = _authzParamMetadata.get(path)
                             .get(method)
                             .get(name);
+                    if (paramMetadata.getParamMetaList() == null ||
+                            paramMetadata.getParamMetaList().size() <= index) {
+                        return Result.SUCCESS;
+                    }
                     paramMetadata.getParamMetaList().remove(index);
                     if (paramMetadata.getParamMetaList().isEmpty()) paramMetadata.setParamMetaList(null);
                     return Result.SUCCESS;

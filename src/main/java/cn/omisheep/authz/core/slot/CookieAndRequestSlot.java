@@ -9,7 +9,6 @@ import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.authz.core.tk.TokenHelper;
-import cn.omisheep.commons.util.Async;
 import cn.omisheep.web.utils.HttpUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -96,9 +95,6 @@ public class CookieAndRequestSlot implements Slot {
         try {
             AccessToken accessToken = TokenHelper.parseAccessToken(tokenValue);
             httpMeta.setToken(accessToken);
-            Async.run(() -> {
-                userDevicesDict.request(httpMeta);
-            });
         } catch (Exception e) {
             TokenHelper.clearCookie();
             if (e instanceof JwtException) {

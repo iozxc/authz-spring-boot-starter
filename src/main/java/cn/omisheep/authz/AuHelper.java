@@ -14,6 +14,7 @@ import cn.omisheep.authz.core.RefreshTokenExpiredException;
 import cn.omisheep.authz.core.ThreadWebEnvironmentException;
 import cn.omisheep.authz.core.auth.deviced.Device;
 import cn.omisheep.authz.core.auth.deviced.DeviceCountInfo;
+import cn.omisheep.authz.core.auth.deviced.DeviceDetails;
 import cn.omisheep.authz.core.auth.ipf.Blacklist;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
@@ -21,10 +22,7 @@ import cn.omisheep.authz.core.callback.AuthorizationCallback;
 import cn.omisheep.authz.core.callback.RateLimitCallback;
 import cn.omisheep.authz.core.codec.AuthzRSAManager;
 import cn.omisheep.authz.core.config.Constants;
-import cn.omisheep.authz.core.helper.AuthzGranterHelper;
-import cn.omisheep.authz.core.helper.AuthzStateHelper;
-import cn.omisheep.authz.core.helper.BaseHelper;
-import cn.omisheep.authz.core.helper.OpenAuthHelper;
+import cn.omisheep.authz.core.helper.*;
 import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.oauth.AuthorizationException;
 import cn.omisheep.authz.core.oauth.AuthorizedDeviceDetails;
@@ -547,6 +545,28 @@ public class AuHelper extends BaseHelper {
     @NonNull
     public static List<Object> getActiveUsers(long ms) {
         return userDevicesDict.listActiveUsers(ms);
+    }
+
+    /**
+     * 所有【在线/活跃】用户详细设备信息
+     *
+     * @param ms 时间间隔(ms)
+     * @return 用户设备list
+     */
+    @NonNull
+    public static List<DeviceDetails> getActiveDevices(long ms) {
+        return AuthzDeviceHelper.getActiveDevices(ms);
+    }
+
+    /**
+     * 所有【在线/活跃】用户详细设备信息
+     *
+     * @param time 时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒
+     * @return 用户设备list
+     */
+    @NonNull
+    public static List<DeviceDetails> getActiveDevices(String time) {
+        return AuthzDeviceHelper.getActiveDevices(time);
     }
 
     // **************************************     黑名单操作      ************************************** //

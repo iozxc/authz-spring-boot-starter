@@ -7,7 +7,6 @@ import org.springframework.web.method.HandlerMethod;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-@Order
 @SuppressWarnings("all")
 public class LogSlot implements Slot {
 

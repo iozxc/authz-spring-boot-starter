@@ -3,8 +3,6 @@ package cn.omisheep.authz.support.http.handler;
 import cn.omisheep.authz.core.AuthzContext;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.config.Constants;
-import cn.omisheep.authz.core.schema.Model;
-import cn.omisheep.authz.core.schema.ModelParser;
 import cn.omisheep.authz.support.entity.Docs;
 import cn.omisheep.authz.support.entity.User;
 import cn.omisheep.authz.support.http.annotation.Header;
@@ -48,11 +46,6 @@ public class ApiHandler {
         private Method  invoke;
         @JsonProperty(index = 3)
         private String  desc;
-
-        @JsonProperty(index = 4)
-        public Model getReturnModel() {
-            return ModelParser.parse(invoke.getReturnType());
-        }
     }
 
     public void process(HttpServletRequest request,

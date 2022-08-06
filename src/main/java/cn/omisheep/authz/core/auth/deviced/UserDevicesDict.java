@@ -58,7 +58,8 @@ public interface UserDevicesDict {
 
     // =========================   登出   ========================= //
 
-    void removeDeviceByTid(Object userId, String tid);
+    void removeDeviceByTid(Object userId,
+                           String tid);
 
     void removeDevice(Object userId,
                       String deviceType,
@@ -89,13 +90,20 @@ public interface UserDevicesDict {
     List<Object> listActiveUsers(long ms);
 
     /**
-     * 某个用户【在线/活跃】 设备
+     * 所有用户【在线/活跃】 设备
      *
-     * @param userId 用户id
-     * @param ms     毫秒书
+     * @param ms 毫秒数
      * @return 【在线/活跃】设备数组
      */
-    List<Device> listActiveUserDevices(Object userId,
+    List<DeviceDetails> listActiveUserDevices(long ms);
+
+    /**
+     * 某个用户的【在线/活跃】 设备
+     *
+     * @param ms 毫秒数
+     * @return 【在线/活跃】设备数组
+     */
+    List<DeviceDetails> listActiveUserDevices(Object userId,
                                        long ms);
 
     // =========================   other   ========================= //
