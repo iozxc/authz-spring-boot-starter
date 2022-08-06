@@ -14,7 +14,7 @@ import lombok.experimental.Accessors;
 public class AccessToken {
 
     /**
-     * id
+     * id - AccessToken和RefreshToken共用的id，可以理解为IssueToken的id
      */
     private final String id;
 
@@ -37,7 +37,6 @@ public class AccessToken {
      * 过期时间戳
      */
     private final Long expiresAt;
-
 
     /**
      * 授权类型

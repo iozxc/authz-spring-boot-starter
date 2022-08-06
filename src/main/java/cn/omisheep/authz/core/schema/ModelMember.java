@@ -28,8 +28,6 @@ public class ModelMember extends Model implements ToJson {
 
     protected ModelObject item;
 
-    protected List<ModelMember> items;
-
     public ModelMember(String typeName) {
         super(typeName);
     }

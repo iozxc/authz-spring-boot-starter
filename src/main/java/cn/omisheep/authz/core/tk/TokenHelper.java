@@ -84,10 +84,10 @@ public class TokenHelper extends BaseHelper {
         }
 
         prefix      = prefix1;
-        expire      = (int) (TimeUtils.parseTimeValue(token.getRefreshTime()) / 1000);
         cookieName  = properties.getToken().getCookieName();
         accessTime  = TimeUtils.parseTimeValue(token.getAccessTime());
         refreshTime = TimeUtils.parseTimeValue(token.getRefreshTime());
+        expire      = (int) (accessTime / 1000);
     }
 
     /**

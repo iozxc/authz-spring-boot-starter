@@ -117,7 +117,13 @@ public class ModelParser {
                 return modelMember;
             }
             ClassStack child = classStack.child(resolvedType.getErasedType());
-            modelMember.setItems(new ArrayList<>());
+            modelMember.setItem(new ModelObject());
+            if (Types.isBaseType(mainType) || Types.isVoid(mainType) || mainType.getErasedType()
+                    .getTypeName()
+                    .startsWith("java.")){
+                modelMember.getItem().typeName = ResolvedTypes.simpleTypeName(resolvedType);
+                return modelMember;
+            }
             for (ResolvedField memberField : memberResolve(resolvedType).getMemberFields()) {
                 ResolvedType fieldType  = memberField.getType();
                 Class<?>     erasedType = fieldType.getErasedType();
@@ -125,10 +131,10 @@ public class ModelParser {
                     continue;
                 }
                 if (child.find(erasedType) != null || Types.isBaseType(fieldType)) {
-                    modelMember.getItems()
+                    modelMember.getItem().getMembers()
                             .add(new ModelMember(ResolvedTypes.simpleTypeName(fieldType), memberField.getName()));
                 } else {
-                    modelMember.getItems()
+                    modelMember.getItem().getMembers()
                             .add(parseMember(fieldType, child, filter).setTypeName(
                                     memberField.getName()));
                 }

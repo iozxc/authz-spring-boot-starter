@@ -12,7 +12,7 @@ import lombok.experimental.Accessors;
 public class RefreshToken {
 
     /**
-     * id
+     * id - AccessToken和RefreshToken共用的id，可以理解为IssueToken的id
      */
     private final String id;
 

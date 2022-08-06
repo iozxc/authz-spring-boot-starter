@@ -57,6 +57,7 @@ public class AuHelper extends BaseHelper {
 
     /**
      * 用户登录 <br>
+     * 登录成功之后会默认返回Cookie，过期时间为AccessToken的过期时间，若不需要，请自行删除
      *
      * @param userId 用户id - 不为null
      * @return 授权后的tokenPair(accessToken以及refreshToken)，返回空则登录失败
@@ -68,6 +69,7 @@ public class AuHelper extends BaseHelper {
 
     /**
      * 用户登录 <br>
+     * 登录成功之后会默认返回Cookie，过期时间为AccessToken的过期时间，若不需要，请自行删除
      *
      * @param userId     用户id - 不为null
      * @param deviceType 设备系统类型 - 不为null 默认为unknown
@@ -81,6 +83,7 @@ public class AuHelper extends BaseHelper {
 
     /**
      * 用户登录 <br>
+     * 登录成功之后会默认返回Cookie，过期时间为AccessToken的过期时间，若不需要，请自行删除
      *
      * @param userId     用户id - 不为null
      * @param deviceType 设备系统类型 - 不为null

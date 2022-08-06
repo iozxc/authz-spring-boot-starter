@@ -1,9 +1,10 @@
 package cn.omisheep.authz.support.http.handler;
 
-import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.authz.core.auth.rpd.ArgsHandler;
-import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.AuthzContext;
+import cn.omisheep.authz.core.auth.ipf.HttpMeta;
+import cn.omisheep.authz.core.config.Constants;
+import cn.omisheep.authz.core.schema.Model;
+import cn.omisheep.authz.core.schema.ModelParser;
 import cn.omisheep.authz.support.entity.Docs;
 import cn.omisheep.authz.support.entity.User;
 import cn.omisheep.authz.support.http.annotation.Header;
@@ -25,7 +26,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -50,10 +50,8 @@ public class ApiHandler {
         private String  desc;
 
         @JsonProperty(index = 4)
-        public Object getReturn() {
-            Map<String, String> map = ArgsHandler.parseTypeForTemplate(invoke.getReturnType().getTypeName());
-            if (map.isEmpty()) return invoke.getReturnType().getTypeName();
-            return map;
+        public Model getReturnModel() {
+            return ModelParser.parse(invoke.getReturnType());
         }
     }
 

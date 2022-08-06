@@ -38,7 +38,8 @@ public class ArgsMeta {
         this.returnType = method.getReturnType();
         this.parameters = Arrays.stream(method.getParameterTypes()).collect(Collectors.toList());
         this.model      = ModelParser.parse(method.getReturnType());
-        this.ref        = method.toString();
+        String[] s = method.toString().split(" ");
+        this.ref = s[s.length - 1];
     }
 
     public String getMethod() {
