@@ -18,7 +18,7 @@ import java.util.Map;
  */
 public class ArgsHandler {
 
-    public static List<Class<?>> argType(String argsName) {
+    public static List<Class<?>> argParameterList(String argsName) {
         ArgsMeta meta = PermissionDict.getArgs().get(argsName);
         if (meta == null) return null;
         return meta.parameterList;

@@ -138,7 +138,7 @@ public class ArgsParser {
             if (matcher.find()) {
                 argsList.add(ref(matcher.group(1), dataPermRolesMeta));
             } else {
-                List<Class<?>> paramType = ArgsHandler.argType(argName);
+                List<Class<?>> paramType = ArgsHandler.argParameterList(argName);
                 if (paramType == null) {
                     throw new RuntimeException("参数个数不匹配");
                 }

@@ -1,8 +1,10 @@
 package cn.omisheep.authz.core.config;
 
 import cn.omisheep.authz.annotation.*;
-import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.authz.core.auth.rpd.*;
+import cn.omisheep.authz.core.auth.rpd.ArgsMeta;
+import cn.omisheep.authz.core.auth.rpd.DataPermRolesMeta;
+import cn.omisheep.authz.core.auth.rpd.FieldDataPermRolesMeta;
+import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.util.MetaUtils;
 import cn.omisheep.authz.core.util.ScanUtils;
 import cn.omisheep.commons.util.ClassUtils;
@@ -16,7 +18,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static cn.omisheep.authz.core.util.MetaUtils.*;
+import static cn.omisheep.authz.core.util.MetaUtils.generateDataFiledRolesMeta;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -77,11 +79,7 @@ public class AuthzResourcesInit implements ImportSelector {
                                     argMap.put(name,
                                                ArgsMeta.of(type, method).setDescription(argResource.description()));
                                 })));
-        argMap.put("httpMeta", ArgsMeta.of(HttpMeta.class, "currentHttpMeta").setDescription("当前请求的HttpMeta"));
-        argMap.put("token", ArgsMeta.of(HttpMeta.class, "currentToken").setDescription("当前请求的Token"));
-        argMap.put("userId", ArgsMeta.of(HttpMeta.class, "currentUserId").setDescription("当前请求的userId"));
         PermissionDict.initArgs(entityClasses, ge(entityClasses), map, argMap);
-
         return new String[0];
     }
 

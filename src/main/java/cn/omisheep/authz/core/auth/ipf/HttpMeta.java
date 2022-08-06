@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core.auth.ipf;
 
+import cn.omisheep.authz.annotation.ArgResource;
 import cn.omisheep.authz.core.AuthzException;
 import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
@@ -39,17 +40,15 @@ import static cn.omisheep.authz.core.util.LogUtils.export;
 @SuppressWarnings("all")
 public class HttpMeta extends BaseHelper {
 
-    @JsonIgnore
-    private HttpServletRequest request;
-    private String             ip;
-    private String             uri;
-    private String             api;
-    private String             servletPath;
-    private String             path;
-    private String             method;
-    private String             userAgent;
-    private String             refer;
-    private String             body;
+    private String ip;
+    private String uri;
+    private String api;
+    private String servletPath;
+    private String path;
+    private String method;
+    private String userAgent;
+    private String refer;
+    private String body;
 
     private AccessToken token;
     private Object      userId;
@@ -63,7 +62,10 @@ public class HttpMeta extends BaseHelper {
     private Boolean       requireLogin;
 
     @JsonIgnore
+    private HttpServletRequest          request;
+    @JsonIgnore
     private boolean                     clearCookie         = true;
+    @JsonIgnore
     private UserDevicesDict.UserStatus  userStatus;
     @JsonIgnore
     private LinkedList<Object>          exceptionObjectList = new LinkedList<>();
@@ -118,6 +120,7 @@ public class HttpMeta extends BaseHelper {
         return scope;
     }
 
+    @ArgResource(value = "httpMeta", description = "当前请求的HttpMeta")
     public static HttpMeta currentHttpMeta() {
         try {
             return ((HttpMeta) HttpUtils.getCurrentRequest().getAttribute(Constants.HTTP_META));
@@ -126,6 +129,7 @@ public class HttpMeta extends BaseHelper {
         }
     }
 
+    @ArgResource(value = "token", description = "当前请求的Token")
     public static AccessToken currentToken() {
         try {
             return currentHttpMeta().token;
@@ -134,6 +138,7 @@ public class HttpMeta extends BaseHelper {
         }
     }
 
+    @ArgResource(value = "userId", description = "当前请求的userId")
     public static Object currentUserId() {
         try {
             return currentToken().getUserId();

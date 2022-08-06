@@ -1,8 +1,14 @@
 package cn.omisheep.authz.core.schema;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import lombok.experimental.Accessors;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author zhouxinchen
@@ -11,8 +17,18 @@ import lombok.ToString;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @ToString(callSuper = true)
-public class ModelMember extends Model {
-    private String memberName;
+@Accessors(chain = true)
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
+public class ModelMember extends Model implements ToJson {
+
+    @JsonProperty(index = 1)
+    protected String memberName;
+
+    protected List<ModelMember> members = new ArrayList<>();
+
+    protected ModelObject item;
+
+    protected List<ModelMember> items;
 
     public ModelMember(String typeName) {
         super(typeName);
@@ -24,5 +40,9 @@ public class ModelMember extends Model {
         this.memberName = memberName;
     }
 
-
+    @Override
+    public ModelMember setTypeName(String typeName) {
+        super.setTypeName(typeName);
+        return this;
+    }
 }

@@ -545,7 +545,6 @@ public class PermissionDict {
     }
 
     private static boolean isInit     = false;
-    private static boolean isInitArgs = false;
 
     private PermissionDict() {
         throw new UnsupportedOperationException();
@@ -555,10 +554,6 @@ public class PermissionDict {
                                 Map<String, Map<String, FieldDataPermRolesMeta>> fieldMetadata,
                                 HashMap<String, List<DataPermRolesMeta>> map,
                                 HashMap<String, ArgsMeta> args) {
-        if (isInitArgs) {
-            AuInit.log.error("PermissionDict已初始化");
-        }
-        isInitArgs = true;
         for (String authzResourcesName : authzResourcesNames) {
             try {
                 Map<String, String> fieldMap = _authzResourcesNameAndTemplate.computeIfAbsent(authzResourcesName,

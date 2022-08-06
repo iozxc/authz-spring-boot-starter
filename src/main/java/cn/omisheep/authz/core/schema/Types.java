@@ -39,6 +39,10 @@ public class Types {
         return baseTypes.contains(typeNameFor(type.getErasedType()));
     }
 
+    public static boolean isEnum(ResolvedType type) {
+        return type.isInstanceOf(Enum.class);
+    }
+
     public static boolean isVoid(ResolvedType returnType) {
         return Void.class.equals(returnType.getErasedType()) || Void.TYPE.equals(returnType.getErasedType());
     }

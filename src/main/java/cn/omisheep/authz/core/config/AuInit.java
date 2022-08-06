@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core.config;
 
+import cn.omisheep.authz.annotation.AuthzResourcesScan;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.slot.SlotScan;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -13,6 +14,7 @@ import java.nio.charset.StandardCharsets;
  * @since 1.0.0
  */
 @SlotScan("cn.omisheep.authz")
+@AuthzResourcesScan(args = "cn.omisheep.authz.core.auth.ipf.HttpMeta")
 public class AuInit {
 
     public static final Logger log = LoggerFactory.getLogger(AuInit.class);
