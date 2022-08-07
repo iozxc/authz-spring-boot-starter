@@ -152,7 +152,7 @@ public class AuthzDeviceHelper extends BaseHelper {
     @NonNull
     public static Map<Object, List<DeviceDetails>> getAllUsersDevices() {
         HashMap<Object, List<DeviceDetails>> map = new HashMap<>();
-        AuHelper.getAllUserId().forEach(userId -> map.put(userId, AuHelper.getAllDeviceAt(userId)));
+        AuHelper.getAllUserId().forEach(userId -> map.put(userId, getAllDeviceByUserId(userId)));
         return map;
     }
 }
