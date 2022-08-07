@@ -24,6 +24,11 @@ import java.util.function.Supplier;
 public class DeviceDetails {
 
     /**
+     * 登录标识
+     */
+    private String Id;
+
+    /**
      * 用户id
      */
     private Object userId;
@@ -68,11 +73,6 @@ public class DeviceDetails {
      * 过期时间
      */
     private Date expires;
-
-    /**
-     * 登录标识
-     */
-    private String Id;
 
     /**
      * 是否登录
