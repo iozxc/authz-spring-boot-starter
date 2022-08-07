@@ -21,7 +21,6 @@ import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.callback.AuthorizationCallback;
 import cn.omisheep.authz.core.callback.RateLimitCallback;
 import cn.omisheep.authz.core.codec.AuthzRSAManager;
-import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.helper.*;
 import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.oauth.AuthorizationException;
@@ -887,36 +886,6 @@ public class AuHelper extends BaseHelper {
         Blacklist.User.remove(userId, deviceType, deviceId);
     }
 
-    /**
-     * 主动修改 数据库、redis时，调用此方法
-     *
-     * @param clientid 客户端id
-     */
-    public static void reloadClient(String clientid) {
-        cache.delSneaky(Constants.CLINT_PREFIX.get() + clientid);
-        openAuthLibrary.getClientById(clientid);
-    }
-
-    /**
-     * 主动修改 数据库、redis时，调用此方法
-     *
-     * @param userId 用户id
-     */
-    public static void reloadRoles(Object userId) {
-        cache.delSneaky(Constants.ROLES_BY_USER_KEY_PREFIX.get() + userId);
-        permLibrary.getRolesByUserId(userId);
-    }
-
-    /**
-     * 主动修改 数据库、redis时，调用此方法
-     *
-     * @param role role
-     */
-    public static void reloadPermissions(String role) {
-        cache.delSneaky(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role);
-        permLibrary.getPermissionsByRole(role);
-    }
-
     // **************************************     OpenAuth 2.0      ************************************** //
 
     /**
@@ -1261,30 +1230,6 @@ public class AuHelper extends BaseHelper {
 
         public Object get(String key) {
             return cache.get(key);
-        }
-
-        /**
-         * redis修改时调用 <br>
-         * 重新加载所有缓存
-         */
-        public static void reloadCache() {
-            cache.reload();
-        }
-
-        /**
-         * redis修改时调用 <br>
-         * 重新加载所有缓存
-         */
-        public static void reloadCache(String... keys) {
-            cache.reload(keys);
-        }
-
-        /**
-         * redis修改时调用 <br>
-         * 重新加载指定的缓存
-         */
-        public static void reloadCache(Collection<String> keys) {
-            cache.reload(keys);
         }
 
     }
