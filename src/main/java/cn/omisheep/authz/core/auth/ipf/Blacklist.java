@@ -502,7 +502,7 @@ public class Blacklist {
                             User._update(userId,
                                          deviceType,
                                          deviceId,
-                                         time);
+                                         date);
                         }
                         break;
                     case REMOVE:
