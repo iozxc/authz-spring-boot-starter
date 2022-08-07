@@ -221,6 +221,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
             };
             deviceDetails.add(new DeviceDetails().setDevice(v).setSupplier(requestDetailsSupplier));
         });
+        deviceDetails.sort((v1,v2)-> v2.getLastRequestTime().compareTo(v1.getLastRequestTime()));
         return deviceDetails;
     }
 
@@ -252,7 +253,9 @@ public class UserDevicesDictByCache implements UserDevicesDict {
                     String[] split = e.getKey().split(Constants.SEPARATOR);
                     return new DeviceDetails().setId(split[5])
                             .setUserId(split[4]).setRequest(e.getValue());
-                }).collect(Collectors.toList());
+                })
+                .sorted((v1,v2)-> v2.getLastRequestTime().compareTo(v1.getLastRequestTime()))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -388,4 +391,5 @@ public class UserDevicesDictByCache implements UserDevicesDict {
             delKeys.add(v.getKey());
         }
     }
+
 }

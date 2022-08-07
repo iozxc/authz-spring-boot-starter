@@ -3,10 +3,12 @@ package cn.omisheep.authz.core.config;
 import cn.omisheep.authz.core.AuthzManager;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.AuthzVersion;
-import cn.omisheep.authz.core.msg.*;
+import cn.omisheep.authz.core.msg.AuthzModifier;
+import cn.omisheep.authz.core.msg.Message;
+import cn.omisheep.authz.core.msg.VersionMessage;
+import cn.omisheep.authz.core.util.FormatUtils;
 import cn.omisheep.authz.core.util.MD5Utils;
 import cn.omisheep.authz.core.util.RedisUtils;
-import cn.omisheep.authz.core.util.FormatUtils;
 import cn.omisheep.authz.support.entity.Docs;
 import cn.omisheep.commons.util.Assert;
 import cn.omisheep.commons.util.Async;
@@ -20,6 +22,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.util.StringUtils;
 
 import java.io.File;
+import java.lang.reflect.Constructor;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
@@ -64,7 +67,8 @@ public class AuthzAppVersion {
     public static Class<?>                mainClass = AuthzAppVersion.class;
     public static ConfigurableEnvironment environment;
     public static AuthzProperties         properties;
-    public static Class<?>                userIdType;
+    public static Class<?>       USER_ID_TYPE;
+    public static Constructor<?> USER_ID_CONSTRUCTOR;
 
     private static final Supplier<Boolean> md5check = () -> properties.getSys().isMd5check();
 

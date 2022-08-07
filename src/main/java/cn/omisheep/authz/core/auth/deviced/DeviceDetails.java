@@ -1,5 +1,7 @@
 package cn.omisheep.authz.core.auth.deviced;
 
+import cn.omisheep.authz.core.AuthzContext;
+import cn.omisheep.authz.core.auth.ipf.Blacklist;
 import cn.omisheep.authz.core.tk.GrantType;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AccessLevel;
@@ -77,6 +79,11 @@ public class DeviceDetails {
      */
     private boolean isLogin;
 
+    public DeviceDetails setUserId(String userId) {
+        this.userId = AuthzContext.createUserId(userId);
+        return this;
+    }
+
     @Getter(AccessLevel.PRIVATE)
     private Supplier<RequestDetails> supplier;
 
@@ -115,4 +122,17 @@ public class DeviceDetails {
         }
         return lastRequestIp;
     }
+
+    public boolean isDenyIp() {
+        return !Blacklist.IP.check(getLastRequestIp());
+    }
+
+    public boolean isDenyIpRange() {
+        return !Blacklist.IPRangeDeny.check(getLastRequestIp());
+    }
+
+    public boolean isDenyUser() {
+        return !Blacklist.User.check(userId, deviceType, deviceId);
+    }
+
 }

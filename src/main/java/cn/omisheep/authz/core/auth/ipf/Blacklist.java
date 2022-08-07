@@ -82,35 +82,7 @@ public class Blacklist {
             this.timeMeta   = timeMeta;
         }
 
-        private static void _add(Object userId,
-                                 @Nullable String deviceType,
-                                 @Nullable String deviceId,
-                                 String time,
-                                 long now) {
-            User user = new User(userId, deviceType, deviceId, TimeMeta.of(time, now));
-            userBlacklist.add(user);
-            userBlacklistBloomFilter.add(userId.toString());
-        }
-
-        public static void add(Object userId,
-                               @Nullable String deviceType,
-                               @Nullable String deviceId,
-                               String time) {
-            long nowTime = TimeUtils.nowTime();
-            AuthzModifier.BlacklistInfo blacklistInfo = new AuthzModifier.BlacklistInfo().setType(
-                            AuthzModifier.BlacklistInfo.TYPE.USER)
-                    .setOp(AuthzModifier.BlacklistInfo.OP.ADD)
-                    .setUserId(userId)
-                    .setDeviceType(deviceType)
-                    .setDeviceId(deviceId)
-                    .setTime(time)
-                    .setStart(nowTime);
-            AuthzModifier authzModifier = new AuthzModifier().setTarget(AuthzModifier.Target.BLACKLIST)
-                    .setBlacklistInfo(blacklistInfo);
-            AuthzManager.operate(authzModifier);
-        }
-
-        private static void _change(Object userId,
+        private static void _update(Object userId,
                                     @Nullable String deviceType,
                                     @Nullable String deviceId,
                                     String time) {
@@ -121,17 +93,21 @@ public class Blacklist {
                     .findFirst();
             if (v.isPresent()) {
                 User user = v.get();
-                user.timeMeta.changeTime(time);
+                user.timeMeta.updateTime(time);
+            } else {
+                User user = new User(userId, deviceType, deviceId, TimeMeta.of(time));
+                userBlacklist.add(user);
+                userBlacklistBloomFilter.add(userId.toString());
             }
         }
 
-        public static void change(Object userId,
+        public static void update(Object userId,
                                   @Nullable String deviceType,
                                   @Nullable String deviceId,
                                   String time) {
             AuthzModifier.BlacklistInfo blacklistInfo = new AuthzModifier.BlacklistInfo().setType(
                             AuthzModifier.BlacklistInfo.TYPE.USER)
-                    .setOp(AuthzModifier.BlacklistInfo.OP.CHANGE)
+                    .setOp(AuthzModifier.BlacklistInfo.OP.UPDATE)
                     .setUserId(userId)
                     .setDeviceType(deviceType)
                     .setDeviceId(deviceId)
@@ -233,41 +209,24 @@ public class Blacklist {
             this.timeMeta = timeMeta;
         }
 
-        private static void _add(String ip,
-                                 String time,
-                                 long now) {
-            ipBlacklist.add(new IP(ip, TimeMeta.of(time, now)));
-            ipBlacklistBloomFilter.add(ip);
-        }
 
-        public static void add(String ip,
-                               String time) {
-            long nowTime = TimeUtils.nowTime();
-            AuthzModifier.BlacklistInfo blacklistInfo = new AuthzModifier.BlacklistInfo().setType(
-                            AuthzModifier.BlacklistInfo.TYPE.IP)
-                    .setOp(AuthzModifier.BlacklistInfo.OP.ADD)
-                    .setIp(ip)
-                    .setTime(time)
-                    .setStart(nowTime);
-            AuthzModifier authzModifier = new AuthzModifier().setTarget(AuthzModifier.Target.BLACKLIST)
-                    .setBlacklistInfo(blacklistInfo);
-            AuthzManager.operate(authzModifier);
-        }
-
-        private static void _change(String ip,
+        private static void _update(String ip,
                                     String time) {
             Optional<IP> v = ipBlacklist.stream().filter(o -> o.ip.equals(ip)).findFirst();
             if (v.isPresent()) {
                 IP i = v.get();
-                i.timeMeta.changeTime(time);
+                i.timeMeta.updateTime(time);
+            } else {
+                ipBlacklist.add(new IP(ip, TimeMeta.of(time)));
+                ipBlacklistBloomFilter.add(ip);
             }
         }
 
-        public static void change(String ip,
+        public static void update(String ip,
                                   String time) {
             AuthzModifier.BlacklistInfo blacklistInfo = new AuthzModifier.BlacklistInfo().setType(
                             AuthzModifier.BlacklistInfo.TYPE.IP)
-                    .setOp(AuthzModifier.BlacklistInfo.OP.CHANGE)
+                    .setOp(AuthzModifier.BlacklistInfo.OP.UPDATE)
                     .setIp(ip)
                     .setTime(time);
             AuthzModifier authzModifier = new AuthzModifier().setTarget(AuthzModifier.Target.BLACKLIST)
@@ -333,40 +292,22 @@ public class Blacklist {
             this.timeMeta = timeMeta;
         }
 
-        private static void _add(String ipRange,
-                                 String time,
-                                 long now) {
-            ipRangeBlacklist.add(new IPRangeDeny(ipRange, TimeMeta.of(time, now)));
-        }
-
-        public static void add(String ipRange,
-                               String time) {
-            long nowTime = TimeUtils.nowTime();
-            AuthzModifier.BlacklistInfo blacklistInfo = new AuthzModifier.BlacklistInfo().setType(
-                            AuthzModifier.BlacklistInfo.TYPE.IP_RANGE)
-                    .setOp(AuthzModifier.BlacklistInfo.OP.ADD)
-                    .setIpRange(ipRange)
-                    .setTime(time)
-                    .setStart(nowTime);
-            AuthzModifier authzModifier = new AuthzModifier().setTarget(AuthzModifier.Target.BLACKLIST)
-                    .setBlacklistInfo(blacklistInfo);
-            AuthzManager.operate(authzModifier);
-        }
-
-        private static void _change(String ipRange,
+        private static void _update(String ipRange,
                                     String time) {
             Optional<IPRangeDeny> v = ipRangeBlacklist.stream().filter(o -> o.value.equals(ipRange)).findFirst();
             if (v.isPresent()) {
                 IPRangeDeny i = v.get();
-                i.timeMeta.changeTime(time);
+                i.timeMeta.updateTime(time);
+            } else {
+                ipRangeBlacklist.add(new IPRangeDeny(ipRange, TimeMeta.of(time)));
             }
         }
 
-        public static void change(String ipRange,
+        public static void update(String ipRange,
                                   String time) {
             AuthzModifier.BlacklistInfo blacklistInfo = new AuthzModifier.BlacklistInfo().setType(
                             AuthzModifier.BlacklistInfo.TYPE.IP_RANGE)
-                    .setOp(AuthzModifier.BlacklistInfo.OP.CHANGE)
+                    .setOp(AuthzModifier.BlacklistInfo.OP.UPDATE)
                     .setIpRange(ipRange)
                     .setTime(time);
             AuthzModifier authzModifier = new AuthzModifier().setTarget(AuthzModifier.Target.BLACKLIST)
@@ -406,14 +347,8 @@ public class Blacklist {
     }
 
     public static class TimeMeta {
-        private final long start;
         private       long end;
         private       long time;
-
-        @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-        public Date getStart() {
-            return new Date(start);
-        }
 
         public String getTime() {
             return TimeUtils.parseTime(time);
@@ -424,21 +359,18 @@ public class Blacklist {
             return new Date(end);
         }
 
-        private TimeMeta(String time,
-                         long now) {
-            this.start = now;
+        private TimeMeta(String time) {
             this.time  = TimeUtils.parseTimeValue(time);
-            this.end   = this.start + this.time;
+            this.end   = TimeUtils.nowTime() + this.time;
         }
 
-        private static TimeMeta of(String time,
-                                   long now) {
-            return new TimeMeta(time, now);
+        private static TimeMeta of(String time) {
+            return new TimeMeta(time);
         }
 
-        private void changeTime(String time) {
+        private void updateTime(String time) {
             this.time = TimeUtils.parseTimeValue(time);
-            this.end  = this.start + this.time;
+            this.end  = TimeUtils.nowTime() + this.time;
         }
 
         private boolean relive() {
@@ -457,19 +389,15 @@ public class Blacklist {
     public static Object modify(AuthzModifier modifier) {
         AuthzModifier.BlacklistInfo blacklistInfo = modifier.getBlacklistInfo();
         String                      time          = blacklistInfo.getTime();
-        Long                        start         = blacklistInfo.getStart();
         switch (blacklistInfo.getType()) {
             case IP:
                 String ip = blacklistInfo.getIp();
                 switch (blacklistInfo.getOp()) {
-                    case ADD:
-                        IP._add(ip, time, start);
-                        break;
-                    case CHANGE:
-                        IP._change(ip, time);
+                    case UPDATE:
+                        IP._update(ip, time);
                         break;
                     case REMOVE:
-                        IP.remove(ip);
+                        IP._remove(ip);
                         break;
                     case READ:
                         return Result.SUCCESS.data(ipBlacklist);
@@ -478,29 +406,24 @@ public class Blacklist {
             case IP_RANGE:
                 String ipRange = blacklistInfo.getIpRange();
                 switch (blacklistInfo.getOp()) {
-                    case ADD:
-                        IPRangeDeny._add(ipRange, time, start);
-                        break;
-                    case CHANGE:
-                        IPRangeDeny._change(ipRange, time);
+                    case UPDATE:
+                        IPRangeDeny._update(ipRange, time);
                         break;
                     case REMOVE:
-                        IPRangeDeny.remove(ipRange);
+                        IPRangeDeny._remove(ipRange);
                         break;
                     case READ:
                         return Result.SUCCESS.data(ipRangeBlacklist);
                 }
                 break;
             case USER:
+            case DEVICE:
                 Object userId = blacklistInfo.getUserId();
                 String deviceType = blacklistInfo.getDeviceType();
                 String deviceId = blacklistInfo.getDeviceId();
                 switch (blacklistInfo.getOp()) {
-                    case ADD:
-                        User._add(userId, deviceType, deviceId, time, start);
-                        break;
-                    case CHANGE:
-                        User._change(userId, deviceType, deviceId, time);
+                    case UPDATE:
+                        User._update(userId, deviceType, deviceId, time);
                         break;
                     case REMOVE:
                         User._remove(userId, deviceType, deviceId);

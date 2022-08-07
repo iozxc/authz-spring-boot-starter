@@ -101,7 +101,12 @@ public class AuCoreInitialization implements ApplicationContextAware {
         }
 
         openAuthLibrary.init();
-        AuthzAppVersion.userIdType = ModelParser.getUserIdType(permLibrary);
+        AuthzAppVersion.USER_ID_TYPE = ModelParser.getUserIdType(permLibrary);
+        try {
+            AuthzAppVersion.USER_ID_CONSTRUCTOR = AuthzAppVersion.USER_ID_TYPE.getConstructor(String.class);
+        } catch (NoSuchMethodException e) {
+            LogUtils.error("请保证UserId有String参数的构造器", e);
+        }
 
         AuInit.log.info("Started Authz Message id: {}", Message.uuid);
 

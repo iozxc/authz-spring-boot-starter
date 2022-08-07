@@ -631,18 +631,18 @@ public class AuHelper extends BaseHelper {
     // **************************************     黑名单操作      ************************************** //
 
     /**
-     * 封禁 ip time时间
+     * 【添加、修改】封禁 ip time时间
      *
      * @param ip   封禁的ip
      * @param time 时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
      */
     public static void denyIP(@NonNull String ip,
                               @NonNull String time) {
-        Blacklist.IP.add(ip, time);
+        Blacklist.IP.update(ip, time);
     }
 
     /**
-     * 封禁 ip time时间
+     * 【添加、修改】封禁 ip time时间
      *
      * @param ip 封禁的ip
      * @param ms 毫秒
@@ -653,18 +653,18 @@ public class AuHelper extends BaseHelper {
     }
 
     /**
-     * 封禁 ipRange网段 time时间
+     * 【添加、修改】封禁 ipRange网段 time时间
      *
      * @param ipRange 封禁的ip范围 xx.xx.xx.xx/xx
      * @param time    时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
      */
     public static void denyIPRange(@NonNull String ipRange,
                                    @NonNull String time) {
-        Blacklist.IPRangeDeny.add(ipRange, time);
+        Blacklist.IPRangeDeny.update(ipRange, time);
     }
 
     /**
-     * 封禁 ipRange网段 time时间
+     * 【添加、修改】封禁 ipRange网段 time时间
      *
      * @param ipRange 封禁的ip范围 xx.xx.xx.xx/xx
      * @param ms      毫秒
@@ -675,18 +675,18 @@ public class AuHelper extends BaseHelper {
     }
 
     /**
-     * 封禁 userId time时间
+     * 【添加、修改】封禁 userId time时间
      *
      * @param userId 封禁的userId
      * @param time   时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
      */
     public static void denyUser(@NonNull Object userId,
                                 @NonNull String time) {
-        Blacklist.User.add(userId, null, null, time);
+        Blacklist.User.update(userId, null, null, time);
     }
 
     /**
-     * 封禁 userId time时间
+     * 【添加、修改】封禁 device time时间
      *
      * @param userId 封禁的userId
      * @param ms     毫秒
@@ -697,59 +697,59 @@ public class AuHelper extends BaseHelper {
     }
 
     /**
-     * 封禁 userId time时间
+     * 【添加、修改】封禁 设备 time时间
      *
      * @param userId     封禁的userId
      * @param deviceType 封禁的设备类型
      * @param time       时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
      */
-    public static void denyUser(@NonNull Object userId,
-                                @NonNull String deviceType,
-                                @NonNull String time) {
-        Blacklist.User.add(userId, deviceType, null, time);
+    public static void denyDevice(@NonNull Object userId,
+                                  @NonNull String deviceType,
+                                  @NonNull String time) {
+        Blacklist.User.update(userId, deviceType, null, time);
     }
 
     /**
-     * 封禁 userId time时间
+     * 【添加、修改】封禁 封禁 time时间
      *
      * @param userId     封禁的userId
      * @param deviceType 封禁的设备类型
      * @param ms         毫秒
      */
-    public static void denyUser(@NonNull Object userId,
-                                @NonNull String deviceType,
-                                @NonNull long ms) {
-        denyUser(userId, deviceType, TimeUtils.parseTime(ms));
+    public static void denyDevice(@NonNull Object userId,
+                                  @NonNull String deviceType,
+                                  @NonNull long ms) {
+        denyDevice(userId, deviceType, TimeUtils.parseTime(ms));
     }
 
     /**
-     * 封禁 userId time时间
+     * 【添加、修改】封禁 设备 time时间
      *
      * @param userId     封禁的userId
      * @param deviceType 封禁的设备类型
      * @param deviceId   封禁的设备id
      * @param time       时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
      */
-    public static void denyUser(@NonNull Object userId,
-                                @NonNull String deviceType,
-                                @NonNull String deviceId,
-                                @NonNull String time) {
-        Blacklist.User.add(userId, deviceType, deviceId, time);
+    public static void denyDevice(@NonNull Object userId,
+                                  @NonNull String deviceType,
+                                  @NonNull String deviceId,
+                                  @NonNull String time) {
+        Blacklist.User.update(userId, deviceType, deviceId, time);
     }
 
     /**
-     * 封禁 userId time时间
+     * 【添加、修改】封禁 设备 time时间
      *
      * @param userId     封禁的userId
      * @param deviceType 封禁的设备类型
      * @param deviceId   封禁的设备id
      * @param ms         毫秒
      */
-    public static void denyUser(@NonNull Object userId,
-                                @NonNull String deviceType,
-                                @NonNull String deviceId,
-                                @NonNull long ms) {
-        denyUser(userId, deviceType, deviceId, TimeUtils.parseTime(ms));
+    public static void denyDevice(@NonNull Object userId,
+                                  @NonNull String deviceType,
+                                  @NonNull String deviceId,
+                                  @NonNull long ms) {
+        denyDevice(userId, deviceType, deviceId, TimeUtils.parseTime(ms));
     }
 
     /**
@@ -792,133 +792,10 @@ public class AuHelper extends BaseHelper {
      * @return 封禁信息
      */
     @Nullable
-    public static Blacklist.User getDenyUserInfo(@NonNull Object userId,
+    public static Blacklist.User getDenyDeviceInfo(@NonNull Object userId,
                                                  @Nullable String deviceType,
                                                  @Nullable String deviceId) {
         return Blacklist.User.get(userId, deviceType, deviceId);
-    }
-
-    /**
-     * 修改 ip的封禁时间时间
-     *
-     * @param ip   封禁的ip
-     * @param time 时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
-     */
-    public static void changeDenyIP(@NonNull String ip,
-                                    @NonNull String time) {
-        Blacklist.IP.change(ip, time);
-    }
-
-    /**
-     * 修改 ip的封禁时间时间
-     *
-     * @param ip 封禁的ip
-     * @param ms 毫秒
-     */
-    public static void changeDenyIP(@NonNull String ip,
-                                    @NonNull long ms) {
-        changeDenyIP(ip, TimeUtils.parseTime(ms));
-    }
-
-    /**
-     * 修改 ipRange网段封禁的时间
-     *
-     * @param ipRange 封禁的ip范围 xx.xx.xx.xx/xx
-     * @param time    时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
-     */
-    public static void changeDenyIPRange(@NonNull String ipRange,
-                                         @NonNull String time) {
-        Blacklist.IPRangeDeny.change(ipRange, time);
-    }
-
-    /**
-     * 修改 ipRange网段封禁的时间
-     *
-     * @param ipRange 封禁的ip范围 xx.xx.xx.xx/xx
-     * @param ms      毫秒
-     */
-    public static void changeDenyIPRange(@NonNull String ipRange,
-                                         @NonNull long ms) {
-        changeDenyIPRange(ipRange, TimeUtils.parseTime(ms));
-    }
-
-    /**
-     * 修改 userId封禁时间
-     *
-     * @param userId 封禁的userId
-     * @param time   时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
-     */
-    public static void changeDenyUser(@NonNull Object userId,
-                                      @NonNull String time) {
-        Blacklist.User.change(userId, null, null, time);
-    }
-
-    /**
-     * 修改 userId封禁时间
-     *
-     * @param userId 封禁的userId
-     * @param ms     毫秒
-     */
-    public static void changeDenyUser(@NonNull Object userId,
-                                      @NonNull long ms) {
-        changeDenyUser(userId, TimeUtils.parseTime(ms));
-    }
-
-    /**
-     * 修改 userId封禁时间
-     *
-     * @param userId     封禁的userId
-     * @param deviceType 封禁的设备类型
-     * @param time       时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
-     */
-    public static void changeDenyUser(@NonNull Object userId,
-                                      @NonNull String deviceType,
-                                      @NonNull String time) {
-        Blacklist.User.change(userId, deviceType, null, time);
-    }
-
-    /**
-     * 修改 userId封禁时间
-     *
-     * @param userId     封禁的userId
-     * @param deviceType 封禁的设备类型
-     * @param ms         毫秒
-     */
-    public static void changeDenyUser(@NonNull Object userId,
-                                      @NonNull String deviceType,
-                                      @NonNull long ms) {
-        changeDenyUser(userId, deviceType, TimeUtils.parseTime(ms));
-    }
-
-
-    /**
-     * 修改 userId封禁时间
-     *
-     * @param userId     封禁的userId
-     * @param deviceType 封禁的设备类型
-     * @param deviceId   封禁的设备id
-     * @param time       时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
-     */
-    public static void changeDenyUser(@NonNull Object userId,
-                                      @NonNull String deviceType,
-                                      @NonNull String deviceId,
-                                      @NonNull String time) {
-        Blacklist.User.change(userId, deviceType, deviceId, time);
-    }
-
-    /**
-     * 修改 userId封禁时间
-     *
-     * @param userId     封禁的userId
-     * @param deviceType 封禁的设备类型
-     * @param deviceId   封禁的设备id
-     * @param ms         毫秒
-     */
-    public static void changeDenyUser(@NonNull Object userId,
-                                      @NonNull String deviceType,
-                                      @NonNull String deviceId,
-                                      @NonNull long ms) {
-        changeDenyUser(userId, deviceType, deviceId, TimeUtils.parseTime(ms));
     }
 
     /**
@@ -955,7 +832,7 @@ public class AuHelper extends BaseHelper {
      * @param userId     指定用户
      * @param deviceType 指定设备类型
      */
-    public static void removeDenyUser(@NonNull Object userId,
+    public static void removeDenyDevice(@NonNull Object userId,
                                       @NonNull String deviceType) {
         Blacklist.User.remove(userId, deviceType, null);
     }
@@ -967,7 +844,7 @@ public class AuHelper extends BaseHelper {
      * @param deviceType 指定设备类型
      * @param deviceId   指定设备id
      */
-    public static void removeDenyUser(@NonNull Object userId,
+    public static void removeDenyDevice(@NonNull Object userId,
                                       @NonNull String deviceType,
                                       @NonNull String deviceId) {
         Blacklist.User.remove(userId, deviceType, deviceId);

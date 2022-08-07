@@ -6,6 +6,7 @@ import cn.omisheep.authz.core.auth.rpd.Rule;
 import cn.omisheep.authz.core.oauth.OpenAuthDict;
 import cn.omisheep.commons.util.NamingUtils;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -74,16 +75,17 @@ public class AuthzModifier {
     public static class BlacklistInfo {
         private TYPE   type;
         private OP     op;
-        private Long   start;
         private String ip;
         private String ipRange;
         private Object userId;
         private String deviceType;
         private String deviceId;
         private String time;
+        @JsonFormat(pattern = "yyyy-MM-dd hh:mm:ss")
+        private Date   date;
 
         public enum OP {
-            ADD, CHANGE, REMOVE, READ, NON;
+            UPDATE, REMOVE, READ, NON;
 
             @JsonCreator
             public static OP create(String op) {
@@ -96,7 +98,7 @@ public class AuthzModifier {
         }
 
         public enum TYPE {
-            IP, USER, IP_RANGE, NON;
+            IP, USER, DEVICE, IP_RANGE, NON;
 
             @JsonCreator
             public static TYPE create(String type) {

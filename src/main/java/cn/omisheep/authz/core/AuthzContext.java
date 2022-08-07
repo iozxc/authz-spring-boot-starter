@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core;
 
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
+import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.web.utils.HttpUtils;
@@ -8,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.lang.NonNull;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
 /**
@@ -67,6 +69,15 @@ public class AuthzContext {
             return accessToken;
         } catch (Exception e) {
             throw new NotLoginException();
+        }
+    }
+
+    public static Object createUserId(String userId) {
+        try {
+            if (AuthzAppVersion.USER_ID_TYPE.equals(String.class)) return userId;
+            return AuthzAppVersion.USER_ID_CONSTRUCTOR.newInstance(userId);
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            return userId;
         }
     }
 
