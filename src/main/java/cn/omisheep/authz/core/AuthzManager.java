@@ -25,15 +25,19 @@ public class AuthzManager extends BaseHelper {
 
     @Nullable
     public static Object op(@NonNull AuthzModifier authzModifier) {
-        switch (authzModifier.getTarget()) {
-            case OPEN_AUTH:
-                return OpenAuthDict.modify(authzModifier);
-            case RATE:
-                return Httpd.modify(authzModifier);
-            case BLACKLIST:
-                return Blacklist.modify(authzModifier);
-            default:
-                return PermissionDict.modify(authzModifier);
+        try {
+            switch (authzModifier.getTarget()) {
+                case OPEN_AUTH:
+                    return OpenAuthDict.modify(authzModifier);
+                case RATE:
+                    return Httpd.modify(authzModifier);
+                case BLACKLIST:
+                    return Blacklist.modify(authzModifier);
+                default:
+                    return PermissionDict.modify(authzModifier);
+            }
+        } catch (Exception e) {
+            return Result.FAIL.data();
         }
     }
 

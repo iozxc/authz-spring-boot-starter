@@ -7,8 +7,10 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.Date;
+import java.util.Set;
 import java.util.function.Supplier;
 
 /**
@@ -105,8 +107,25 @@ public class DeviceDetails {
         return !Blacklist.IPRangeDeny.check(getLastRequestIp());
     }
 
+    @Getter(AccessLevel.PRIVATE)
+    private Set<Blacklist.User> list;
+
     public boolean isDenyUser() {
-        return !Blacklist.User.check(userId, deviceType, deviceId);
+        if (list == null) {
+            list = Blacklist.User.list(userId);
+        }
+        return list.stream()
+                .anyMatch(v -> StringUtils.equals(v.getDeviceType(), null)
+                        && StringUtils.equals(v.getDeviceId(), null));
+    }
+
+    public boolean isDenyDevice() {
+        if (list == null) {
+            list = Blacklist.User.list(userId);
+        }
+        return list.stream()
+                .anyMatch(v -> StringUtils.equals(v.getDeviceType(), deviceType)
+                        && StringUtils.equals(v.getDeviceId(), deviceId));
     }
 
 }

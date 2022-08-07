@@ -6,7 +6,6 @@ import cn.omisheep.authz.core.auth.rpd.Rule;
 import cn.omisheep.authz.core.oauth.OpenAuthDict;
 import cn.omisheep.commons.util.NamingUtils;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -80,9 +79,8 @@ public class AuthzModifier {
         private Object userId;
         private String deviceType;
         private String deviceId;
-        private String time;
-        @JsonFormat(pattern = "yyyy-MM-dd hh:mm:ss")
-        private Date   date;
+        private long   time;
+        private String   date;
 
         public enum OP {
             UPDATE, REMOVE, READ, NON;
@@ -109,6 +107,7 @@ public class AuthzModifier {
                 }
             }
         }
+
     }
 
     public enum Target {

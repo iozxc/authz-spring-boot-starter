@@ -29,7 +29,6 @@ import cn.omisheep.authz.core.oauth.AuthorizedDeviceDetails;
 import cn.omisheep.authz.core.oauth.ClientDetails;
 import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.authz.core.tk.IssueToken;
-import cn.omisheep.commons.util.TimeUtils;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
@@ -46,7 +45,7 @@ import static cn.omisheep.authz.core.AuthzManager.modify;
  * @version 1.2
  * @since 1.0.0
  */
-@SuppressWarnings("all")
+//@SuppressWarnings("all")
 public class AuHelper extends BaseHelper {
 
     // **************************************     登录 & 用户设备      ************************************** //
@@ -219,7 +218,7 @@ public class AuHelper extends BaseHelper {
      *
      * @return 设备列表
      */
-    @Nullable
+    @NonNull
     public static List<DeviceDetails> getDevices(@NonNull String deviceType) throws NotLoginException {
         return AuthzDeviceHelper.getAllDeviceByUserIdAndDeviceType(getUserId(), deviceType);
     }
@@ -251,7 +250,7 @@ public class AuHelper extends BaseHelper {
      *
      * @return 设备列表
      */
-    @Nullable
+    @NonNull
     public static List<DeviceDetails> getDevicesAt(@NonNull Object userId) {
         return AuthzDeviceHelper.getAllDeviceByUserId(userId);
     }
@@ -261,7 +260,7 @@ public class AuHelper extends BaseHelper {
      *
      * @return 设备列表
      */
-    @Nullable
+    @NonNull
     public static List<DeviceDetails> getDevicesAt(@NonNull Object userId,
                                                    @NonNull String deviceType) {
         return AuthzDeviceHelper.getAllDeviceByUserIdAndDeviceType(userId, deviceType);
@@ -355,7 +354,7 @@ public class AuHelper extends BaseHelper {
      * @return 获得当前请求的userId
      * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
      */
-    @Nullable
+    @NonNull
     public static Object getUserId() throws NotLoginException {
         return AuthzContext.getCurrentToken().getUserId();
     }
@@ -364,7 +363,7 @@ public class AuHelper extends BaseHelper {
      * @return 获得当前请求的deviceType
      * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
      */
-    @Nullable
+    @NonNull
     public static String getDeviceType() throws NotLoginException {
         return AuthzContext.getCurrentToken().getDeviceType();
     }
@@ -439,9 +438,8 @@ public class AuHelper extends BaseHelper {
      * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
      * count >= 1 or count = -1
      *
-     * @param userId 用户id
-     * @param types  deviceType
-     * @param total  数量
+     * @param types deviceType
+     * @param total 数量
      */
     public static void addDeviceTypesTotalLimit(Collection<String> types,
                                                 int total) throws NotLoginException {
@@ -472,8 +470,7 @@ public class AuHelper extends BaseHelper {
      * 同类型设备最多登录数 默认 1个【count最小为1】，超出会挤出最长时间未访问的设备。
      * count >= 1
      *
-     * @param userId 用户id
-     * @param count  数量
+     * @param count 数量
      */
     public static void changeMaximumSameTypeDeviceCount(int count) throws NotLoginException {
         changeMaximumSameTypeDeviceCount(getUserId(), count);
@@ -617,7 +614,6 @@ public class AuHelper extends BaseHelper {
     /**
      * 所有【在线/活跃】用户详细设备信息 （默认60秒内）
      *
-     * @param ms 时间间隔(ms)
      * @return 用户设备列表
      */
     @NonNull
@@ -652,34 +648,23 @@ public class AuHelper extends BaseHelper {
     /**
      * 【添加、修改】封禁 ip time时间
      *
-     * @param ip   封禁的ip
-     * @param time 时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
-     */
-    public static void denyIP(@NonNull String ip,
-                              @NonNull String time) {
-        Blacklist.IP.update(ip, time);
-    }
-
-    /**
-     * 【添加、修改】封禁 ip time时间
-     *
      * @param ip 封禁的ip
      * @param ms 毫秒
      */
     public static void denyIP(@NonNull String ip,
                               @NonNull long ms) {
-        denyIP(ip, TimeUtils.parseTime(ms));
+        Blacklist.IP.update(ip, ms);
     }
 
     /**
-     * 【添加、修改】封禁 ipRange网段 time时间
+     * 【添加、修改】封禁 ip time时间
      *
-     * @param ipRange 封禁的ip范围 xx.xx.xx.xx/xx
-     * @param time    时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
+     * @param ip      封禁的ip
+     * @param endDate 过期日期
      */
-    public static void denyIPRange(@NonNull String ipRange,
-                                   @NonNull String time) {
-        Blacklist.IPRangeDeny.update(ipRange, time);
+    public static void denyIP(@NonNull String ip,
+                              @NonNull Date endDate) {
+        Blacklist.IP.update(ip, endDate);
     }
 
     /**
@@ -690,18 +675,19 @@ public class AuHelper extends BaseHelper {
      */
     public static void denyIPRange(@NonNull String ipRange,
                                    @NonNull long ms) {
-        denyIPRange(ipRange, TimeUtils.parseTime(ms));
+
+        Blacklist.IPRangeDeny.update(ipRange, ms);
     }
 
     /**
-     * 【添加、修改】封禁 userId time时间
+     * 【添加、修改】封禁 ipRange网段 time时间
      *
-     * @param userId 封禁的userId
-     * @param time   时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
+     * @param ipRange 封禁的ip范围 xx.xx.xx.xx/xx
+     * @param endDate 过期日期
      */
-    public static void denyUser(@NonNull Object userId,
-                                @NonNull String time) {
-        Blacklist.User.update(userId, null, null, time);
+    public static void denyIPRange(@NonNull String ipRange,
+                                   @NonNull Date endDate) {
+        Blacklist.IPRangeDeny.update(ipRange, endDate);
     }
 
     /**
@@ -712,20 +698,18 @@ public class AuHelper extends BaseHelper {
      */
     public static void denyUser(@NonNull Object userId,
                                 @NonNull long ms) {
-        denyUser(userId, TimeUtils.parseTime(ms));
+        Blacklist.User.update(userId, null, null, ms);
     }
 
     /**
-     * 【添加、修改】封禁 设备 time时间
+     * 【添加、修改】封禁 device time时间
      *
-     * @param userId     封禁的userId
-     * @param deviceType 封禁的设备类型
-     * @param time       时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
+     * @param userId  封禁的userId
+     * @param endDate 过期日期
      */
-    public static void denyDevice(@NonNull Object userId,
-                                  @NonNull String deviceType,
-                                  @NonNull String time) {
-        Blacklist.User.update(userId, deviceType, null, time);
+    public static void denyUser(@NonNull Object userId,
+                                @NonNull Date endDate) {
+        Blacklist.User.update(userId, null, null, endDate);
     }
 
     /**
@@ -738,23 +722,22 @@ public class AuHelper extends BaseHelper {
     public static void denyDevice(@NonNull Object userId,
                                   @NonNull String deviceType,
                                   @NonNull long ms) {
-        denyDevice(userId, deviceType, TimeUtils.parseTime(ms));
+        denyDevice(userId, deviceType, null, ms);
     }
 
     /**
-     * 【添加、修改】封禁 设备 time时间
+     * 【添加、修改】封禁 封禁 time时间
      *
      * @param userId     封禁的userId
      * @param deviceType 封禁的设备类型
-     * @param deviceId   封禁的设备id
-     * @param time       时间字符串 "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
+     * @param endDate    过期日期
      */
     public static void denyDevice(@NonNull Object userId,
                                   @NonNull String deviceType,
-                                  @NonNull String deviceId,
-                                  @NonNull String time) {
-        Blacklist.User.update(userId, deviceType, deviceId, time);
+                                  @NonNull Date endDate) {
+        denyDevice(userId, deviceType, null, endDate);
     }
+
 
     /**
      * 【添加、修改】封禁 设备 time时间
@@ -766,24 +749,50 @@ public class AuHelper extends BaseHelper {
      */
     public static void denyDevice(@NonNull Object userId,
                                   @NonNull String deviceType,
-                                  @NonNull String deviceId,
+                                  @Nullable String deviceId,
                                   @NonNull long ms) {
-        denyDevice(userId, deviceType, deviceId, TimeUtils.parseTime(ms));
+        Blacklist.User.update(userId, deviceType, deviceId, ms);
+    }
+
+
+    /**
+     * 【添加、修改】封禁 设备 time时间
+     *
+     * @param userId     封禁的userId
+     * @param deviceType 封禁的设备类型
+     * @param deviceId   封禁的设备id
+     * @param endDate    过期日期
+     */
+    public static void denyDevice(@NonNull Object userId,
+                                  @NonNull String deviceType,
+                                  @Nullable String deviceId,
+                                  @NonNull Date endDate) {
+        Blacklist.User.update(userId, deviceType, deviceId, endDate);
+    }
+
+    /**
+     * 得到所有的 封禁的ip信息
+     *
+     * @return 得到所有的 封禁的ip信息
+     */
+    @NonNull
+    public static Set<Blacklist.IP> getAllDenyIPInfo() {
+        return Blacklist.IP.list();
     }
 
     /**
      * @return 得到封禁的ip信息
      */
-    @NonNull
-    public static List<Blacklist.IP> getDenyIPInfo() {
-        return Blacklist.IP.list();
+    @Nullable
+    public static Blacklist.IP getDenyIPInfo(String ip) {
+        return Blacklist.IP.get(ip);
     }
 
     /**
      * @return 得到封禁的iprange信息
      */
     @NonNull
-    public static List<Blacklist.IPRangeDeny> getDenyIPRangeInfo() {
+    public static Set<Blacklist.IPRangeDeny> getAllDenyIPRangeInfo() {
         return Blacklist.IPRangeDeny.list();
     }
 
@@ -791,7 +800,7 @@ public class AuHelper extends BaseHelper {
      * @return 获得封禁用户的信息
      */
     @NonNull
-    public static List<Blacklist.User> getDenyUserInfo() {
+    public static Set<Blacklist.User> getAllDenyUserInfo() {
         return Blacklist.User.list();
     }
 
@@ -800,8 +809,17 @@ public class AuHelper extends BaseHelper {
      * @return 获得指定的封禁用户的信息
      */
     @NonNull
-    public static List<Blacklist.User> getDenyUserInfo(@NonNull Object userId) {
+    public static Set<Blacklist.User> getDenyUserAndDeviceInfo(@NonNull Object userId) {
         return Blacklist.User.list(userId);
+    }
+
+    /**
+     * @param userId 指定用户id
+     * @return 获得指定的封禁用户的信息
+     */
+    @Nullable
+    public static Blacklist.User getDenyUserInfo(@NonNull Object userId) {
+        return Blacklist.User.getUser(userId);
     }
 
     /**
@@ -812,9 +830,9 @@ public class AuHelper extends BaseHelper {
      */
     @Nullable
     public static Blacklist.User getDenyDeviceInfo(@NonNull Object userId,
-                                                   @Nullable String deviceType,
+                                                   @NonNull String deviceType,
                                                    @Nullable String deviceId) {
-        return Blacklist.User.get(userId, deviceType, deviceId);
+        return Blacklist.User.getDevice(userId, deviceType, deviceId);
     }
 
     /**
@@ -905,7 +923,7 @@ public class AuHelper extends BaseHelper {
      * <li>1.注册客户端 {@link #clientRegister(String, String)} -> 返回客户端信息（客户端id，客户端name，客户端密钥，重定向url）</li>
      * <li>2.获取授权码 {@link #createAuthorizationCode(String, String, String)} -> 客户端id+登录用户+权限范围 、获得登录用户的授权码</li>
      * <li>3.验证授权码 {@link #authorizeByCode(String, String, String)}-> 利用授权码去获得IssueToken</li>
-     * <li>or 3.登录授权 {@link #authorizeByPasswrod(String, String, String)}-> 登录即可获得IssueToken</li>
+     * <li>or 3.登录授权 {@link #authorizeByPassword(String, String, String)}-> 登录即可获得IssueToken</li>
      *
      * @since 1.2.0
      */
@@ -940,7 +958,7 @@ public class AuHelper extends BaseHelper {
          * @throws AuthorizationException 验证失败，客户端密码错误 或 未登录
          */
         @Nullable
-        public static IssueToken authorizeByPasswrod(@NonNull String clientId,
+        public static IssueToken authorizeByPassword(@NonNull String clientId,
                                                      @NonNull String clientSecret,
                                                      @NonNull String scope,
                                                      @NonNull Object userId) throws AuthorizationException {
@@ -957,7 +975,7 @@ public class AuHelper extends BaseHelper {
          * @throws AuthorizationException 验证失败，客户端密码错误 或 未登录
          */
         @Nullable
-        public static IssueToken authorizeByPasswrod(@NonNull String clientId,
+        public static IssueToken authorizeByPassword(@NonNull String clientId,
                                                      @NonNull String clientSecret,
                                                      @NonNull String scope) throws AuthorizationException {
             return OpenAuthHelper.authorizeByPassword(clientId, clientSecret, scope, getUserId());
@@ -1289,7 +1307,7 @@ public class AuHelper extends BaseHelper {
         /**
          * 设置成功授权获得授权码时的回调函数
          *
-         * @param createAuthorizationCodeCallback 成功授权获得授权码时的回调函数
+         * @param authorizationCallback 成功授权获得授权码时的回调函数
          */
         public static void setAuthorizationCallback(AuthorizationCallback authorizationCallback) {
             OpenAuthHelper.setAuthorizationCallback(authorizationCallback);

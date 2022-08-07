@@ -98,7 +98,7 @@ public class AuthzGranterHelper extends BaseHelper {
                 }
                 return TokenHelper.createIssueToken(tokenPair);
             }
-            return null;
+            throw new AuthzException(ExceptionStatus.TOKEN_EXCEPTION);
         } catch (ExpiredJwtException e) {
             throw new RefreshTokenExpiredException();
         } catch (Exception e) {

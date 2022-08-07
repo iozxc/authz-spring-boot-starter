@@ -3,7 +3,6 @@ package cn.omisheep.authz.support.http.api;
 import cn.omisheep.authz.AuHelper;
 import cn.omisheep.authz.core.AuthzContext;
 import cn.omisheep.authz.core.auth.ipf.Blacklist;
-import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.support.http.ApiSupport;
 import cn.omisheep.authz.support.http.annotation.*;
@@ -12,8 +11,9 @@ import cn.omisheep.commons.util.TimeUtils;
 import cn.omisheep.web.entity.Result;
 import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -88,40 +88,27 @@ public class DeviceApiSupport implements ApiSupport {
     }
 
     @Post(value = "/deny", desc = "封禁")
-    public Result denyInfo(@JSON AuthzModifier.BlacklistInfo info,
-                           HttpMeta httpMeta) {
+    public Result denyInfo(@JSON AuthzModifier.BlacklistInfo info) {
         try {
             Object _userId = AuthzContext.createUserId(info.getUserId());
 
-            long ms = info.getDate().getTime() - TimeUtils.nowTime();
+            Date endTime = TimeUtils.formatParse(info.getDate());
 
             switch (info.getType()) {
                 case USER: {
-                    if (ms < 0) {AuHelper.removeDenyUser(_userId);} else AuHelper.denyUser(_userId, ms);
+                    AuHelper.denyUser(_userId, endTime);
                     break;
                 }
                 case DEVICE: {
-                    if (ms < 0) {
-                        AuHelper.removeDenyDevice(_userId, info.getDeviceType(), info.getDeviceId());
-                    } else {
-                        AuHelper.denyDevice(_userId, info.getDeviceType(), info.getDeviceId(), ms);
-                    }
+                    AuHelper.denyDevice(_userId, info.getDeviceType(), info.getDeviceId(), endTime);
                     break;
                 }
                 case IP: {
-                    if (ms < 0) {
-                        AuHelper.removeDenyIP(info.getIp());
-                    } else {
-                        AuHelper.denyIP(info.getIp(), ms);
-                    }
+                    AuHelper.denyIP(info.getIp(), endTime);
                     break;
                 }
                 case IP_RANGE: {
-                    if (ms < 0) {
-                        AuHelper.removeDenyIPRange(info.getIp());
-                    } else {
-                        AuHelper.denyIPRange(info.getIp(), ms);
-                    }
+                    AuHelper.denyIPRange(info.getIp(), endTime);
                     break;
                 }
                 default: {
@@ -138,26 +125,25 @@ public class DeviceApiSupport implements ApiSupport {
 
     @Data
     public static class DenyInfo {
-        private List<Blacklist.User>        userId;
-        private Blacklist.User              device;
-        private List<Blacklist.IP>          ip;
-        private List<Blacklist.IPRangeDeny> iprange;
+        private Blacklist.User             userId;
+        private Blacklist.User             device;
+        private Blacklist.IP               ip;
+        private Set<Blacklist.IPRangeDeny> iprange;
 
         public DenyInfo(Object _userId,
                         AuthzModifier.BlacklistInfo info) {
             userId = AuHelper.getDenyUserInfo(_userId);
             device = AuHelper.getDenyDeviceInfo(info.getUserId(), info.getDeviceType(), info.getDeviceId());
-            ip     = AuHelper.getDenyIPInfo().stream().filter(v -> v.getIp().equals(info.getIp())).collect(
-                    Collectors.toList());
+            ip     = AuHelper.getDenyIPInfo(info.getIp());
             if (info.getIp() != null) {
                 IPAddress ipAddress = new IPAddress(info.getIp());
-                iprange = AuHelper.getDenyIPRangeInfo()
+                iprange = AuHelper.getAllDenyIPRangeInfo()
                         .stream()
                         .filter(v -> v.getIpRange().isIPAddressInRange(ipAddress))
                         .collect(
-                                Collectors.toList());
+                                Collectors.toSet());
             } else {
-                iprange = new ArrayList<>(0);
+                iprange = new HashSet<>(0);
             }
         }
     }
