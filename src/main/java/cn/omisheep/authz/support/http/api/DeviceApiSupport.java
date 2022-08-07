@@ -25,7 +25,7 @@ public class DeviceApiSupport implements ApiSupport {
 
     @Get(value = "/all", desc = "获得所有设备")
     public Result version() {
-        return Result.SUCCESS.data(AuHelper.getAllUsersDevices());
+        return Result.SUCCESS.data(AuHelper.getAllUserDevices());
     }
 
     @Get(value = "/active-users-count", desc = "当前在线用户数量")
@@ -62,7 +62,7 @@ public class DeviceApiSupport implements ApiSupport {
     @Post(value = "/get-deny-info", desc = "获得封禁信息")
     public Result getDenyInfo(@JSON AuthzModifier.BlacklistInfo info) {
         try {
-            return Result.SUCCESS.data(new DenyInfo(AuthzContext.createUserId(info.getUserId() + ""), info));
+            return Result.SUCCESS.data(new DenyInfo(AuthzContext.createUserId(info.getUserId()), info));
         } catch (Exception e) {
             return Result.FAIL.data();
         }
@@ -81,7 +81,7 @@ public class DeviceApiSupport implements ApiSupport {
     public Result denyInfo(@JSON AuthzModifier.BlacklistInfo info,
                            HttpMeta httpMeta) {
         try {
-            Object _userId = AuthzContext.createUserId(info.getUserId() + "");
+            Object _userId = AuthzContext.createUserId(info.getUserId());
 
             long ms = info.getDate().getTime() - TimeUtils.nowTime();
 

@@ -72,10 +72,18 @@ public class AuthzContext {
         }
     }
 
-    public static Object createUserId(String userId) {
+
+    @NonNull
+    public static Object createUserId(@NonNull Object userId) {
         try {
-            if (AuthzAppVersion.USER_ID_TYPE.equals(String.class)) return userId;
-            return AuthzAppVersion.USER_ID_CONSTRUCTOR.newInstance(userId);
+            String _userId;
+            if (userId instanceof String) {
+                _userId = (String) userId;
+            } else {
+                _userId = userId + "";
+            }
+            if (AuthzAppVersion.USER_ID_TYPE.equals(String.class)) return _userId;
+            return AuthzAppVersion.USER_ID_CONSTRUCTOR.newInstance(_userId);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
             return userId;
         }

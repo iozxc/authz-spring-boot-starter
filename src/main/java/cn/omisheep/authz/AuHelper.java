@@ -137,13 +137,6 @@ public class AuHelper extends BaseHelper {
     }
 
     /**
-     * 注销当前用户所有设备
-     */
-    public static void logoutAll() {
-        AuthzGranterHelper.logoutAll();
-    }
-
-    /**
      * 注销当前用户所指定的类型的所有设备
      *
      * @param deviceType 指定设备类型
@@ -164,11 +157,18 @@ public class AuHelper extends BaseHelper {
     }
 
     /**
+     * 注销当前用户所有设备
+     */
+    public static void logoutAll() {
+        AuthzGranterHelper.logoutAll();
+    }
+
+    /**
      * 注销指定用户所有设备，建议用于管理员，如果某用户想通过自己id注销自己，建议加上参数权限判断
      *
      * @param userId 用户id
      */
-    public static void logoutAll(@NonNull Object userId) {
+    public static void logoutAllAt(@NonNull Object userId) {
         AuthzGranterHelper.logoutAll(userId);
     }
 
@@ -178,8 +178,8 @@ public class AuHelper extends BaseHelper {
      * @param userId     用户id
      * @param deviceType 指定设备类型
      */
-    public static void logout(@NonNull Object userId,
-                              @NonNull String deviceType) {
+    public static void logoutAt(@NonNull Object userId,
+                                @NonNull String deviceType) {
         AuthzGranterHelper.logout(userId, deviceType);
     }
 
@@ -190,9 +190,9 @@ public class AuHelper extends BaseHelper {
      * @param deviceType 指定设备类型
      * @param deviceId   指定设备id
      */
-    public static void logout(@NonNull Object userId,
-                              @NonNull String deviceType,
-                              @Nullable String deviceId) {
+    public static void logoutAt(@NonNull Object userId,
+                                @NonNull String deviceType,
+                                @Nullable String deviceId) {
         AuthzGranterHelper.logout(userId, deviceType, deviceId);
     }
 
@@ -202,32 +202,8 @@ public class AuHelper extends BaseHelper {
      * @return 一个map userId->设备信息列表
      */
     @NonNull
-    public static Map<Object, List<DeviceDetails>> getAllUsersDevices() {
+    public static Map<Object, List<DeviceDetails>> getAllUserDevices() {
         return AuthzDeviceHelper.getAllUsersDevices();
-    }
-
-    /**
-     * 获得指定设备信息
-     *
-     * @param userId 指定userId
-     * @return 设备信息
-     */
-    @Nullable
-    public static DeviceDetails getDeviceByUserIdAndDeviceTypeAndDeviceId(@NonNull Object userId,
-                                                                          @NonNull String deviceType,
-                                                                          @Nullable String deviceId) {
-        return AuthzDeviceHelper.getDeviceByUserIdAndDeviceTypeAndDeviceId(userId, deviceType, deviceId);
-    }
-
-
-    /**
-     * 当前访问用户的所有设备
-     *
-     * @return 所有设备列表
-     */
-    @NonNull
-    public static List<DeviceDetails> getAllDeviceFromCurrentUser() throws NotLoginException {
-        return AuthzDeviceHelper.getAllDeviceFromCurrentUser();
     }
 
     /**
@@ -239,26 +215,69 @@ public class AuHelper extends BaseHelper {
     }
 
     /**
-     * 获得指定userId的所有设备信息
+     * 当前访问用户的指定类型的所有设备
      *
-     * @param userId 指定userId
-     * @return 所有设备信息
+     * @return 设备列表
+     */
+    @Nullable
+    public static List<DeviceDetails> getDevices(@NonNull String deviceType) throws NotLoginException {
+        return AuthzDeviceHelper.getAllDeviceByUserIdAndDeviceType(getUserId(), deviceType);
+    }
+
+    /**
+     * 当前访问用户的所有设备
+     *
+     * @return 设备列表
      */
     @NonNull
-    public static List<DeviceDetails> getAllDeviceByUserId(@NonNull Object userId) {
+    public static List<DeviceDetails> getDevices() throws NotLoginException {
+        return AuthzDeviceHelper.getAllDeviceFromCurrentUser();
+    }
+
+    /**
+     * 当前访问用户的设备
+     *
+     * @return 设备列表
+     */
+    @Nullable
+    public static DeviceDetails getDevice() throws NotLoginException {
+        AccessToken token = getToken();
+        return AuthzDeviceHelper.getDeviceByUserIdAndDeviceTypeAndDeviceId(token.getUserId(), token.getDeviceType(),
+                                                                           token.getDeviceId());
+    }
+
+    /**
+     * 指定用户的所有设备
+     *
+     * @return 设备列表
+     */
+    @Nullable
+    public static List<DeviceDetails> getDevicesAt(@NonNull Object userId) {
         return AuthzDeviceHelper.getAllDeviceByUserId(userId);
     }
 
     /**
-     * 获得指定userId的所有设备信息
+     * 指定用户的指定类型的所有设备
+     *
+     * @return 设备列表
+     */
+    @Nullable
+    public static List<DeviceDetails> getDevicesAt(@NonNull Object userId,
+                                                   @NonNull String deviceType) {
+        return AuthzDeviceHelper.getAllDeviceByUserIdAndDeviceType(userId, deviceType);
+    }
+
+    /**
+     * 获得指定设备信息
      *
      * @param userId 指定userId
-     * @return 所有设备信息
+     * @return 设备信息
      */
-    @NonNull
-    public static List<DeviceDetails> getAllDeviceByUserIdAndDeviceType(@NonNull Object userId,
-                                                                        @NonNull String deviceType) {
-        return AuthzDeviceHelper.getAllDeviceByUserIdAndDeviceType(userId, deviceType);
+    @Nullable
+    public static DeviceDetails getDeviceAt(@NonNull Object userId,
+                                            @NonNull String deviceType,
+                                            @Nullable String deviceId) {
+        return AuthzDeviceHelper.getDeviceByUserIdAndDeviceTypeAndDeviceId(userId, deviceType, deviceId);
     }
 
     /**
@@ -268,8 +287,8 @@ public class AuHelper extends BaseHelper {
      * @throws NotLoginException 未登录
      */
     @NonNull
-    public static List<AuthorizedDeviceDetails> getAllAuthorizedDeviceDetails() throws NotLoginException {
-        return getAllAuthorizedDeviceDetails(getUserId());
+    public static List<AuthorizedDeviceDetails> getAuthorizedDeviceDetails() throws NotLoginException {
+        return getAuthorizedDeviceDetailsAt(getUserId());
     }
 
     /**
@@ -278,7 +297,7 @@ public class AuHelper extends BaseHelper {
      * @return 所有授设备信息信息
      */
     @NonNull
-    public static List<AuthorizedDeviceDetails> getAllAuthorizedDeviceDetails(Object userId) {
+    public static List<AuthorizedDeviceDetails> getAuthorizedDeviceDetailsAt(Object userId) {
         return OpenAuthHelper.getAllAuthorizedDeviceDetails(userId);
     }
 
@@ -793,8 +812,8 @@ public class AuHelper extends BaseHelper {
      */
     @Nullable
     public static Blacklist.User getDenyDeviceInfo(@NonNull Object userId,
-                                                 @Nullable String deviceType,
-                                                 @Nullable String deviceId) {
+                                                   @Nullable String deviceType,
+                                                   @Nullable String deviceId) {
         return Blacklist.User.get(userId, deviceType, deviceId);
     }
 
@@ -833,7 +852,7 @@ public class AuHelper extends BaseHelper {
      * @param deviceType 指定设备类型
      */
     public static void removeDenyDevice(@NonNull Object userId,
-                                      @NonNull String deviceType) {
+                                        @NonNull String deviceType) {
         Blacklist.User.remove(userId, deviceType, null);
     }
 
@@ -845,8 +864,8 @@ public class AuHelper extends BaseHelper {
      * @param deviceId   指定设备id
      */
     public static void removeDenyDevice(@NonNull Object userId,
-                                      @NonNull String deviceType,
-                                      @NonNull String deviceId) {
+                                        @NonNull String deviceType,
+                                        @NonNull String deviceId) {
         Blacklist.User.remove(userId, deviceType, deviceId);
     }
 

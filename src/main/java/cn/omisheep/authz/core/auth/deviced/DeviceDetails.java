@@ -79,7 +79,7 @@ public class DeviceDetails {
      */
     private boolean isLogin;
 
-    public DeviceDetails setUserId(String userId) {
+    public DeviceDetails setUserId(Object userId) {
         this.userId = AuthzContext.createUserId(userId);
         return this;
     }
