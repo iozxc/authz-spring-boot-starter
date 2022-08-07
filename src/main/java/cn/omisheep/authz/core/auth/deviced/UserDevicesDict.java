@@ -26,14 +26,6 @@ public interface UserDevicesDict {
      */
     Map<Object, AuthzProperties.UserConfig> usersConfig = new ConcurrentHashMap<>();
 
-    /**
-     * 可以单独为【每一类 (by role) 用户】设置登录状态管理方案
-     * 若为空，则使用默认的
-     *
-     * @since 1.2.0
-     */
-    Map<String, AuthzProperties.UserConfig> roleConfig = new ConcurrentHashMap<>();
-
     enum UserStatus {
         SUCCESS, REQUIRE_LOGIN, LOGIN_EXCEPTION, ACCESS_TOKEN_OVERDUE;
     }
