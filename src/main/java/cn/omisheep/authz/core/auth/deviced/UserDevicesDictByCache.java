@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core.auth.deviced;
 
 import cn.omisheep.authz.AuHelper;
+import cn.omisheep.authz.core.AuthzContext;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.cache.Cache;
@@ -203,7 +204,8 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     public List<Object> listUserId() {
         Set<String> keys = cache.keys(key(Constants.WILDCARD, Constants.WILDCARD));
         if (keys.isEmpty()) return new ArrayList<>(0);
-        return keys.stream().map(key -> key.split(Constants.SEPARATOR)[4]).distinct().collect(Collectors.toList());
+        return keys.stream().map(key -> AuthzContext.createUserId(key.split(Constants.SEPARATOR)[4]))
+                .distinct().collect(Collectors.toList());
     }
 
     @Override
@@ -221,7 +223,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
             };
             deviceDetails.add(new DeviceDetails().setDevice(v).setSupplier(requestDetailsSupplier));
         });
-        deviceDetails.sort((v1,v2)-> v2.getLastRequestTime().compareTo(v1.getLastRequestTime()));
+        deviceDetails.sort((v1, v2) -> v2.getLastRequestTime().compareTo(v1.getLastRequestTime()));
         return deviceDetails;
     }
 
@@ -254,7 +256,7 @@ public class UserDevicesDictByCache implements UserDevicesDict {
                     return new DeviceDetails().setId(split[5])
                             .setUserId(split[4]).setRequest(e.getValue());
                 })
-                .sorted((v1,v2)-> v2.getLastRequestTime().compareTo(v1.getLastRequestTime()))
+                .sorted((v1, v2) -> v2.getLastRequestTime().compareTo(v1.getLastRequestTime()))
                 .collect(Collectors.toList());
     }
 

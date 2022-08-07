@@ -2,7 +2,6 @@ package cn.omisheep.authz.core.auth.deviced;
 
 import cn.omisheep.authz.core.AuthzContext;
 import cn.omisheep.authz.core.auth.ipf.Blacklist;
-import cn.omisheep.authz.core.tk.GrantType;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AccessLevel;
 import lombok.Data;
@@ -53,31 +52,10 @@ public class DeviceDetails {
      */
     private String deviceId;
 
-
-    /**
-     * 客户端id
-     */
-    private String clientId;
-
-    /**
-     * 授权范围
-     */
-    private String scope;
-
-    /**
-     * 授权类型
-     */
-    private GrantType grantType;
-
     /**
      * 过期时间
      */
     private Date expires;
-
-    /**
-     * 是否登录
-     */
-    private boolean isLogin;
 
     public DeviceDetails setUserId(Object userId) {
         this.userId = AuthzContext.createUserId(userId);
@@ -90,10 +68,6 @@ public class DeviceDetails {
     public DeviceDetails setDevice(Device device) {
         this.deviceType = device.getDeviceType();
         this.deviceId   = device.getDeviceId();
-        this.clientId   = device.getClientId();
-        this.scope      = device.getScope();
-        this.grantType  = device.getGrantType();
-        this.expires    = device.getExpiresDate();
         return this;
     }
 

@@ -28,6 +28,16 @@ public class DeviceApiSupport implements ApiSupport {
         return Result.SUCCESS.data(AuHelper.getAllUserDevices());
     }
 
+
+    @Get(value = "/get-all-userid", desc = "获得当前有效用户id列表")
+    public Result getAllUserId() {
+        try {
+            return Result.SUCCESS.data(AuHelper.getAllUserId());
+        } catch (Exception e) {
+            return Result.FAIL.data();
+        }
+    }
+
     @Get(value = "/active-users-count", desc = "当前在线用户数量")
     public Result activeUsersCount(@Param String time) {
         return Result.SUCCESS.data(AuHelper.getNumberOfActiveUser(time));
