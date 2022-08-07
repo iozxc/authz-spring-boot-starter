@@ -462,13 +462,13 @@ public class Blacklist {
     public static Object modify(AuthzModifier modifier) throws ParseException {
         AuthzModifier.BlacklistInfo blacklistInfo = modifier.getBlacklistInfo();
         long                        time          = blacklistInfo.getTime();
-        Date                        date          = TimeUtils.formatParse(blacklistInfo.getDate());
 
         switch (blacklistInfo.getType()) {
             case IP:
                 String ip = blacklistInfo.getIp();
                 switch (blacklistInfo.getOp()) {
                     case UPDATE:
+                        Date date = TimeUtils.formatParse(blacklistInfo.getDate());
                         if (date == null) {IP._update(ip, time);} else IP._update(ip, date);
                         break;
                     case REMOVE:
@@ -482,6 +482,7 @@ public class Blacklist {
                 String ipRange = blacklistInfo.getIpRange();
                 switch (blacklistInfo.getOp()) {
                     case UPDATE:
+                        Date date = TimeUtils.formatParse(blacklistInfo.getDate());
                         if (date == null) {IPRangeDeny._update(ipRange, time);} else IPRangeDeny._update(ipRange, date);
                         break;
                     case REMOVE:
@@ -498,6 +499,7 @@ public class Blacklist {
                 String deviceId = blacklistInfo.getDeviceId();
                 switch (blacklistInfo.getOp()) {
                     case UPDATE:
+                        Date date = TimeUtils.formatParse(blacklistInfo.getDate());
                         if (date == null) {User._update(userId, deviceType, deviceId, time);} else {
                             User._update(userId,
                                          deviceType,

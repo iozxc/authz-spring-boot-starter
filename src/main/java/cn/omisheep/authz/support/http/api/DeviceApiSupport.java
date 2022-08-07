@@ -123,6 +123,41 @@ public class DeviceApiSupport implements ApiSupport {
 
     }
 
+    @Post(value = "/deny-remove", desc = "移除封禁")
+    public Result removeDenyInfo(@JSON AuthzModifier.BlacklistInfo info) {
+        try {
+            Object _userId = AuthzContext.createUserId(info.getUserId());
+
+            switch (info.getType()) {
+                case USER: {
+                    AuHelper.removeDenyUser(_userId);
+                    break;
+                }
+                case DEVICE: {
+                    AuHelper.removeDenyDevice(_userId, info.getDeviceType(), info.getDeviceId());
+                    break;
+                }
+                case IP: {
+                    AuHelper.removeDenyIP(info.getIp());
+                    break;
+                }
+                case IP_RANGE: {
+                    AuHelper.removeDenyIPRange(info.getIp());
+                    break;
+                }
+                default: {
+                    return Result.FAIL.data();
+                }
+            }
+
+            return Result.SUCCESS.data(new DenyInfo(_userId, info));
+        } catch (Exception e) {
+            return Result.FAIL.data();
+        }
+
+    }
+
+
     @Data
     public static class DenyInfo {
         private Blacklist.User             userId;
