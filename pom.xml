@@ -151,7 +151,6 @@
         <connection>scm:git:git@gitee.com:iozxc/authz.git</connection>
         <developerConnection>git@gitee.com:iozxc/authz.git</developerConnection>
     </scm>
-
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
@@ -298,6 +297,19 @@
                             </execution>
                         </executions>
                     </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <version>3.2.2</version>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </plugin>
                 </plugins>
             </build>
         </profile>
@@ -314,6 +326,5 @@
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
     </distributionManagement>
-
 
 </project>
