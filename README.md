@@ -1,13 +1,13 @@
 ### Authz - (authz-spring-boot-starter)
 
-## 动态权限框架 - 简单介绍
+## 权限安全框架 - 简单介绍
 
 > [Authz](https://github.com/iozxc/authz-spring-boot-starter) 
 - gitee地址 https://gitee.com/iozxc/authz-spring-boot-starter
 - github地址 https://github.com/iozxc/authz-spring-boot-starter
 - 更新日志 <a href='CHANGELOG.md'>CHANGELOG.md</a>
 
-![Authz](http://cdn.omisheep.cn/upload/img/article/320649505852620800.png)
+![Authz](https://tva1.sinaimg.cn/large/e6c9d24egy1h4z753rq3mj21h40rqn0l.jpg)
 
 ## 导入&配置
 
@@ -18,7 +18,7 @@
 <dependency>
     <groupId>cn.omisheep</groupId>
     <artifactId>authz-spring-boot-starter</artifactId>
-    <version>1.1.10</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 
@@ -27,16 +27,7 @@
 ```yaml
 authz:
   token:
-    key: 123456 # token加密密钥
-  cache:
-    enable-redis: true 
-    # 是否开启redis二级缓存，默认为一级缓存，单机版可以不开启。
-    # 若为cloud项目建议开启。否则用户信息无法同步
-  log: error   # authz的log等级
-  orm: mybatis # orm框架
-  dashboard:
-    enabled: true # 是否开启dashboard，默认页面为 http[s]://{baseUrl}/authz-dashboard/
-  app: omisheep # app名。默认为defaultApp，若不同项目用一个redis建议单独命名各个项目的app名
+    key: 123456
 ```
 
 ## 登录 & 退出 & 封禁、ip限制、网段限制 & RateLimit & 在线人数信息、人数查询
@@ -62,7 +53,7 @@ AuHepler.queryActiveUsers(); // 获得所有活跃的用户信息 返回：用�
 ### 封禁、ip限制、网段限制
 ```java
 AuHelper.denyUser(1, "2s"); // 对用户1进行封禁2秒
-AuHelper.denyUser(2, "mac", "10s"); // 对用户2的mac设备进行封禁10秒
+AuHelper.denyDevice(2, "mac", "10s"); // 对用户2的mac设备进行封禁10秒
 AuHelper.removeDenyUser(1); // 移除用户1的封禁
 AuHelper.denyIPRange("10.2.0.0/24", "10d"); // 对10.2.0.0/24网段下的IP进行封禁10天
 AuHelper.denyIP("10.2.0.2", "10d"); // 对ip 10.2.0.2进行封禁10天
@@ -70,23 +61,25 @@ AuHelper.denyIP("10.2.0.2", "10d"); // 对ip 10.2.0.2进行封禁10天
 
 ### 更多操作
 ```java
-AuHelper.login(1);    // 登录用户1，返回：TokenPair
+AuHelper.login(1);    // 登录userId为1的用户，返回：IssueToken ->内有AccessToken和RefreshToken
 AuHelper.refreshToken("用户的RefreshTokenValue"); // 利用RefreshToken刷新获得新的AccessToken
-AuHelper.getToken();    // 获取当前用户的Token，返回：AccessToken
+AuHelper.getToken();    // 获取当前用户的Token，返回：Token
 AuHelper.isLogin();    // 此次访问是否已经登录, 返回：true｜false
 AuHelper.logout();    // 注销当前访问用户的当前设备
 AuHelper.logoutAll();    // 注销当前访问用户的所有设备
-AuHelper.logoutAll(2);    // 注销用户2的所有设备
-AuHelper.logout(2, "macOS");    // 注销用户2的macOS系统的设备
+AuHelper.logoutAllAt(2);    // 注销用户2的所有设备
+AuHelper.logoutAt(2, "macOS");    // 注销用户2的macOS系统的设备
 AuHelper.hasRole("admin");    // 查询当前访问用户是否含有指定角色标识， 返回：true｜false
 AuHelper.hasPermission("admin");    // 查询当前访问用户是否含有指定权限标识，返回：true｜false
-AuHelper.getRSAPublicKey(); // 得到当前RSA的公钥， 返回String
-AuHelper.checkUserIsActive(1); // 检查用户1是否活跃， 返回true或false
-AuHelper.checkUserIsActive(1, "20s"); // 检查用户1是否在20s内访问过，返回：true｜false
-AuHelper.queryActiveUsers(); // 查询活跃用户，返回：List
-AuHelper.queryNumberOfActiveUsers(); // 查询活跃用户人数，返回：int
-AuHelper.queryAllDeviceByUserId(1); // 获得用户id为1的所有设备信息，返回：List<Device>
-AuHelper.reloadCache(); // 重新加载二级缓存
+AuHelper.RSA.getRSAPrivateKey(); // 得到当前RSA的公钥， 返回String
+AuHelper.OpenAuth.clientRegister("客户端名","回调url"); // 注册一个客户端信息 返回 ClientDetails
+AuHelper.OpenAuth.createAuthorizationCode("客户端id","授权范围","回调url"); // 创建一个关于当前登录用户的授权码 ，返回 String
+AuHelper.checkUserIsActive(1); // 检查用户1是否活跃， 返回true｜false
+AuHelper.getActiveUserIdList(); // 查询活跃用户，返回：List<Object> 用户id集合
+AuHelper.getNumberOfActiveUser(); // 查询活跃用户人数，返回：int
+AuHelper.getActiveDevices(); // 查询活跃用户设备，返回：List<DeviceDetails>
+AuHelper.getDevicesAt(1); // 获得用户id为1的所有设备信息，返回：List<DeviceDetails>
+
 ```
 
 ### RateLimit
@@ -179,35 +172,33 @@ public class ArgResourceTest {
 
 @RestController
 class Main {
-    // 参数name为ooo时，必须需要role包含zxc  
+    
+    // 参数name为ooo时，必须需要role包含zxc
     // id为177时必须需要admin权限
     // zxc 能够访问id属于123-156 不能访问177
     // admin 能够访问id属于146-200
     // 如果某个用户有两个角色，那么取并集。如 zxc,admin 能访问123-200
     @Roles({"admin", "zxc"})
-    @GetMapping("/get/{name}/{id}")
-    public Result getPath2(@Roles(value = "zxc", paramResources = "#{name}") @PathVariable String name,
-                           @BatchAuthority(roles = {
-                                   @Roles(value = "zxc", paramRange = {"#{id}-156", "177"}),
-                                   @Roles(value = "admin", paramRange = "146-200", paramResources = "177")
+    @GetMapping("/get/{n}/{id}")
+    public Result getPath2(@AuthParam(requireRoles = "zxc", resources = "#{name}") @PathVariable("n") String name,
+                           @BatchAuthParam({
+                                   @AuthParam(requireRoles = "zxc", range = {"#{id}-156", "177"}),
+                                   @AuthParam(requireRoles = "admin", range = "146-200", resources = "177")
                            }) @PathVariable int id) {
-    ...
+        ...
     }
+
 }
 
-    // 对于参数operate
-// 如果需要 "查询" 和 "重启"，则需要 "工程师权限", "运维权限", "技术人员权限" 这三个权限
-// 如果需要 "开机", "关机", "添加" 则需要 "运维权限" 权限
-// 如果需要 "登录" 则需要 "技术人员权限" 权限
     @Roles({"admin", "zxc"})
     @GetMapping("/operate")
-    public Result test(
-            @BatchAuthority(perms = {
-                    @Perms(value = {"工程师权限", "运维权限", "技术人员权限"}, paramResources = {"查询", "重启"}),
-                    @Perms(value = {"运维权限"}, paramResources = {"开机", "关机", "添加"}),
-                    @Perms(value = {"技术人员权限"}, paramResources = "登录")})
-            @RequestParam(required = true) String operate) {
-        ....
+    public Result get(@BatchAuthParam({
+                              @AuthParam(requirePermissions = {"工程师权限", "运维权限", "技术人员权限"}, resources = {"查询", "重启"}),
+                              @AuthParam(requirePermissions = {"运维权限"}, resources = {"开机", "关机", "添加"}),
+                              @AuthParam(requirePermissions = {"技术人员权限"}, resources = "登录"),
+                      })
+                      @RequestParam(required = false) String operate) {
+        ...
     }
 ```
 
@@ -217,13 +208,15 @@ class Main {
 
 ```java
 
+import cn.omisheep.authz.annotation.AuthField;
+
 // 如果是admin角色，那么只能看到id在 #{test}内的数据
 // 如果是zxc角色，那么只能看到 id >=10的数据
 // 如果两个都有， 那么就是 or
 // #{test}为【资源】
-@BatchAuthority({
-        @Roles(value = "admin", condition = "id in (#{test})"),
-        @Roles(value = "zxc", condition = "id >= 10")
+@BatchAuthData({
+        @AuthData(requireRoles = "admin", condition = "id in (#{test})"),
+        @AuthData(requireRoles = "user", condition = "id >= 10")
 })
 @Data
 @TableName("hnie_user")
@@ -239,11 +232,11 @@ public class HnieUser {
     private String username;
 
     // 只有admin角色才能看见password字段
-    @Roles("admin")
+    @AuthField(requireRoles = "admin")
     private String password;
 
     // 只有zxc角色才能看见info字段
-    @Roles("zxc")
+    @AuthField(requireRoles = "zxc")
     private String info;
 
 }
@@ -261,16 +254,14 @@ public class UserPermLibrary implements PermLibrary<Integer> {
 
     @Autowired
     private UserService userService;
-
-    @NonNull
+    
     @Override
-    public Set<String> getRolesByUserId(@NonNull Integer userId) {
+    public Set<String> getRolesByUserId(Integer userId) {
         return userService.getRolesByUserId(userId);
     }
-
-    @NonNull
+    
     @Override
-    public Set<String> getPermissionsByRole(@NonNull String role) {
+    public Set<String> getPermissionsByRole(String role) {
         return userService.getPermissionsByRole(role);
     }
 }

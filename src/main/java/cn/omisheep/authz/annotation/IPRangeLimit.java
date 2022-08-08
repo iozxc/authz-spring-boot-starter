@@ -12,6 +12,7 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface IPRangeLimit {
+
     /**
      * @return xx.xx.xx.xx/xx , xx.xx.xx.xx/xx
      */
@@ -21,4 +22,5 @@ public @interface IPRangeLimit {
      * @return xx.xx.xx.xx/xx , xx.xx.xx.xx/xx
      */
     String deny() default "";
+
 }
