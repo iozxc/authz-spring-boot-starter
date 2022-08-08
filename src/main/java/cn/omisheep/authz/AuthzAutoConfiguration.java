@@ -113,8 +113,9 @@ public class AuthzAutoConfiguration {
     }
 
     @Configuration
-    @EnableConfigurationProperties(RedisProperties.class)
     @SuppressWarnings({"rawtypes", "unchecked"})
+    @ConditionalOnProperty(prefix = "authz.cache", name = "enable-redis", havingValue = "true")
+    @EnableConfigurationProperties(RedisProperties.class)
     public static class CacheAutoConfiguration {
 
         public static Jackson2JsonRedisSerializer jackson2JsonRedisSerializer;
@@ -137,7 +138,6 @@ public class AuthzAutoConfiguration {
 
         @Bean("authzRedisTemplate")
         @ConditionalOnMissingBean(name = "authzRedisTemplate")
-        @ConditionalOnProperty(prefix = "authz.cache", name = "enable-redis", havingValue = "true")
         public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
             RedisTemplate<String, Object> template = new RedisTemplate<>();
             template.setConnectionFactory(redisConnectionFactory);
@@ -150,7 +150,6 @@ public class AuthzAutoConfiguration {
         }
 
         @Bean("authzCacheMessageReceive")
-        @ConditionalOnProperty(prefix = "authz.cache", name = "enable-redis", havingValue = "true")
         public MessageReceive messageReceive(Cache cache) {
             return new MessageReceive(cache);
         }

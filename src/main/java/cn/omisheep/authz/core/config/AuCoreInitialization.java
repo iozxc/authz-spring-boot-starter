@@ -105,7 +105,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
         try {
             AuthzAppVersion.USER_ID_CONSTRUCTOR = AuthzAppVersion.USER_ID_TYPE.getConstructor(String.class);
         } catch (NoSuchMethodException e) {
-            LogUtils.error("请保证UserId有String参数的构造器", e);
+            LogUtils.error("请保证UserId的类有String参数的构造器");
         }
 
         AuInit.log.info("Started Authz Message id: {}", Message.uuid);
