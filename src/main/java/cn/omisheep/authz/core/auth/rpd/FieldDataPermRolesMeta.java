@@ -16,10 +16,11 @@ public class FieldDataPermRolesMeta extends PermRolesMeta {
 
     public static FieldDataPermRolesMeta of(String className,
                                             PermRolesMeta permRolesMeta) {
-        if (permRolesMeta == null || permRolesMeta.non()) return null;
         FieldDataPermRolesMeta fieldDataPermRolesMeta = new FieldDataPermRolesMeta(className);
-        fieldDataPermRolesMeta.roles       = permRolesMeta.roles;
-        fieldDataPermRolesMeta.permissions = permRolesMeta.permissions;
+        if (permRolesMeta != null && permRolesMeta.non()) {
+            fieldDataPermRolesMeta.roles       = permRolesMeta.roles;
+            fieldDataPermRolesMeta.permissions = permRolesMeta.permissions;
+        }
         return fieldDataPermRolesMeta;
     }
 

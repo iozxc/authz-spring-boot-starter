@@ -307,9 +307,9 @@ public class AuthzAutoConfiguration {
         @Bean
         @Primary
         @ConditionalOnProperty(name = "authz.orm", havingValue = "MYBATIS")
-        public DataSecurityInterceptorForMybatis dataSecurityInterceptorForMybatis(PermLibrary permLibrary,
-                                                                                   DataFinderSecurityInterceptor dataFinderSecurityInterceptor) {
-            return new DataSecurityInterceptorForMybatis(permLibrary, dataFinderSecurityInterceptor);
+        public DataSecurityInterceptorForMybatis dataSecurityInterceptorForMybatis(
+                DataFinderSecurityInterceptor dataFinderSecurityInterceptor) {
+            return new DataSecurityInterceptorForMybatis(dataFinderSecurityInterceptor);
         }
 
         @Bean

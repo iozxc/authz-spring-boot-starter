@@ -1,6 +1,5 @@
 package cn.omisheep.authz.core.interceptor;
 
-import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.rpd.DataPermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.FieldDataPermRolesMeta;
@@ -24,7 +23,6 @@ public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterce
 
     @Override
     public String sqlChange(HttpMeta httpMeta,
-                            PermLibrary permLibrary,
                             List<DataPermRolesMeta> dataPermRolesMetaList,
                             Class<?> resultType,
                             String sql) throws JSQLParserException {
@@ -35,10 +33,11 @@ public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterce
 
         Iterator<String> iterator = dataPermRolesMetaList
                 .stream()
-                .filter(dataPermMeta -> dataPermMeta.getRequireRoles() != null && CollectionUtils.containsSub(dataPermMeta.getRequireRoles(), rolesByUserId)
-                                        || dataPermMeta.getRequirePermissions() != null && CollectionUtils.containsSub(dataPermMeta.getRequirePermissions(), permissionsByRole)
-                                        || dataPermMeta.getExcludeRoles() != null && !CollectionUtils.containsSub(dataPermMeta.getExcludeRoles(), rolesByUserId)
-                                        || dataPermMeta.getExcludePermissions() != null && !CollectionUtils.containsSub(dataPermMeta.getExcludePermissions(), permissionsByRole))
+                .filter(dataPermMeta -> (dataPermMeta.non() && httpMeta.hasToken())  // 空表示只需要验证登录
+                        || CollectionUtils.containsSub(dataPermMeta.getRequireRoles(), rolesByUserId)
+                        || CollectionUtils.containsSub(dataPermMeta.getRequirePermissions(), permissionsByRole)
+                        || !CollectionUtils.containsSub(dataPermMeta.getExcludeRoles(), rolesByUserId)
+                        || !CollectionUtils.containsSub(dataPermMeta.getExcludePermissions(), permissionsByRole))
                 .map(ArgsParser::parse)
                 .iterator();
 
@@ -64,7 +63,6 @@ public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterce
 
     @Override
     public Object dataTrim(HttpMeta httpMeta,
-                           PermLibrary permLibrary,
                            Map<String, FieldDataPermRolesMeta> fieldDataMap,
                            Class<?> resultType,
                            Object obj) {
@@ -76,10 +74,14 @@ public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterce
 
             fieldDataMap.entrySet()
                     .stream()
-                    .filter(e -> (!CollectionUtils.containsSub(e.getValue().getRoles().getRequire(), rolesByUserId))
-                            || (!CollectionUtils.containsSub(e.getValue().getPermissions().getRequire(), permissionsByRole))
+                    .filter(e -> (e.getValue().non() && !httpMeta.hasToken()) // 空表示只需要验证登录
+                            || (!CollectionUtils.containsSub(e.getValue().getRoles().getRequire(), rolesByUserId))
+                            || (!CollectionUtils.containsSub(e.getValue().getPermissions().getRequire(),
+                                                             permissionsByRole))
                             || (CollectionUtils.containsSub(e.getValue().getRoles().getExclude(), rolesByUserId))
-                            || (CollectionUtils.containsSub(e.getValue().getPermissions().getExclude(), permissionsByRole)))
+                            || (CollectionUtils.containsSub(e.getValue().getPermissions().getExclude(),
+                                                            permissionsByRole))
+                    )
                     .map(Map.Entry::getKey)
                     .forEach(deleted::add); //任意一个没有满足则从字段中删除
 

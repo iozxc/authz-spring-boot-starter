@@ -1,12 +1,11 @@
 package cn.omisheep.authz.core.interceptor.mybatis;
 
-import cn.omisheep.authz.core.auth.PermLibrary;
+import cn.omisheep.authz.core.AuthzContext;
 import cn.omisheep.authz.core.auth.rpd.DataPermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.FieldDataPermRolesMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.cache.library.L2RefreshCacheSupport;
 import cn.omisheep.authz.core.interceptor.DataFinderSecurityInterceptor;
-import cn.omisheep.authz.core.AuthzContext;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.ReflectUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -42,13 +41,10 @@ import java.util.Map;
 public class DataSecurityInterceptorForMybatis implements Interceptor {
 
     private final ThreadLocal<ResultMap>        resultMapThreadLocal = ThreadLocal.withInitial(() -> null);
-    private final PermLibrary                   permLibrary;
     private final DataFinderSecurityInterceptor dataFinderSecurityInterceptor;
 
 
-    public DataSecurityInterceptorForMybatis(PermLibrary permLibrary,
-                                             DataFinderSecurityInterceptor dataFinderSecurityInterceptor) {
-        this.permLibrary                   = permLibrary;
+    public DataSecurityInterceptorForMybatis(DataFinderSecurityInterceptor dataFinderSecurityInterceptor) {
         this.dataFinderSecurityInterceptor = dataFinderSecurityInterceptor;
     }
 
@@ -70,7 +66,7 @@ public class DataSecurityInterceptorForMybatis implements Interceptor {
                 if (PermissionDict.getDataPermission() == null) return invocation.proceed();
                 List<DataPermRolesMeta> dataPermRolesMetaList = PermissionDict.getDataPermission()
                         .get(type.getTypeName());
-                String change = dataFinderSecurityInterceptor.sqlChange(AuthzContext.getCurrentHttpMeta(), permLibrary,
+                String change = dataFinderSecurityInterceptor.sqlChange(AuthzContext.getCurrentHttpMeta(),
                                                                         dataPermRolesMetaList, type, boundSql.getSql());
                 System.out.println(change);
                 ReflectUtils.setFieldValue(boundSql, "sql", change);
@@ -92,7 +88,7 @@ public class DataSecurityInterceptorForMybatis implements Interceptor {
                     }
                     Map<String, FieldDataPermRolesMeta> fieldDataMap = PermissionDict.getFieldsData()
                             .get(type.getTypeName());
-                    obj = dataFinderSecurityInterceptor.dataTrim(AuthzContext.getCurrentHttpMeta(), permLibrary,
+                    obj = dataFinderSecurityInterceptor.dataTrim(AuthzContext.getCurrentHttpMeta(),
                                                                  fieldDataMap,
                                                                  type, obj);
                     return obj;
