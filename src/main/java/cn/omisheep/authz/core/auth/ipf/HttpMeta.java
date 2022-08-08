@@ -3,6 +3,7 @@ package cn.omisheep.authz.core.auth.ipf;
 import cn.omisheep.authz.annotation.ArgResource;
 import cn.omisheep.authz.core.AuthzException;
 import cn.omisheep.authz.core.ExceptionStatus;
+import cn.omisheep.authz.core.LogLevel;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.rpd.ParamMetadata;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
@@ -19,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import org.springframework.boot.logging.LogLevel;
 import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;

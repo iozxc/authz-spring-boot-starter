@@ -5,7 +5,6 @@ import cn.omisheep.authz.core.codec.Decryptor;
 import cn.omisheep.authz.core.codec.RSADecryptor;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.logging.LogLevel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,11 +49,6 @@ public class AuthzProperties {
      * @since 1.0.5
      */
     private ORM orm;
-
-    /**
-     * 过滤后缀名，对dashboard有点用
-     */
-    private String[] ignoreSuffix = {".css", ".js", ".html", ".png", ".jpg", ".gif", ".svg", ".ico"};
 
     private TokenConfig token = new TokenConfig();
 
@@ -140,7 +134,7 @@ public class AuthzProperties {
         private String key;
 
         /**
-         * tokenId的长度
+         * 登录标识的长度
          */
         private int tokenIdBits = 8;
 
@@ -211,13 +205,13 @@ public class AuthzProperties {
          * 若配置，则必须在这些范围内
          * xx.xx.xx.xx/xx , xx.xx.xx.xx/xx
          */
-        private String allow = "";
+        private String allow;
 
         /**
-         * 拒绝访问网断
+         * 拒绝访问网段
          * xx.xx.xx.xx/xx , xx.xx.xx.xx/xx
          */
-        private String deny = "";
+        private String deny;
 
         /**
          * 0:0:0:0:0:0:0:1  127.0.0.1是否支持
@@ -322,10 +316,6 @@ public class AuthzProperties {
          */
         private String unresponsiveExpirationTime = "10m";
 
-        /**
-         * 用户ip
-         */
-        private String ip;
         /**
          * 【-只only-允许】的iprange
          */

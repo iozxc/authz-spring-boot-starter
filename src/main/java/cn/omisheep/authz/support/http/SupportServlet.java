@@ -76,10 +76,9 @@ public class SupportServlet extends HttpServlet {
         users.addAll(dashboardConfig.getUsers().stream().map(User::new).collect(Collectors.toList()));
         String                                                username    = dashboardConfig.getUsername();
         String                                                password    = dashboardConfig.getPassword();
-        String                                                ip          = dashboardConfig.getIp();
         AuthzProperties.DashboardConfig.DashboardPermission[] permissions = dashboardConfig.getPermissions();
         if (!StringUtils.isEmpty(username) && !StringUtils.isEmpty(password)) {
-            users.add(new User(username, password, ip, permissions));
+            users.add(new User(username, password, null, permissions));
         }
 
         SupportServlet.unresponsiveExpirationTime = TimeUtils.parseTimeValue(
@@ -274,11 +273,6 @@ public class SupportServlet extends HttpServlet {
         }
 
         response.getWriter().write(text);
-    }
-
-    private boolean isPermittedRequest(HttpServletRequest request) {
-        String ip = IPUtils.getIp(request);
-        return isPermittedRequest(ip);
     }
 
     private boolean isPermittedRequest(String remoteAddress) {

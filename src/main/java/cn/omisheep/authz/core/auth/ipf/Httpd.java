@@ -9,7 +9,6 @@ import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.web.entity.Result;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
-import lombok.Setter;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.http.server.PathContainer;
@@ -37,10 +36,6 @@ public class Httpd {
     private static final HashMap<String, PathPattern> pathMatcherMap = new HashMap<>();
 
     private static final PathPatternParser pathPatternParser = new PathPatternParser();
-
-    @Getter
-    @Setter
-    private static String[] ignoreSuffix;
 
     /**
      * 用于保存请求限制的信息
@@ -320,7 +315,6 @@ public class Httpd {
             }
         });
 
-        ignoreSuffix = properties.getIgnoreSuffix();
     }
 
     private Httpd() {

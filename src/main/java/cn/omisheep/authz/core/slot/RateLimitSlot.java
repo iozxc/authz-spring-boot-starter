@@ -3,6 +3,7 @@ package cn.omisheep.authz.core.slot;
 import cn.omisheep.authz.annotation.RateLimit;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.ExceptionStatus;
+import cn.omisheep.authz.core.LogLevel;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.ipf.LimitMeta;
@@ -10,7 +11,6 @@ import cn.omisheep.authz.core.auth.ipf.RequestMeta;
 import cn.omisheep.authz.core.msg.RequestMessage;
 import cn.omisheep.authz.core.util.RedisUtils;
 import cn.omisheep.commons.util.Async;
-import org.springframework.boot.logging.LogLevel;
 import org.springframework.web.method.HandlerMethod;
 
 import static cn.omisheep.authz.annotation.RateLimit.CheckType.IP;

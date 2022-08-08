@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core.util;
 
+import cn.omisheep.authz.core.LogLevel;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.config.Constants;
@@ -9,7 +10,6 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
-import org.springframework.boot.logging.LogLevel;
 
 import java.util.ArrayList;
 import java.util.List;

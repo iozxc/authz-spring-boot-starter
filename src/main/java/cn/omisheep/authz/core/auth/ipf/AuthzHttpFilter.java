@@ -31,6 +31,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
         this.isDashboard = isDashboard;
     }
 
+
     @Override
     public void doFilterInternal(HttpServletRequest rrequest,
                                  HttpServletResponse response,
@@ -49,7 +50,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
 
         HttpUtils.request.set(request);
 
-        if (isIgnoreSuffix(uri, Httpd.getIgnoreSuffix()) || (isDashboard && (servletPath.equals(
+        if (isIgnoreSuffix(uri, SUFFIX) || (isDashboard && (servletPath.equals(
                 DASHBOARD_LOGO) || servletPath.startsWith(DASHBOARD_API_PREFIX) || servletPath.startsWith(
                 DASHBOARD_STATIC_PREFIX) || servletPath.startsWith(DASHBOARD_HTML)))) {
             HttpMeta httpMeta = new HttpMeta(request, uri, null, method, uri);
