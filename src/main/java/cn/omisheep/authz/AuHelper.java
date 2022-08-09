@@ -114,27 +114,6 @@ public class AuHelper extends BaseHelper {
     }
 
     /**
-     * 根据登录标识退出登录
-     *
-     * @param id 登录标识
-     */
-    public static void logoutById(String id) throws NotLoginException {
-        AuthzGranterHelper.logoutById(getUserId(), id);
-    }
-
-    /**
-     * 根据登录标识退出登录
-     *
-     * @param userId 用户id
-     * @param id     登录标识
-     */
-    public static void logoutById(Object userId,
-                                  String id) {
-        AuthzGranterHelper.logoutById(userId, id);
-    }
-
-
-    /**
      * 注销当前用户当前设备
      */
     public static void logout() throws NotLoginException {
@@ -199,6 +178,26 @@ public class AuHelper extends BaseHelper {
                                 @NonNull String deviceType,
                                 @Nullable String deviceId) {
         AuthzGranterHelper.logout(userId, deviceType, deviceId);
+    }
+
+    /**
+     * 根据登录标识退出登录
+     *
+     * @param id 登录标识
+     */
+    public static void logoutById(String id) throws NotLoginException {
+        AuthzGranterHelper.logoutById(getUserId(), id);
+    }
+
+    /**
+     * 根据登录标识退出登录
+     *
+     * @param userId 用户id
+     * @param id     登录标识
+     */
+    public static void logoutById(Object userId,
+                                  String id) {
+        AuthzGranterHelper.logoutById(userId, id);
     }
 
     /**
