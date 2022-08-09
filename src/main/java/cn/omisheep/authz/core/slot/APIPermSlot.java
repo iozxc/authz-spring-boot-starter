@@ -8,10 +8,7 @@ import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.commons.util.CollectionUtils;
 import org.springframework.web.method.HandlerMethod;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static cn.omisheep.authz.core.util.LogUtils.logs;
 
@@ -35,9 +32,20 @@ public class APIPermSlot implements Slot {
                       HandlerMethod handler,
                       Error error) {
         if (!httpMeta.isHasApiAuth()) return;
-        PermRolesMeta permRolesMeta = PermissionDict.getRolePermission().get(httpMeta.getApi()).get(
-                httpMeta.getMethod());
-        if (permRolesMeta.non()) return;
+
+        if (!check(PermissionDict.getControllerRolePermission().get(httpMeta.getControllerType()), error,
+                  httpMeta)) return;
+
+        Map<String, PermRolesMeta> rolesMetaMap1 = PermissionDict.getRolePermission().get(httpMeta.getApi());
+        if (rolesMetaMap1 == null || check(rolesMetaMap1.get(httpMeta.getMethod()), error, httpMeta)) {
+            logs("Success: API", httpMeta);
+        }
+    }
+
+    private boolean check(PermRolesMeta permRolesMeta,
+                          Error error,
+                          HttpMeta httpMeta) {
+        if (permRolesMeta == null || permRolesMeta.non()) return true;
 
         Set<String> roles = null;
         if (!CollectionUtils.isEmpty(permRolesMeta.getRequireRoles())
@@ -47,7 +55,7 @@ public class APIPermSlot implements Slot {
                     || CollectionUtils.containsSub(permRolesMeta.getExcludeRoles(), roles)) {
                 logs("Forbid : permissions exception", httpMeta, permRolesMeta);
                 error.error(ExceptionStatus.PERM_EXCEPTION);
-                return;
+                return false;
             }
         }
 
@@ -60,17 +68,18 @@ public class APIPermSlot implements Slot {
                 if (CollectionUtils.containsSub(permRolesMeta.getExcludePermissions(), permissionsByRole)) {
                     logs("Forbid : permissions exception", httpMeta, permRolesMeta);
                     error.error(ExceptionStatus.PERM_EXCEPTION);
-                    return;
+                    return false;
                 }
             }
             if (!CollectionUtils.containsSub(permRolesMeta.getRequirePermissions(), perms)) {
                 logs("Forbid : permissions exception", httpMeta, permRolesMeta);
                 error.error(ExceptionStatus.PERM_EXCEPTION);
-                return;
+                return false;
             }
             httpMeta.setPermissions(perms);
         }
 
-        logs("Success: API", httpMeta, permRolesMeta);
+        return true;
     }
+
 }

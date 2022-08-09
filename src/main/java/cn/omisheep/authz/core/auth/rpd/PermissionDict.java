@@ -52,6 +52,16 @@ public class PermissionDict {
     private static final Map<String, Map<String, PermRolesMeta>> _authzMetadata = new HashMap<>();
 
     /**
+     * controller权限
+     */
+    private static final Map<String, PermRolesMeta> _authzControllerMetadata = new HashMap<>();
+
+    /**
+     * 哪些controller需要登录
+     */
+    private static final Set<String> _certificatedControllerMetadata = new HashSet<>();
+
+    /**
      * api的参数权限
      */
     private static final Map<String, Map<String, Map<String, ParamMetadata>>> _authzParamMetadata = new HashMap<>();
@@ -104,39 +114,43 @@ public class PermissionDict {
     // ----------------------------------------- unModify ----------------------------------------- //
 
     @Getter
-    private static final Map<String, Map<String, PermRolesMeta>>              rolePermission  = Collections.unmodifiableMap(
-            _authzMetadata);
-    @Getter
-    private static final Map<String, Map<String, Map<String, ParamMetadata>>> paramPermission = Collections.unmodifiableMap(
-            _authzParamMetadata);
-
-    @Getter
-    private static final Map<String, Model>                               authzResourcesModel = Collections.unmodifiableMap(
-            _authzResourcesModel);
-    @Getter
-    private static final Map<String, List<DataPermRolesMeta>>             dataPermission      = Collections.unmodifiableMap(
-            _dataPermMetadata);
-    @Getter
-    private static final Map<String, Map<String, FieldDataPermRolesMeta>> fieldsData          = Collections.unmodifiableMap(
-            _fieldMetadata);
-    @Getter
-    private static final Map<String, ArgsMeta>                            args                = Collections.unmodifiableMap(
-            _argsMetadata);
-
-    @Getter
-    private static final Map<String, Map<String, IPRangeMeta>>  iPRange              = Collections.unmodifiableMap(
-            _ipRangeMeta);
-    @Getter
-    private static final Map<String, Set<String>>               certificatedMetadata = Collections.unmodifiableMap(
+    private static final Map<String, Set<String>>                             certificatedMetadata           = Collections.unmodifiableMap(
             _certificatedMetadata);
     @Getter
-    private static final Set<IPRange>                           globalAllow          = Collections.unmodifiableSet(
+    private static final Set<String>                                          controllerCertificatedMetadata = Collections.unmodifiableSet(
+            _certificatedControllerMetadata);
+    @Getter
+    private static final Map<String, Map<String, PermRolesMeta>>              rolePermission                 = Collections.unmodifiableMap(
+            _authzMetadata);
+    @Getter
+    private static final Map<String, PermRolesMeta>                           controllerRolePermission       = Collections.unmodifiableMap(
+            _authzControllerMetadata);
+    @Getter
+    private static final Map<String, Map<String, Map<String, ParamMetadata>>> paramPermission                = Collections.unmodifiableMap(
+            _authzParamMetadata);
+    @Getter
+    private static final Map<String, Model>                                   authzResourcesModel            = Collections.unmodifiableMap(
+            _authzResourcesModel);
+    @Getter
+    private static final Map<String, List<DataPermRolesMeta>>                 dataPermission                 = Collections.unmodifiableMap(
+            _dataPermMetadata);
+    @Getter
+    private static final Map<String, Map<String, FieldDataPermRolesMeta>>     fieldsData                     = Collections.unmodifiableMap(
+            _fieldMetadata);
+    @Getter
+    private static final Map<String, ArgsMeta>                                args                           = Collections.unmodifiableMap(
+            _argsMetadata);
+    @Getter
+    private static final Map<String, Map<String, IPRangeMeta>>                iPRange                        = Collections.unmodifiableMap(
+            _ipRangeMeta);
+    @Getter
+    private static final Set<IPRange>                                         globalAllow                    = Collections.unmodifiableSet(
             _globalAllow);
     @Getter
-    private static final Set<IPRange>                           globalDeny           = Collections.unmodifiableSet(
+    private static final Set<IPRange>                                         globalDeny                     = Collections.unmodifiableSet(
             _globalDeny);
     @Getter
-    private static final Map<String, List<Map<String, String>>> controllerMetadata   = Collections.unmodifiableMap(
+    private static final Map<String, List<Map<String, String>>>               controllerMetadata             = Collections.unmodifiableMap(
             _controllerMetadata);
 
     public static boolean isSupportNative() {
@@ -587,10 +601,8 @@ public class PermissionDict {
         isInit = true;
 
         PermissionDict.setPermSeparator(Constants.COMMA);
-        Set<String>                toBeLoadedRoles = new HashSet<>();
-        Map<String, PermRolesMeta> cMap            = new HashMap<>();
-        Map<String, IPRangeMeta>   iMap            = new HashMap<>();
-        Set<String>                cList           = new HashSet<>();
+        Set<String>              toBeLoadedRoles = new HashSet<>();
+        Map<String, IPRangeMeta> iMap            = new HashMap<>();
 
         applicationContext.getBeansWithAnnotation(Auth.class).forEach((key, value) -> {
             String    name  = getTypeName(value);
@@ -598,8 +610,7 @@ public class PermissionDict {
             if (auths != null) {
                 PermRolesMeta permRolesMeta = generatePermRolesMeta(auths);
                 if (permRolesMeta != null && !permRolesMeta.non()) {
-                    cMap.put(name, permRolesMeta);
-                    cList.add(getTypeName(value));
+                    _authzControllerMetadata.put(name, permRolesMeta);
                 }
             }
         });
@@ -607,7 +618,7 @@ public class PermissionDict {
         applicationContext.getBeansWithAnnotation(Certificated.class).forEach((key, value) -> {
             Certificated certificated = getAnnotation(value, Certificated.class);
             if (certificated != null) {
-                cList.add(getTypeName(value));
+                _certificatedControllerMetadata.add(getTypeName(value));
             }
         });
 
@@ -641,8 +652,7 @@ public class PermissionDict {
             Set<Auth> auths = AnnotatedElementUtils.getAllMergedAnnotations(value.getMethod(),
                                                                             Auth.class);
 
-            PermRolesMeta permRolesMeta = new PermRolesMeta().merge(generatePermRolesMeta(auths))
-                    .merge(cMap.get(value.getBeanType().getName()));
+            PermRolesMeta permRolesMeta = new PermRolesMeta().merge(generatePermRolesMeta(auths));
 
             if (!permRolesMeta.non()) {
                 mtds.forEach(method -> patterns.forEach(
@@ -662,7 +672,7 @@ public class PermissionDict {
             // ------------- 初始化Certificated --------------- //
             Certificated certificated = AnnotatedElementUtils.getMergedAnnotation(value.getMethod(),
                                                                                   Certificated.class);
-            if (cList.contains(value.getBeanType().getTypeName()) || certificated != null) {
+            if (certificated != null) {
                 patterns.forEach(p -> _certificatedMetadata.computeIfAbsent(p, r -> new HashSet<>()).addAll(mtds));
             }
 

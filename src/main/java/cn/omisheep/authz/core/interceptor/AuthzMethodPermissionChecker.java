@@ -1,14 +1,16 @@
 package cn.omisheep.authz.core.interceptor;
 
 import cn.omisheep.authz.AuHelper;
-import cn.omisheep.authz.annotation.*;
+import cn.omisheep.authz.annotation.Auth;
+import cn.omisheep.authz.annotation.OAuthScope;
+import cn.omisheep.authz.annotation.OAuthScopeBasic;
 import cn.omisheep.authz.core.*;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.rpd.PermRolesMeta;
 import cn.omisheep.authz.core.oauth.OpenAuthDict;
-import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.authz.core.tk.GrantType;
+import cn.omisheep.authz.core.util.MetaUtils;
 import cn.omisheep.commons.util.CollectionUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
@@ -22,9 +24,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
-
-import static cn.omisheep.authz.core.util.MetaUtils.generatePermRolesMeta;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -34,12 +33,10 @@ import static cn.omisheep.authz.core.util.MetaUtils.generatePermRolesMeta;
 @SuppressWarnings("all")
 public class AuthzMethodPermissionChecker {
 
-    private final PermLibrary                    permLibrary;
-    /**
-     * 方法的Meta暂不支持修改。所以是固定的
-     */
-    private final HashMap<String, PermRolesMeta> prMeta = new HashMap<>();
-    private final HashMap<String, Boolean>       cMeta  = new HashMap<>();
+    private final PermLibrary permLibrary;
+
+    private final HashMap<String, PermRolesMeta> prClassMeta  = new HashMap<>();
+    private final HashMap<String, PermRolesMeta> prMethodMeta = new HashMap<>();
 
     private final HashMap<String, OpenAuthDict.OAuthInfo> oauthInfoList = new HashMap<>();
     private final AuthzProperties                         properties;
@@ -78,6 +75,64 @@ public class AuthzMethodPermissionChecker {
     public void hasRequestMapping() {
     }
 
+    @Before("!hasRequestMapping()&&(hasCertificated()||hasPerms()||hasRoles()||hasRolesInType()||hasPermsInType()||hasCertificatedInType())")
+    public void checkPermissionAndRole(JoinPoint joinPoint) {
+
+        if (!AuHelper.isLogin()) {
+            throw new NotLoginException();
+        }
+
+        try {
+            Class clz = joinPoint.getSignature().getDeclaringType();
+            Method method = clz.getMethod(joinPoint.getSignature().getName(),
+                                          ((MethodSignature) joinPoint.getSignature()).getParameterTypes());
+
+            check(prClassMeta.computeIfAbsent(clz.getTypeName(), r -> {
+                PermRolesMeta _p = MetaUtils.generatePermRolesMeta(
+                        AnnotatedElementUtils.getAllMergedAnnotations(clz, Auth.class));
+                if (_p == null) {
+                    return new PermRolesMeta();
+                } else {
+                    return _p;
+                }
+            }));
+
+            check(prMethodMeta.computeIfAbsent(joinPoint.getSignature().toString(), r -> {
+                PermRolesMeta _p = MetaUtils.generatePermRolesMeta(
+                        AnnotatedElementUtils.getAllMergedAnnotations(method, Auth.class));
+                if (_p == null) {
+                    return new PermRolesMeta();
+                } else {
+                    return _p;
+                }
+            }));
+
+        } catch (NoSuchMethodException e) {
+            // skip
+        }
+    }
+
+    private void check(PermRolesMeta permRolesMeta) {
+
+        HttpMeta    httpMeta      = AuHelper.getHttpMeta();
+        Set<String> rolesByUserId = httpMeta.getRoles();
+        if (permRolesMeta.getRoles() != null) {
+            if (!CollectionUtils.containsSub(permRolesMeta.getRequireRoles(), rolesByUserId)
+                    || CollectionUtils.containsSub(permRolesMeta.getExcludeRoles(), rolesByUserId)) {
+                throw new PermissionException();
+            }
+        }
+
+        if (permRolesMeta.getPermissions() != null) {
+            Set<String> permissionsByRole = httpMeta.getPermissions();
+            if (!CollectionUtils.containsSub(permRolesMeta.getRequirePermissions(), permissionsByRole)
+                    || CollectionUtils.containsSub(permRolesMeta.getExcludePermissions(), permissionsByRole)) {
+                throw new PermissionException();
+            }
+        }
+
+    }
+
     @Pointcut("@annotation(cn.omisheep.authz.annotation.OAuthScope)")
     public void hasOAuthScope() {
     }
@@ -94,107 +149,48 @@ public class AuthzMethodPermissionChecker {
     public void hasOAuthScopeBasicInType() {
     }
 
-    @Before("!hasRequestMapping()&&(hasCertificated()||hasPerms()||hasRoles()||hasRolesInType()||hasPermsInType()||hasCertificatedInType())")
-    public void checkPermissionAndRole(JoinPoint joinPoint) {
-        try {
-            MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-            Method method = joinPoint.getSignature().getDeclaringType().getMethod(joinPoint.getSignature().getName(),
-                                                                                  methodSignature.getParameterTypes());
-            String name = joinPoint.getSignature().toLongString();
-
-            AtomicReference<Set<Auth>>         auths         = new AtomicReference<>();
-            AtomicReference<Set<Certificated>> certificateds = new AtomicReference<>();
-
-            Boolean requireLogin = cMeta.computeIfAbsent(name, r -> {
-                certificateds.set(AnnotatedElementUtils.getAllMergedAnnotations(method,
-                                                                                Certificated.class));
-                auths.set(AnnotatedElementUtils.getAllMergedAnnotations(method.getDeclaringClass(),
-                                                                        Auth.class));
-                return !auths.get().isEmpty() || !certificateds.get().isEmpty();
-            });
-
-            if (!requireLogin) return;
-
-            if (!AuHelper.isLogin()) {
-                throw new NotLoginException();
-            }
-
-            PermRolesMeta permRolesMeta = prMeta.computeIfAbsent(joinPoint.getSignature().toLongString(), r -> {
-                if (auths.get() == null) {
-                    auths.set(AnnotatedElementUtils.getAllMergedAnnotations(method.getDeclaringClass(), Auth.class));
-                }
-                return generatePermRolesMeta(auths.get());
-            });
-
-            if (permRolesMeta == null) return;
-
-            HttpMeta    httpMeta      = AuHelper.getHttpMeta();
-            Set<String> rolesByUserId = httpMeta.getRoles();
-
-            if (permRolesMeta.getRoles() != null) {
-                if (!CollectionUtils.containsSub(permRolesMeta.getRequireRoles(), rolesByUserId)
-                        || CollectionUtils.containsSub(permRolesMeta.getExcludeRoles(), rolesByUserId)) {
-                    throw new PermissionException();
-                }
-            }
-
-            if (permRolesMeta.getPermissions() != null) {
-                Set<String> permissionsByRole = httpMeta.getPermissions();
-                if (!CollectionUtils.containsSub(permRolesMeta.getRequirePermissions(), permissionsByRole)
-                        || CollectionUtils.containsSub(permRolesMeta.getExcludePermissions(), permissionsByRole)) {
-                    throw new PermissionException();
-                }
-            }
-
-        } catch (NoSuchMethodException e) {
-            // skip
-        }
-    }
-
     @Before("!hasRequestMapping()&&(hasOAuthScope()||hasOAuthScopeInType()||hasOAuthScopeBasic()||hasOAuthScopeBasicInType())")
-    public void checkScope(JoinPoint joinPoint) { // todo
-        MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-        Method          method          = null;
-        try {
-            method = joinPoint.getSignature().getDeclaringType().getMethod(joinPoint.getSignature().getName(),
-                                                                           methodSignature.getParameterTypes());
-        } catch (NoSuchMethodException e) {
-            // skip
-        }
-        if (method == null) return;
-
-        AccessToken accessToken = AuHelper.getToken();
-        if (accessToken == null) {
+    public void checkScope(JoinPoint joinPoint) {
+        if (!AuHelper.isLogin()) {
             throw new NotLoginException();
         }
-        if (accessToken.getClientId() == null) return; //不需要拦截
+
+        if (AuHelper.getToken().getClientId() == null) return; //不需要拦截
         if (AuHelper.getHttpMeta().getScope().isEmpty() || AuHelper.getHttpMeta()
                 .getToken()
                 .getGrantType() == null) {
             throw new AuthzException(ExceptionStatus.SCOPE_EXCEPTION_OR_TYPE_ERROR);
         }
 
-        OAuthScope oAuthScope1 = AnnotatedElementUtils.getMergedAnnotation(method, OAuthScope.class);
-        OAuthScope oAuthScope2 = AnnotatedElementUtils.getMergedAnnotation(method.getDeclaringClass(),
-                                                                           OAuthScope.class);
+        try {
+            Class clz = joinPoint.getSignature().getDeclaringType();
+            Method method = clz.getMethod(joinPoint.getSignature().getName(),
+                                          ((MethodSignature) joinPoint.getSignature()).getParameterTypes());
 
-        OAuthScopeBasic oAuthScopeBasic1 = AnnotatedElementUtils.getMergedAnnotation(method, OAuthScopeBasic.class);
-        OAuthScopeBasic oAuthScopeBasic2 = AnnotatedElementUtils.getMergedAnnotation(method.getDeclaringClass(),
-                                                                                     OAuthScopeBasic.class);
+            OAuthScope oAuthScope1 = AnnotatedElementUtils.getMergedAnnotation(method, OAuthScope.class);
+            OAuthScope oAuthScope2 = AnnotatedElementUtils.getMergedAnnotation(clz, OAuthScope.class);
 
-        OpenAuthDict.OAuthInfo oAuthInfo = oauthInfoList
-                .computeIfAbsent(joinPoint.getSignature().toLongString(),
-                                 r -> merge(oAuthScope1, oAuthScope2,
-                                            oAuthScopeBasic1,
-                                            oAuthScopeBasic1));
+            OAuthScopeBasic oAuthScopeBasic1 = AnnotatedElementUtils.getMergedAnnotation(method, OAuthScopeBasic.class);
+            OAuthScopeBasic oAuthScopeBasic2 = AnnotatedElementUtils.getMergedAnnotation(clz, OAuthScopeBasic.class);
 
-        if (oAuthInfo == null) return;
-        if (!oAuthInfo.getType().contains(accessToken.getGrantType())) {
-            throw new AuthzException(ExceptionStatus.SCOPE_EXCEPTION_OR_TYPE_ERROR);
+            OpenAuthDict.OAuthInfo oAuthInfo = oauthInfoList
+                    .computeIfAbsent(joinPoint.getSignature().toLongString(),
+                                     r -> merge(oAuthScope1, oAuthScope2,
+                                                oAuthScopeBasic1,
+                                                oAuthScopeBasic1));
+
+            if (oAuthInfo.non()) return;
+            if (!oAuthInfo.getType().contains(AuHelper.getToken().getGrantType())) {
+                throw new AuthzException(ExceptionStatus.SCOPE_EXCEPTION_OR_TYPE_ERROR);
+            }
+            if (!AuHelper.getHttpMeta().getScope().containsAll(oAuthInfo.getScope())) {
+                throw new AuthzException(ExceptionStatus.SCOPE_EXCEPTION_OR_TYPE_ERROR);
+            }
+
+        } catch (NoSuchMethodException e) {
+
         }
-        if (!AuHelper.getHttpMeta().getScope().containsAll(oAuthInfo.getScope())) {
-            throw new AuthzException(ExceptionStatus.SCOPE_EXCEPTION_OR_TYPE_ERROR);
-        }
+
 
     }
 
@@ -227,7 +223,7 @@ public class AuthzMethodPermissionChecker {
             set2.addAll(Arrays.asList(oAuthScopeBasic2.type()));
         }
 
-        if (set.isEmpty() || set2.isEmpty()) return null;
+        if (set.isEmpty() || set2.isEmpty()) return new OpenAuthDict.OAuthInfo();
         return new OpenAuthDict.OAuthInfo().setScope(set).setType(set2);
     }
 

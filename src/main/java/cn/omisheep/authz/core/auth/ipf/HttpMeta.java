@@ -61,6 +61,8 @@ public class HttpMeta extends BaseHelper {
     private Boolean       hasParamAuth;
     private Boolean       requireLogin;
 
+    private String controllerType;
+
     @JsonIgnore
     private HttpServletRequest          request;
     @JsonIgnore
@@ -235,13 +237,20 @@ public class HttpMeta extends BaseHelper {
 
     public boolean isHasApiAuth() {
         if (hasApiAuth != null) return hasApiAuth;
-        Map<String, PermRolesMeta> map = PermissionDict.getRolePermission().get(api);
-        if (map == null) {
+        Map<String, PermRolesMeta> map            = PermissionDict.getRolePermission().get(api);
+        PermRolesMeta              cPermRolesMeta = PermissionDict.getControllerRolePermission().get(controllerType);
+        if (map == null && cPermRolesMeta == null) {
             hasApiAuth = false;
             return hasApiAuth;
         }
-        PermRolesMeta permRolesMeta = map.get(method);
-        hasApiAuth = permRolesMeta != null && !permRolesMeta.non();
+
+        if (map != null) {
+            PermRolesMeta permRolesMeta = map.get(method);
+            hasApiAuth = (permRolesMeta != null && !permRolesMeta.non()) || (cPermRolesMeta != null && !cPermRolesMeta.non());
+        } else {
+            hasApiAuth = (cPermRolesMeta != null && !cPermRolesMeta.non());
+        }
+
         return hasApiAuth;
     }
 
@@ -259,12 +268,13 @@ public class HttpMeta extends BaseHelper {
 
     public boolean isRequireLogin() {
         if (requireLogin != null) return requireLogin;
-        Set<String> list = PermissionDict.getCertificatedMetadata().get(api);
+        Set<String> list     = PermissionDict.getCertificatedMetadata().get(api);
+        boolean     contains = PermissionDict.getControllerCertificatedMetadata().contains(controllerType);
         if (list == null || list.isEmpty()) {
-            requireLogin = isHasApiAuth() || isHasParamAuth();
+            requireLogin = isHasApiAuth() || isHasParamAuth() || contains;
             return requireLogin;
         }
-        requireLogin = list.contains(method) || isHasApiAuth() || isHasParamAuth();
+        requireLogin = contains || list.contains(method) || isHasApiAuth() || isHasParamAuth();
         return requireLogin;
     }
 }

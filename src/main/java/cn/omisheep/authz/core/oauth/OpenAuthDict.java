@@ -2,7 +2,7 @@ package cn.omisheep.authz.core.oauth;
 
 import cn.omisheep.authz.annotation.OAuthScope;
 import cn.omisheep.authz.annotation.OAuthScopeBasic;
-import cn.omisheep.authz.core.AuthzProperties;
+import cn.omisheep.authz.core.auth.rpd.Non;
 import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.tk.GrantType;
@@ -18,7 +18,6 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static cn.omisheep.authz.core.util.MetaUtils.*;
@@ -33,9 +32,14 @@ public class OpenAuthDict {
 
     @Data
     @Accessors(chain = true)
-    public static class OAuthInfo {
-        private Set<String>    scope;
-        private Set<GrantType> type;
+    public static class OAuthInfo implements Non {
+        private Set<String>    scope = new HashSet<>();
+        private Set<GrantType> type  = new HashSet<>();
+
+        @Override
+        public boolean non() {
+            return scope.isEmpty() && type.isEmpty();
+        }
     }
 
     @Getter
@@ -48,24 +52,16 @@ public class OpenAuthDict {
         Map<String, OAuthInfo> p = src.get(path);
         if (p == null) return false;
         OAuthInfo authInfo = p.get(method);
-        if (authInfo == null) return false;
-        if (authInfo.scope == null || authInfo.scope.isEmpty()) {
-            return false;
-        }
-
-        if (authInfo.type == null || authInfo.type.isEmpty()) {
-            return false;
-        }
-
+        if (authInfo == null || authInfo.non()) return false;
         if (!authInfo.type.contains(type)) return false;
         return scope.containsAll(authInfo.scope);
     }
 
     public static void init(ApplicationContext applicationContext,
                             Map<RequestMappingInfo, HandlerMethod> mapRet) {
-        HashMap<String, Set<String>>    cMap              = new HashMap<>();
-        HashMap<String, Set<GrantType>> gMap              = new HashMap<>();
-        String                          defaultBasicScope = AuthzAppVersion.properties.getOauth()
+        HashMap<String, Set<String>>    cMap = new HashMap<>();
+        HashMap<String, Set<GrantType>> gMap = new HashMap<>();
+        String defaultBasicScope = AuthzAppVersion.properties.getOauth()
                 .getDefaultBasicScope();
 
         applicationContext.getBeansWithAnnotation(OAuthScope.class).forEach((key, value) -> {
@@ -87,7 +83,6 @@ public class OpenAuthDict {
         });
 
         mapRet.forEach((key, value) -> {
-            AtomicBoolean clientCredentials = new AtomicBoolean(false);
             List<String> mtds = key.getMethodsCondition().getMethods().stream().map(Enum::name).collect(
                     Collectors.toList());
             Set<String> patterns = getPatterns(key);
@@ -115,8 +110,6 @@ public class OpenAuthDict {
             patterns.forEach(pattern -> mtds.forEach(method -> {
                 OAuthInfo authInfo = _src.computeIfAbsent(pattern, r -> new HashMap<>())
                         .computeIfAbsent(method, r -> new OAuthInfo());
-                authInfo.scope = new HashSet<>();
-                authInfo.type  = new HashSet<>();
                 authInfo.scope.addAll(scope);
                 authInfo.type.addAll(type);
             }));
