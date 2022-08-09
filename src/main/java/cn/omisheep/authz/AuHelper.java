@@ -104,8 +104,8 @@ public class AuHelper extends BaseHelper {
      *
      * @param refreshToken 与accessToken一起授予的refreshToken
      * @return IssueToken  刷新获得新的IssueToken(accessToken以及refreshToken)
-     * @throws RefreshTokenExpiredException refreshToken过期
-     * @throws TokenException               refreshToken异常
+     * @throws RefreshTokenExpiredException refreshToken过期 {@link RefreshTokenExpiredException}
+     * @throws TokenException               refreshToken异常 {@link TokenException}
      */
     @NonNull
     public static IssueToken refreshToken(@NonNull String refreshToken)
@@ -124,6 +124,7 @@ public class AuHelper extends BaseHelper {
      * 注销当前用户所指定的类型的所有设备
      *
      * @param deviceType 指定设备类型
+     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
      */
     public static void logout(@NonNull String deviceType) throws NotLoginException {
         AuthzGranterHelper.logout(deviceType, null);
@@ -134,6 +135,7 @@ public class AuHelper extends BaseHelper {
      *
      * @param deviceType 指定设备类型
      * @param deviceId   指定设备id
+     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
      */
     public static void logout(@NonNull String deviceType,
                               @Nullable String deviceId) throws NotLoginException {
@@ -142,6 +144,8 @@ public class AuHelper extends BaseHelper {
 
     /**
      * 注销当前用户所有设备
+     *
+     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
      */
     public static void logoutAll() throws NotLoginException {
         AuthzGranterHelper.logoutAll();
@@ -181,16 +185,17 @@ public class AuHelper extends BaseHelper {
     }
 
     /**
-     * 根据登录标识退出登录
+     * 退出当前用户指定登录标识的设备
      *
      * @param id 登录标识
+     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
      */
     public static void logoutById(String id) throws NotLoginException {
         AuthzGranterHelper.logoutById(getUserId(), id);
     }
 
     /**
-     * 根据登录标识退出登录
+     * 退出指定用户指定登录标识的设备
      *
      * @param userId 用户id
      * @param id     登录标识
@@ -222,6 +227,7 @@ public class AuHelper extends BaseHelper {
      * 当前访问用户的指定类型的所有设备
      *
      * @return 设备列表
+     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
      */
     @NonNull
     public static List<DeviceDetails> getDevices(@NonNull String deviceType)
@@ -233,6 +239,7 @@ public class AuHelper extends BaseHelper {
      * 当前访问用户的所有设备
      *
      * @return 设备列表
+     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
      */
     @NonNull
     public static List<DeviceDetails> getDevices()
@@ -244,6 +251,7 @@ public class AuHelper extends BaseHelper {
      * 当前访问用户的设备
      *
      * @return 设备列表
+     * @throws NotLoginException 若未登录，抛出 {@link NotLoginException}
      */
     @Nullable
     public static DeviceDetails getDevice()
