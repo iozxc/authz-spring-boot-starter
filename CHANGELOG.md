@@ -6,6 +6,7 @@
 
 - 对所有需要登录的接口做出了补充，增加了 NotLoginException 异常的提示
 - 现在在非web环境下也能使用login、refreshToken功能
+- 修改了一些接口的描述说明
 
 ## Version 1.2.0 - 2022.8.8
 
