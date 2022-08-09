@@ -124,6 +124,7 @@ public class AuthzGranterHelper extends BaseHelper {
     }
 
     public static void logout() throws NotLoginException {
+        AuHelper.getToken();
         userDevicesDict.removeCurrentDevice();
         clearCookie(null, null, null);
     }
