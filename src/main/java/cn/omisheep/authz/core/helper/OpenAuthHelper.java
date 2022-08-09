@@ -96,7 +96,7 @@ public class OpenAuthHelper extends BaseHelper {
 
     private static IssueToken authorize(AuthorizationInfo authorizationInfo) {
         TokenPair tokenPair = TokenHelper.createTokenPair(authorizationInfo);
-        if (!AuthzGranterHelper.grant(tokenPair, false)) return null;
+        AuthzGranterHelper.grant(tokenPair, false);
 
         if (authorizationCallback != null) {
             authorizationCallback.authorize(

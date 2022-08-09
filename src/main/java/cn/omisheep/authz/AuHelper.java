@@ -9,10 +9,7 @@ package cn.omisheep.authz;
 /_/    \_\\__,_| \__||_| |_|/___|
  */
 
-import cn.omisheep.authz.core.AuthzContext;
-import cn.omisheep.authz.core.NotLoginException;
-import cn.omisheep.authz.core.RefreshTokenExpiredException;
-import cn.omisheep.authz.core.ThreadWebEnvironmentException;
+import cn.omisheep.authz.core.*;
 import cn.omisheep.authz.core.auth.deviced.DeviceCountInfo;
 import cn.omisheep.authz.core.auth.deviced.DeviceDetails;
 import cn.omisheep.authz.core.auth.ipf.Blacklist;
@@ -51,25 +48,29 @@ public class AuHelper extends BaseHelper {
 
     /**
      * 用户登录 <br>
-     * 登录成功之后会默认给请求返回Cookie，过期时间为AccessToken的过期时间，若不需要，请自行删除
+     * <p>
+     * 若线程绑定了Request，则登录成功之后会默认给请求返回Cookie <br>
+     * 过期时间为AccessToken的过期时间，若不需要，请自行删除
      *
      * @param userId 用户id - 不为空
-     * @return 授权后的IssueToken(accessToken以及refreshToken)，返回空则登录失败
+     * @return 授权后的IssueToken(accessToken以及refreshToken)
      */
-    @Nullable
+    @NonNull
     public static IssueToken login(@NonNull Object userId) {
-        return AuthzGranterHelper.grant(userId);
+        return AuthzGranterHelper.grant(userId, null, null);
     }
 
     /**
      * 用户登录 <br>
-     * 登录成功之后会默认给请求返回Cookie，过期时间为AccessToken的过期时间，若不需要，请自行删除
+     * <p>
+     * 若线程绑定了Request，则登录成功之后会默认给请求返回Cookie <br>
+     * 过期时间为AccessToken的过期时间，若不需要，请自行删除
      *
      * @param userId     用户id - 不为空
      * @param deviceType 设备系统类型 - 不为null 默认为unknown
-     * @return 授权后的IssueToken(accessToken以及refreshToken)，返回空则登录失败
+     * @return 授权后的IssueToken(accessToken以及refreshToken)
      */
-    @Nullable
+    @NonNull
     public static IssueToken login(@NonNull Object userId,
                                    @NonNull String deviceType) {
         return login(userId, deviceType, null);
@@ -77,14 +78,16 @@ public class AuHelper extends BaseHelper {
 
     /**
      * 用户登录 <br>
-     * 登录成功之后会默认给请求返回Cookie，过期时间为AccessToken的过期时间，若不需要，请自行删除
+     * <p>
+     * 若线程绑定了Request，则登录成功之后会默认给请求返回Cookie <br>
+     * 过期时间为AccessToken的过期时间，若不需要，请自行删除
      *
      * @param userId     用户id - 不为空
      * @param deviceType 设备系统类型 - 不为空
      * @param deviceId   设备id - 可为null 且为 "" 时于 null等价
-     * @return 授权后的IssueToken(accessToken以及refreshToken)，返回空则登录失败
+     * @return 授权后的IssueToken(accessToken以及refreshToken)
      */
-    @Nullable
+    @NonNull
     public static IssueToken login(@NonNull Object userId,
                                    @NonNull String deviceType,
                                    @Nullable String deviceId) {
@@ -93,16 +96,20 @@ public class AuHelper extends BaseHelper {
 
     /**
      * access过期刷新接口。
+     * refreshToken 为一次性的，刷新之后会失效
      * <p>
      * 如果使用单token，则直接使用accessToken即可，在accessToken过期时再重新登录。
      * <p>
      * 使用双token时，accessToken过期时，可以利用refreshToken在此接口中刷新获得一个新的accessToken。
      *
      * @param refreshToken 与accessToken一起授予的refreshToken
-     * @return 刷新成功（true）/ 失败（false）返回 [空] 则登录失败
+     * @return IssueToken  刷新获得新的IssueToken(accessToken以及refreshToken)
+     * @throws RefreshTokenExpiredException refreshToken过期
+     * @throws TokenException               refreshToken异常
      */
     @NonNull
-    public static IssueToken refreshToken(@NonNull String refreshToken) throws RefreshTokenExpiredException {
+    public static IssueToken refreshToken(@NonNull String refreshToken)
+            throws RefreshTokenExpiredException, TokenException {
         return AuthzGranterHelper.refreshToken(refreshToken);
     }
 
@@ -111,7 +118,7 @@ public class AuHelper extends BaseHelper {
      *
      * @param id 登录标识
      */
-    public static void logoutById(String id) {
+    public static void logoutById(String id) throws NotLoginException {
         AuthzGranterHelper.logoutById(getUserId(), id);
     }
 
@@ -130,7 +137,7 @@ public class AuHelper extends BaseHelper {
     /**
      * 注销当前用户当前设备
      */
-    public static void logout() {
+    public static void logout() throws NotLoginException {
         AuthzGranterHelper.logout();
     }
 
@@ -139,8 +146,8 @@ public class AuHelper extends BaseHelper {
      *
      * @param deviceType 指定设备类型
      */
-    public static void logout(@NonNull String deviceType) {
-        AuthzGranterHelper.logout(deviceType);
+    public static void logout(@NonNull String deviceType) throws NotLoginException {
+        AuthzGranterHelper.logout(deviceType, null);
     }
 
     /**
@@ -150,14 +157,14 @@ public class AuHelper extends BaseHelper {
      * @param deviceId   指定设备id
      */
     public static void logout(@NonNull String deviceType,
-                              @Nullable String deviceId) {
+                              @Nullable String deviceId) throws NotLoginException {
         AuthzGranterHelper.logout(deviceType, deviceId);
     }
 
     /**
      * 注销当前用户所有设备
      */
-    public static void logoutAll() {
+    public static void logoutAll() throws NotLoginException {
         AuthzGranterHelper.logoutAll();
     }
 
@@ -218,7 +225,8 @@ public class AuHelper extends BaseHelper {
      * @return 设备列表
      */
     @NonNull
-    public static List<DeviceDetails> getDevices(@NonNull String deviceType) throws NotLoginException {
+    public static List<DeviceDetails> getDevices(@NonNull String deviceType)
+            throws NotLoginException {
         return AuthzDeviceHelper.getAllDeviceByUserIdAndDeviceType(getUserId(), deviceType);
     }
 
@@ -228,7 +236,8 @@ public class AuHelper extends BaseHelper {
      * @return 设备列表
      */
     @NonNull
-    public static List<DeviceDetails> getDevices() throws NotLoginException {
+    public static List<DeviceDetails> getDevices()
+            throws NotLoginException {
         return AuthzDeviceHelper.getAllDeviceFromCurrentUser();
     }
 
@@ -238,7 +247,8 @@ public class AuHelper extends BaseHelper {
      * @return 设备列表
      */
     @Nullable
-    public static DeviceDetails getDevice() throws NotLoginException {
+    public static DeviceDetails getDevice()
+            throws NotLoginException {
         AccessToken token = getToken();
         return AuthzDeviceHelper.getDeviceByUserIdAndDeviceTypeAndDeviceId(token.getUserId(), token.getDeviceType(),
                                                                            token.getDeviceId());
@@ -285,7 +295,8 @@ public class AuHelper extends BaseHelper {
      * @throws NotLoginException 未登录
      */
     @NonNull
-    public static List<AuthorizedDeviceDetails> getAuthorizedDeviceDetails() throws NotLoginException {
+    public static List<AuthorizedDeviceDetails> getAuthorizedDeviceDetails()
+            throws NotLoginException {
         return getAuthorizedDeviceDetailsAt(getUserId());
     }
 

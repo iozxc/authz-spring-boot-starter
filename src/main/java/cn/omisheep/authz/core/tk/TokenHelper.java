@@ -2,7 +2,7 @@ package cn.omisheep.authz.core.tk;
 
 import cn.omisheep.authz.core.AuthzException;
 import cn.omisheep.authz.core.AuthzProperties;
-import cn.omisheep.authz.core.ExceptionStatus;
+import cn.omisheep.authz.core.TokenException;
 import cn.omisheep.authz.core.auth.deviced.Device;
 import cn.omisheep.authz.core.helper.BaseHelper;
 import cn.omisheep.authz.core.oauth.AuthorizationInfo;
@@ -234,7 +234,7 @@ public class TokenHelper extends BaseHelper {
      * @return TokenPair
      * @throws Exception e
      */
-    public static TokenPair refreshToken(String refreshToken) throws Exception {
+    public static TokenPair refreshToken(String refreshToken) throws TokenException {
         return refreshToken(parseRefreshToken(refreshToken));
     }
 
@@ -322,10 +322,10 @@ public class TokenHelper extends BaseHelper {
      * @return AccessToken
      * @throws AuthzException e
      */
-    public static AccessToken parseAccessToken(String accessToken) throws AuthzException {
+    public static AccessToken parseAccessToken(String accessToken) throws TokenException {
         Claims claims = parseToken(accessToken);
         if (claims == null || claims.get(ID, String.class) == null) {
-            throw new AuthzException(ExceptionStatus.TOKEN_EXCEPTION);
+            throw new TokenException();
         }
         return new AccessToken(claims.get(ID, String.class), accessToken, claims.getId(), null,
                                claims.getExpiration().getTime(),
@@ -343,10 +343,10 @@ public class TokenHelper extends BaseHelper {
      * @return AccessToken
      * @throws AuthzException e
      */
-    public static RefreshToken parseRefreshToken(String refreshToken) throws AuthzException {
+    public static RefreshToken parseRefreshToken(String refreshToken) throws TokenException {
         Claims claims = parseToken(refreshToken);
         if (claims == null) {
-            throw new AuthzException(ExceptionStatus.TOKEN_EXCEPTION);
+            throw new TokenException();
         }
         return new RefreshToken(refreshToken, claims.getId(),
                                 null,

@@ -1,9 +1,9 @@
 package cn.omisheep.authz.core.slot;
 
 import cn.omisheep.authz.annotation.AuthRequestToken;
-import cn.omisheep.authz.core.AuthzException;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.ExceptionStatus;
+import cn.omisheep.authz.core.TokenException;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
@@ -102,7 +102,7 @@ public class CookieAndRequestSlot implements Slot {
                     if (e instanceof ExpiredJwtException) {
                         Claims claims = ((ExpiredJwtException) e).getClaims();
                         userDevicesDict.removeAccessTokenByTid(claims.get(USER_ID),
-                                                          claims.get(ID, String.class));
+                                                               claims.get(ID, String.class));
                         httpMeta.setUserStatus(ACCESS_TOKEN_OVERDUE);
                     } else {
                         httpMeta.setUserStatus(REQUIRE_LOGIN);
@@ -110,12 +110,9 @@ public class CookieAndRequestSlot implements Slot {
                 } catch (Exception ee) {
                     // skip
                 }
-            } else if (e instanceof AuthzException) {
-                if (ExceptionStatus.TOKEN_EXCEPTION.equals(((AuthzException) e).getExceptionStatus())) {
-                    httpMeta.setUserStatus(REQUIRE_LOGIN);
-                    error.error(ExceptionStatus.TOKEN_EXCEPTION);
-                    return;
-                }
+            } else if (e instanceof TokenException) {
+                httpMeta.setUserStatus(REQUIRE_LOGIN);
+                error.error(ExceptionStatus.TOKEN_EXCEPTION);
             } else {
                 error.error(e);
                 return;

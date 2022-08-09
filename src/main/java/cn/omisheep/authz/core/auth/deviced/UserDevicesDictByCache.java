@@ -110,15 +110,14 @@ public class UserDevicesDictByCache implements UserDevicesDict {
     }
 
     @Override
-    public boolean refreshUser(RefreshToken refreshToken,
-                               TokenPair tokenPair) {
+    public boolean refreshUser(TokenPair tokenPair) {
         if (tokenPair == null) return false;
-        String key    = key(refreshToken);
+        String key    = key(tokenPair.getRefreshToken());
         Device device = cache.get(key, Device.class);
         if (device == null) return false;
 
         AccessToken accessToken = tokenPair.getAccessToken();
-        Long        expiredAt   = refreshToken.getExpiresAt();
+        Long        expiredAt   = tokenPair.getRefreshToken().getExpiresAt();
 
         device.setAccessTokenId(accessToken.getTokenId());
 

@@ -45,8 +45,7 @@ public interface UserDevicesDict {
 
     // =========================   刷新   ========================= //
 
-    boolean refreshUser(RefreshToken refresh,
-                        TokenPair tokenPair);
+    boolean refreshUser(TokenPair tokenPair);
 
     // =========================   登出   ========================= //
 
