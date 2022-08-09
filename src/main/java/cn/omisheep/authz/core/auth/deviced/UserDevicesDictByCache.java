@@ -333,7 +333,6 @@ public class UserDevicesDictByCache implements UserDevicesDict {
                       && StringUtils.equals(deviceId, e.getValue().getDeviceId()));
         }
 
-
         List<DeviceCountInfo> typesTotal = userConfig.getTypesTotal();
 
         // 登录设备总数

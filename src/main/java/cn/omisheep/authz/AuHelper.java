@@ -67,7 +67,7 @@ public class AuHelper extends BaseHelper {
      * 过期时间为AccessToken的过期时间，若不需要，请自行删除
      *
      * @param userId     用户id - 不为空
-     * @param deviceType 设备系统类型 - 不为null 默认为unknown
+     * @param deviceType 设备系统类型 - 不为null 默认为user-agnet，若没有则为unknown
      * @return 授权后的IssueToken(accessToken以及refreshToken)
      */
     @NonNull
@@ -83,8 +83,8 @@ public class AuHelper extends BaseHelper {
      * 过期时间为AccessToken的过期时间，若不需要，请自行删除
      *
      * @param userId     用户id - 不为空
-     * @param deviceType 设备系统类型 - 不为空
-     * @param deviceId   设备id - 可为null 且为 "" 时于 null等价
+     * @param deviceType 设备系统类型 - 不为空 默认为user-agnet，若没有则为unknown
+     * @param deviceId   设备id - 可为null
      * @return 授权后的IssueToken(accessToken以及refreshToken)
      */
     @NonNull
