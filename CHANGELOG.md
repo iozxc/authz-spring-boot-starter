@@ -1,6 +1,13 @@
 # 更新日记【Authz】
 
-## <span style="color: green">Version 1.2.0</span>(_Recommend_) - 2022.8.8
+## <span style="color: green">Version 1.2.1</span>(_Recommend_) - 2022.8.9
+
+### Added
+
+- 对所有需要登录的接口做出了补充，增加了 NotLoginException 异常的提示
+- 现在在非web环境下也能使用login、refreshToken功能
+
+## Version 1.2.0 - 2022.8.8
 
 ### Added
 
