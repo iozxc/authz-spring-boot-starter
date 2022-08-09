@@ -18,7 +18,7 @@
 <dependency>
     <groupId>cn.omisheep</groupId>
     <artifactId>authz-spring-boot-starter</artifactId>
-    <version>1.2.1</version>
+    <version>1.2.2</version>
 </dependency>
 ```
 
@@ -172,7 +172,7 @@ public class ArgResourceTest {
 
 @RestController
 class Main {
-    
+
     // 参数name为ooo时，必须需要role包含zxc
     // id为177时必须需要admin权限
     // zxc 能够访问id属于123-156 不能访问177
@@ -188,18 +188,18 @@ class Main {
         ...
     }
 
-}
 
     @Roles({"admin", "zxc"})
     @GetMapping("/operate")
     public Result get(@BatchAuthParam({
-                              @AuthParam(requirePermissions = {"工程师权限", "运维权限", "技术人员权限"}, resources = {"查询", "重启"}),
-                              @AuthParam(requirePermissions = {"运维权限"}, resources = {"开机", "关机", "添加"}),
-                              @AuthParam(requirePermissions = {"技术人员权限"}, resources = "登录"),
-                      })
+            @AuthParam(requirePermissions = {"工程师权限", "运维权限", "技术人员权限"}, resources = {"查询", "重启"}),
+            @AuthParam(requirePermissions = {"运维权限"}, resources = {"开机", "关机", "添加"}),
+            @AuthParam(requirePermissions = {"技术人员权限"}, resources = "登录"),
+    })
                       @RequestParam(required = false) String operate) {
         ...
     }
+}
 ```
 
 ## 数据行权限（数据权限）和 数据列权限（字段权限）

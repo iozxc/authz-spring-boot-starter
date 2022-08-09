@@ -42,4 +42,5 @@ public class DefaultAuthzExceptionHandler implements AuthzExceptionHandler {
 
         return false;
     }
+
 }
