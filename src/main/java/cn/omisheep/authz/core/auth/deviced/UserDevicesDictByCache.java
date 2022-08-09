@@ -16,7 +16,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -31,8 +34,9 @@ import static cn.omisheep.authz.core.auth.deviced.UserDevicesDict.*;
 @Slf4j
 public class UserDevicesDictByCache implements UserDevicesDict {
 
-    private final AuthzProperties properties;
-    private final Cache           cache;
+    private final AuthzProperties                      properties;
+    private final Cache                                cache;
+    private final Map<Object, CompletableFuture<Void>> cleanCache = new ConcurrentHashMap<>();
 
     public UserDevicesDictByCache(AuthzProperties properties,
                                   Cache cache) {
@@ -103,8 +107,22 @@ public class UserDevicesDictByCache implements UserDevicesDict {
             String key        = key(accessToken);
             String rKey       = UserDevicesDict.requestKey(accessToken);
             device.setDeviceType(deviceType).setDeviceId(deviceId);
+
+            if (properties.getToken().isLogoutBeforeLogin()) {
+                removeCurrentDevice();
+            }
+
             cache.set(key, device, expiredIn);
-            Async.run(() -> clean(accessToken.getUserId(), deviceType, deviceId, key, rKey));
+
+            Object                  userId = accessToken.getUserId();
+            Runnable                run    = () -> clean(userId, deviceType, deviceId, key, rKey);
+            CompletableFuture<Void> future = cleanCache.get(userId);
+
+            if (future == null || Async.isSuccessFuture(future)) {
+                cleanCache.put(userId, Async.run(run));
+            } else {
+                future.thenRun(run);
+            }
         }
 
     }
@@ -277,18 +295,30 @@ public class UserDevicesDictByCache implements UserDevicesDict {
 
     @Override
     public void deviceClean(Object userId) {
+
+        AtomicReference<Runnable> reference = new AtomicReference<>();
+
         if (AuHelper.isLogin()) {
             AccessToken token  = AuHelper.getToken();
             Device      device = cache.get(key(token), Device.class);
             if (device != null) {
-                Async.run(() -> clean(userId,
-                                      device.getDeviceType(), device.getDeviceId(),
-                                      key(token), requestKey(token)
-                ));
+                reference.set(() -> clean(userId,
+                                          device.getDeviceType(), device.getDeviceId(),
+                                          key(token), requestKey(token)));
+
             }
         } else {
-            Async.run(() -> clean(userId, null, null, null, null));
+            reference.set(() -> clean(userId, null, null, null, null));
         }
+
+        CompletableFuture<Void> future = cleanCache.get(userId);
+
+        if (future == null || Async.isSuccessFuture(future)) {
+            cleanCache.put(userId, Async.run(reference.get()));
+        } else {
+            future.thenRun(reference.get());
+        }
+
     }
 
     private void clean(Object userId,
@@ -343,9 +373,9 @@ public class UserDevicesDictByCache implements UserDevicesDict {
         }
 
         // 同类型设备最大登录数量
-        if (userConfig.getMaximumSameTypeDeviceCount() != -1 && deviceType != null && typesTotal.stream()
-                .noneMatch(v -> v.getTypes().size() == 1 && v.getTypes().contains(deviceType))) {
-            d(userConfig.getMaximumSameTypeDeviceCount() - 1, deviceMap, requestMap, delKeys,
+        if (userConfig.getMaximumTotalSameTypeDevice() != -1 && deviceType != null && typesTotal.stream()
+                .noneMatch(v -> v.getTypes().contains(deviceType))) {
+            d(userConfig.getMaximumTotalSameTypeDevice() - 1, deviceMap, requestMap, delKeys,
               e -> StringUtils.equals(e.getValue().getDeviceType(), deviceType));
         }
 

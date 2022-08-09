@@ -2,15 +2,19 @@ package cn.omisheep.authz.core.helper;
 
 import cn.omisheep.authz.AuHelper;
 import cn.omisheep.authz.core.NotLoginException;
+import cn.omisheep.authz.core.auth.deviced.DeviceCountInfo;
 import cn.omisheep.authz.core.auth.deviced.DeviceDetails;
 import cn.omisheep.commons.util.TimeUtils;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static cn.omisheep.authz.AuHelper.getUserId;
 
 /**
  * @author zhouxinchen
@@ -90,7 +94,7 @@ public class AuthzDeviceHelper extends BaseHelper {
     }
 
     /**
-     * @return 所有当前有效登录用户的用户id, 当开启redis缓存时，userId返回为String数组
+     * @return 所有当前有效登录用户的用户id
      */
     @NonNull
     public static List<Object> getAllUserId() {
@@ -117,7 +121,7 @@ public class AuthzDeviceHelper extends BaseHelper {
      */
     @NonNull
     public static List<DeviceDetails> getAllDeviceFromCurrentUser() throws NotLoginException {
-        return userDevicesDict.listDevicesByUserId(AuHelper.getUserId());
+        return userDevicesDict.listDevicesByUserId(getUserId());
     }
 
     /**
@@ -155,4 +159,96 @@ public class AuthzDeviceHelper extends BaseHelper {
         AuHelper.getAllUserId().forEach(userId -> map.put(userId, getAllDeviceByUserId(userId)));
         return map;
     }
+
+    /**
+     * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
+     * count >= 1 or count = -1
+     *
+     * @param types deviceType
+     * @param total 数量
+     */
+    public static void addDeviceTypesTotalLimit(@NonNull Collection<String> types,
+                                                int total) throws NotLoginException {
+        addDeviceTypesTotalLimitAt(getUserId(), types, total);
+    }
+
+    /**
+     * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
+     * count >= 1 or count = -1
+     *
+     * @param userId 用户id
+     * @param types  deviceType
+     * @param total  数量
+     */
+    public static void addDeviceTypesTotalLimitAt(@NonNull Object userId,
+                                                  @NonNull Collection<String> types,
+                                                  int total) {
+        userDevicesDict.addDeviceTypesTotalLimit(userId, types, total);
+    }
+
+    /**
+     * 获得一个可修改的 DeviceTypesTotalLimit list
+     * count >= 1 or count = -1
+     *
+     * @param userId 用户id
+     */
+    public static List<DeviceCountInfo> getOrUpdateDeviceTypesTotalLimitAt(@NonNull Object userId) {
+        return userDevicesDict.getOrUpdateDeviceTypesTotalLimit(userId);
+    }
+
+
+    /**
+     * 获得一个可修改的 DeviceTypesTotalLimit list
+     * count >= 1 or count = -1
+     */
+    public static List<DeviceCountInfo> getOrUpdateDeviceTypesTotalLimit() throws NotLoginException {
+        return userDevicesDict.getOrUpdateDeviceTypesTotalLimit(getUserId());
+    }
+
+    /**
+     * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param count 数量
+     */
+    public static void changeMaximumTotalDevice(int count) throws NotLoginException {
+        changeMaximumTotalDeviceAt(getUserId(), count);
+    }
+
+    /**
+     * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param userId 用户id
+     * @param count  数量
+     */
+    public static void changeMaximumTotalDeviceAt(@NonNull Object userId,
+                                                  int count) {
+        userDevicesDict.changeMaximumTotalDevice(userId, count);
+    }
+
+    /**
+     * 同类型设备最多登录数 默认 1个【count最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param count 数量
+     */
+    public static void changeMaximumTotalSameTypeDevice(int count) throws NotLoginException {
+        changeMaximumTotalSameTypeDeviceAt(getUserId(), count);
+    }
+
+
+    /**
+     * 同类型设备最多登录数 默认 1个【count最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param userId 用户id
+     * @param count  数量
+     */
+    public static void changeMaximumTotalSameTypeDeviceAt(@NonNull Object userId,
+                                                          int count) {
+        userDevicesDict.changeMaximumTotalSameTypeDevice(userId, count);
+    }
+
+
 }

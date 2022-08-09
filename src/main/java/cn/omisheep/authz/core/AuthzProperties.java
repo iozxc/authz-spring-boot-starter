@@ -164,6 +164,11 @@ public class AuthzProperties {
          */
         private String refreshTime = "30d";
 
+        /**
+         * 在登录前退出
+         */
+        private boolean logoutBeforeLogin = true;
+
     }
 
     @Data
@@ -184,12 +189,12 @@ public class AuthzProperties {
          * 相当于typesTotal对所有的类型添加一个设备数量限制，会被typesTotal覆盖。
          * 同类型设备最大登录数 默认 1个【-1为不做限制，最小为1】，超出会挤出最长时间未访问的设备。
          */
-        private int maximumSameTypeDeviceCount = 1;
+        private int maximumTotalSameTypeDevice = 1;
 
-        public int getMaximumSameTypeDeviceCount() {
-            if (maximumSameTypeDeviceCount == 0) return 1;
-            if (maximumSameTypeDeviceCount < 0) return -1;
-            return maximumSameTypeDeviceCount;
+        public int getMaximumTotalSameTypeDevice() {
+            if (maximumTotalSameTypeDevice == 0) return 1;
+            if (maximumTotalSameTypeDevice < 0) return -1;
+            return maximumTotalSameTypeDevice;
         }
 
         /**

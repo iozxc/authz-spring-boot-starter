@@ -216,7 +216,7 @@ public class AuHelper extends BaseHelper {
     }
 
     /**
-     * @return 所有当前有效登录用户的用户id, 当开启redis缓存时，userId返回为String数组
+     * @return 所有当前有效登录用户的用户id
      */
     @NonNull
     public static List<Object> getAllUserId() {
@@ -296,25 +296,92 @@ public class AuHelper extends BaseHelper {
     }
 
     /**
-     * 得到当前用户所有授设备信息信息
+     * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
+     * count >= 1 or count = -1
      *
-     * @return 所有授设备信息信息
-     * @throws NotLoginException 未登录
+     * @param types deviceType
+     * @param total 数量
      */
-    @NonNull
-    public static List<AuthorizedDeviceDetails> getAuthorizedDeviceDetails()
-            throws NotLoginException {
-        return getAuthorizedDeviceDetailsAt(getUserId());
+    public static void addDeviceTypesTotalLimit(@NonNull Collection<String> types,
+                                                int total) throws NotLoginException {
+        AuthzDeviceHelper.addDeviceTypesTotalLimit(types, total);
     }
 
     /**
-     * 得到当前用户所有授设备信息信息
+     * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
+     * count >= 1 or count = -1
      *
-     * @return 所有授设备信息信息
+     * @param userId 用户id
+     * @param types  deviceType
+     * @param total  数量
      */
-    @NonNull
-    public static List<AuthorizedDeviceDetails> getAuthorizedDeviceDetailsAt(Object userId) {
-        return OpenAuthHelper.getAllAuthorizedDeviceDetails(userId);
+    public static void addDeviceTypesTotalLimitAt(@NonNull Object userId,
+                                                  @NonNull Collection<String> types,
+                                                  int total) {
+        AuthzDeviceHelper.addDeviceTypesTotalLimitAt(userId, types, total);
+    }
+
+    /**
+     * 获得当前用户 可修改的 DeviceTypesTotalLimit list
+     * count >= 1 or count = -1
+     */
+    public static List<DeviceCountInfo> getOrUpdateDeviceTypesTotalLimit() throws NotLoginException {
+        return AuthzDeviceHelper.getOrUpdateDeviceTypesTotalLimit();
+    }
+
+    /**
+     * 获得任意用户 可修改的 DeviceTypesTotalLimit list
+     * count >= 1 or count = -1
+     *
+     * @param userId 用户id
+     */
+    public static List<DeviceCountInfo> getOrUpdateDeviceTypesTotalLimitAt(@NonNull Object userId) {
+        return AuthzDeviceHelper.getOrUpdateDeviceTypesTotalLimitAt(userId);
+    }
+
+    /**
+     * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param total 总数
+     */
+    public static void changeMaximumDeviceTotal(int total) throws NotLoginException {
+        AuthzDeviceHelper.changeMaximumTotalDevice(total);
+    }
+
+    /**
+     * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param userId 用户id
+     * @param total 总数
+     */
+    public static void changeMaximumTotalDeviceAt(@NonNull Object userId,
+                                                  int total) {
+        AuthzDeviceHelper.changeMaximumTotalDeviceAt(userId, total);
+    }
+
+    /**
+     * 同类型设备最多登录数 默认 1个【count最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param total 总数
+     */
+    public static void changeMaximumTotalSameTypeDevice(int total) throws NotLoginException {
+        AuthzDeviceHelper.changeMaximumTotalSameTypeDevice(total);
+    }
+
+
+    /**
+     * 同类型设备最多登录数 默认 1个【count最小为1】，超出会挤出最长时间未访问的设备。
+     * count >= 1
+     *
+     * @param userId 用户id
+     * @param count  数量
+     */
+    public static void changeMaximumTotalSameTypeDeviceAt(@NonNull Object userId,
+                                                          int count) {
+        AuthzDeviceHelper.changeMaximumTotalSameTypeDeviceAt(userId, count);
     }
 
     // **************************************     状态&权限      ************************************** //
@@ -330,7 +397,7 @@ public class AuHelper extends BaseHelper {
      * @param id 登录标识
      * @return 当前请求是否登录 true为登录、false为未登录
      */
-    public static boolean isLoginById(String id) {
+    public static boolean isLoginById(@NonNull String id) {
         try {
             return AuthzStateHelper.isLogin(getUserId(), id);
         } catch (Exception e) {
@@ -342,8 +409,8 @@ public class AuHelper extends BaseHelper {
      * @param id 登录标识
      * @return 当前请求是否登录 true为登录、false为未登录
      */
-    public static boolean isLoginById(Object userId,
-                                      String id) {
+    public static boolean isLoginById(@NonNull Object userId,
+                                      @NonNull String id) {
         return AuthzStateHelper.isLogin(userId, id);
     }
 
@@ -407,7 +474,7 @@ public class AuHelper extends BaseHelper {
      * @param role 所指定的角色
      * @return 判断当前请求用户是否有指定角色 若未登录返回false
      */
-    public static boolean hasRole(String... role) {
+    public static boolean hasRole(@NonNull String... role) {
         return hasRoles(Arrays.asList(role));
     }
 
@@ -415,7 +482,7 @@ public class AuHelper extends BaseHelper {
      * @param roles 所指定的角色
      * @return 判断当前请求用户是否有指定角色 若未登录返回false
      */
-    public static boolean hasRoles(List<String> roles) {
+    public static boolean hasRoles(@NonNull List<String> roles) {
         return AuthzStateHelper.hasRoles(roles);
     }
 
@@ -423,7 +490,7 @@ public class AuHelper extends BaseHelper {
      * @param permission 所指定的权限
      * @return 判断当前请求用户是否有指定角色 若未登录返回false
      */
-    public static boolean hasPermission(String... permission) {
+    public static boolean hasPermission(@NonNull String... permission) {
         return hasPermissions(Arrays.asList(permission));
     }
 
@@ -431,7 +498,7 @@ public class AuHelper extends BaseHelper {
      * @param permissions 所指定的权限
      * @return 判断当前请求用户是否有指定角色
      */
-    public static boolean hasPermissions(List<String> permissions) {
+    public static boolean hasPermissions(@NonNull List<String> permissions) {
         return AuthzStateHelper.hasPermissions(permissions);
     }
 
@@ -439,7 +506,7 @@ public class AuHelper extends BaseHelper {
      * @param scope 所指定的访问范围
      * @return 判断当前请求用户（oauth）是否有指定的访问权限
      */
-    public static boolean hasScope(String... scope) {
+    public static boolean hasScope(@NonNull String... scope) {
         return AuthzStateHelper.hasScope(Arrays.asList(scope));
     }
 
@@ -447,88 +514,8 @@ public class AuHelper extends BaseHelper {
      * @param scope 所指定的访问范围
      * @return 判断当前请求用户（oauth）是否有指定的访问权限
      */
-    public static boolean hasScope(List<String> scope) {
+    public static boolean hasScope(@NonNull List<String> scope) {
         return AuthzStateHelper.hasScope(scope);
-    }
-
-    /**
-     * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
-     * count >= 1 or count = -1
-     *
-     * @param types deviceType
-     * @param total 数量
-     */
-    public static void addDeviceTypesTotalLimit(Collection<String> types,
-                                                int total) throws NotLoginException {
-        addDeviceTypesTotalLimit(getUserId(), types, total);
-    }
-
-    /**
-     * 获得一个可修改的 DeviceTypesTotalLimit list
-     * count >= 1 or count = -1
-     *
-     * @param userId 用户id
-     */
-    public static List<DeviceCountInfo> getOrUpdateDeviceTypesTotalLimit(Object userId) {
-        return userDevicesDict.getOrUpdateDeviceTypesTotalLimit(userId);
-    }
-
-    /**
-     * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
-     * count >= 1
-     *
-     * @param count 数量
-     */
-    public static void changeMaximumDeviceTotal(int count) throws NotLoginException {
-        changeMaximumDeviceTotal(getUserId(), count);
-    }
-
-    /**
-     * 同类型设备最多登录数 默认 1个【count最小为1】，超出会挤出最长时间未访问的设备。
-     * count >= 1
-     *
-     * @param count 数量
-     */
-    public static void changeMaximumSameTypeDeviceCount(int count) throws NotLoginException {
-        changeMaximumSameTypeDeviceCount(getUserId(), count);
-    }
-
-    /**
-     * 每[一种、多种]设备类型设置[共同]的最大登录数（最小为1），超出会挤出最长时间未访问的设备。
-     * count >= 1 or count = -1
-     *
-     * @param userId 用户id
-     * @param types  deviceType
-     * @param total  数量
-     */
-    public static void addDeviceTypesTotalLimit(Object userId,
-                                                Collection<String> types,
-                                                int total) {
-        userDevicesDict.addDeviceTypesTotalLimit(userId, types, total);
-    }
-
-    /**
-     * 同类型设备最多登录数 默认 1个【count最小为1】，超出会挤出最长时间未访问的设备。
-     * count >= 1
-     *
-     * @param userId 用户id
-     * @param count  数量
-     */
-    public static void changeMaximumSameTypeDeviceCount(Object userId,
-                                                        int count) {
-        userDevicesDict.changeMaximumSameTypeDeviceCount(userId, count);
-    }
-
-    /**
-     * 登录设备总数默不做限制【total为-1不做限制，最小为1】，超出会挤出最长时间未访问的设备。
-     * count >= 1
-     *
-     * @param userId 用户id
-     * @param count  数量
-     */
-    public static void changeMaximumDeviceTotal(Object userId,
-                                                int count) {
-        userDevicesDict.changeMaximumDeviceTotal(userId, count);
     }
 
     // ************************************     【在线/活跃】      ************************************ //
@@ -1044,6 +1031,7 @@ public class AuHelper extends BaseHelper {
          * @param clientId 客户端id
          * @return 客户端的详细信息（客户端id，客户端name，客户端密钥，重定向url）
          */
+        @NonNull
         public static ClientDetails findClient(@NonNull String clientId) {
             return OpenAuthHelper.findClient(clientId);
         }
@@ -1054,6 +1042,7 @@ public class AuHelper extends BaseHelper {
          * @param clientId 客户端id
          * @return RedirectUrl 重定向地址
          */
+        @NonNull
         public static String getRedirectUrl(@NonNull String clientId) {
             return OpenAuthHelper.findClient(clientId).getRedirectUrl();
         }
@@ -1075,12 +1064,14 @@ public class AuHelper extends BaseHelper {
             OpenAuthHelper.removeAllAuthorizedDevice(userId);
         }
 
-        public static List<AuthorizedDeviceDetails> getAllAuthorizedDeviceDetails() throws NotLoginException {
-            return getAllAuthorizedDeviceDetails(getUserId());
+        @NonNull
+        public static List<AuthorizedDeviceDetails> getAuthorizedDeviceDetails() throws NotLoginException {
+            return getAuthorizedDeviceDetailsAt(getUserId());
         }
 
-        public static List<AuthorizedDeviceDetails> getAllAuthorizedDeviceDetails(@NonNull Object userId) {
-            return OpenAuthHelper.getAllAuthorizedDeviceDetails(userId);
+        @NonNull
+        public static List<AuthorizedDeviceDetails> getAuthorizedDeviceDetailsAt(@NonNull Object userId) {
+            return OpenAuthHelper.getAuthorizedDeviceDetailsAt(userId);
         }
 
         /**

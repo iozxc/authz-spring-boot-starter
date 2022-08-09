@@ -101,15 +101,15 @@ public interface UserDevicesDict {
 
     void deviceClean(Object userId);
 
-    default void changeMaximumSameTypeDeviceCount(Object userId,
-                                                  int count) {
+    default void changeMaximumTotalSameTypeDevice(Object userId,
+                                                  int total) {
         AuthzProperties.UserConfig userConfig = UserDevicesDict.usersConfig
                 .computeIfAbsent(userId, r -> new AuthzProperties.UserConfig());
-        userConfig.setMaximumSameTypeDeviceCount(count);
+        userConfig.setMaximumTotalSameTypeDevice(total);
         deviceClean(userId);
     }
 
-    default void changeMaximumDeviceTotal(Object userId,
+    default void changeMaximumTotalDevice(Object userId,
                                           int count) {
         AuthzProperties.UserConfig userConfig = UserDevicesDict.usersConfig
                 .computeIfAbsent(userId, r -> new AuthzProperties.UserConfig());

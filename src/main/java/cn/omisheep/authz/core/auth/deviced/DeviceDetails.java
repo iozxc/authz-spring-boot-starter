@@ -54,11 +54,6 @@ public class DeviceDetails {
      */
     private String deviceId;
 
-    /**
-     * 过期时间
-     */
-    private Date expires;
-
     public DeviceDetails setUserId(Object userId) {
         this.userId = AuthzContext.createUserId(userId);
         return this;

@@ -178,7 +178,7 @@ public class OpenAuthHelper extends BaseHelper {
         openAuthLibrary.deleteClientById(clientId);
     }
 
-    public static List<AuthorizedDeviceDetails> getAllAuthorizedDeviceDetails(Object userId) {
+    public static List<AuthorizedDeviceDetails> getAuthorizedDeviceDetailsAt(Object userId) {
         Set<String>         keys      = cache.keys(UserDevicesDict.oauthKey(userId, Constants.WILDCARD));
         Map<String, Device> deviceMap = cache.get(keys, Device.class);
         Iterator<String>    iterator  = keys.stream().map(k -> k.split(Constants.SEPARATOR)[6]).iterator();
