@@ -71,7 +71,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
         PermLibrary bean = ctx.getBean(PermLibrary.class);
         if (bean == null || bean instanceof DefaultPermLibrary) {
             AuInit.log.warn(
-                    "not configured PermLibrary，Possible error in permission acquisition. Please implements cn.omisheep.authz.core.auth.PermLibrary");
+                    "Not configured PermLibrary. Please implements cn.omisheep.authz.core.auth.PermLibrary");
         }
     }
 
