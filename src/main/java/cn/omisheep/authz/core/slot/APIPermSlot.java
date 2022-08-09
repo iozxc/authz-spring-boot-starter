@@ -33,8 +33,8 @@ public class APIPermSlot implements Slot {
                       Error error) {
         if (!httpMeta.isHasApiAuth()) return;
 
-        if (!check(PermissionDict.getControllerRolePermission().get(httpMeta.getControllerType()), error,
-                  httpMeta)) return;
+        if (!check(PermissionDict.getControllerRolePermission().get(httpMeta.getController()), error,
+                   httpMeta)) {return;}
 
         Map<String, PermRolesMeta> rolesMetaMap1 = PermissionDict.getRolePermission().get(httpMeta.getApi());
         if (rolesMetaMap1 == null || check(rolesMetaMap1.get(httpMeta.getMethod()), error, httpMeta)) {

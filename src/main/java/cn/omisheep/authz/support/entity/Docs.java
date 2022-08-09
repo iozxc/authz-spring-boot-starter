@@ -53,6 +53,19 @@ public class Docs {
     }
 
     @JsonProperty(index = 6)
+    public Map<String, Map<String, Object>> getControllerPermissions() {
+        HashMap<String, Map<String, Object>> data = new HashMap<>();
+        PermissionDict.getControllerRolePermission()
+                .forEach((k, v) -> {
+                    HashMap<String, Object> map = new HashMap<>();
+                    map.put("auth", v);
+                    map.put("hasAuth", v != null && !v.non());
+                    data.put(k.substring(k.lastIndexOf(".") + 1), map);
+                });
+        return data;
+    }
+
+    @JsonProperty(index = 7)
     public Map<String, Map<String, Map<String, Object>>> getPaths() {
         HashMap<String, Map<String, Map<String, Object>>> map = new HashMap<>();
 
@@ -92,12 +105,12 @@ public class Docs {
         return map;
     }
 
-    @JsonProperty(index = 7)
+    @JsonProperty(index = 8)
     public Map<String, ArgsMeta> getArgResource() {
         return PermissionDict.getArgs();
     }
 
-    @JsonProperty(index = 8)
+    @JsonProperty(index = 9)
     public List<AuthzAppVersion.ConnectInfo> conns() { // 实例
         return AuthzAppVersion.getConnectInfo().get(AuthzAppVersion.LOCAL_CONNECT);
     }

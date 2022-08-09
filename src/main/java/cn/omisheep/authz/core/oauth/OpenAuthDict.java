@@ -65,21 +65,19 @@ public class OpenAuthDict {
                 .getDefaultBasicScope();
 
         applicationContext.getBeansWithAnnotation(OAuthScope.class).forEach((key, value) -> {
-            String     name       = getTypeName(value);
             OAuthScope oAuthScope = getAnnotation(value, OAuthScope.class);
             if (oAuthScope == null) return;
-            cMap.computeIfAbsent(name, r -> new HashSet<>()).addAll(Arrays.asList(oAuthScope.scope()));
-            gMap.computeIfAbsent(name, r -> new HashSet<>()).addAll(Arrays.asList(oAuthScope.type()));
+            cMap.computeIfAbsent(key, r -> new HashSet<>()).addAll(Arrays.asList(oAuthScope.scope()));
+            gMap.computeIfAbsent(key, r -> new HashSet<>()).addAll(Arrays.asList(oAuthScope.type()));
         });
 
         applicationContext.getBeansWithAnnotation(OAuthScopeBasic.class).forEach((key, value) -> {
-            String          name            = getTypeName(value);
             OAuthScopeBasic oAuthScopeBasic = getAnnotation(value, OAuthScopeBasic.class);
             if (oAuthScopeBasic == null) return;
-            Set<String> l = cMap.computeIfAbsent(name, r -> new HashSet<>());
+            Set<String> l = cMap.computeIfAbsent(key, r -> new HashSet<>());
             l.addAll(Arrays.asList(oAuthScopeBasic.scope()));
             l.add(defaultBasicScope);
-            gMap.computeIfAbsent(name, r -> new HashSet<>()).addAll(Arrays.asList(oAuthScopeBasic.type()));
+            gMap.computeIfAbsent(key, r -> new HashSet<>()).addAll(Arrays.asList(oAuthScopeBasic.type()));
         });
 
         mapRet.forEach((key, value) -> {
@@ -87,10 +85,10 @@ public class OpenAuthDict {
                     Collectors.toList());
             Set<String> patterns = getPatterns(key);
             HashSet<String> scope = new HashSet<>(
-                    cMap.getOrDefault(value.getBeanType().getTypeName(), new HashSet<>())
+                    cMap.getOrDefault((String) value.getBean(), new HashSet<>())
             );
             HashSet<GrantType> type = new HashSet<>(
-                    gMap.getOrDefault(value.getBeanType().getTypeName(), new HashSet<>())
+                    gMap.getOrDefault((String) value.getBean(), new HashSet<>())
             );
 
             OAuthScope oAuthScope = AnnotatedElementUtils.getMergedAnnotation(value.getMethod(), OAuthScope.class);

@@ -29,6 +29,7 @@ public class AuthzModifier {
     private Object     value;
     private Integer    index;
     private Role       role;
+    private String     controller;
     private Permission permission;
 
     // param
@@ -80,7 +81,7 @@ public class AuthzModifier {
         private String deviceType;
         private String deviceId;
         private long   time;
-        private String   date;
+        private String date;
 
         public enum OP {
             UPDATE, REMOVE, READ, NON;

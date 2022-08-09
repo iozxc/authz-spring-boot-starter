@@ -24,6 +24,7 @@ import org.springframework.core.MethodParameter;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.method.HandlerMethod;
@@ -55,6 +56,11 @@ public class PermissionDict {
      * controller权限
      */
     private static final Map<String, PermRolesMeta> _authzControllerMetadata = new HashMap<>();
+
+    /**
+     * controller 名字映射
+     */
+    private static final Map<String, String> _controllerNameMap = new HashMap<>();
 
     /**
      * 哪些controller需要登录
@@ -159,12 +165,15 @@ public class PermissionDict {
 
     // ----------------------------------------- func ----------------------------------------- //
 
+    public static String getControllerBeanName(String typeName) {
+        return _controllerNameMap.get(typeName);
+    }
+
     public static void putParam(String api,
                                 String method,
                                 String name,
                                 ParamMetadata paramMetadata) {
-        _authzParamMetadata
-                .computeIfAbsent(api, r -> new HashMap<>())
+        _authzParamMetadata.computeIfAbsent(api, r -> new HashMap<>())
                 .computeIfAbsent(method, r -> new HashMap<>())
                 .computeIfAbsent(name, r -> paramMetadata)
                 .setParamMetaList(paramMetadata.getParamMetaList());
@@ -172,9 +181,7 @@ public class PermissionDict {
 
     public static void putParam(String api,
                                 String method) {
-        _authzParamMetadata
-                .computeIfAbsent(api, r -> new HashMap<>())
-                .computeIfAbsent(method, r -> new HashMap<>());
+        _authzParamMetadata.computeIfAbsent(api, r -> new HashMap<>()).computeIfAbsent(method, r -> new HashMap<>());
     }
 
     @Nullable
@@ -219,8 +226,7 @@ public class PermissionDict {
         boolean                    hasParamAuth = false;
 
         try {
-            paramAuth    = _authzParamMetadata.get(api)
-                    .get(method);
+            paramAuth    = _authzParamMetadata.get(api).get(method);
             hasParamAuth = paramAuth != null && !paramAuth.isEmpty() && paramAuth.values()
                     .stream()
                     .anyMatch(ParamMetadata::hasParamAuth);
@@ -231,15 +237,13 @@ public class PermissionDict {
         LimitMeta rateLimit = null;
 
         try {
-            rateLimit = Httpd.getRateLimitMetadata().get(api)
-                    .get(method);
+            rateLimit = Httpd.getRateLimitMetadata().get(api).get(method);
         } catch (Exception e) {
             // skip
         }
 
         if (_v != null) {
-            return Result.SUCCESS
-                    .data("auth", _v)
+            return Result.SUCCESS.data("auth", _v)
                     .data("hasAuth", !_v.non())
                     .data("requireLogin", !_v.non() || k)
                     .data("paramAuth", paramAuth)
@@ -247,8 +251,7 @@ public class PermissionDict {
                     .data("hasRateLimit", rateLimit != null)
                     .data("hasParamAuth", hasParamAuth);
         } else {
-            return Result.SUCCESS
-                    .data("auth", null)
+            return Result.SUCCESS.data("auth", null)
                     .data("hasAuth", false)
                     .data("paramAuth", paramAuth)
                     .data("rateLimit", rateLimit)
@@ -267,6 +270,20 @@ public class PermissionDict {
             if (AuthzModifier.Target.LOGIN.equals(authzModifier.getTarget())) {
                 try {
                     boolean login = (boolean) authzModifier.getValue();
+
+                    String controller = authzModifier.getController();
+                    if (controller != null) {
+                        if (!_controllerMetadata.containsKey(controller)) {
+                            return Result.FAIL.data();
+                        }
+                        if (login) {
+                            _certificatedControllerMetadata.add(controller);
+                        } else {
+                            _certificatedControllerMetadata.remove(controller);
+                        }
+                        return Result.SUCCESS.data();
+                    }
+
                     if (login) {
                         _certificatedMetadata.computeIfAbsent(api, r -> new HashSet<>()).add(method);
                     } else {
@@ -301,10 +318,26 @@ public class PermissionDict {
                 case MODIFY:
                 case UPDATE: {
                     PermRolesMeta build = authzModifier.build();
+
+                    String controller = authzModifier.getController();
+                    if (controller != null) {
+                        if (!_controllerMetadata.containsKey(controller)) {
+                            return Result.FAIL.data();
+                        }
+                        if (build == null || build.non()) {
+                            _authzControllerMetadata.remove(controller);
+                            return Result.SUCCESS.data("auth", new PermRolesMeta()).data("hasAuth", false);
+                        } else {
+                            _authzControllerMetadata.put(controller, build);
+                        }
+                        return Result.SUCCESS.data("auth", build).data("hasAuth", !build.non());
+                    }
+
                     if (build != null) {
                         _authzMetadata.computeIfAbsent(api, r -> new HashMap<>())
                                 .computeIfAbsent(authzModifier.getMethod(), r -> new PermRolesMeta())
-                                .clear().merge(build);
+                                .clear()
+                                .merge(build);
                     }
 
                     Map<String, PermRolesMeta> metaMap = _authzMetadata.get(api);
@@ -323,6 +356,15 @@ public class PermissionDict {
                 }
                 case DELETE:
                 case DEL: {
+                    String controller = authzModifier.getController();
+                    if (controller != null) {
+                        if (!_controllerMetadata.containsKey(controller)) {
+                            return Result.FAIL.data();
+                        }
+                        _authzControllerMetadata.remove(controller);
+                        return Result.SUCCESS.data("auth", null).data("hasAuth", false);
+                    }
+
                     _authzMetadata.get(api).get(method).clear();
                     if (_authzMetadata.get(api).get(method).non()) {
                         _authzMetadata.get(api).remove(method);
@@ -336,11 +378,12 @@ public class PermissionDict {
                 case READ:
                     if (api == null && method == null) return rolePermission;
                     if (api == null) {
-                        return rolePermission.values().stream().filter(
-                                stringPermRolesMetaMap -> stringPermRolesMetaMap.containsKey(
-                                        authzModifier.getMethod())).map(
-                                stringPermRolesMetaMap -> stringPermRolesMetaMap.get(
-                                        authzModifier.getMethod())).collect(Collectors.toList());
+                        return rolePermission.values()
+                                .stream()
+                                .filter(stringPermRolesMetaMap -> stringPermRolesMetaMap.containsKey(
+                                        authzModifier.getMethod()))
+                                .map(stringPermRolesMetaMap -> stringPermRolesMetaMap.get(authzModifier.getMethod()))
+                                .collect(Collectors.toList());
                     }
                     if (method == null) {
                         return rolePermission.get(authzModifier.getApi());
@@ -369,14 +412,13 @@ public class PermissionDict {
                 case ADD:
                 case UPDATE:
                 case MODIFY: {
-                    ParamMetadata paramMetadata = _authzParamMetadata.get(path)
-                            .get(method)
-                            .get(name);
-                    PermRolesMeta build = authzModifier.build();
+                    ParamMetadata paramMetadata = _authzParamMetadata.get(path).get(method).get(name);
+                    PermRolesMeta build         = authzModifier.build();
                     if (paramMetadata.getParamMetaList() == null) {
                         if (build != null && !build.non()) {
                             ParamPermRolesMeta meta = new ParamPermRolesMeta().setRange(authzModifier.getRange())
-                                    .setResources(authzModifier.getResources()).merge(build);
+                                    .setResources(authzModifier.getResources())
+                                    .merge(build);
                             if (!meta.non()) {
                                 paramMetadata.setParamMetaList(new ArrayList<>());
                                 paramMetadata.getParamMetaList().add(meta);
@@ -410,11 +452,8 @@ public class PermissionDict {
                 }
                 case DELETE:
                 case DEL: {
-                    ParamMetadata paramMetadata = _authzParamMetadata.get(path)
-                            .get(method)
-                            .get(name);
-                    if (paramMetadata.getParamMetaList() == null ||
-                            paramMetadata.getParamMetaList().size() <= index) {
+                    ParamMetadata paramMetadata = _authzParamMetadata.get(path).get(method).get(name);
+                    if (paramMetadata.getParamMetaList() == null || paramMetadata.getParamMetaList().size() <= index) {
                         return Result.SUCCESS;
                     }
                     paramMetadata.getParamMetaList().remove(index);
@@ -494,8 +533,7 @@ public class PermissionDict {
                         Integer index = authzModifier.getIndex();
                         if (_dataPermMetadata.get(className) == null) return Result.FAIL;
                         if (index == null) {_dataPermMetadata.get(className).clear();} else {
-                            _dataPermMetadata.get(
-                                    className).remove(index.intValue());
+                            _dataPermMetadata.get(className).remove(index.intValue());
                         }
                         break;
                     case GET:
@@ -514,20 +552,17 @@ public class PermissionDict {
                         if (authzModifier.getFieldName() == null) return Result.FAIL;
                         PermRolesMeta          build     = authzModifier.build();
                         FieldDataPermRolesMeta fieldData = FieldDataPermRolesMeta.of(className, build);
-                        _fieldMetadata.computeIfAbsent(className, r -> new HashMap<>()).put(
-                                authzModifier.getFieldName(),
-                                fieldData);
+                        _fieldMetadata.computeIfAbsent(className, r -> new HashMap<>())
+                                .put(authzModifier.getFieldName(), fieldData);
                     }
                     case UPDATE:
                     case MODIFY: {
                         if (authzModifier.getFieldName() == null) return Result.FAIL;
                         PermRolesMeta          build     = authzModifier.build();
                         FieldDataPermRolesMeta fieldData = FieldDataPermRolesMeta.of(className, build);
-                        FieldDataPermRolesMeta fd = _fieldMetadata.computeIfAbsent(className,
-                                                                                   r -> new HashMap<>())
-                                .computeIfAbsent(
-                                        authzModifier.getFieldName(),
-                                        r -> new FieldDataPermRolesMeta(className));
+                        FieldDataPermRolesMeta fd = _fieldMetadata.computeIfAbsent(className, r -> new HashMap<>())
+                                .computeIfAbsent(authzModifier.getFieldName(),
+                                                 r -> new FieldDataPermRolesMeta(className));
                         if (fieldData.getPermissions() != null) fd.setPermissions(fieldData.getPermissions());
                         if (fieldData.getRoles() != null) fd.setRoles(fieldData.getRoles());
                     }
@@ -604,41 +639,52 @@ public class PermissionDict {
         Set<String>              toBeLoadedRoles = new HashSet<>();
         Map<String, IPRangeMeta> iMap            = new HashMap<>();
 
+        applicationContext.getBeansWithAnnotation(Controller.class).forEach((k, v) -> {
+            _controllerNameMap.put(getTypeName(v), k);
+        });
+
+        // ------------- 初始化Controller RBAC权限 --------------- //
         applicationContext.getBeansWithAnnotation(Auth.class).forEach((key, value) -> {
-            String    name  = getTypeName(value);
+            if (!isController(value)) return;
             Set<Auth> auths = getAnnotations(value, Auth.class);
             if (auths != null) {
                 PermRolesMeta permRolesMeta = generatePermRolesMeta(auths);
                 if (permRolesMeta != null && !permRolesMeta.non()) {
-                    _authzControllerMetadata.put(name, permRolesMeta);
+                    _authzControllerMetadata.put(key, permRolesMeta);
                 }
             }
         });
 
+        // ------------- 初始化Controller 登录权限 --------------- //
         applicationContext.getBeansWithAnnotation(Certificated.class).forEach((key, value) -> {
+            if (!isController(value)) return;
             Certificated certificated = getAnnotation(value, Certificated.class);
             if (certificated != null) {
-                _certificatedControllerMetadata.add(getTypeName(value));
+                _certificatedControllerMetadata.add(key);
             }
         });
 
+        // ------------- 初始化Controller IPRangeLimit --------------- //
         applicationContext.getBeansWithAnnotation(IPRangeLimit.class).forEach((key, value) -> {
+            if (!isController(value)) return;
             IPRangeLimit ipRangeLimit = getAnnotation(value, IPRangeLimit.class);
             if (ipRangeLimit == null) return;
-            iMap.put(getTypeName(value), new IPRangeMeta().setAllow(ipRangeLimit.allow()).setDeny(ipRangeLimit.deny()));
+            iMap.put(key, new IPRangeMeta().setAllow(ipRangeLimit.allow()).setDeny(ipRangeLimit.deny()));
         });
 
         mapRet.forEach((key, value) -> {
-
-            List<String> mtds = key.getMethodsCondition().getMethods().stream().map(Enum::name).collect(
-                    Collectors.toList());
+            List<String> mtds = key.getMethodsCondition()
+                    .getMethods()
+                    .stream()
+                    .map(Enum::name)
+                    .collect(Collectors.toList());
             Set<String> patterns = getPatterns(key);
 
             // ------------- 初始化Controller --------------- //
             {
                 if (!value.getBeanType().equals(BasicErrorController.class)) {
-                    List<Map<String, String>> clm = _controllerMetadata
-                            .computeIfAbsent(value.getBeanType().getSimpleName(), r -> new ArrayList<>());
+                    List<Map<String, String>> clm = _controllerMetadata.computeIfAbsent((String) value.getBean(),
+                                                                                        r -> new ArrayList<>());
                     patterns.forEach(p -> mtds.forEach(m -> {
                         HashMap<String, String> map = new HashMap<>();
                         map.put("method", m);
@@ -649,16 +695,14 @@ public class PermissionDict {
             }
 
             // ------------- 初始化Api权限 --------------- //
-            Set<Auth> auths = AnnotatedElementUtils.getAllMergedAnnotations(value.getMethod(),
-                                                                            Auth.class);
+            Set<Auth> auths = AnnotatedElementUtils.getAllMergedAnnotations(value.getMethod(), Auth.class);
 
             PermRolesMeta permRolesMeta = new PermRolesMeta().merge(generatePermRolesMeta(auths));
 
             if (!permRolesMeta.non()) {
                 mtds.forEach(method -> patterns.forEach(
                         patternValue -> _authzMetadata.computeIfAbsent(patternValue, r -> new HashMap<>())
-                                .put(method, permRolesMeta)
-                ));
+                                .put(method, permRolesMeta)));
             }
 
             // ------------- Load --------------- //
@@ -678,7 +722,7 @@ public class PermissionDict {
 
             // ------------- 初始化RateLimit --------------- //
             // 初始化IPRange权限
-            IPRangeMeta iFc         = iMap.get(value.getBeanType().getName());
+            IPRangeMeta iFc         = iMap.get(value.getBean() + "");
             IPRangeMeta ipRangeMeta = new IPRangeMeta();
             if (iFc != null) {
                 ipRangeMeta.setAllow(iFc.getAllow());
@@ -695,8 +739,8 @@ public class PermissionDict {
             if (ipRangeMeta.getDeny() != null && !ipRangeMeta.getDeny()
                     .isEmpty() || ipRangeMeta.getAllow() != null && !ipRangeMeta.getAllow().isEmpty()) {
                 mtds.forEach(method -> patterns.forEach(
-                        patternValue -> _ipRangeMeta.computeIfAbsent(patternValue, r -> new HashMap<>()).put(
-                                method, ipRangeMeta)));
+                        patternValue -> _ipRangeMeta.computeIfAbsent(patternValue, r -> new HashMap<>())
+                                .put(method, ipRangeMeta)));
             }
 
             // ------------- 初始化参数权限 --------------- //
@@ -749,8 +793,7 @@ public class PermissionDict {
 
                     if (paramPermRolesMetas.isEmpty()) continue;
 
-                    putParam(patternValue, method, paramName,
-                             ParamMetadata.of(clz, type, paramPermRolesMetas));
+                    putParam(patternValue, method, paramName, ParamMetadata.of(clz, type, paramPermRolesMetas));
 
                 }
             }));
@@ -763,11 +806,9 @@ public class PermissionDict {
 
         if (AuthzAppVersion.properties.getCache().isEnableRedis()) {
             Async.run(() -> {
-                List<Set<String>> toBeLoadedRolesKeys = RedisUtils.Obj.get(
-                        toBeLoadedRoles.stream()
-                                .map(role -> Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role)
-                                .collect(Collectors.toList())
-                );
+                List<Set<String>> toBeLoadedRolesKeys = RedisUtils.Obj.get(toBeLoadedRoles.stream()
+                                                                                   .map(role -> Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role)
+                                                                                   .collect(Collectors.toList()));
                 Iterator<String>             iterator = toBeLoadedRoles.iterator();
                 HashMap<String, Set<String>> map      = new HashMap<>();
                 toBeLoadedRolesKeys.forEach(perms -> map.put(iterator.next(), perms));
@@ -780,8 +821,7 @@ public class PermissionDict {
                                             Cache.INFINITE);
                         } else {
                             cache.setSneaky(Constants.PERMISSIONS_BY_ROLE_KEY_PREFIX.get() + role,
-                                            new HashSet<>(permissions),
-                                            Cache.INFINITE);
+                                            new HashSet<>(permissions), Cache.INFINITE);
                         }
                     }
                 });

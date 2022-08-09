@@ -61,7 +61,7 @@ public class HttpMeta extends BaseHelper {
     private Boolean       hasParamAuth;
     private Boolean       requireLogin;
 
-    private String controllerType;
+    private String controller;
 
     @JsonIgnore
     private HttpServletRequest          request;
@@ -238,7 +238,7 @@ public class HttpMeta extends BaseHelper {
     public boolean isHasApiAuth() {
         if (hasApiAuth != null) return hasApiAuth;
         Map<String, PermRolesMeta> map            = PermissionDict.getRolePermission().get(api);
-        PermRolesMeta              cPermRolesMeta = PermissionDict.getControllerRolePermission().get(controllerType);
+        PermRolesMeta              cPermRolesMeta = PermissionDict.getControllerRolePermission().get(controller);
         if (map == null && cPermRolesMeta == null) {
             hasApiAuth = false;
             return hasApiAuth;
@@ -269,7 +269,7 @@ public class HttpMeta extends BaseHelper {
     public boolean isRequireLogin() {
         if (requireLogin != null) return requireLogin;
         Set<String> list     = PermissionDict.getCertificatedMetadata().get(api);
-        boolean     contains = PermissionDict.getControllerCertificatedMetadata().contains(controllerType);
+        boolean     contains = PermissionDict.getControllerCertificatedMetadata().contains(controller);
         if (list == null || list.isEmpty()) {
             requireLogin = isHasApiAuth() || isHasParamAuth() || contains;
             return requireLogin;

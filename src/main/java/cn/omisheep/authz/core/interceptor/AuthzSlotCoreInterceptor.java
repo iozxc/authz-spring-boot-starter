@@ -3,6 +3,7 @@ package cn.omisheep.authz.core.interceptor;
 import cn.omisheep.authz.core.AuthzException;
 import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
+import cn.omisheep.authz.core.auth.rpd.PermissionDict;
 import cn.omisheep.authz.core.slot.Order;
 import cn.omisheep.authz.core.slot.Slot;
 import cn.omisheep.authz.core.tk.TokenHelper;
@@ -54,7 +55,7 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
             return true;
         }
         HandlerMethod handlerMethod = (HandlerMethod) handler;
-        httpMeta.setControllerType(handlerMethod.getBeanType().getTypeName());
+        httpMeta.setController(PermissionDict.getControllerBeanName(handlerMethod.getBeanType().getTypeName()));
         LinkedList<ExceptionStatus> list = httpMeta.getExceptionStatusList();
         if (!list.isEmpty()) {
             httpMeta.exportLog();

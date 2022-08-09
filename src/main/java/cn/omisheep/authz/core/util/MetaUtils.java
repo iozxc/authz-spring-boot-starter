@@ -6,6 +6,8 @@ import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.commons.util.CollectionUtils;
 import lombok.SneakyThrows;
 import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 
 import java.lang.annotation.Annotation;
@@ -171,6 +173,16 @@ public class MetaUtils {
             prm.setExcludePermissions(CollectionUtils.splitStrValsToSets(Constants.COMMA, excludePermissions));
         }
         return !prm.non() ? prm : null;
+    }
+
+    public static boolean isController(Object value) {
+        try {
+            Class<?> aClass = Class.forName(getTypeName(value));
+            if (AnnotationUtils.getAnnotation(aClass, Controller.class) == null) return false;
+        } catch (Exception e) {
+            return false;
+        }
+        return true;
     }
 
 }
