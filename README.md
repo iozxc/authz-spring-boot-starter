@@ -2,7 +2,7 @@
 
 ## 权限安全框架 - 简单介绍
 
-> [Authz](https://github.com/iozxc/authz-spring-boot-starter) 
+> [Authz 文档官网 http://authz.omisheep.com](http://authz.omisheep.com) 
 - gitee地址 https://gitee.com/iozxc/authz-spring-boot-starter
 - github地址 https://github.com/iozxc/authz-spring-boot-starter
 - 更新日志 <a href='CHANGELOG.md'>CHANGELOG.md</a>
