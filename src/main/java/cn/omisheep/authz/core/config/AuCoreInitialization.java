@@ -57,7 +57,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
         AuthzContext.init(applicationContext);
         init();
         CallbackInit.callbackInit(applicationContext);
-        chechPermLibrary();
+        checkPermLibrary();
         printBanner();
     }
 
@@ -67,7 +67,7 @@ public class AuCoreInitialization implements ApplicationContextAware {
         }
     }
 
-    public void chechPermLibrary() {
+    public void checkPermLibrary() {
         PermLibrary bean = ctx.getBean(PermLibrary.class);
         if (bean == null || bean instanceof DefaultPermLibrary) {
             AuInit.log.warn(

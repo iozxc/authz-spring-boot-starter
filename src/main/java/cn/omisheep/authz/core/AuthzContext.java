@@ -32,6 +32,10 @@ public class AuthzContext {
         return ctx.getBean(clz);
     }
 
+    public static String getMainClassPkg() {
+        return AuthzAppVersion.mainClass.getPackage().getName();
+    }
+
     public static <T> T getBean(String name,
                                 Class<T> clz) {
         return ctx.getBean(name, clz);
