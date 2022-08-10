@@ -354,7 +354,7 @@ public class AuHelper extends BaseHelper {
      * count >= 1
      *
      * @param userId 用户id
-     * @param total 总数
+     * @param total  总数
      */
     public static void changeMaximumTotalDeviceAt(@NonNull Object userId,
                                                   int total) {
@@ -1205,39 +1205,43 @@ public class AuHelper extends BaseHelper {
 
         private Cache() {}
 
-        public <E> void set(String key,
-                            E element) {
+        public static Set<String> keys(String pattern) {
+            return cache.keys(pattern);
+        }
+
+        public static <E> void set(String key,
+                                   E element) {
             cache.set(key, element);
         }
 
-        public <E> void set(String key,
-                            E element,
-                            long time,
-                            TimeUnit unit) {
+        public static <E> void set(String key,
+                                   E element,
+                                   long time,
+                                   TimeUnit unit) {
             cache.set(key, element, time, unit);
         }
 
-        public <E> void set(String key,
-                            E element,
-                            String time) {
+        public static <E> void set(String key,
+                                   E element,
+                                   String time) {
             cache.set(key, element, time);
         }
 
-        public void delete(String... keys) {
+        public static void delete(String... keys) {
             cache.del(keys);
         }
 
-        public void delete(Collection<String> keys) {
+        public static void delete(Collection<String> keys) {
             if (keys instanceof Set) {cache.del((Set<String>) keys);} else {delete(new HashSet<>(keys));}
         }
 
-        public Map<String, Object> get(Collection<String> keys) {
+        public static Map<String, Object> get(Collection<String> keys) {
             if (keys instanceof Set) {return cache.get((Set<String>) keys);} else {
                 return cache.get(new HashSet<>(keys));
             }
         }
 
-        public Object get(String key) {
+        public static Object get(String key) {
             return cache.get(key);
         }
 

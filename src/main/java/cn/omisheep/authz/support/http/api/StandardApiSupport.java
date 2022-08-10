@@ -22,7 +22,7 @@ public class StandardApiSupport implements ApiSupport {
     }
 
     @Get(value = "/echo", desc = "echo")
-    public Result echo(@Param String msg) {
+    public Result echo(@Param("msg") String msg) {
         return Result.SUCCESS.data(msg);
     }
 

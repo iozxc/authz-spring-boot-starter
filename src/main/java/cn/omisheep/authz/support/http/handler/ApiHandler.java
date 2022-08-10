@@ -39,13 +39,15 @@ public class ApiHandler {
     @Accessors(chain = true)
     public static class ApiInfo {
         @JsonProperty(index = 2)
-        private String  method;
+        private String      method;
         @JsonProperty(index = 1)
-        private boolean requireLogin;
+        private boolean     requireLogin;
         @JsonIgnore
-        private Method  invoke;
+        private Method      invoke;
+        @JsonIgnore
+        private Parameter[] parameters;
         @JsonProperty(index = 3)
-        private String  desc;
+        private String      desc;
     }
 
     public void process(HttpServletRequest request,
@@ -65,7 +67,7 @@ public class ApiHandler {
             return;
         }
         Method      invoke     = apiInfo.getInvoke();
-        Parameter[] parameters = invoke.getParameters();
+        Parameter[] parameters = apiInfo.getParameters();
 
         try {
             if (parameters == null || parameters.length == 0) {
@@ -117,7 +119,8 @@ public class ApiHandler {
                     objects.add(AuthzContext.getBean(type));
                 }
             }
-            SupportUtils.toJSON(response, invoke.invoke(AuthzContext.getBean(invoke.getDeclaringClass()), objects.toArray()));
+            SupportUtils.toJSON(response,
+                                invoke.invoke(AuthzContext.getBean(invoke.getDeclaringClass()), objects.toArray()));
         } catch (Exception e) {
             // skip
         }

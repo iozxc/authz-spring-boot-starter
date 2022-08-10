@@ -328,7 +328,7 @@ public class AuthzAutoConfiguration {
         private Info info() {
             return new Info()
                     .setDescription("Authz Documentation")
-                    .setTitle("Authz Documentation")
+                    .setTitle("Authz Dashboard")
                     .setVersion("1.0-beta1");
         }
 

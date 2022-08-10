@@ -39,18 +39,18 @@ public class DeviceApiSupport implements ApiSupport {
     }
 
     @Get(value = "/active-users-count", desc = "当前在线用户数量")
-    public Result activeUsersCount(@Param String time) {
+    public Result activeUsersCount(@Param("time") String time) {
         return Result.SUCCESS.data(AuHelper.getNumberOfActiveUser(time));
     }
 
-    @Get(value = "/active-users", desc = "当前在线用户的详细设备信息")
-    public Result activeUsers(@Param String time) {
+    @Get(value = "/active-users", desc = "当前所有在线用户的详细设备信息")
+    public Result activeUsers(@Param("time") String time) {
         return Result.SUCCESS.data(AuHelper.getActiveDevices(time));
     }
 
-    @Get(value = "/check-is-login", desc = "当前在线用户的详细设备信息")
-    public Result checkLogin(@Param String userId,
-                             @Param String id) {
+    @Get(value = "/check-is-login", desc = "判断该用户是否在线")
+    public Result checkLogin(@Param("userId") String userId,
+                             @Param("id") String id) {
         try {
             return Result.SUCCESS.data(AuHelper.isLoginById(AuthzContext.createUserId(userId), id));
         } catch (Exception e) {
@@ -58,9 +58,9 @@ public class DeviceApiSupport implements ApiSupport {
         }
     }
 
-    @Get(value = "/logout", desc = "当前在线用户的详细设备信息")
-    public Result logout(@Param String userId,
-                         @Param String id) {
+    @Get(value = "/logout", desc = "让该用户下线")
+    public Result logout(@Param("userId") String userId,
+                         @Param("id") String id) {
         try {
             AuHelper.logoutById(AuthzContext.createUserId(userId), id);
             return Result.SUCCESS.data();

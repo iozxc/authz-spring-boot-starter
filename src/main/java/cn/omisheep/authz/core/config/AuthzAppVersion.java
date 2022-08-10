@@ -81,7 +81,7 @@ public class AuthzAppVersion {
     });
 
     public static Supplier<String> PORT = () -> _values.computeIfAbsent("PORT", r -> Optional.ofNullable(
-            environment.getProperty("server.port")).orElse("unknown"));
+            environment.getProperty("server.port")).orElse("8080"));
 
     public static Supplier<String> CONTEXT_PATH
             = () -> _values.computeIfAbsent("CONTEXT_PATH",
@@ -232,8 +232,12 @@ public class AuthzAppVersion {
 
     @SuppressWarnings("unchecked")
     public static List<ConnectInfo> listAllConnectInfo() {
-        Set<String> scan = RedisUtils.scan(CONNECT_PREFIX + "*");
-        return RedisUtils.Obj.get(scan);
+        if (SUPPORT_REDIS.get()) {
+            Set<String> scan = RedisUtils.scan(CONNECT_PREFIX + "*");
+            return RedisUtils.Obj.get(scan);
+        } else {
+            return Collections.singletonList(CONNECT_INFO.get());
+        }
     }
 
     public static Map<String, List<ConnectInfo>> getConnectInfo() {
@@ -309,30 +313,39 @@ public class AuthzAppVersion {
     }
 
     public static void born() {
-        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL,
-                                           new VersionMessage(-1)));
-        // authz:v1:connect:{MessageId} 30秒后过期  25秒一次
-        TaskBuilder.schedule(AuthzAppVersion::ping, 25, TimeUnit.SECONDS);
+        if (SUPPORT_REDIS.get()) {
+            Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL,
+                                               new VersionMessage(-1)));
+            // authz:v1:connect:{MessageId} 30秒后过期  25秒一次
+            TaskBuilder.schedule(AuthzAppVersion::ping, 25, TimeUnit.SECONDS);
+        }
     }
 
     public static void ping() {
-        try {
-            RedisUtils.Obj.set(CONNECT_PREFIX + Message.uuid, CONNECT_INFO.get(), 30000);
-        } catch (Exception e) {
-            // skip
+        if (SUPPORT_REDIS.get()) {
+            try {
+                RedisUtils.Obj.set(CONNECT_PREFIX + Message.uuid, CONNECT_INFO.get(), 30000);
+            } catch (Exception e) {
+                // skip
+            }
         }
     }
 
     public static void send(AuthzModifier authzModifier) {
-        AuthzAppVersion.changeLog.add(authzModifier);
-        int v = AuthzAppVersion.version.incrementAndGet();
-        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL,
-                                           new VersionMessage(authzModifier, v)));
+        if (SUPPORT_REDIS.get()) {
+            AuthzAppVersion.changeLog.add(authzModifier);
+            int v = AuthzAppVersion.version.incrementAndGet();
+            Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL,
+                                               new VersionMessage(authzModifier, v)));
+        }
     }
 
     public static void send() {
-        Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL,
-                                           new VersionMessage(changeLog, AuthzAppVersion.version.get()).setTag(true)));
+        if (SUPPORT_REDIS.get()) {
+            Async.run(() -> RedisUtils.publish(VersionMessage.CHANNEL,
+                                               new VersionMessage(changeLog, AuthzAppVersion.version.get()).setTag(
+                                                       true)));
+        }
     }
 
 }
