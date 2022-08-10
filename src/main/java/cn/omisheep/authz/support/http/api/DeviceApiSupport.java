@@ -14,6 +14,7 @@ import lombok.Data;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -105,6 +106,9 @@ public class DeviceApiSupport implements ApiSupport {
                 }
                 case IP: {
                     AuHelper.denyIP(info.getIp(), endTime);
+                    AuHelper.denyIPRange("127.0.0.1", TimeUnit.SECONDS.toMillis(1));
+
+
                     break;
                 }
                 case IP_RANGE: {
