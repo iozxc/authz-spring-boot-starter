@@ -10,4 +10,4 @@
 更多信息查看官网
 ![Authz 文档官网](https://tva1.sinaimg.cn/large/e6c9d24egy1h51noscn3ij218f0u0q61.jpg)
 
-![Authz 文档官网](https://tva1.sinaimg.cn/large/e6c9d24egy1h51rfrnrqcj217w0u078p.jpg)
+![Authz 文档官网](https://tva1.sinaimg.cn/large/e6c9d24egy1h51rxuuz03j215y0u0gpf.jpg)
