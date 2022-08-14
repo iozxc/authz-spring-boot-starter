@@ -1,6 +1,12 @@
 # 更新日记【Authz】
 
-## <span style="color: green">Version 1.2.3</span>(_Recommend_) - 2022.8.10
+## Version 1.2.4 - 2022.8.14
+
+### Fixed
+
+- 修复了一些bug
+
+## Version 1.2.3 - 2022.8.10
 
 ### Fixed
 
