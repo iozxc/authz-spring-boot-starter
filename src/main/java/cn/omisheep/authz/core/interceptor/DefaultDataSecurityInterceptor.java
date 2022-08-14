@@ -26,7 +26,7 @@ public class DefaultDataSecurityInterceptor implements DataFinderSecurityInterce
                             List<DataPermRolesMeta> dataPermRolesMetaList,
                             Class<?> resultType,
                             String sql) throws JSQLParserException {
-        if (dataPermRolesMetaList.size() == 0) return sql;
+        if (dataPermRolesMetaList == null || dataPermRolesMetaList.size() == 0) return sql;
 
         Set<String> rolesByUserId     = httpMeta.getRoles();
         Set<String> permissionsByRole = httpMeta.getPermissions();

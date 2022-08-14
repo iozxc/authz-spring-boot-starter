@@ -2,11 +2,11 @@ package cn.omisheep.authz.core.auth.ipf;
 
 import cn.omisheep.authz.annotation.RateLimit;
 import cn.omisheep.authz.core.AuthzProperties;
+import cn.omisheep.authz.core.AuthzResult;
 import cn.omisheep.authz.core.callback.RateLimitCallback;
 import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.msg.RequestMessage;
 import cn.omisheep.authz.core.util.LogUtils;
-import cn.omisheep.web.entity.Result;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import org.springframework.aop.support.AopUtils;
@@ -219,23 +219,23 @@ public class Httpd {
                                                         rateLimit.getAssociatedPatterns().toArray(new String[0]),
                                                         rateLimit.getCheckType());
                     _rateLimitMetadata.computeIfAbsent(path, r -> new HashMap<>()).put(method, limitMeta);
-                    return Result.SUCCESS.data("rateLimit", limitMeta);
+                    return AuthzResult.SUCCESS.data("rateLimit", limitMeta);
                 case DEL:
                 case DELETE:
                     _rateLimitMetadata.computeIfAbsent(path, r -> new HashMap<>()).remove(method);
                     if (_rateLimitMetadata.get(path).isEmpty()) {
                         _rateLimitMetadata.remove(path);
                     }
-                    return Result.SUCCESS;
+                    return AuthzResult.SUCCESS;
                 case READ:
                 case GET:
                     return _rateLimitMetadata.get(authzModifier.getApi()).get(authzModifier.getMethod());
                 default:
-                    return Result.FAIL;
+                    return AuthzResult.FAIL;
             }
         } catch (Exception e) {
             LogUtils.error("modify error", e);
-            return Result.FAIL;
+            return AuthzResult.FAIL;
         }
     }
 

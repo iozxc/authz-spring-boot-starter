@@ -1,12 +1,13 @@
 package cn.omisheep.authz.core.auth.ipf;
 
 import cn.omisheep.authz.core.AuthzManager;
+import cn.omisheep.authz.core.AuthzResult;
 import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.authz.support.util.IPAddress;
 import cn.omisheep.authz.support.util.IPRange;
 import cn.omisheep.commons.util.TimeUtils;
-import cn.omisheep.web.entity.Result;
+import cn.omisheep.web.entity.ResponseResult;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
@@ -459,7 +460,7 @@ public class Blacklist {
         return Collections.unmodifiableMap(map);
     }
 
-    public static Object modify(AuthzModifier modifier) throws ParseException {
+    public static ResponseResult<?> modify(AuthzModifier modifier) throws ParseException {
         AuthzModifier.BlacklistInfo blacklistInfo = modifier.getBlacklistInfo();
         long                        time          = blacklistInfo.getTime();
 
@@ -475,7 +476,7 @@ public class Blacklist {
                         IP._remove(ip);
                         break;
                     case READ:
-                        return Result.SUCCESS.data(ipBlacklist);
+                        return AuthzResult.SUCCESS.data(ipBlacklist);
                 }
                 break;
             case IP_RANGE:
@@ -489,7 +490,7 @@ public class Blacklist {
                         IPRangeDeny._remove(ipRange);
                         break;
                     case READ:
-                        return Result.SUCCESS.data(ipRangeBlacklist);
+                        return AuthzResult.SUCCESS.data(ipRangeBlacklist);
                 }
                 break;
             case USER:
@@ -511,11 +512,11 @@ public class Blacklist {
                         User._remove(userId, deviceType, deviceId);
                         break;
                     case READ:
-                        return Result.SUCCESS.data(userBlacklist);
+                        return AuthzResult.SUCCESS.data(userBlacklist);
                 }
                 break;
         }
-        return Result.SUCCESS;
+        return AuthzResult.SUCCESS.data();
     }
 
     private Blacklist() {

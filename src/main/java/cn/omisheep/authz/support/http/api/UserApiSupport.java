@@ -1,5 +1,6 @@
 package cn.omisheep.authz.support.http.api;
 
+import cn.omisheep.authz.core.AuthzResult;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.config.Constants;
@@ -10,7 +11,7 @@ import cn.omisheep.authz.support.http.annotation.Get;
 import cn.omisheep.authz.support.http.annotation.JSON;
 import cn.omisheep.authz.support.http.annotation.Mapping;
 import cn.omisheep.authz.support.http.annotation.Post;
-import cn.omisheep.web.entity.Result;
+import cn.omisheep.web.entity.ResponseResult;
 
 /**
  * @author zhouxinchen
@@ -26,38 +27,38 @@ public class UserApiSupport implements ApiSupport {
     }
 
     @Post(value = "/login", requireLogin = false, desc = "登录")
-    public Result login(@JSON User user,
-                        HttpMeta httpMeta) {
+    public ResponseResult<?> login(@JSON User user,
+                                   HttpMeta httpMeta) {
         if (user != null) {
             User loginUser = SupportServlet.login(user.getUsername(), user.getPassword(), httpMeta.getIp(), cache);
-            if (loginUser == null) return Result.FAIL.data();
-            return Result.SUCCESS.data("username", user.getUsername()).data("uuid", loginUser.getUuid());
+            if (loginUser == null) return AuthzResult.FAIL.data();
+            return AuthzResult.SUCCESS.data("username", user.getUsername()).data("uuid", loginUser.getUuid());
         } else {
-            return Result.FAIL.data();
+            return AuthzResult.FAIL.data();
         }
     }
 
     @Get(value = "/check-status", requireLogin = false, desc = "状态检查")
-    public Result checkLogin(HttpMeta httpMeta) {
-        if (!SupportServlet.requireLogin()) return Result.SUCCESS.data();
+    public ResponseResult<Object> checkLogin(HttpMeta httpMeta) {
+        if (!SupportServlet.requireLogin()) return AuthzResult.SUCCESS.data();
         User user = SupportServlet.connectPkg(httpMeta.getRequest(), httpMeta.getIp(), cache);
         if (user != null) {
-            return Result.SUCCESS.data();
+            return AuthzResult.SUCCESS.data();
         } else {
-            return Result.FAIL.data();
+            return AuthzResult.FAIL.data();
         }
     }
 
     @Get(value = "/logout", desc = "退出登录")
-    public Result logout(User user) {
-        if (!SupportServlet.requireLogin()) return Result.SUCCESS.data();
+    public ResponseResult<Object> logout(User user) {
+        if (!SupportServlet.requireLogin()) return AuthzResult.SUCCESS.data();
         cache.del(Constants.DASHBOARD_KEY_PREFIX.get() + user.getUuid());
-        return Result.SUCCESS.data();
+        return AuthzResult.SUCCESS.data();
     }
 
     @Get(value = "/expiration-time", requireLogin = false, desc = "失效时间")
-    public Result expirationTime() {
-        return Result.SUCCESS.data(SupportServlet.getUnresponsiveExpirationTime());
+    public ResponseResult<Long> expirationTime() {
+        return AuthzResult.SUCCESS.data(SupportServlet.getUnresponsiveExpirationTime());
     }
 
 }

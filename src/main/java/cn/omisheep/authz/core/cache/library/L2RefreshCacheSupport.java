@@ -41,7 +41,7 @@ public class L2RefreshCacheSupport extends BaseHelper {
             CompletableFuture<Void> future = Async.run(() -> {
                 try {
                     isLibrary.set(Boolean.TRUE);
-                    AuthzContext.httpMeta.set(currentHttpMeta);
+                    AuthzContext.currentHttpMeta.set(currentHttpMeta);
                     Object             v1   = joinPoint.proceed();
                     Cache.CacheItem<?> item = cache.asRawMap().get(key);
                     if (item == null) {

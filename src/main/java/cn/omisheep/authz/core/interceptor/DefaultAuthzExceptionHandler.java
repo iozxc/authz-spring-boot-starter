@@ -3,7 +3,6 @@ package cn.omisheep.authz.core.interceptor;
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.web.entity.Result;
 import cn.omisheep.web.utils.HttpUtils;
 
 import javax.servlet.http.HttpServletRequest;
@@ -24,20 +23,18 @@ public class DefaultAuthzExceptionHandler implements AuthzExceptionHandler {
     public boolean handle(HttpServletRequest request,
                           HttpServletResponse response,
                           HttpMeta httpMeta,
-                          ExceptionStatus firstExceptionStatus,
+                          ExceptionStatus exceptionStatus,
                           List<Object> errorObjects) throws Exception {
-        if (firstExceptionStatus.equals(ExceptionStatus.MISMATCHED_URL)) {
+        if (exceptionStatus.equals(ExceptionStatus.MISMATCHED_URL)) {
             httpMeta.log("「普通访问(uri不存在)」 \tmethod: [{}] , ip : [{}] , path: [{}]   ", httpMeta.getMethod(),
                          httpMeta.getIp(), httpMeta.getApi());
             return true;
         }
 
         if (config.isAlwaysOk()) {
-            HttpUtils.returnResponse(200,
-                                     Result.of(firstExceptionStatus.getCode(), firstExceptionStatus.getMessage()));
+            HttpUtils.returnResponse(200, exceptionStatus.data());
         } else {
-            HttpUtils.returnResponse(firstExceptionStatus.getHttpStatus(),
-                                     Result.of(firstExceptionStatus.getCode(), firstExceptionStatus.getMessage()));
+            HttpUtils.returnResponse(exceptionStatus.getHttpStatus(), exceptionStatus.data());
         }
 
         return false;

@@ -1,6 +1,7 @@
 package cn.omisheep.authz.core.auth.rpd;
 
 import cn.omisheep.authz.annotation.*;
+import cn.omisheep.authz.core.AuthzResult;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.ipf.Httpd;
 import cn.omisheep.authz.core.auth.ipf.LimitMeta;
@@ -16,7 +17,7 @@ import cn.omisheep.authz.core.util.ValueMatcher;
 import cn.omisheep.authz.support.util.IPRange;
 import cn.omisheep.authz.support.util.IPRangeMeta;
 import cn.omisheep.commons.util.Async;
-import cn.omisheep.web.entity.Result;
+import cn.omisheep.web.entity.ResponseResultMap;
 import lombok.Getter;
 import org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController;
 import org.springframework.context.ApplicationContext;
@@ -206,8 +207,8 @@ public class PermissionDict {
 
     private final static ReentrantLock lock = new ReentrantLock();
 
-    private static Result returnObj(String api,
-                                    String method) {
+    private static ResponseResultMap returnObj(String api,
+                                               String method) {
         PermRolesMeta _v = null;
         try {
             _v = _authzMetadata.get(api).get(method);
@@ -243,7 +244,7 @@ public class PermissionDict {
         }
 
         if (_v != null) {
-            return Result.SUCCESS.data("auth", _v)
+            return AuthzResult.SUCCESS.data("auth", _v)
                     .data("hasAuth", !_v.non())
                     .data("requireLogin", !_v.non() || k)
                     .data("paramAuth", paramAuth)
@@ -251,7 +252,7 @@ public class PermissionDict {
                     .data("hasRateLimit", rateLimit != null)
                     .data("hasParamAuth", hasParamAuth);
         } else {
-            return Result.SUCCESS.data("auth", null)
+            return AuthzResult.SUCCESS.data("auth", null)
                     .data("hasAuth", false)
                     .data("paramAuth", paramAuth)
                     .data("rateLimit", rateLimit)
@@ -274,14 +275,14 @@ public class PermissionDict {
                     String controller = authzModifier.getController();
                     if (controller != null) {
                         if (!_controllerMetadata.containsKey(controller)) {
-                            return Result.FAIL.data();
+                            return AuthzResult.FAIL.data();
                         }
                         if (login) {
                             _certificatedControllerMetadata.add(controller);
                         } else {
                             _certificatedControllerMetadata.remove(controller);
                         }
-                        return Result.SUCCESS.data();
+                        return AuthzResult.SUCCESS.data();
                     }
 
                     if (login) {
@@ -298,18 +299,18 @@ public class PermissionDict {
                                 PermRolesMeta meta = metaMap.get(method);
                                 hasAuth = (meta != null && !meta.non());
                             }
-                            if (hasAuth || hasParamAuth) return Result.FAIL.data();
+                            if (hasAuth || hasParamAuth) return AuthzResult.FAIL.data();
                         } catch (Exception e) {
-                            return Result.FAIL.data();
+                            return AuthzResult.FAIL.data();
                         }
 
                         if (_certificatedMetadata.containsKey(api)) {
                             _certificatedMetadata.get(api).remove(method);
                         }
                     }
-                    return Result.SUCCESS.data();
+                    return AuthzResult.SUCCESS.data();
                 } catch (Exception e) {
-                    return Result.FAIL.data();
+                    return AuthzResult.FAIL.data();
                 }
             }
 
@@ -322,15 +323,15 @@ public class PermissionDict {
                     String controller = authzModifier.getController();
                     if (controller != null) {
                         if (!_controllerMetadata.containsKey(controller)) {
-                            return Result.FAIL.data();
+                            return AuthzResult.FAIL.data();
                         }
                         if (build == null || build.non()) {
                             _authzControllerMetadata.remove(controller);
-                            return Result.SUCCESS.data("auth", new PermRolesMeta()).data("hasAuth", false);
+                            return AuthzResult.SUCCESS.data("auth", new PermRolesMeta()).data("hasAuth", false);
                         } else {
                             _authzControllerMetadata.put(controller, build);
                         }
-                        return Result.SUCCESS.data("auth", build).data("hasAuth", !build.non());
+                        return AuthzResult.SUCCESS.data("auth", build).data("hasAuth", !build.non());
                     }
 
                     if (build != null) {
@@ -359,10 +360,10 @@ public class PermissionDict {
                     String controller = authzModifier.getController();
                     if (controller != null) {
                         if (!_controllerMetadata.containsKey(controller)) {
-                            return Result.FAIL.data();
+                            return AuthzResult.FAIL.data();
                         }
                         _authzControllerMetadata.remove(controller);
-                        return Result.SUCCESS.data("auth", null).data("hasAuth", false);
+                        return AuthzResult.SUCCESS.data("auth", null).data("hasAuth", false);
                     }
 
                     _authzMetadata.get(api).get(method).clear();
@@ -390,10 +391,10 @@ public class PermissionDict {
                     }
                     return rolePermission.get(api).get(method);
                 default:
-                    return Result.FAIL;
+                    return AuthzResult.FAIL;
             }
         } catch (Exception e) {
-            return Result.FAIL;
+            return AuthzResult.FAIL;
         } finally {
             lock.unlock();
         }
@@ -422,12 +423,12 @@ public class PermissionDict {
                             if (!meta.non()) {
                                 paramMetadata.setParamMetaList(new ArrayList<>());
                                 paramMetadata.getParamMetaList().add(meta);
-                                return Result.SUCCESS.data(meta);
+                                return AuthzResult.SUCCESS.data(meta);
                             } else {
-                                return Result.FAIL.data();
+                                return AuthzResult.FAIL.data();
                             }
                         } else {
-                            return Result.FAIL.data();
+                            return AuthzResult.FAIL.data();
                         }
                     }
 
@@ -440,7 +441,7 @@ public class PermissionDict {
                         if (paramMetadata.getParamMetaList().isEmpty()) {
                             paramMetadata.setParamMetaList(null);
                         }
-                        return Result.FAIL.data();
+                        return AuthzResult.FAIL.data();
                     } else {
                         if (paramMetadata.getParamMetaList().size() <= index) {
                             paramMetadata.getParamMetaList().add(meta);
@@ -448,23 +449,23 @@ public class PermissionDict {
                             paramMetadata.getParamMetaList().set(index, meta);
                         }
                     }
-                    return Result.SUCCESS.data(meta);
+                    return AuthzResult.SUCCESS.data(meta);
                 }
                 case DELETE:
                 case DEL: {
                     ParamMetadata paramMetadata = _authzParamMetadata.get(path).get(method).get(name);
                     if (paramMetadata.getParamMetaList() == null || paramMetadata.getParamMetaList().size() <= index) {
-                        return Result.SUCCESS;
+                        return AuthzResult.SUCCESS;
                     }
                     paramMetadata.getParamMetaList().remove(index);
                     if (paramMetadata.getParamMetaList().isEmpty()) paramMetadata.setParamMetaList(null);
-                    return Result.SUCCESS;
+                    return AuthzResult.SUCCESS;
                 }
             }
 
-            return Result.SUCCESS;
+            return AuthzResult.SUCCESS;
         } catch (Exception e) {
-            return Result.FAIL;
+            return AuthzResult.FAIL;
         } finally {
             lock.unlock();
         }
@@ -480,9 +481,9 @@ public class PermissionDict {
                 } else if (authzModifier.getTarget() == AuthzModifier.Target.DATA_ROW) {
                     return dataPermission;
                 }
-                return Result.FAIL;
+                return AuthzResult.FAIL;
             }
-            if (authzResourcesModel.get(className) == null) return Result.FAIL;
+            if (authzResourcesModel.get(className) == null) return AuthzResult.FAIL;
             if (authzModifier.getTarget() == AuthzModifier.Target.DATA_ROW) {
                 switch (authzModifier.getOperate()) {
                     case ADD:
@@ -501,8 +502,8 @@ public class PermissionDict {
                         break;
                     case MODIFY:
                     case UPDATE:
-                        if (authzModifier.getIndex() == null) return Result.FAIL;
-                        if (_dataPermMetadata.get(className) == null) return Result.FAIL;
+                        if (authzModifier.getIndex() == null) return AuthzResult.FAIL;
+                        if (_dataPermMetadata.get(className) == null) return AuthzResult.FAIL;
                         DataPermRolesMeta old_data_mata = _dataPermMetadata.get(className)
                                 .get(authzModifier.getIndex());
                         DataPermRolesMeta new_data_mata = null;
@@ -531,7 +532,7 @@ public class PermissionDict {
                     case DEL:
                     case DELETE:
                         Integer index = authzModifier.getIndex();
-                        if (_dataPermMetadata.get(className) == null) return Result.FAIL;
+                        if (_dataPermMetadata.get(className) == null) return AuthzResult.FAIL;
                         if (index == null) {_dataPermMetadata.get(className).clear();} else {
                             _dataPermMetadata.get(className).remove(index.intValue());
                         }
@@ -543,13 +544,13 @@ public class PermissionDict {
                             return dataPermission.get(className).get(authzModifier.getIndex());
                         }
                     default:
-                        return Result.FAIL;
+                        return AuthzResult.FAIL;
                 }
                 return dataPermission.get(className);
             } else {
                 switch (authzModifier.getOperate()) {
                     case ADD: {
-                        if (authzModifier.getFieldName() == null) return Result.FAIL;
+                        if (authzModifier.getFieldName() == null) return AuthzResult.FAIL;
                         PermRolesMeta          build     = authzModifier.build();
                         FieldDataPermRolesMeta fieldData = FieldDataPermRolesMeta.of(className, build);
                         _fieldMetadata.computeIfAbsent(className, r -> new HashMap<>())
@@ -557,7 +558,7 @@ public class PermissionDict {
                     }
                     case UPDATE:
                     case MODIFY: {
-                        if (authzModifier.getFieldName() == null) return Result.FAIL;
+                        if (authzModifier.getFieldName() == null) return AuthzResult.FAIL;
                         PermRolesMeta          build     = authzModifier.build();
                         FieldDataPermRolesMeta fieldData = FieldDataPermRolesMeta.of(className, build);
                         FieldDataPermRolesMeta fd = _fieldMetadata.computeIfAbsent(className, r -> new HashMap<>())
@@ -579,13 +580,13 @@ public class PermissionDict {
                         } else {
                             _fieldMetadata.get(className).remove(authzModifier.getFieldName());
                         }
-                        return Result.SUCCESS;
+                        return AuthzResult.SUCCESS;
                     }
                 }
             }
-            return Result.FAIL;
+            return AuthzResult.FAIL;
         } catch (Exception e) {
-            return Result.FAIL;
+            return AuthzResult.FAIL;
         } finally {
             lock.unlock();
         }

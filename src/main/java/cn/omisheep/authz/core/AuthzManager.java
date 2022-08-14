@@ -8,8 +8,7 @@ import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.helper.BaseHelper;
 import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.oauth.OpenAuthDict;
-import cn.omisheep.web.entity.Result;
-import cn.omisheep.web.entity.ResultCode;
+import cn.omisheep.web.entity.ResponseResult;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
@@ -37,7 +36,7 @@ public class AuthzManager extends BaseHelper {
                     return PermissionDict.modify(authzModifier);
             }
         } catch (Exception e) {
-            return Result.FAIL.data();
+            return AuthzResult.FAIL.data();
         }
     }
 
@@ -51,12 +50,12 @@ public class AuthzManager extends BaseHelper {
     }
 
     @NonNull
-    public static Result operate(@NonNull AuthzModifier authzModifier) {
+    public static ResponseResult<?> operate(@NonNull AuthzModifier authzModifier) {
         Object res = modify(authzModifier);
-        if (res == null) return Result.SUCCESS.data(null);
-        if (res instanceof Result) return (Result) res;
-        if (res instanceof ResultCode) return ((ResultCode) res).data();
-        return Result.SUCCESS.data(res);
+        if (res == null) return AuthzResult.SUCCESS.data(null);
+        if (res instanceof ResponseResult) return (ResponseResult<?>) res;
+        if (res instanceof AuthzResult) return ((AuthzResult) res).data();
+        return AuthzResult.SUCCESS.data(res);
     }
 
 }

@@ -307,7 +307,7 @@ public class TokenHelper extends BaseHelper {
      * 清空cookie
      */
     public static void clearCookie() {
-        clearCookie(HttpUtils.getCurrentResponse());
+        clearCookie(HttpUtils.currentResponse.get());
     }
 
     private static Claims parseToken(String val) {

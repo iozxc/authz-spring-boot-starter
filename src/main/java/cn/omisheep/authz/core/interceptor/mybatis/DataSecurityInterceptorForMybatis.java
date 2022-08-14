@@ -66,9 +66,9 @@ public class DataSecurityInterceptorForMybatis implements Interceptor {
                 if (PermissionDict.getDataPermission() == null) return invocation.proceed();
                 List<DataPermRolesMeta> dataPermRolesMetaList = PermissionDict.getDataPermission()
                         .get(type.getTypeName());
+                if (dataPermRolesMetaList == null || dataPermRolesMetaList.isEmpty()) return invocation.proceed();
                 String change = dataFinderSecurityInterceptor.sqlChange(AuthzContext.getCurrentHttpMeta(),
                                                                         dataPermRolesMetaList, type, boundSql.getSql());
-                System.out.println(change);
                 ReflectUtils.setFieldValue(boundSql, "sql", change);
             } catch (Exception e) {
                 LogUtils.error(e);

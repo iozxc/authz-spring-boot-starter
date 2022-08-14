@@ -1,5 +1,6 @@
 package cn.omisheep.authz.core;
 
+import cn.omisheep.web.entity.IResponseResult;
 import org.springframework.http.HttpStatus;
 
 import static org.springframework.http.HttpStatus.*;
@@ -8,7 +9,7 @@ import static org.springframework.http.HttpStatus.*;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
-public enum ExceptionStatus {
+public enum ExceptionStatus implements IResponseResult {
 
     /**
      * 未登录
@@ -117,26 +118,12 @@ public enum ExceptionStatus {
         this.httpStatus = httpStatus;
     }
 
-    ExceptionStatus(int code,
-                    String message,
-                    HttpStatus httpStatus) {
-        this.code       = code;
-        this.message    = message;
-        this.clearToken = false;
-        this.httpStatus = httpStatus;
-    }
-
-    ExceptionStatus(HttpStatus httpStatus) {
-        this.code       = httpStatus.value();
-        this.message    = httpStatus.getReasonPhrase();
-        this.clearToken = false;
-        this.httpStatus = httpStatus;
-    }
-
+    @Override
     public int getCode() {
         return code;
     }
 
+    @Override
     public String getMessage() {
         return message;
     }
@@ -148,4 +135,5 @@ public enum ExceptionStatus {
     public boolean isClearToken() {
         return clearToken;
     }
+
 }

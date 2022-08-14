@@ -40,14 +40,10 @@ import static cn.omisheep.authz.core.util.LogUtils.export;
 @SuppressWarnings("all")
 public class HttpMeta extends BaseHelper {
 
+    private Date   now = new Date();
     private String ip;
-    private String uri;
     private String api;
-    private String servletPath;
     private String path;
-    private String method;
-    private String userAgent;
-    private String refer;
     private String body;
 
     private AccessToken token;
@@ -56,12 +52,11 @@ public class HttpMeta extends BaseHelper {
     private Set<String> permissions;
     private Set<String> scope;
 
+    private String        controller;
     private PermRolesMeta permRolesMeta;
     private Boolean       hasApiAuth;
     private Boolean       hasParamAuth;
     private Boolean       requireLogin;
-
-    private String controller;
 
     @JsonIgnore
     private HttpServletRequest          request;
@@ -73,7 +68,6 @@ public class HttpMeta extends BaseHelper {
     private LinkedList<Object>          exceptionObjectList = new LinkedList<>();
     @JsonIgnore
     private LinkedList<ExceptionStatus> exceptionStatusList = new LinkedList<>();
-    private Date                        now                 = new Date();
 
     public HttpMeta setRoles(Set<String> roles) {
         if (roles == null) return this;
@@ -186,7 +180,7 @@ public class HttpMeta extends BaseHelper {
      * @return 请求体
      */
     public String getBody() {
-        if (!"POST".equals(method) || StringUtils.startsWithIgnoreCase(request.getContentType(), "multipart/")) {
+        if (!"POST".equals(getMethod()) || StringUtils.startsWithIgnoreCase(request.getContentType(), "multipart/")) {
             return null;
         }
         if (body == null) {
@@ -213,24 +207,17 @@ public class HttpMeta extends BaseHelper {
     }
 
     public HttpMeta(HttpServletRequest request,
-                    String uri,
                     String api,
-                    String method,
                     String path) {
-        this.request     = request;
-        this.refer       = request.getHeader("Referer");
-        this.ip          = IPUtils.getIp(request);
-        this.method      = method.toUpperCase();
-        this.userAgent   = request.getHeader("user-agent");
-        this.servletPath = request.getServletPath();
-        this.uri         = uri;
-        this.api         = api;
-        this.path        = path;
+        this.request = request;
+        this.ip      = IPUtils.getIp(request);
+        this.api     = api;
+        this.path    = path;
     }
 
     public boolean isMethod(String method) {
         if (method != null) {
-            return this.method.equals(method.toUpperCase());
+            return getMethod().equals(method.toUpperCase());
         }
         return false;
     }
@@ -245,7 +232,7 @@ public class HttpMeta extends BaseHelper {
         }
 
         if (map != null) {
-            PermRolesMeta permRolesMeta = map.get(method);
+            PermRolesMeta permRolesMeta = map.get(getMethod());
             hasApiAuth = (permRolesMeta != null && !permRolesMeta.non()) || (cPermRolesMeta != null && !cPermRolesMeta.non());
         } else {
             hasApiAuth = (cPermRolesMeta != null && !cPermRolesMeta.non());
@@ -258,11 +245,11 @@ public class HttpMeta extends BaseHelper {
         if (hasParamAuth != null) return requireLogin;
         Map<String, Map<String, ParamMetadata>> map = PermissionDict.getParamPermission()
                 .get(api);
-        if (map == null || map.get(method) == null) {
+        if (map == null || map.get(getMethod()) == null) {
             hasParamAuth = false;
             return hasParamAuth;
         }
-        hasParamAuth = map.get(method).values().stream().anyMatch(v -> v.hasParamAuth());
+        hasParamAuth = map.get(getMethod()).values().stream().anyMatch(v -> v.hasParamAuth());
         return hasParamAuth;
     }
 
@@ -274,7 +261,28 @@ public class HttpMeta extends BaseHelper {
             requireLogin = isHasApiAuth() || isHasParamAuth() || contains;
             return requireLogin;
         }
-        requireLogin = contains || list.contains(method) || isHasApiAuth() || isHasParamAuth();
+        requireLogin = contains || list.contains(getMethod()) || isHasApiAuth() || isHasParamAuth();
         return requireLogin;
     }
+
+    public String getUri() {
+        return request.getRequestURI();
+    }
+
+    public String getMethod() {
+        return request.getMethod();
+    }
+
+    public String getServletPath() {
+        return request.getServletPath();
+    }
+
+    public String getUserAgent() {
+        return request.getHeader("user-agent");
+    }
+
+    public String getReferer() {
+        return request.getHeader("Referer");
+    }
+
 }

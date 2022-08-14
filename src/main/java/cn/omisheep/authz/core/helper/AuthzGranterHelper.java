@@ -47,7 +47,7 @@ public class AuthzGranterHelper extends BaseHelper {
                              boolean resp) {
         userDevicesDict.addUser(tokenPair, AuthzContext.getCurrentHttpMeta());
         try {
-            HttpServletResponse response = HttpUtils.getCurrentResponse();
+            HttpServletResponse response = HttpUtils.currentResponse.get();
             if (response != null) {
                 if (resp) {
                     response.addCookie(TokenHelper.generateCookie(tokenPair.getAccessToken()));
@@ -83,7 +83,7 @@ public class AuthzGranterHelper extends BaseHelper {
             TokenPair tokenPair = TokenHelper.refreshToken(refreshToken);
             if (userDevicesDict.refreshUser(tokenPair)) {
                 try {
-                    HttpServletResponse response = HttpUtils.getCurrentResponse();
+                    HttpServletResponse response = HttpUtils.currentResponse.get();
                     if (response != null) {
                         response.addCookie(TokenHelper.generateCookie(tokenPair.getAccessToken()));
                     }
@@ -110,7 +110,7 @@ public class AuthzGranterHelper extends BaseHelper {
             if (ObjectUtils.equals(token.getUserId(), userId)
                     && (deviceType == null || StringUtils.equals(token.getDeviceType(), deviceType))
                     && (deviceId == null || StringUtils.equals(token.getDeviceId(), deviceId))) {
-                TokenHelper.clearCookie(HttpUtils.getCurrentResponse());
+                TokenHelper.clearCookie(HttpUtils.currentResponse.get());
             }
         } catch (Exception e) {
             // skip

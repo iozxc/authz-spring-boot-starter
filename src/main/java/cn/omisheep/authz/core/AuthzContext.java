@@ -9,8 +9,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.lang.NonNull;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * @author zhouxinchen[1269670415@qq.com]
@@ -20,7 +23,9 @@ import java.util.Map;
 @SuppressWarnings("all")
 public class AuthzContext {
 
-    public static final ThreadLocal<HttpMeta> httpMeta = ThreadLocal.withInitial(() -> null);
+    public static final ThreadLocal<HttpMeta>         currentHttpMeta = ThreadLocal.withInitial(() -> null);
+    public static final Supplier<HttpServletRequest>  currentRequest  = () -> HttpUtils.currentRequest.get();
+    public static final Supplier<HttpServletResponse> currentResponse = () -> HttpUtils.currentResponse.get();
 
     private AuthzContext() {
         throw new UnsupportedOperationException();
@@ -56,7 +61,7 @@ public class AuthzContext {
     @NonNull
     public static HttpMeta getCurrentHttpMeta() throws ThreadWebEnvironmentException {
         try {
-            if (httpMeta.get() != null) return httpMeta.get();
+            if (currentHttpMeta.get() != null) return currentHttpMeta.get();
             HttpMeta currentHttpMeta = (HttpMeta) HttpUtils.getCurrentRequest().getAttribute(Constants.HTTP_META);
             if (currentHttpMeta == null) throw new ThreadWebEnvironmentException();
             return currentHttpMeta;
@@ -75,7 +80,6 @@ public class AuthzContext {
             throw new NotLoginException();
         }
     }
-
 
     @NonNull
     public static Object createUserId(@NonNull Object userId) {

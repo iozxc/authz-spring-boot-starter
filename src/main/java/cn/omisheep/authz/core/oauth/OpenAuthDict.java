@@ -2,11 +2,11 @@ package cn.omisheep.authz.core.oauth;
 
 import cn.omisheep.authz.annotation.OAuthScope;
 import cn.omisheep.authz.annotation.OAuthScopeBasic;
+import cn.omisheep.authz.core.AuthzResult;
 import cn.omisheep.authz.core.auth.rpd.Non;
 import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.core.tk.GrantType;
-import cn.omisheep.web.entity.Result;
 import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -116,7 +116,7 @@ public class OpenAuthDict {
 
     @Nullable
     public static Object modify(@NonNull AuthzModifier modifier) {
-        if (modifier.getTarget() != AuthzModifier.Target.OPEN_AUTH) return Result.FAIL.data();
+        if (modifier.getTarget() != AuthzModifier.Target.OPEN_AUTH) return AuthzResult.FAIL.data();
         switch (modifier.getOperate()) {
             case READ:
             case GET:
@@ -125,9 +125,9 @@ public class OpenAuthDict {
             case UPDATE:
             case MODIFY: {
                 OAuthInfo oauth = modifier.getOauth();
-                if (oauth == null) return Result.SUCCESS;
+                if (oauth == null) return AuthzResult.SUCCESS;
                 _src.computeIfAbsent(modifier.getApi(), r -> new HashMap<>()).put(modifier.getMethod(), oauth);
-                return Result.SUCCESS;
+                return AuthzResult.SUCCESS;
             }
             case DELETE:
             case DEL: {
@@ -138,10 +138,10 @@ public class OpenAuthDict {
                         _src.remove(modifier.getApi());
                     }
                 }
-                return Result.SUCCESS;
+                return AuthzResult.SUCCESS;
             }
         }
-        return Result.SUCCESS;
+        return AuthzResult.SUCCESS;
     }
 
     private OpenAuthDict() {

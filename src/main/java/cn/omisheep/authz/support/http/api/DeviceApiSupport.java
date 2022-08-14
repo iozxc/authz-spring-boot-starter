@@ -2,18 +2,18 @@ package cn.omisheep.authz.support.http.api;
 
 import cn.omisheep.authz.AuHelper;
 import cn.omisheep.authz.core.AuthzContext;
+import cn.omisheep.authz.core.AuthzResult;
+import cn.omisheep.authz.core.auth.deviced.DeviceDetails;
 import cn.omisheep.authz.core.auth.ipf.Blacklist;
 import cn.omisheep.authz.core.msg.AuthzModifier;
 import cn.omisheep.authz.support.http.ApiSupport;
 import cn.omisheep.authz.support.http.annotation.*;
 import cn.omisheep.authz.support.util.IPAddress;
 import cn.omisheep.commons.util.TimeUtils;
-import cn.omisheep.web.entity.Result;
+import cn.omisheep.web.entity.ResponseResult;
 import lombok.Data;
 
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -24,71 +24,71 @@ import java.util.stream.Collectors;
 public class DeviceApiSupport implements ApiSupport {
 
     @Get(value = "/all", desc = "获得所有设备")
-    public Result version() {
-        return Result.SUCCESS.data(AuHelper.getAllUserDevices());
+    public ResponseResult<Map<Object, List<DeviceDetails>>> version() {
+        return AuthzResult.SUCCESS.data(AuHelper.getAllUserDevices());
     }
 
 
     @Get(value = "/get-all-userid", desc = "获得当前有效用户id列表")
-    public Result getAllUserId() {
+    public ResponseResult<List<Object>> getAllUserId() {
         try {
-            return Result.SUCCESS.data(AuHelper.getAllUserId());
+            return AuthzResult.SUCCESS.data(AuHelper.getAllUserId());
         } catch (Exception e) {
-            return Result.FAIL.data();
+            return AuthzResult.FAIL.data();
         }
     }
 
     @Get(value = "/active-users-count", desc = "当前在线用户数量")
-    public Result activeUsersCount(@Param("time") String time) {
-        return Result.SUCCESS.data(AuHelper.getNumberOfActiveUser(time));
+    public ResponseResult<Integer> activeUsersCount(@Param("time") String time) {
+        return AuthzResult.SUCCESS.data(AuHelper.getNumberOfActiveUser(time));
     }
 
     @Get(value = "/active-users", desc = "当前所有在线用户的详细设备信息")
-    public Result activeUsers(@Param("time") String time) {
-        return Result.SUCCESS.data(AuHelper.getActiveDevices(time));
+    public ResponseResult<List<DeviceDetails>> activeUsers(@Param("time") String time) {
+        return AuthzResult.SUCCESS.data(AuHelper.getActiveDevices(time));
     }
 
     @Get(value = "/check-is-login", desc = "判断该用户是否在线")
-    public Result checkLogin(@Param("userId") String userId,
-                             @Param("id") String id) {
+    public ResponseResult<Boolean> checkLogin(@Param("userId") String userId,
+                                              @Param("id") String id) {
         try {
-            return Result.SUCCESS.data(AuHelper.isLoginById(AuthzContext.createUserId(userId), id));
+            return AuthzResult.SUCCESS.data(AuHelper.isLoginById(AuthzContext.createUserId(userId), id));
         } catch (Exception e) {
-            return Result.FAIL.data();
+            return AuthzResult.FAIL.data();
         }
     }
 
     @Get(value = "/logout", desc = "让该用户下线")
-    public Result logout(@Param("userId") String userId,
+    public ResponseResult<Object> logout(@Param("userId") String userId,
                          @Param("id") String id) {
         try {
             AuHelper.logoutById(AuthzContext.createUserId(userId), id);
-            return Result.SUCCESS.data();
+            return AuthzResult.SUCCESS.data();
         } catch (Exception e) {
-            return Result.FAIL.data();
+            return AuthzResult.FAIL.data();
         }
     }
 
     @Post(value = "/get-deny-info", desc = "获得封禁信息")
-    public Result getDenyInfo(@JSON AuthzModifier.BlacklistInfo info) {
+    public ResponseResult<DenyInfo> getDenyInfo(@JSON AuthzModifier.BlacklistInfo info) {
         try {
-            return Result.SUCCESS.data(new DenyInfo(AuthzContext.createUserId(info.getUserId()), info));
+            return AuthzResult.SUCCESS.data(new DenyInfo(AuthzContext.createUserId(info.getUserId()), info));
         } catch (Exception e) {
-            return Result.FAIL.data();
+            return AuthzResult.FAIL.data();
         }
     }
 
     @Get(value = "/get-all-deny-info", desc = "获得封禁信息")
-    public Result getAllDenyInfo() {
+    public ResponseResult<Map<String, Object>> getAllDenyInfo() {
         try {
-            return Result.SUCCESS.data(Blacklist.readAll());
+            return AuthzResult.SUCCESS.data(Blacklist.readAll());
         } catch (Exception e) {
-            return Result.FAIL.data();
+            return AuthzResult.FAIL.data();
         }
     }
 
     @Post(value = "/deny", desc = "封禁")
-    public Result denyInfo(@JSON AuthzModifier.BlacklistInfo info) {
+    public ResponseResult<DenyInfo> denyInfo(@JSON AuthzModifier.BlacklistInfo info) {
         try {
             Object _userId = AuthzContext.createUserId(info.getUserId());
 
@@ -112,19 +112,19 @@ public class DeviceApiSupport implements ApiSupport {
                     break;
                 }
                 default: {
-                    return Result.FAIL.data();
+                    return AuthzResult.FAIL.data();
                 }
             }
 
-            return Result.SUCCESS.data(new DenyInfo(_userId, info));
+            return AuthzResult.SUCCESS.data(new DenyInfo(_userId, info));
         } catch (Exception e) {
-            return Result.FAIL.data();
+            return AuthzResult.FAIL.data();
         }
 
     }
 
     @Post(value = "/deny-remove", desc = "移除封禁")
-    public Result removeDenyInfo(@JSON AuthzModifier.BlacklistInfo info) {
+    public ResponseResult<DenyInfo> removeDenyInfo(@JSON AuthzModifier.BlacklistInfo info) {
         try {
             Object _userId = AuthzContext.createUserId(info.getUserId());
 
@@ -146,13 +146,13 @@ public class DeviceApiSupport implements ApiSupport {
                     break;
                 }
                 default: {
-                    return Result.FAIL.data();
+                    return AuthzResult.FAIL.data();
                 }
             }
 
-            return Result.SUCCESS.data(new DenyInfo(_userId, info));
+            return AuthzResult.SUCCESS.data(new DenyInfo(_userId, info));
         } catch (Exception e) {
-            return Result.FAIL.data();
+            return AuthzResult.FAIL.data();
         }
 
     }
