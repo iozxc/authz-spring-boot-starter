@@ -8,7 +8,7 @@
     <artifactId>authz-spring-boot-starter</artifactId>
     <version>1.2.7</version>
     <description>简洁、好用、快速的权限安全、设备管理框架</description>
-    <url>https://gitee.com/iozxc/authz</url>
+    <url>http://authz.omisheep.cn</url>
     <packaging>jar</packaging>
     <name>Authz</name>
 
@@ -147,8 +147,8 @@
 
     <scm>
         <tag>master</tag>
-        <url>scm:git:git@gitee.com:iozxc/authz.git</url>
-        <connection>scm:git:git@gitee.com:iozxc/authz.git</connection>
+        <url>scm:git@gitee.com:iozxc/authz.git</url>
+        <connection>scm:git@gitee.com:iozxc/authz.git</connection>
         <developerConnection>git@gitee.com:iozxc/authz.git</developerConnection>
     </scm>
     <licenses>
