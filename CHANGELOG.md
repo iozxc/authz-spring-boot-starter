@@ -1,5 +1,11 @@
 # 更新日记【Authz】
 
+## Version 1.2.5 - 2022.8.17
+
+### Fixed
+
+- 修复了一些bug
+
 ## Version 1.2.4 - 2022.8.14
 
 ### Fixed
