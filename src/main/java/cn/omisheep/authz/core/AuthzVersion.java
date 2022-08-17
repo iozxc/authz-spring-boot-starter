@@ -26,7 +26,7 @@ public class AuthzVersion {
         Color.RESET.println(" / _` || | | || __|| '_ \\ |_  /");
         Color.RESET.println("| (_| || |_| || |_ | | | | / / ");
         Color.RESET.println(" \\__,_| \\__,_| \\__||_| |_|/___|");
-        Color.RESET.println("  \t\t Authz  v" + getVersion());
+        Color.RESET.println("           Authz  v" + getVersion());
     }
 
 }
