@@ -1,9 +1,9 @@
 package cn.omisheep.authz.core.auth.ipf;
 
-import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.AuthzContext;
+import cn.omisheep.authz.core.ExceptionStatus;
+import cn.omisheep.authz.core.util.HttpUtils;
 import cn.omisheep.web.utils.BufferedServletRequestWrapper;
-import cn.omisheep.web.utils.HttpUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -47,6 +47,7 @@ public class AuthzHttpFilter extends OncePerRequestFilter {
         String servletPath = request.getServletPath();
 
         HttpUtils.currentRequest.set(request);
+        HttpUtils.currentResponse.set(response);
 
         if (isIgnoreSuffix(uri, SUFFIX) || (isDashboard && (servletPath.equals(
                 DASHBOARD_LOGO) || servletPath.startsWith(DASHBOARD_API_PREFIX) || servletPath.startsWith(

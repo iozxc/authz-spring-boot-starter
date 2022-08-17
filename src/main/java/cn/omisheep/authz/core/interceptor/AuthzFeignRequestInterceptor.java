@@ -1,6 +1,6 @@
 package cn.omisheep.authz.core.interceptor;
 
-import cn.omisheep.web.utils.HttpUtils;
+import cn.omisheep.authz.core.util.HttpUtils;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
 

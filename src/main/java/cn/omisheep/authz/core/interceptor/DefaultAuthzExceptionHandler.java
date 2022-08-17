@@ -2,8 +2,9 @@ package cn.omisheep.authz.core.interceptor;
 
 import cn.omisheep.authz.core.AuthzProperties;
 import cn.omisheep.authz.core.ExceptionStatus;
+import cn.omisheep.authz.core.LogLevel;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.web.utils.HttpUtils;
+import cn.omisheep.authz.core.util.HttpUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -26,7 +27,9 @@ public class DefaultAuthzExceptionHandler implements AuthzExceptionHandler {
                           ExceptionStatus exceptionStatus,
                           List<Object> errorObjects) throws Exception {
         if (exceptionStatus.equals(ExceptionStatus.MISMATCHED_URL)) {
-            httpMeta.log("「普通访问(uri不存在)」 \tmethod: [{}] , ip : [{}] , path: [{}]   ", httpMeta.getMethod(),
+            httpMeta.log(LogLevel.DEBUG,
+                         "「普通访问(uri不存在)」 \tmethod: [{}] , ip : [{}] , path: [{}]   ",
+                         httpMeta.getMethod(),
                          httpMeta.getIp(), httpMeta.getApi());
             return true;
         }

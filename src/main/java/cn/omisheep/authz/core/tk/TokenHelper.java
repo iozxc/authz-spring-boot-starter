@@ -6,10 +6,10 @@ import cn.omisheep.authz.core.TokenException;
 import cn.omisheep.authz.core.auth.deviced.Device;
 import cn.omisheep.authz.core.helper.BaseHelper;
 import cn.omisheep.authz.core.oauth.AuthorizationInfo;
+import cn.omisheep.authz.core.util.HttpUtils;
 import cn.omisheep.authz.core.util.LogUtils;
 import cn.omisheep.commons.util.TimeUtils;
 import cn.omisheep.commons.util.UUIDBits;
-import cn.omisheep.web.utils.HttpUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.*;
@@ -18,7 +18,6 @@ import io.jsonwebtoken.security.Keys;
 
 import javax.crypto.SecretKey;
 import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -232,7 +231,7 @@ public class TokenHelper extends BaseHelper {
      *
      * @param refreshToken refreshToken
      * @return TokenPair
-     * @throws Exception e
+     * @throws TokenException e
      */
     public static TokenPair refreshToken(String refreshToken) throws TokenException {
         return refreshToken(parseRefreshToken(refreshToken));
@@ -291,23 +290,16 @@ public class TokenHelper extends BaseHelper {
 
     /**
      * 清空cookie
-     *
-     * @param response response
-     */
-    public static void clearCookie(HttpServletResponse response) {
-        if (response == null) return;
-        Cookie cookie = new Cookie(cookieName, null);
-        cookie.setPath("/");
-        cookie.setHttpOnly(true);
-        cookie.setMaxAge(0);
-        response.addCookie(cookie);
-    }
-
-    /**
-     * 清空cookie
      */
     public static void clearCookie() {
-        clearCookie(HttpUtils.currentResponse.get());
+        if (HttpUtils.currentResponse.get() == null) {
+            return;
+        }
+        Cookie cookie = HttpUtils.readSingleCookieInRequestByName(cookieName);
+        if (cookie != null) {
+            cookie.setMaxAge(0);
+        }
+        HttpUtils.currentResponse.get().addCookie(cookie);
     }
 
     private static Claims parseToken(String val) {

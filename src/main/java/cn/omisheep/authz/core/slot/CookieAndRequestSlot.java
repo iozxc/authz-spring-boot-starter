@@ -9,7 +9,7 @@ import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.authz.core.tk.TokenHelper;
-import cn.omisheep.web.utils.HttpUtils;
+import cn.omisheep.authz.core.util.HttpUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;

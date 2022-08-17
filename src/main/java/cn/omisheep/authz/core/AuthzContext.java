@@ -4,7 +4,7 @@ import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.config.AuthzAppVersion;
 import cn.omisheep.authz.core.config.Constants;
 import cn.omisheep.authz.core.tk.AccessToken;
-import cn.omisheep.web.utils.HttpUtils;
+import cn.omisheep.authz.core.util.HttpUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.lang.NonNull;

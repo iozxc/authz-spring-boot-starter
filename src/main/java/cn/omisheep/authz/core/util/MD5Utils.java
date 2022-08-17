@@ -17,6 +17,7 @@ public class MD5Utils {
         throw new UnsupportedOperationException();
     }
 
+    @SuppressWarnings("all")
     public static String compute(String path) {
         try {
             BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(path));

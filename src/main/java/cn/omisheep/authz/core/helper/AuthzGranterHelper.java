@@ -2,8 +2,11 @@ package cn.omisheep.authz.core.helper;
 
 import cn.omisheep.authz.AuHelper;
 import cn.omisheep.authz.core.*;
-import cn.omisheep.authz.core.tk.*;
-import cn.omisheep.web.utils.HttpUtils;
+import cn.omisheep.authz.core.tk.AccessToken;
+import cn.omisheep.authz.core.tk.IssueToken;
+import cn.omisheep.authz.core.tk.TokenHelper;
+import cn.omisheep.authz.core.tk.TokenPair;
+import cn.omisheep.authz.core.util.HttpUtils;
 import io.jsonwebtoken.ExpiredJwtException;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
@@ -110,7 +113,7 @@ public class AuthzGranterHelper extends BaseHelper {
             if (ObjectUtils.equals(token.getUserId(), userId)
                     && (deviceType == null || StringUtils.equals(token.getDeviceType(), deviceType))
                     && (deviceId == null || StringUtils.equals(token.getDeviceId(), deviceId))) {
-                TokenHelper.clearCookie(HttpUtils.currentResponse.get());
+                TokenHelper.clearCookie();
             }
         } catch (Exception e) {
             // skip
