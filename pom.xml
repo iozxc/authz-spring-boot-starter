@@ -6,11 +6,11 @@
 
     <groupId>cn.omisheep</groupId>
     <artifactId>authz-spring-boot-starter</artifactId>
-    <version>1.2.6</version>
-    <description>by zhou xin chen</description>
+    <version>1.2.7</version>
+    <description>简洁、好用、快速的权限安全、设备管理框架</description>
     <url>https://gitee.com/iozxc/authz</url>
     <packaging>jar</packaging>
-    <name>authz</name>
+    <name>Authz</name>
 
     <properties>
         <java.version>1.8</java.version>
@@ -37,12 +37,12 @@
         <dependency>
             <groupId>cn.omisheep</groupId>
             <artifactId>web</artifactId>
-            <version>1.0.6</version>
+            <version>1.0.7</version>
         </dependency>
         <dependency>
             <groupId>cn.omisheep</groupId>
             <artifactId>commons</artifactId>
-            <version>1.0.6</version>
+            <version>1.0.7</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -96,7 +96,7 @@
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
-            <version>2.0.7</version>
+            <version>2.0.10</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml</groupId>
@@ -141,7 +141,7 @@
         <dependency>
             <groupId>com.github.jsqlparser</groupId>
             <artifactId>jsqlparser</artifactId>
-            <version>4.3</version>
+            <version>4.5</version>
         </dependency>
     </dependencies>
 
