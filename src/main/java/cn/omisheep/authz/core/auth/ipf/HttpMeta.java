@@ -15,9 +15,12 @@ import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.authz.core.util.HttpUtils;
 import cn.omisheep.authz.core.util.IPUtils;
 import cn.omisheep.authz.core.util.LogUtils;
+import cn.omisheep.authz.core.util.ua.UserAgent;
+import cn.omisheep.authz.core.util.ua.UserAgentParser;
 import cn.omisheep.commons.util.CollectionUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.springframework.util.StringUtils;
@@ -35,16 +38,17 @@ import static cn.omisheep.authz.core.util.LogUtils.export;
  * @author zhouxinchen[1269670415@qq.com]
  * @since 1.0.0
  */
+@EqualsAndHashCode(callSuper = false)
 @Data
 @NoArgsConstructor
-@SuppressWarnings("all")
 public class HttpMeta extends BaseHelper {
 
-    private Date   now = new Date();
-    private String ip;
-    private String api;
-    private String path;
-    private String body;
+    private Date      now = new Date();
+    private String    ip;
+    private String    api;
+    private String    path;
+    private String    body;
+    private UserAgent userAgent;
 
     private AccessToken token;
     private Object      userId;
@@ -82,6 +86,7 @@ public class HttpMeta extends BaseHelper {
     }
 
     @NonNull
+    @SuppressWarnings("unchecked")
     public Set<String> getRoles() {
         if (userId == null) return new HashSet<>();
         if (roles == null) {
@@ -92,11 +97,12 @@ public class HttpMeta extends BaseHelper {
     }
 
     @NonNull
+    @SuppressWarnings("unchecked")
     public Set<String> getPermissions() {
         if (userId == null) return new HashSet<>();
         permissions = Optional.ofNullable(permissions).orElseGet(() -> {
             HashSet<String> perms = new HashSet<>();
-            for (String role : Optional.ofNullable(getRoles()).orElse(new HashSet<>())) {
+            for (String role : Optional.of(getRoles()).orElse(new HashSet<>())) {
                 Collection<String> permissionsByRole = permLibrary.getPermissionsByRole(role);
                 if (permissionsByRole != null) perms.addAll(permissionsByRole);
             }
@@ -228,14 +234,14 @@ public class HttpMeta extends BaseHelper {
         PermRolesMeta              cPermRolesMeta = PermissionDict.getControllerRolePermission().get(controller);
         if (map == null && cPermRolesMeta == null) {
             hasApiAuth = false;
-            return hasApiAuth;
+            return false;
         }
 
         if (map != null) {
             PermRolesMeta permRolesMeta = map.get(getMethod());
             hasApiAuth = (permRolesMeta != null && !permRolesMeta.non()) || (cPermRolesMeta != null && !cPermRolesMeta.non());
         } else {
-            hasApiAuth = (cPermRolesMeta != null && !cPermRolesMeta.non());
+            hasApiAuth = !cPermRolesMeta.non();
         }
 
         return hasApiAuth;
@@ -247,9 +253,9 @@ public class HttpMeta extends BaseHelper {
                 .get(api);
         if (map == null || map.get(getMethod()) == null) {
             hasParamAuth = false;
-            return hasParamAuth;
+            return false;
         }
-        hasParamAuth = map.get(getMethod()).values().stream().anyMatch(v -> v.hasParamAuth());
+        hasParamAuth = map.get(getMethod()).values().stream().anyMatch(ParamMetadata::hasParamAuth);
         return hasParamAuth;
     }
 
@@ -277,8 +283,11 @@ public class HttpMeta extends BaseHelper {
         return request.getServletPath();
     }
 
-    public String getUserAgent() {
-        return request.getHeader("user-agent");
+    public UserAgent getUserAgent() {
+        if (userAgent == null) {
+            userAgent = UserAgentParser.parse(request.getHeader("user-agent"));
+        }
+        return userAgent;
     }
 
     public String getReferer() {

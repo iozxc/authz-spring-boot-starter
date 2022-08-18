@@ -25,6 +25,9 @@ import cn.omisheep.authz.core.oauth.AuthorizedDeviceDetails;
 import cn.omisheep.authz.core.oauth.ClientDetails;
 import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.authz.core.tk.IssueToken;
+import cn.omisheep.authz.core.util.ua.OS;
+import cn.omisheep.authz.core.util.ua.Platform;
+import cn.omisheep.authz.core.util.ua.UserAgent;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
@@ -41,7 +44,6 @@ import static cn.omisheep.authz.core.AuthzManager.modify;
  * @version 1.2
  * @since 1.0.0
  */
-//@SuppressWarnings("all")
 public class AuHelper extends BaseHelper {
 
     // **************************************     登录 & 用户设备      ************************************** //
@@ -423,6 +425,30 @@ public class AuHelper extends BaseHelper {
     @NonNull
     public static HttpMeta getHttpMeta() throws ThreadWebEnvironmentException {
         return AuthzContext.getCurrentHttpMeta();
+    }
+
+    /**
+     * @return 获得当前请求的平台信息
+     */
+    @NonNull
+    public static UserAgent getUserAgent() throws ThreadWebEnvironmentException {
+        return AuthzContext.getCurrentHttpMeta().getUserAgent();
+    }
+
+    /**
+     * @return 获得当前请求的平台信息
+     */
+    @NonNull
+    public static Platform getPlatform() throws ThreadWebEnvironmentException {
+        return AuthzContext.getCurrentHttpMeta().getUserAgent().getPlatform();
+    }
+
+    /**
+     * @return 获得当前请求的操作系统
+     */
+    @NonNull
+    public static OS getOS() throws ThreadWebEnvironmentException {
+        return AuthzContext.getCurrentHttpMeta().getUserAgent().getOs();
     }
 
     /**

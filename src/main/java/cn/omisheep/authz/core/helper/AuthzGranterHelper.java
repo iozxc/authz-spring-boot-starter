@@ -7,6 +7,7 @@ import cn.omisheep.authz.core.tk.IssueToken;
 import cn.omisheep.authz.core.tk.TokenHelper;
 import cn.omisheep.authz.core.tk.TokenPair;
 import cn.omisheep.authz.core.util.HttpUtils;
+import cn.omisheep.authz.core.util.ua.Platform;
 import io.jsonwebtoken.ExpiredJwtException;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
@@ -32,9 +33,9 @@ public class AuthzGranterHelper extends BaseHelper {
                                    String deviceId) {
         if (deviceType == null) {
             try {
-                deviceType = AuHelper.getHttpMeta().getUserAgent();
+                deviceType = AuHelper.getHttpMeta().getUserAgent().getPlatform().getName();
             } catch (ThreadWebEnvironmentException e) {
-                deviceType = "unknown";
+                deviceType = Platform.NAME_UNKNOWN;
             }
         }
         TokenPair tokenPair = TokenHelper.createTokenPair(userId, deviceType, deviceId);
