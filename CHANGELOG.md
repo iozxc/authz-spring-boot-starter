@@ -1,5 +1,11 @@
 # 更新日记【Authz】
 
+## Version 1.2.8 - 2022.8.23
+
+### Added
+
+- 增加了token的ip绑定
+
 ## Version 1.2.7 - 2022.8.18
 
 ### Added
