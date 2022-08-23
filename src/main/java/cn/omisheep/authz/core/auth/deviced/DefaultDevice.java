@@ -107,4 +107,15 @@ public class DefaultDevice extends AuthzMap implements Device {
         return this;
     }
 
+    @Override
+    public String getBindIp() {
+        return getString(BIND_IP);
+    }
+
+    @Override
+    public Device setBindIp(String ip) {
+        setValue(BIND_IP, ip);
+        return this;
+    }
+
 }

@@ -19,6 +19,7 @@ public interface Constants {
     String GRANT_TYPE        = "gtp";
     String AUTHORIZED_TIME   = "aut";
     String EXPIRES_TIME      = "ext";
+    String BIND_IP           = "bip";
 
     String SEPARATOR = ":";
     String COMMA     = ",";
@@ -44,7 +45,7 @@ public interface Constants {
     Supplier<String> OAUTH_USER_DEVICE_KEY_PREFIX = () -> AuthzAppVersion.values.get(
             "OAUTH_USER_DEVICE_KEY_PREFIX");
 
-    Supplier<String> USER_REQUEST_KEY_PREFIX       = () -> AuthzAppVersion.values.get(
+    Supplier<String> USER_REQUEST_KEY_PREFIX = () -> AuthzAppVersion.values.get(
             "USER_REQUEST_KEY_PREFIX");
 
     Supplier<String> ROLES_BY_USER_KEY_PREFIX       = () -> AuthzAppVersion.values.get(
@@ -64,5 +65,5 @@ public interface Constants {
     String CONNECT_PREFIX = "authz:connect:";
 
     String[] METHODS = {"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE"};
-    String[] SUFFIX = {".css", ".js", ".html", ".png", ".jpg", ".gif", ".svg", ".ico"};
+    String[] SUFFIX  = {".css", ".js", ".html", ".png", ".jpg", ".gif", ".svg", ".ico"};
 }

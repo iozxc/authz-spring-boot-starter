@@ -49,7 +49,7 @@ public class AuthzGranterHelper extends BaseHelper {
      */
     public static void grant(TokenPair tokenPair,
                              boolean resp) {
-        userDevicesDict.addUser(tokenPair, AuthzContext.getCurrentHttpMeta());
+        userDevicesDict.addUser(tokenPair);
         try {
             HttpServletResponse response = HttpUtils.currentResponse.get();
             if (response != null) {

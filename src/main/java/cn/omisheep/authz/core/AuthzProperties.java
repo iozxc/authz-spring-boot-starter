@@ -169,6 +169,11 @@ public class AuthzProperties {
          */
         private boolean logoutBeforeLogin = true;
 
+        /**
+         * token是否绑定登录的ip。若请求ip与token绑定的ip不相同，token会立即失效
+         */
+        private boolean bindIp = false;
+
     }
 
     @Data

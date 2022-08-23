@@ -3,6 +3,7 @@ package cn.omisheep.authz.core.auth.deviced;
 import cn.omisheep.authz.AuHelper;
 import cn.omisheep.authz.core.AuthzContext;
 import cn.omisheep.authz.core.AuthzProperties;
+import cn.omisheep.authz.core.ThreadWebEnvironmentException;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.cache.Cache;
 import cn.omisheep.authz.core.config.Constants;
@@ -67,14 +68,34 @@ public class UserDevicesDictByCache implements UserDevicesDict {
             if (!StringUtils.equals(device.getAccessTokenId(), accessTokenId)) return LOGIN_EXCEPTION;
         }
 
+        // 若绑定了ip，验证ip是否相等
+        if (device.getBindIp() != null) {
+            try {
+                if (!StringUtils.equals(device.getBindIp(), AuthzContext.getCurrentHttpMeta().getIp())) {
+                    return REQUIRE_LOGIN;
+                }
+            } catch (ThreadWebEnvironmentException e) {
+                return REQUIRE_LOGIN;
+            }
+        }
+
         // 成功
         return SUCCESS;
     }
 
     // @since 1.2.0 优化了登录以及验证逻辑
     @Override
-    public void addUser(TokenPair tokenPair,
-                        HttpMeta httpMeta) {
+    public void addUser(TokenPair tokenPair) {
+        Date   now = TimeUtils.now();
+        String ip  = null;
+        try {
+            HttpMeta httpMeta = AuthzContext.getCurrentHttpMeta();
+            now = httpMeta.getNow();
+            ip  = httpMeta.getIp();
+        } catch (ThreadWebEnvironmentException e) {
+            // skip
+        }
+
         if (tokenPair == null || tokenPair.getAccessToken() == null || tokenPair.getRefreshToken() == null) {return;}
 
         AccessToken accessToken = tokenPair.getAccessToken();
@@ -91,13 +112,15 @@ public class UserDevicesDictByCache implements UserDevicesDict {
 
         Device device = new DefaultDevice()
                 .setAccessTokenId(accessToken.getTokenId());
-
+        if (properties.getToken().isBindIp()) {
+            device.setBindIp(ip);
+        }
         String clientId = accessToken.getClientId();
         if (clientId != null) {
             String    scope     = accessToken.getScope();
             GrantType grantType = accessToken.getGrantType();
             device.setScope(scope).setGrantType(grantType).setClientId(clientId)
-                    .setAuthorizedDate(httpMeta.getNow())
+                    .setAuthorizedDate(now)
                     .setExpiresDate(expiresAt);
             String key = UserDevicesDict.oauthKey(accessToken);
             cache.set(key, device, expiredIn);

@@ -40,8 +40,7 @@ public interface UserDevicesDict {
 
     // =========================   登入   ========================= //
 
-    void addUser(TokenPair tokenPair,
-                 HttpMeta httpMeta);
+    void addUser(TokenPair tokenPair);
 
     // =========================   刷新   ========================= //
 

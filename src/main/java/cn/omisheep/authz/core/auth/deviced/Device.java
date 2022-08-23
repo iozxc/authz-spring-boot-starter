@@ -51,4 +51,9 @@ public interface Device extends Map<Object, Object>, java.io.Serializable {
 
     Device setExpiresDate(Date expiresDate);
 
+    // 绑定的ip
+    String getBindIp();
+
+    Device setBindIp(String ip);
+
 }
