@@ -55,7 +55,7 @@ public class TokenHelper extends BaseHelper {
     static {
         AuthzProperties.TokenConfig token = properties.getToken();
         String                      key   = token.getKey();
-        tokenIdBits = token.getTokenIdBits();
+        tokenIdBits = token.getIdBits();
         if (key == null || key.equals("")) {
             secretKey = null;
             alg       = NONE;

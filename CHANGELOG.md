@@ -1,5 +1,15 @@
 # 更新日记【Authz】
 
+## Version 1.2.9 - 2022.8.24
+
+### Breaking Changes
+
+- `authz.token.token-id-bits` ==> `authz.token.id-bits`
+
+### Fixed
+
+- 修复了一些bug
+
 ## Version 1.2.8 - 2022.8.23
 
 ### Added
@@ -136,7 +146,8 @@
 
 ### Added
 
-1. 为了弥补封禁类型，新增 **封禁时和解封时** 的【回调函数】，可以在程序初始化时调用，或者直接继承`cn.omisheep.authz.core.callback.RateLimitCallback`接口并将其注入Spring。
+1. 为了弥补封禁类型，新增 **封禁时和解封时**
+   的【回调函数】，可以在程序初始化时调用，或者直接继承`cn.omisheep.authz.core.callback.RateLimitCallback`接口并将其注入Spring。
 
 ```java
 import cn.omisheep.authz.AuHelper;
@@ -236,7 +247,8 @@ class Main {
 ### Fixed
 
 - 修改了`cn.omisheep.authz.core.slot.Slot`接口
-  在其内的chain方法不在返回值，若此slot需要返回错误并且中断之后的slot，则调用`cn.omisheep.authz.core.slot.Error`函数接口中error方法即可
+  在其内的chain方法不在返回值，若此slot需要返回错误并且中断之后的slot，则调用`cn.omisheep.authz.core.slot.Error`
+  函数接口中error方法即可
 
 ## Version 1.0.13 - 2022.7.9
 

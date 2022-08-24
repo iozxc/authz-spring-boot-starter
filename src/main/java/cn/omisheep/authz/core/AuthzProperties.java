@@ -136,7 +136,7 @@ public class AuthzProperties {
         /**
          * 登录标识的长度
          */
-        private int tokenIdBits = 8;
+        private int idBits = 8;
 
         /**
          * cookie name
