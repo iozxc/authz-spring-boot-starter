@@ -7,12 +7,12 @@ import cn.omisheep.authz.core.TokenException;
 import cn.omisheep.authz.core.auth.PermLibrary;
 import cn.omisheep.authz.core.auth.deviced.UserDevicesDict;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
-import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.authz.core.tk.TokenHelper;
 import cn.omisheep.authz.core.util.HttpUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.web.method.HandlerMethod;
 
@@ -63,6 +63,10 @@ public class CookieAndRequestSlot implements Slot {
             if (!authRequestToken.header().equals("")) {
                 tokenValue = HttpUtils.getCurrentRequestHeaders().get(
                         authRequestToken.header().toLowerCase(Locale.ROOT));
+                if (!StringUtils.equals("", authRequestToken.prefix())
+                        && tokenValue.startsWith(authRequestToken.prefix())) {
+                    tokenValue = tokenValue.substring(authRequestToken.prefix().length());
+                }
             }
 
             if (tokenValue == null && !authRequestToken.cookie().equals("")) {
@@ -93,10 +97,13 @@ public class CookieAndRequestSlot implements Slot {
         if (tokenValue == null) return;
 
         try {
-            AccessToken accessToken = TokenHelper.parseAccessToken(tokenValue);
-            httpMeta.setToken(accessToken);
+            httpMeta.setToken(TokenHelper.parseAccessToken(tokenValue));
         } catch (Exception e) {
             TokenHelper.clearCookie();
+            if (!httpMeta.isRequireLogin()) {
+                error.stop();
+                return;
+            }
             if (e instanceof JwtException) {
                 try {
                     if (e instanceof ExpiredJwtException) {

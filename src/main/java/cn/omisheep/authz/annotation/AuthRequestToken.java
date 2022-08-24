@@ -22,5 +22,7 @@ public @interface AuthRequestToken {
 
     String header() default "";
 
+    String prefix() default "";
+
     String cookie() default "";
 }

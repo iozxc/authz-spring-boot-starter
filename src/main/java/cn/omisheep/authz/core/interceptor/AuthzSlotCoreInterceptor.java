@@ -4,6 +4,7 @@ import cn.omisheep.authz.core.AuthzException;
 import cn.omisheep.authz.core.ExceptionStatus;
 import cn.omisheep.authz.core.auth.ipf.HttpMeta;
 import cn.omisheep.authz.core.auth.rpd.PermissionDict;
+import cn.omisheep.authz.core.slot.Error;
 import cn.omisheep.authz.core.slot.Order;
 import cn.omisheep.authz.core.slot.Slot;
 import cn.omisheep.authz.core.tk.TokenHelper;
@@ -70,17 +71,25 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
             LinkedList<Object>          exceptionObjectList = httpMeta.getExceptionObjectList();
             for (Slot slot : slots) {
                 if (next.get() || slot.must()) {
-                    slot.chain(httpMeta, handlerMethod, (error) -> {
-                        next.set(false);
-                        if (error == null || error.length == 0) return;
-                        for (Object o : error) {
-                            if (o instanceof ExceptionStatus) {
-                                exceptionStatusList.offer((ExceptionStatus) o);
-                            } else if (o instanceof AuthzException) {
-                                exceptionStatusList.offer(((AuthzException) o).getExceptionStatus());
-                            } else {
-                                exceptionObjectList.offer(error);
+                    slot.chain(httpMeta, handlerMethod, new Error() {
+                        @Override
+                        public void error(Object... error) {
+                            next.set(false);
+                            if (error == null || error.length == 0) return;
+                            for (Object o : error) {
+                                if (o instanceof ExceptionStatus) {
+                                    exceptionStatusList.offer((ExceptionStatus) o);
+                                } else if (o instanceof AuthzException) {
+                                    exceptionStatusList.offer(((AuthzException) o).getExceptionStatus());
+                                } else {
+                                    exceptionObjectList.offer(error);
+                                }
                             }
+                        }
+
+                        @Override
+                        public void stop() {
+                            next.set(false);
                         }
                     });
                 }

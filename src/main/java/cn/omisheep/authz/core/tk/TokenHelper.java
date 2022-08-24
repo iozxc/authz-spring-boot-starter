@@ -89,6 +89,10 @@ public class TokenHelper extends BaseHelper {
         expire      = (int) (accessTime / 1000);
     }
 
+    public static boolean hasKey() {
+        return secretKey != null;
+    }
+
     /**
      * 创建一个 TokenPair（ accessToken，refreshToken ）
      *
@@ -200,7 +204,7 @@ public class TokenHelper extends BaseHelper {
 
         JwtBuilder jwtBuilder = Jwts.builder().setClaims(claims) // 设置 claims
                 .setId(accessTokenId).compressWith(codec).setExpiration(expiresAt);
-        if (secretKey != null) {
+        if (hasKey()) {
             jwtBuilder.signWith(secretKey, alg);
         }
         String tokenVal = jwtBuilder.compact();
@@ -216,7 +220,7 @@ public class TokenHelper extends BaseHelper {
         claims.put(CLIENT_ID, accessToken.getClientId());
         JwtBuilder jwtBuilder = Jwts.builder().setClaims(claims) // 设置 claims
                 .setId(accessToken.getId()).setExpiration(expiresAt).compressWith(codec);
-        if (secretKey != null) {
+        if (hasKey()) {
             jwtBuilder.signWith(secretKey, alg);
         }
         String tokenVal = jwtBuilder.compact();
@@ -304,7 +308,9 @@ public class TokenHelper extends BaseHelper {
 
     private static Claims parseToken(String val) {
         if (val == null || val.equals("")) return null;
-        return Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(prefix + val).getBody();
+        JwtParserBuilder jwtParserBuilder = Jwts.parserBuilder();
+        if (hasKey()) jwtParserBuilder.setSigningKey(secretKey);
+        return jwtParserBuilder.build().parseClaimsJws(prefix + val).getBody();
     }
 
     /**
@@ -346,7 +352,6 @@ public class TokenHelper extends BaseHelper {
                                 claims.get(USER_ID),
                                 claims.get(CLIENT_ID, String.class));
     }
-
 
     public static IssueToken createIssueToken(TokenPair tokenPair) {
         GrantType grantType = tokenPair.getAccessToken().getGrantType();

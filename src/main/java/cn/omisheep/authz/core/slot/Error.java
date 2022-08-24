@@ -7,4 +7,6 @@ package cn.omisheep.authz.core.slot;
 @FunctionalInterface
 public interface Error {
     void error(Object... error);
+
+    default void stop() {}
 }

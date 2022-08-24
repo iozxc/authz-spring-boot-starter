@@ -16,7 +16,7 @@ public class FilterSlot implements Slot {
                       HandlerMethod handler,
                       Error error) {
         if (httpMeta.isMethod(OPTIONS) || httpMeta.getApi() == null) {
-            error.error();
+            error.stop();
         }
     }
 }
