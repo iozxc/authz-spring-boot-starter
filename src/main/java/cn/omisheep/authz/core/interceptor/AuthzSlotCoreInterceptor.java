@@ -95,11 +95,15 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
                 }
             }
             if (!exceptionStatusList.isEmpty() || !exceptionObjectList.isEmpty()) {
-                ExceptionStatus status = exceptionStatusList.getFirst();
-                if (httpMeta.isClearCookie() && status != null && status.isClearToken()) {
-                    TokenHelper.clearCookie();
+                if (!exceptionStatusList.isEmpty()) {
+                    ExceptionStatus status = exceptionStatusList.getFirst();
+                    if (httpMeta.isClearCookie() && status != null && status.isClearToken()) {
+                        TokenHelper.clearCookie();
+                    }
+                    return authzExceptionHandler.handle(request, response, httpMeta, status, exceptionObjectList);
+                } else {
+                    return authzExceptionHandler.handle(request, response, httpMeta, ExceptionStatus.UNKNOWN, exceptionObjectList);
                 }
-                return authzExceptionHandler.handle(request, response, httpMeta, status, exceptionObjectList);
             } else {return true;}
         } catch (Exception e) {
             LogUtils.error(e);
