@@ -52,9 +52,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.data.redis.connection.RedisConnectionCommands;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
@@ -182,11 +180,6 @@ public class AuthzAutoConfiguration {
                                                        @Qualifier("authzCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter1,
                                                        @Qualifier("authzRequestCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter2,
                                                        @Qualifier("authzVersionMessageListenerAdapter") MessageListenerAdapter listenerAdapter3) {
-            try {
-                redisTemplate.execute((RedisCallback<Object>) RedisConnectionCommands::ping);
-            } catch (Exception e) {
-                throw new IllegalStateException("redis异常，检查redis配置是否有效");
-            }
             RedisMessageListenerContainer container = new RedisMessageListenerContainer();
             container.setMaxSubscriptionRegistrationWaitingTime(6000L);
             container.setRecoveryInterval(15000L);
