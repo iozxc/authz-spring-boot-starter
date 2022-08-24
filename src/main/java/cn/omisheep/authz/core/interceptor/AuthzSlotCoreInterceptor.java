@@ -102,7 +102,8 @@ public class AuthzSlotCoreInterceptor implements HandlerInterceptor {
                     }
                     return authzExceptionHandler.handle(request, response, httpMeta, status, exceptionObjectList);
                 } else {
-                    return authzExceptionHandler.handle(request, response, httpMeta, ExceptionStatus.UNKNOWN, exceptionObjectList);
+                    return authzExceptionHandler.handle(request, response, httpMeta, ExceptionStatus.UNKNOWN,
+                                                        exceptionObjectList);
                 }
             } else {return true;}
         } catch (Exception e) {
