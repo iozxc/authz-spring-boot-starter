@@ -1,7 +1,8 @@
 ### Authz - (authz-spring-boot-starter)
 
-![GitHub](https://img.shields.io/github/stars/iozxc/authz-spring-boot-starter?color=e879b0)
-![GitHub](https://img.shields.io/github/license/iozxc/authz-spring-boot-starter)
+![Authz-Version](https://img.shields.io/static/v1?label=version&message=1.2.10&color=ec8c47&link=http:%2F%2Fauthz.omisheep.cn&link=http:%2F%2Fauthz.omisheep.cn)
+![Stars](https://img.shields.io/github/stars/iozxc/authz-spring-boot-starter?color=e879b0)
+![License](https://img.shields.io/github/license/iozxc/authz-spring-boot-starter)
 
 ## 权限安全框架 - 简单介绍
 
