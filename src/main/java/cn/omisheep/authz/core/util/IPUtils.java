@@ -11,11 +11,11 @@ public class IPUtils {
     }
 
     public static String getIp(HttpServletRequest request) {
-        String ip;
-        int    index = 0;
-        do {
-            ip = request.getHeader(IP_HEADERS[index++]);
-        } while (check(ip));
+        String ip = null;
+        for (int i = 0; i < IP_HEADERS.length; i++) {
+            ip = request.getHeader(IP_HEADERS[i]);
+            if (check(ip)) break;
+        }
         if (check(ip)) ip = request.getRemoteAddr();
         if (ip.length() > 15 && !ip.contains(":")) {
             String[] ips = ip.split(Constants.COMMA);
