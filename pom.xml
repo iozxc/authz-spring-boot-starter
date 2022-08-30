@@ -6,7 +6,7 @@
 
     <groupId>cn.omisheep</groupId>
     <artifactId>authz-spring-boot-starter</artifactId>
-    <version>1.2.11</version>
+    <version>1.2.12</version>
     <description>简洁、好用、快速的权限安全、设备管理框架</description>
     <url>http://authz.omisheep.cn</url>
     <packaging>jar</packaging>
