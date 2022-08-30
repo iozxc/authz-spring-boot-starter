@@ -7,7 +7,7 @@ import cn.omisheep.authz.core.tk.IssueToken;
 import cn.omisheep.authz.core.tk.TokenHelper;
 import cn.omisheep.authz.core.tk.TokenPair;
 import cn.omisheep.authz.core.util.HttpUtils;
-import cn.omisheep.authz.core.util.ua.Platform;
+import cn.omisheep.commons.util.web.ua.Platform;
 import io.jsonwebtoken.ExpiredJwtException;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
