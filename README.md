@@ -23,7 +23,7 @@
 <dependency>
     <groupId>cn.omisheep</groupId>
     <artifactId>authz-spring-boot-starter</artifactId>
-    <version>1.2.10</version>
+    <version>1.2.12</version>
 </dependency>
 ```
 
