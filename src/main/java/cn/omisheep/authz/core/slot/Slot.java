@@ -9,8 +9,8 @@ import org.springframework.web.method.HandlerMethod;
  * <p>
  * (0)        FilterSlot               <br>
  * (1)        CookieAndRequestSlot     <br>
- * (10)       BlacklistSlot            <br>
- * (15)       RateLimitSlot            <br>
+ * (10)       RateLimitSlot            <br>
+ * (15)       BlacklistSlot            <br>
  * (30)       IPRangeSlot              <br>
  * (50)       OAuthSlot                <br>
  * (100)      DeviceSlot               <br>
