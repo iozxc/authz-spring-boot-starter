@@ -15,9 +15,9 @@ import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.authz.core.util.HttpUtils;
 import cn.omisheep.authz.core.util.IPUtils;
 import cn.omisheep.authz.core.util.LogUtils;
-import cn.omisheep.authz.core.util.ua.UserAgent;
-import cn.omisheep.authz.core.util.ua.UserAgentParser;
 import cn.omisheep.commons.util.CollectionUtils;
+import cn.omisheep.commons.util.web.ua.UserAgent;
+import cn.omisheep.commons.util.web.ua.UserAgentParser;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -144,7 +144,7 @@ public class HttpMeta extends BaseHelper {
     public static Object currentUserId() {
         try {
             return currentToken().getUserId();
-        } catch (Exception e) {
+        } catch (NullPointerException e) {
             return null;
         }
     }

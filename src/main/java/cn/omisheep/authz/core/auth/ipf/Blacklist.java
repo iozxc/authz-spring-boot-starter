@@ -136,7 +136,7 @@ public class Blacklist {
                                   @Nullable String deviceType,
                                   @Nullable String deviceId,
                                   long time) {
-            _op(_createUser(userId, deviceType, deviceId, UPDATE)
+            _op(_createUser(userId, deviceType, deviceId)
                         .setTime(time));
         }
 
@@ -144,15 +144,14 @@ public class Blacklist {
                                   @Nullable String deviceType,
                                   @Nullable String deviceId,
                                   Date endDate) {
-            _op(_createUser(userId, deviceType, deviceId, UPDATE)
+            _op(_createUser(userId, deviceType, deviceId)
                         .setDate(TimeUtils.format(endDate)));
         }
 
         private static AuthzModifier.BlacklistInfo _createUser(Object userId,
                                                                @Nullable String deviceType,
-                                                               @Nullable String deviceId,
-                                                               AuthzModifier.BlacklistInfo.OP op) {
-            return _create(USER, op)
+                                                               @Nullable String deviceId) {
+            return _create(USER, AuthzModifier.BlacklistInfo.OP.UPDATE)
                     .setUserId(userId)
                     .setDeviceType(deviceType)
                     .setDeviceId(deviceId);

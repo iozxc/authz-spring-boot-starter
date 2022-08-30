@@ -54,6 +54,7 @@ public class AuthzContext {
         ctx = applicationContext;
     }
 
+    @NonNull
     public static ApplicationContext getCtx() {
         return ctx;
     }

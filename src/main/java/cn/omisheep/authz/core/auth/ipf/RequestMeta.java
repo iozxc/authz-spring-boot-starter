@@ -181,6 +181,7 @@ public class RequestMeta {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(ip).toHashCode();
+        return new HashCodeBuilder(17, 37).append(getIp()).append(getUserId()).toHashCode();
     }
+
 }

@@ -175,8 +175,7 @@ public class AuthzAutoConfiguration {
 
         @Bean("auCacheRedisMessageListenerContainer")
         @ConditionalOnBean(value = MessageReceive.class, name = "authzCacheMessageReceive")
-        public RedisMessageListenerContainer container(@Qualifier("authzRedisTemplate") RedisTemplate redisTemplate,
-                                                       RedisConnectionFactory connectionFactory,
+        public RedisMessageListenerContainer container(RedisConnectionFactory connectionFactory,
                                                        @Qualifier("authzCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter1,
                                                        @Qualifier("authzRequestCacheMessageListenerAdapter") MessageListenerAdapter listenerAdapter2,
                                                        @Qualifier("authzVersionMessageListenerAdapter") MessageListenerAdapter listenerAdapter3) {

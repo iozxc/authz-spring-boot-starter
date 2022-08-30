@@ -1,13 +1,17 @@
-package cn.omisheep.authz;
-
 /*
-                 _    _
-    /\   v1.2   | |  | |
-   /  \   _   _ | |_ | |__  _authz
-  / /\ \ | | | || __|| '_ \ |_  /
- / ____ \| |_| || |_ | | | | / /
-/_/    \_\\__,_| \__||_| |_|/___|
+                         _    _
+            /\   v1.2   | |  | |
+           /  \   _   _ | |_ | |__  _authz
+          / /\ \ | | | || __|| '_ \ |_  /
+         / ____ \| |_| || |_ | | | | / /
+        /_/    \_\\__,_| \__||_| |_|/___|
+
+    tips:
+        1. 时间字符串均采用如下格式
+           "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
  */
+
+package cn.omisheep.authz;
 
 import cn.omisheep.authz.core.*;
 import cn.omisheep.authz.core.auth.deviced.DeviceCountInfo;
@@ -25,9 +29,9 @@ import cn.omisheep.authz.core.oauth.AuthorizedDeviceDetails;
 import cn.omisheep.authz.core.oauth.ClientDetails;
 import cn.omisheep.authz.core.tk.AccessToken;
 import cn.omisheep.authz.core.tk.IssueToken;
-import cn.omisheep.authz.core.util.ua.OS;
-import cn.omisheep.authz.core.util.ua.Platform;
-import cn.omisheep.authz.core.util.ua.UserAgent;
+import cn.omisheep.commons.util.web.ua.OS;
+import cn.omisheep.commons.util.web.ua.Platform;
+import cn.omisheep.commons.util.web.ua.UserAgent;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
@@ -37,9 +41,6 @@ import java.util.concurrent.TimeUnit;
 import static cn.omisheep.authz.core.AuthzManager.modify;
 
 /**
- * 时间字符串均采用如下格式 <br>
- * "2d 3h 4m 5s 100ms"-> 2天3小时4分钟5秒100毫秒 用空格隔开
- *
  * @author zhouxinchen[1269670415@qq.com]
  * @version 1.2
  * @since 1.0.0
