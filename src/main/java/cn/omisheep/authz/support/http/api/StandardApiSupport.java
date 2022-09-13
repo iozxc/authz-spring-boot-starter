@@ -29,7 +29,7 @@ public class StandardApiSupport implements ApiSupport {
 
     @Post(value = "/operate", desc = "权限操作通用接口")
     public ResponseResult<?> operate(@JSON AuthzModifier modifier,
-                          User user) {
+                                     User user) {
         if (user.getPermissions() == null || user.getPermissions().isEmpty()) {
             return AuthzResult.FAIL.data();
         }
